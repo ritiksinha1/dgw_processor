@@ -24,11 +24,14 @@ Required Courses is a list consisting of the following items
 
 Command Line Arguments for testing
   Canonical forms:
-    Institution lower-case 3-letter instutition code (qns => Queens College)
+    Institution: lower-case 3-letter instutition code (qns => Queens College)
       Accept upper or lower case, with or without 01 suffix
-    Program Type (major1, major2, concentration, or minor)
+    Any number of program codes
       Accept upper or lower case
-      accept 3-letter abbreviation (where maj => major1 or major2)
+
+#   Program Type (major1, major2, concentration, or minor)
+#     Accept upper or lower case
+#     accept 3-letter abbreviation (where maj => major1 or major2)
 
 Hidden Rules (from Dennis Avalos)
   Documentation comments would be the comments you see in “#”. For example, Sociology made changes
