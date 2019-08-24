@@ -4,29 +4,86 @@ import argparse
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
+import re
+
+
+def parse_catalog_years(period_start, period_stop):
+  """ First Year = CCYY-YY or CCYY-CCYY if centuries differ
+      Last Year = CCYY-YY or CCYY-CCYY or 'Now'
+      Other values: 'Missing', 'Unknown', or 'Unused'
+      Catalogs: list which will be either empty, Undergraduate, Graduate, or both
+
+  """
+  catalogs = set()
+  first_academic_year = ''
+  last_academic_year = ''
+
+  m_start = re.search(r'(19|20)(\d\d)-?(19|20)(\d\d)([UG]?)', period_start)
+  if m_start is None:
+    first_academic_year = 'Unknown'
+  else:
+    century_1, year_1, century_2, year_2, catalog = m_start.groups()
+    if century_1 != century_2:
+      first_academic_year = f'{century_1}{year_1}-{century_2}{year_2}'
+    else:
+      first_academic_year = f'{century_1}{year_1}-{year_2}'
+    if catalog == 'U':
+      catalogs.add('Undergraduate')
+    if catalog == 'G':
+      catalogs.add('Graduate')
+
+  if re.search(r'9999+', period_stop):
+    last_academic_year = 'Now'
+  else:
+    m_stop = re.search(r'(19|20)(\d\d)-?(19|20)(\d\d)([UG]?)', period_stop)
+    if m_stop is None:
+      last_academic_year = 'Unknown'
+    else:
+      century_1, year_1, century_2, year_2, catalog = m_stop.groups()
+      if century_1 != century_2:
+        last_academic_year = f'{century_1}{year_1}-{century_2}{year_2}'
+      else:
+        last_academic_year = f'{century_1}{year_1}-{year_2}'
+      if catalog == 'U':
+        catalogs.add('Undergraduate')
+      if catalog == 'G':
+        catalogs.add('Graduate')
+
+  if first_academic_year != last_academic_year:
+    return f'{first_academic_year} to {last_academic_year}', catalogs
+  else:
+    return f'{first_academic_year}', catalogs
+
+
+def parse_requirements(requirement_text):
+  """ Return Requirements object
+      This is going to be a class with a json member and a __str__() method.
+  """
+  requirements = {}
+  comments = []
+  lines = requirement_text.split('\n')
+  for line in lines:
+    if line.startswith('#'):
+      comments.append(line)
+  requirements['comments'] = comments
+  return requirements
+
+
 # Unit test
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Test DGW Parser')
   parser.add_argument('programs', nargs='+')
   parser.add_argument('-i', '--institution', default='QNS01')
-  parser.add_argument('-t', '--program_types', nargs='*', required=True)
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-v', '--verbose', action='store_true', default=False)
   args = parser.parse_args()
 
-  type_names = {'maj': 'major', 'con': 'concentration', 'min': 'minor'}
   # Put arguments in canonical form
   query_base = 'select requirement_text from requirement_blocks where '
   institution = f'{args.institution.lower()[0:3]}'
 
-  program_types = [type_names[t.lower()[0:3]] for t in args.program_types]
-  type_list = []
-  for program_type in program_types:
-    if program_type == 'major':
-      type_list += ['major1 = %s', 'major2 = %s']
-    else:
-      type_list.append(f"{program_type} = %s")
-  type_clause = ' or '.join(type_list)
+  type_list = ['major1 = %s', 'major2 = %s', 'minor = %s', 'concentration = %s']
+  type_clause = f" and ({' or '.join(type_list)})"
 
   conn = psycopg2.connect('dbname=cuny_programs')
   cursor = conn.cursor(cursor_factory=NamedTupleCursor)
@@ -36,11 +93,26 @@ if __name__ == '__main__':
     query = f"""
               select * from requirement_blocks
               where institution = '{institution}'
-              and ({type_clause})
+              {type_clause}
               order by period_start desc
             """
     cursor.execute(query, types)
-    print(cursor.rowcount)
     for row in cursor.fetchall():
-      print(row.block_type, row.block_value, row.period_start, row.period_stop,
-            len(row.requirement_text))
+      request_block = {}
+      which_catalog = 'Unknown'
+      end_year, program_level = row.period_stop[0:4], row.period_stop[-1]
+      if program_level == 'U':
+        which_catalog = 'Undergraduate'
+      elif program_level == 'G':
+        which_catalog = 'Graduate'
+      if int(end_year) < 9999:
+        end_str = end_year[3:4]
+      else:
+        end_str = 'Now'
+      request_block['institution'] = row.institution
+      (request_block['catalog_years'],
+      request_block['catalogs']) = parse_catalog_years(row.period_start, row.period_stop)
+      request_block['program_type'] = row.block_type
+      request_block['program'] = row.block_value
+      request_block['requirements'] = parse_requirements(row.requirement_text)
+      print(request_block)
