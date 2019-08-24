@@ -5,6 +5,7 @@ import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
 import re
+from requirements import Requirements
 
 
 def parse_catalog_years(period_start, period_stop):
@@ -59,14 +60,8 @@ def parse_requirements(requirement_text):
   """ Return Requirements object
       This is going to be a class with a json member and a __str__() method.
   """
-  requirements = {}
-  comments = []
-  lines = requirement_text.split('\n')
-  for line in lines:
-    if line.startswith('#'):
-      comments.append(line)
-  requirements['comments'] = comments
-  return requirements
+  requirements = Requirements(requirement_text)
+  return requirements.html()
 
 
 # Unit test
@@ -99,19 +94,9 @@ if __name__ == '__main__':
     cursor.execute(query, types)
     for row in cursor.fetchall():
       request_block = {}
-      which_catalog = 'Unknown'
-      end_year, program_level = row.period_stop[0:4], row.period_stop[-1]
-      if program_level == 'U':
-        which_catalog = 'Undergraduate'
-      elif program_level == 'G':
-        which_catalog = 'Graduate'
-      if int(end_year) < 9999:
-        end_str = end_year[3:4]
-      else:
-        end_str = 'Now'
       request_block['institution'] = row.institution
       (request_block['catalog_years'],
-      request_block['catalogs']) = parse_catalog_years(row.period_start, row.period_stop)
+       request_block['catalogs']) = parse_catalog_years(row.period_start, row.period_stop)
       request_block['program_type'] = row.block_type
       request_block['program'] = row.block_value
       request_block['requirements'] = parse_requirements(row.requirement_text)
