@@ -4,7 +4,7 @@ import argparse
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from requirements import Requirements, parse_catalog_years
+from requirements import Requirements
 
 
 # Unit test
@@ -22,8 +22,9 @@ if __name__ == '__main__':
     institutions = ['QNS01']
   else:
     institutions = args.institutions
-  print('programs:', args.programs)
-  print('institutions:', institutions)
+  if args.debug:
+    print('programs:', args.programs)
+    print('institutions:', institutions)
 
   # Create dict of known colleges
   colleges = dict()
@@ -34,16 +35,18 @@ if __name__ == '__main__':
     colleges[row.code] = row.name
   crse_conn.close()
 
-  # Set up for querying program information
+  # Set up to query program information
   prog_conn = psycopg2.connect('dbname=cuny_programs')
   prog_cursor = prog_conn.cursor(cursor_factory=NamedTupleCursor)
   query_base = 'select requirement_text from requirement_blocks where '
-  type_list = ['major1 ~* %s', 'major2 ~* %s', 'minor ~* %s', 'concentration ~* %s']
+  type_list = ['major1 = %s', 'major2 = %s', 'minor = %s', 'concentration = %s']
   type_clause = f" and ({' or '.join(type_list)})"
 
   # Go through the selected programs for each college
-  for college_code in colleges.keys():
+  for institution in args.institutions:
+    college_code = institution.lower()[0:3]
     college_name = colleges[college_code]
+    print('<h1>', college_name, '</h1>')
     for program in args.programs:
       program_code = program.upper()
       types = [f'{program}'] * type_clause.count('%s')
@@ -55,15 +58,8 @@ if __name__ == '__main__':
               """
       prog_cursor.execute(query, types)
       for row in prog_cursor.fetchall():
-        requirement_block = {}
-        requirement_block['college'] = college_name
-        (requirement_block['catalog_years'],
-         requirement_block['catalogs']) = parse_catalog_years(row.period_start, row.period_stop)
-        requirement_block['program_type'] = row.block_type
-        requirement_block['program'] = row.block_value
-        requirement_block['requirements'] = Requirements(row.requirement_text).html()
-        print(requirement_block['college'],
-              requirement_block['program'], row.title,
-              requirement_block['catalog_years'],
-              requirement_block['catalogs'])
-        print(requirement_block['requirements'])
+        print('<h2>', row.block_value, row.block_type.title(), '</h2>')
+        if args.debug:
+          print(row.requirement_text)
+        requirements = Requirements(row.requirement_text, row.period_start, row.period_stop).html()
+        print(requirements)
