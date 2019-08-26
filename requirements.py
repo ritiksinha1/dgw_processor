@@ -35,10 +35,13 @@ class Requirements():
     self.courses = {}
     self.notes = ''
     self.comments = []
+    self.text = []
     lines = requirement_text.split('\n')
     for line in lines:
       if line.startswith('#'):
         self.comments.append(line)
+      else:
+        self.text.append(line)
 
   def __str__(self):
     return '\n'.join(self.requirements['comments'])
@@ -59,11 +62,14 @@ class Requirements():
     if k > 0:
       k += 1
       years_str = years_str[:k] + ' and' + years_str[k:]
-    return f"""
-            <h2>{str(self.catalogs)}</h2>
-            <p>{years_str}</p>
-            <p>This program appears in the {catalog_str}</p>
-            """
+    returnVal = f"""
+                <h2>{str(self.catalogs)}</h2>
+                <p>{years_str}</p>
+                <p>This program appears in the {catalog_str}</p>
+                """
+    for line in self.text:
+      returnVal += f'<p>{line}</p>'
+    return returnVal
 
 
 class AcademicYear:
@@ -118,7 +124,10 @@ class Catalogs:
     m_start = re.search(r'(19|20)(\d\d)-?(19|20)(\d\d)([UG]?)', period_start)
     if m_start is not None:
       century_1, year_1, century_2, year_2, catalog = m_start.groups()
-      self.first_academic_year = AcademicYear(century_1, year_1, century_2, year_2)
+      try:
+        self.first_academic_year = AcademicYear(century_1, year_1, century_2, year_2)
+      except ValueError as e:
+        self.first_academic_year = f'Unknown: {e}.'
       self.first_year = (century_1 * 100) + year_1
       if catalog == 'U':
         self.which_catalogs.add('Undergraduate')
@@ -131,7 +140,10 @@ class Catalogs:
       m_stop = re.search(r'(19|20)(\d\d)-?(19|20)(\d\d)([UG]?)', period_stop)
       if m_stop is not None:
         century_1, year_1, century_2, year_2, catalog = m_stop.groups()
-        self.last_academic_year = AcademicYear(century_1, year_1, century_2, year_2)
+        try:
+          self.last_academic_year = AcademicYear(century_1, year_1, century_2, year_2)
+        except ValueError as e:
+          self.last_academic_year = f'Unknown: {e}.'
         self.last_year = (century_1 * 100) + year_1
         if catalog == 'U':
           self.which_catalogs.add('Undergraduate')

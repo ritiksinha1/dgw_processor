@@ -43,7 +43,7 @@ if __name__ == '__main__':
   type_clause = f" and ({' or '.join(type_list)})"
 
   # Go through the selected programs for each college
-  for institution in args.institutions:
+  for institution in institutions:
     college_code = institution.lower()[0:3]
     college_name = colleges[college_code]
     print('<h1>', college_name, '</h1>')
