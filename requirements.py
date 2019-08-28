@@ -1,4 +1,5 @@
 import json
+from json import JSONEncoder
 import re
 
 from datetime import datetime
@@ -27,36 +28,39 @@ class Requirements():
                ):
     self.scribe_text = requirement_text
     self.catalogs = Catalogs(period_start, period_stop)
-    self.which_catalogs = sorted([cat for cat in self.catalogs.which_catalogs], reverse=True)
-    self.years = range(self.catalogs.first_academic_year.year,
-                       self.catalogs.last_academic_year.year + 1)
+    self.years = list(range(self.catalogs.first_academic_year.year,
+                            self.catalogs.last_academic_year.year + 1))
     self.total_credits = total_credits
     self.transfer_limit = transfer_limit
     self.courses = {}
     self.notes = ''
     self.comments = []
     self.text = []
+    ignore = ['REMARK', 'LOG:', 'NonExclusive', ';', '(CLOB)', 'Proxy-Advice']
     lines = requirement_text.split('\n')
     for line in lines:
       if line.startswith('#'):
         self.comments.append(line)
       else:
-        self.text.append(line)
+        tokens = line.split()
+        if len(tokens) > 0 and tokens[0] not in ignore:
+          self.text.append(line)
 
   def __str__(self):
-    return '\n'.join(self.requirements['comments'])
+    return '\n'.join(self.__dict__['text'])
 
   def json(self):
-    return json.dumps(self)
+    return json.dumps(self.__dict__, default=lambda x: x.__dict__)
 
   def html(self):
-    num_catalogs = len(self.which_catalogs)
+    num_catalogs = len(self.catalogs.which_catalogs)
     if num_catalogs == 0:
       catalog_str = 'College catalog.'
     elif num_catalogs == 1:
-      catalog_str = f'{self.which_catalogs[0]} Catalog.'
+      catalog_str = f'{self.catalogs.which_catalogs[0]} Catalog.'
     else:
-      catalog_str = f'{self.which_catalogs[0]} and {self.which_catalogs[1]} Catalogs.'
+      catalog_str = f'{self.catalogs.which_catalogs[0]} and '
+      f'{self.catalogs.which_catalogs[1]} Catalogs.'
     years_str = ', '.join([f'{year}' for year in self.years])
     k = years_str.rfind(',')
     if k > 0:
@@ -110,14 +114,15 @@ class AcademicYear:
         return f'{self.century_1}{self.year_1:02}-{self.year_2:02}'
 
 
-class Catalogs:
+class Catalogs():
   def __init__(self, period_start, period_stop):
     """ Represents a range of catalog years and which catalogs (graduate, undergraduate, both, or
         unspecified) are involved. When a student starts a program, the catalog year tells what the
         requirements are at that time.
 
     """
-    self.which_catalogs = set()
+    self.which_catalogs = []  # Serializable
+    which_catalogs = set()  # Not serializable
     self.first_academic_year = None
     self.last_academic_year = None
 
@@ -130,9 +135,9 @@ class Catalogs:
         self.first_academic_year = f'Unknown: {e}.'
       self.first_year = (century_1 * 100) + year_1
       if catalog == 'U':
-        self.which_catalogs.add('Undergraduate')
+        which_catalogs.add('Undergraduate')
       if catalog == 'G':
-        self.which_catalogs.add('Graduate')
+        which_catalogs.add('Graduate')
 
     if re.search(r'9999+', period_stop):
       self.last_academic_year = AcademicYear()
@@ -146,9 +151,10 @@ class Catalogs:
           self.last_academic_year = f'Unknown: {e}.'
         self.last_year = (century_1 * 100) + year_1
         if catalog == 'U':
-          self.which_catalogs.add('Undergraduate')
+          which_catalogs.add('Undergraduate')
         if catalog == 'G':
-          self.which_catalogs.add('Graduate')
+          which_catalogs.add('Graduate')
+    self.which_catalogs = sorted(list(which_catalogs), reverse=True)
 
   def __str__(self):
     if self.first_academic_year != self.last_academic_year:

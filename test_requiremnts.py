@@ -13,6 +13,7 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Test DGW Parser')
   parser.add_argument('-p', '--programs', nargs='+')
   parser.add_argument('-i', '--institutions', nargs='*')
+  parser.add_argument('-f', '--format', default='')
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-v', '--verbose', action='store_true', default=False)
 
@@ -22,6 +23,8 @@ if __name__ == '__main__':
     institutions = ['QNS01']
   else:
     institutions = args.institutions
+  if args.programs is None:
+    programs = ['CSCI-BS']
   if args.debug:
     print('programs:', args.programs)
     print('institutions:', institutions)
@@ -47,7 +50,7 @@ if __name__ == '__main__':
     college_code = institution.lower()[0:3]
     college_name = colleges[college_code]
     print('<h1>', college_name, '</h1>')
-    for program in args.programs:
+    for program in programs:
       program_code = program.upper()
       types = [f'{program}'] * type_clause.count('%s')
       query = f"""
@@ -61,5 +64,20 @@ if __name__ == '__main__':
         print('<h2>', row.block_value, row.block_type.title(), '</h2>')
         if args.debug:
           print(row.requirement_text)
-        requirements = Requirements(row.requirement_text, row.period_start, row.period_stop).html()
+        if args.format.lower() == 'html':
+          requirements = Requirements(row.requirement_text,
+                                      row.period_start,
+                                      row.period_stop).html()
+        elif args.format.lower() == 'json':
+          requirements = Requirements(row.requirement_text,
+                                      row.period_start,
+                                      row.period_stop).json()
+        elif args.format.lower() == 'scribe':
+          requirements = Requirements(row.requirement_text,
+                                      row.period_start,
+                                      row.period_stop).scribe_text
+        else:
+          requirements = Requirements(row.requirement_text,
+                                      row.period_start,
+                                      row.period_stop)
         print(requirements)
