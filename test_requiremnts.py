@@ -25,6 +25,8 @@ if __name__ == '__main__':
     institutions = args.institutions
   if args.programs is None:
     programs = ['CSCI-BS']
+  else:
+    programs = args.programs
   if args.debug:
     print('programs:', args.programs)
     print('institutions:', institutions)
@@ -52,7 +54,7 @@ if __name__ == '__main__':
     print('<h1>', college_name, '</h1>')
     for program in programs:
       program_code = program.upper()
-      types = [f'{program}'] * type_clause.count('%s')
+      types = [f'{program_code}'] * type_clause.count('%s')
       query = f"""
                 select * from requirement_blocks
                 where institution = '{college_code}'
