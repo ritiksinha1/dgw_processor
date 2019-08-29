@@ -36,14 +36,23 @@ class Requirements():
     self.notes = ''
     self.comments = []
     self.text = []
-    ignore = ['REMARK', 'LOG:', 'NonExclusive', ';', '(CLOB)', 'Proxy-Advice']
+    ignore = [';',
+              '(clob)',
+              'display',
+              'nonexclusive',
+              'proxy-advice',
+              'sharewith',
+              ]
     lines = requirement_text.split('\n')
     for line in lines:
-      if line.startswith('#'):
+      if line.startswith('#') or \
+         line.startswith('/') or \
+         line.lower().startswith('log') or \
+         line.lower().startswith('remark'):
         self.comments.append(line)
       else:
         tokens = line.split()
-        if len(tokens) > 0 and tokens[0] not in ignore:
+        if len(tokens) > 0 and tokens[0].lower() not in ignore:
           self.text.append(line)
 
   def __str__(self):
@@ -66,9 +75,13 @@ class Requirements():
     if k > 0:
       k += 1
       years_str = years_str[:k] + ' and' + years_str[k:]
+    if self.catalogs.first_academic_year != self.catalogs.last_academic_year:
+      suffix = 's'
+    else:
+      suffix = ''
     returnVal = f"""
-                <h2>{str(self.catalogs)}</h2>
-                <p>{years_str}</p>
+                <h2>Requirements for Catalog Year{suffix} {str(self.catalogs)}</h2>
+                <p>Academic years starting in the fall of {years_str}</p>
                 <p>This program appears in the {catalog_str}</p>
                 """
     for line in self.text:
