@@ -6,7 +6,8 @@ from datetime import datetime
 
 
 class Requirements():
-  """ Representation of the requirements for an academic program for one range of Catalog Years.
+  """ Representation of the requirements for a degree, major, minor, or concentration for one range
+      of Catalog Years.
 
       The constructor takes a text description in Degreeworks Scribe format, which is stored as the
       "scribe_text" member. The parsed information is available in the "json" and "html" members.
