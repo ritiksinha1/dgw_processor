@@ -1,8 +1,24 @@
+from enum import Enum
 import json
 from json import JSONEncoder
 import re
 
 from datetime import datetime
+
+
+class State(Enum):
+  """ Parsing states.
+  """
+  BEFORE = 1
+  HEAD = 2
+  BODY = 3
+  AFTER = 4
+
+  def next(self):
+    if self.value < 4:
+      return State(self.value + 1)
+    else:
+      return self
 
 
 class Requirements():
@@ -14,78 +30,81 @@ class Requirements():
       The _str_() method returns a plain text version.
 
       Fields:
-        years       Catalog Year(s)
-        credits     Total Credits
-        limit       Transfer Credits Allowed
-        courses     Required Courses
-        notes       Notes
-        scribe_text Raw requirements text in scribe format
-
+        scribe_text     Raw requirements text in scribe format
+        header_lines:   Scribe text between BEGIN and first semicolon, with comment lines dropped
+        body_lines:     Scribe text between first semicolon and END., with comment lines dropped
+        anomalies:      Parsing anomalies
   """
 
-  def __init__(self, requirement_text, period_start, period_stop,
-               total_credits=0.0,
-               transfer_limit=0.0,
-               ):
+  def __init__(self, requirement_text):
     self.scribe_text = requirement_text
-    self.catalogs = Catalogs(period_start, period_stop)
-    self.years = list(range(self.catalogs.first_academic_year.year,
-                            self.catalogs.last_academic_year.year + 1))
-    self.total_credits = total_credits
-    self.transfer_limit = transfer_limit
-    self.courses = {}
-    self.notes = ''
-    self.comments = []
-    self.text = []
-    ignore = [';',
-              '(clob)',
-              'display',
-              'nonexclusive',
-              'proxy-advice',
-              'sharewith',
-              ]
-    lines = requirement_text.split('\n')
-    for line in lines:
+    self.header_lines = []
+    self.body_lines = []
+    self.ignored_lines = []
+    self.anomalies = []
+    self.lines = requirement_text.split('\n')
+    state = State.BEFORE
+    for line in self.lines:
+      line = line.replace('(CLOB)', '').strip()
+      if len(line) == 0:
+        continue
       if line.startswith('#') or \
-         line.startswith('/') or \
-         line.lower().startswith('log') or \
-         line.lower().startswith('remark'):
-        self.comments.append(line)
+         line.startswith('!') or \
+         line.lower().startswith('log'):
+        self.ignored_lines.append(line)
       else:
-        tokens = line.split()
-        if len(tokens) > 0 and tokens[0].lower() not in ignore:
-          self.text.append(line)
+        # FSM for separating block's lines into header and body parts
+        if state == State.BEFORE:
+          # Observation: BEGIN is always alone on a separate line
+          if line == 'BEGIN':
+            state = state.next()
+          else:
+            self.ignored_lines.append(line)
+          continue
+        if state == State.HEAD:
+          # Observation: the first semicolon may be embedded in the middle of a line, or not
+          parts = line.split(';')
+          if parts[0] != '':
+            self.header_lines.append(parts[0])
+          if len(parts) > 1:
+            state = state.next()
+            if parts[1] != '':
+              self.body_lines.append(parts[1])
+          continue
+        if state == State.BODY:
+          # Observation: END. may be embedded in the middle of a line, or not. It never appears in
+          # label or remark strings.
+          matches = re.match(r'(.*)END\.(.*)', line)
+          if matches is None:
+            self.body_lines.append(line)
+          else:
+            if matches.group(1) != '':
+              self.body_lines.append(matches.group(0))
+            if matches.group(2) != '':
+              self.ignored_lines.append(matches.group(2))
+            state = state.next()
+          continue
+        if state == State.AFTER:
+          self.ignored_lines.append(line)
+
+    if state != State.AFTER:
+      self.anomalies.append(f'Incomplete requirement block in state {state.name}.')
 
   def __str__(self):
-    return '\n'.join(self.__dict__['text'])
+    return '\n'.join(['HEADER LINES']
+                     + self.header_lines
+                     + ['BODY LINES']
+                     + self.body_lines
+                     + ['ANOMALIES']
+                     + self.anomalies
+                     + ['IGNORED']
+                     + self.ignored_lines)
 
   def json(self):
     return json.dumps(self.__dict__, default=lambda x: x.__dict__)
 
   def html(self):
-    num_catalogs = len(self.catalogs.which_catalogs)
-    if num_catalogs == 0:
-      catalog_str = 'College catalog.'
-    elif num_catalogs == 1:
-      catalog_str = f'{self.catalogs.which_catalogs[0]} Catalog.'
-    else:
-      catalog_str = f'{self.catalogs.which_catalogs[0]} and '
-      f'{self.catalogs.which_catalogs[1]} Catalogs.'
-    years_str = ', '.join([f'{year}' for year in self.years])
-    k = years_str.rfind(',')
-    if k > 0:
-      k += 1
-      years_str = years_str[:k] + ' and' + years_str[k:]
-    if self.catalogs.first_academic_year != self.catalogs.last_academic_year:
-      suffix = 's'
-    else:
-      suffix = ''
-    returnVal = f"""
-                <h2>Requirements for Catalog Year{suffix} {str(self.catalogs)}</h2>
-                <p>Academic years starting in the fall of {years_str}</p>
-                <p>This program appears in the {catalog_str}</p>
-                """
-    for line in self.text:
+    for line in self.header_lines + self.body_lines + self.anomalies:
       returnVal += f'<p>{line}</p>'
     return returnVal
 

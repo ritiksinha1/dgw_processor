@@ -7,7 +7,7 @@ import argparse
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from requirements import Requirements
+from requirements import Requirements, Catalogs
 
 
 # Unit test
@@ -53,11 +53,33 @@ if __name__ == '__main__':
   for row in requirements_cursor.fetchall():
     college_code = row.institution
     college_name = colleges[college_code]
-    print('<h1>', college_name, '</h1>')
+    print('==================================================\n<h1>', college_name, '</h1>')
     print('<h2>', row.block_value, row.block_type.title(), '</h2>')
+    catalogs = Catalogs(row.period_start, row.period_stop)
+    num_catalogs = len(catalogs.which_catalogs)
+    if num_catalogs == 0:
+      catalog_str = 'College catalog.'
+    elif num_catalogs == 1:
+      catalog_str = f'{catalogs.which_catalogs[0]} Catalog.'
+    else:
+      catalog_str = f'{catalogs.which_catalogs[0]} and '
+      f'{catalogs.which_catalogs[1]} Catalogs.'
+    # years_str = ', '.join([f'{year}' for year in years])
+    # k = years_str.rfind(',')
+    # if k > 0:
+    #   k += 1
+    #   years_str = years_str[:k] + ' and' + years_str[k:]
+    # if self.catalogs.first_academic_year != self.catalogs.last_academic_year:
+    #   suffix = 's'
+    # else:
+    #   suffix = ''
+    # returnVal = f"""
+    #             <h2>Requirements for Catalog Year{suffix} {str(self.catalogs)}</h2>
+    #             <p>Academic years starting in the fall of {years_str}</p>
+    #             <p>This program appears in the {catalog_str}</p>
+    #             """
     if args.debug:
       print(row.requirement_text)
-    requirements = Requirements(row.requirement_text,
-                                row.period_start,
-                                row.period_stop)
+    requirements = Requirements(row.requirement_text)
     print(requirements)
+
