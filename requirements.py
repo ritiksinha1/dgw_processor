@@ -9,12 +9,13 @@ from datetime import datetime
 class State(Enum):
   """ Parsing states.
   """
+  # Block States
   BEFORE = 1
-  HEAD = 2
-  BODY = 3
+  HEADER = 2
+  RULES = 3
   AFTER = 4
 
-  def next(self):
+  def next_section(self):
     if self.value < 4:
       return State(self.value + 1)
     else:
@@ -43,9 +44,25 @@ class Requirements():
     self.ignored_lines = []
     self.anomalies = []
     self.lines = requirement_text.split('\n')
-    state = State.BEFORE
+
+    strings = dict()
+    string_count = 0
+    block_state = State.BEFORE
+    line_count = 0
+
     for line in self.lines:
       line = line.replace('(CLOB)', '').strip()
+      if '"' in line:
+        match = re.search('".*"', line)
+        if not match:
+          self.anomalies.append(f'{line}\nLine {line_count}: Unterminated string.')
+          self.ignored_lines.append(line)
+          continue
+        else:
+          string_count += 1
+          string_id = f'_str_{string_count:05}'
+          strings[string_id] = match.group(0).strip('"').strip()
+          line = line.replace(match.group(0), string_id)
       if len(line) == 0:
         continue
       if line.startswith('#') or \
@@ -54,24 +71,24 @@ class Requirements():
         self.ignored_lines.append(line)
       else:
         # FSM for separating block's lines into header and body parts
-        if state == State.BEFORE:
+        if block_state == State.BEFORE:
           # Observation: BEGIN is always alone on a separate line
           if line == 'BEGIN':
-            state = state.next()
+            block_state = block_state.next_section()
           else:
             self.ignored_lines.append(line)
           continue
-        if state == State.HEAD:
+        if block_state == State.HEAD:
           # Observation: the first semicolon may be embedded in the middle of a line, or not
           parts = line.split(';')
           if parts[0] != '':
             self.header_lines.append(parts[0])
           if len(parts) > 1:
-            state = state.next()
+            block_state = block_state.next_section()
             if parts[1] != '':
               self.body_lines.append(parts[1])
           continue
-        if state == State.BODY:
+        if block_state == State.BODY:
           # Observation: END. may be embedded in the middle of a line, or not. It never appears in
           # label or remark strings.
           matches = re.match(r'(.*)END\.(.*)', line)
@@ -82,22 +99,22 @@ class Requirements():
               self.body_lines.append(matches.group(0))
             if matches.group(2) != '':
               self.ignored_lines.append(matches.group(2))
-            state = state.next()
+            block_state = block_state.next_section()
           continue
-        if state == State.AFTER:
+        if block_state == State.AFTER:
           self.ignored_lines.append(line)
 
-    if state != State.AFTER:
-      self.anomalies.append(f'Incomplete requirement block in state {state.name}.')
+    if block_state != State.AFTER:
+      self.anomalies.append(f'Incomplete requirement block in section {block_state.name}.')
 
   def __str__(self):
-    return '\n'.join(['HEADER LINES']
+    return '\n'.join(['*** HEADER LINES ***']
                      + self.header_lines
-                     + ['BODY LINES']
+                     + ['*** BODY LINES ***']
                      + self.body_lines
-                     + ['ANOMALIES']
+                     + ['*** ANOMALIES ***']
                      + self.anomalies
-                     + ['IGNORED']
+                     + ['*** IGNORED ***']
                      + self.ignored_lines)
 
   def json(self):
