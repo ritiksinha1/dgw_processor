@@ -39,8 +39,10 @@ class Requirements():
 
   def __init__(self, requirement_text):
     self.scribe_text = requirement_text
+    self.requirements = {'precis': {} 'details', {}}
     self.header_lines = []
     self.body_lines = []
+    self.comment_lines = []
     self.ignored_lines = []
     self.anomalies = []
     self.lines = requirement_text.split('\n')
@@ -68,7 +70,8 @@ class Requirements():
       if line.startswith('#') or \
          line.startswith('!') or \
          line.lower().startswith('log'):
-        self.ignored_lines.append(line)
+        self.comment_lines.append(line)
+        continue
       else:
         # FSM for separating block's lines into header and body parts
         if block_state == State.BEFORE:
@@ -76,8 +79,9 @@ class Requirements():
           if line == 'BEGIN':
             block_state = block_state.next_section()
           else:
-            self.ignored_lines.append(line)
+            self.comment_lines.append(line)
           continue
+
         if block_state == State.HEAD:
           # Observation: the first semicolon may be embedded in the middle of a line, or not
           parts = line.split(';')
@@ -88,6 +92,7 @@ class Requirements():
             if parts[1] != '':
               self.body_lines.append(parts[1])
           continue
+
         if block_state == State.BODY:
           # Observation: END. may be embedded in the middle of a line, or not. It never appears in
           # label or remark strings.
@@ -101,11 +106,31 @@ class Requirements():
               self.ignored_lines.append(matches.group(2))
             block_state = block_state.next_section()
           continue
+
         if block_state == State.AFTER:
           self.ignored_lines.append(line)
 
     if block_state != State.AFTER:
-      self.anomalies.append(f'Incomplete requirement block in section {block_state.name}.')
+      self.anomalies.append(f'Incomplete requirement block in {block_state.name}.')
+
+    # Process header (precis) lines
+    for line in self.header_lines:
+      keyword, remainder = line.split(maxsplit=1)
+      try:
+        keyword = keyword.lower
+        if keyword == 'credits':
+          this.json.precis['credits'] = float(remainder)
+        elif keyword == 'mingpa':
+          this.json.precis['mingpa'] = float(remainder)
+        elif keyword == 'mingrade':
+          this.json.precis['mingrade'] = float(remainder)
+        elif keyword == 'minres':
+          this.json.precis['min_residence'] = float(remainder.split()[0])
+      except ValueError as e:
+        raise Exception(f'{keyword} error: {e}')
+    # Process body (details) lines
+    for line in self.body_lines:
+      pass
 
   def __str__(self):
     return '\n'.join(['*** HEADER LINES ***']
@@ -115,7 +140,7 @@ class Requirements():
                      + ['*** ANOMALIES ***']
                      + self.anomalies
                      + ['*** IGNORED ***']
-                     + self.ignored_lines)
+                     + self.comment_lines)
 
   def json(self):
     return json.dumps(self.__dict__, default=lambda x: x.__dict__)
