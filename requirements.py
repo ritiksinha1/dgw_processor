@@ -3,7 +3,49 @@ import json
 from json import JSONEncoder
 import re
 
+from collections import namedtuple
 from datetime import datetime
+
+quant = r'(\d+\.?\d*)(:\d+\.?\d*)?'
+quantifier = namedtuple('Quantifier', 'lower upper')
+
+
+def tokenize(lines, strings):
+  tokens = ' '.join(lines).split()
+  for token in tokens:
+    if re.match(r'_str_\d{5}', token):
+      token_type = 'string'
+      value = strings[token]
+    elif token in ['lparen', 'rparen', 'semi', 'colon', 'and', 'or']:
+      token_type = 'punctuation'
+      value = token
+    else:
+      # Quantifier can be:
+      #   int (int_value)
+      #   int:int (int_range)
+      #   float (float_value)
+      #   float:float, int:float, float:int (float_range)
+      nums = re.match(quant, token)
+      if nums is not None:
+        try:
+          lower_val = int(nums.group(1))
+          token_type = 'int_value'
+        except ValueError as ve:
+          lower_val = float(nums.group(1))
+          token_type = 'float_value'
+        value = {'lower': lower_val}
+        if nums.group(2) is not None:
+          token_type = token_type.replace('_value', '_range')
+          try:
+            upper_val = int(nums.group(2))
+          except ValueError as ve:
+            upper_val = float(nums.group(2))
+            token_type = 'float_range'
+          value['upper'] = upper_val
+      else:
+        token_type = 'keyword'
+        value = token
+    yield {'token_type': token_type, 'value': value}
 
 
 class State(Enum):
@@ -39,7 +81,7 @@ class Requirements():
 
   def __init__(self, requirement_text):
     self.scribe_text = requirement_text
-    self.requirements = {'precis': {} 'details', {}}
+    self.requirements = {'precis': {}, 'details': {}}
     self.header_lines = []
     self.body_lines = []
     self.comment_lines = []
@@ -53,7 +95,21 @@ class Requirements():
     line_count = 0
 
     for line in self.lines:
+      # '(CLOB)' (Character large object) is an Oracle artifact
       line = line.replace('(CLOB)', '').strip()
+
+      # Comment lines start with # or !
+      if line.startswith('#') or \
+         line.startswith('!') or \
+         line.lower().startswith('log'):
+        self.comment_lines.append(line)
+
+      # Known to-ignore lines
+      if re.match('proxy(-)?advice', line, re.I):
+        self.ignored_lines.append(line)
+        continue
+
+      # tokenize strings
       if '"' in line:
         match = re.search('".*"', line)
         if not match:
@@ -67,45 +123,48 @@ class Requirements():
           line = line.replace(match.group(0), string_id)
       if len(line) == 0:
         continue
-      if line.startswith('#') or \
-         line.startswith('!') or \
-         line.lower().startswith('log'):
-        self.comment_lines.append(line)
+
+      # tokenize punctuation
+      line = line.replace(',', ' or ')
+      line = line.replace('+', ' and ')
+      line = line.replace('(', ' lparen ')
+      line = line.replace(')', ' rparen ')
+      line = line.replace(';', ' semi ')
+      line = line.replace(':', ' colon ')
+
+      # FSM for separating block's lines into header and body parts
+      if block_state == State.BEFORE:
+        # Observation: BEGIN is always alone on a separate line
+        if line == 'BEGIN':
+          block_state = block_state.next_section()
+        else:
+          self.comment_lines.append(line)
         continue
-      else:
-        # FSM for separating block's lines into header and body parts
-        if block_state == State.BEFORE:
-          # Observation: BEGIN is always alone on a separate line
-          if line == 'BEGIN':
-            block_state = block_state.next_section()
-          else:
-            self.comment_lines.append(line)
-          continue
 
-        if block_state == State.HEAD:
-          # Observation: the first semicolon may be embedded in the middle of a line, or not
-          parts = line.split(';')
-          if parts[0] != '':
-            self.header_lines.append(parts[0])
-          if len(parts) > 1:
-            block_state = block_state.next_section()
-            if parts[1] != '':
-              self.body_lines.append(parts[1])
-          continue
+      if block_state == State.HEADER:
+        # Observation: the first semicolon may be embedded in the middle of a line, or not
+        parts = line.split(';')
+        if parts[0] != '':
+          self.header_lines.append(parts[0])
+        if len(parts) > 1:
+          block_state = block_state.next_section()
+          if parts[1] != '':
+            self.body_lines.append(parts[1])
+        continue
 
-        if block_state == State.BODY:
-          # Observation: END. may be embedded in the middle of a line, or not. It never appears in
-          # label or remark strings.
-          matches = re.match(r'(.*)END\.(.*)', line)
-          if matches is None:
-            self.body_lines.append(line)
-          else:
-            if matches.group(1) != '':
-              self.body_lines.append(matches.group(0))
-            if matches.group(2) != '':
-              self.ignored_lines.append(matches.group(2))
-            block_state = block_state.next_section()
-          continue
+      if block_state == State.RULES:
+        # Observation: END. may be embedded in the middle of a line, or not. It never appears in
+        # label or remark strings.
+        matches = re.match(r'(.*)END\.(.*)', line)
+        if matches is None:
+          self.body_lines.append(line)
+        else:
+          if matches.group(1) != '':
+            self.body_lines.append(matches.group(0))
+          if matches.group(2) != '':
+            self.ignored_lines.append(matches.group(2))
+          block_state = block_state.next_section()
+        continue
 
         if block_state == State.AFTER:
           self.ignored_lines.append(line)
@@ -114,20 +173,14 @@ class Requirements():
       self.anomalies.append(f'Incomplete requirement block in {block_state.name}.')
 
     # Process header (precis) lines
-    for line in self.header_lines:
-      keyword, remainder = line.split(maxsplit=1)
-      try:
-        keyword = keyword.lower
-        if keyword == 'credits':
-          this.json.precis['credits'] = float(remainder)
-        elif keyword == 'mingpa':
-          this.json.precis['mingpa'] = float(remainder)
-        elif keyword == 'mingrade':
-          this.json.precis['mingrade'] = float(remainder)
-        elif keyword == 'minres':
-          this.json.precis['min_residence'] = float(remainder.split()[0])
-      except ValueError as e:
-        raise Exception(f'{keyword} error: {e}')
+    tokens = tokenize(self.header_lines, strings)
+    for token in tokens:
+      if token['token_type'].endswith('_range'):
+        value_str = f'between {token["value"].lower} and {token["value"].upper}'
+      else:
+        value_str = token['value']
+      print(f'{token["token_type"]}\t{value_str}')
+
     # Process body (details) lines
     for line in self.body_lines:
       pass
