@@ -78,8 +78,6 @@ if __name__ == '__main__':
     #             <p>Academic years starting in the fall of {years_str}</p>
     #             <p>This program appears in the {catalog_str}</p>
     #             """
-    if args.debug:
-      print(row.requirement_text)
     requirements = Requirements(row.requirement_text)
-    print(requirements)
-
+    if args.debug:
+      print(requirements.debug())

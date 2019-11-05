@@ -11,11 +11,16 @@ quantifier = namedtuple('Quantifier', 'lower upper')
 
 
 def tokenize(lines, strings):
+  # NOTE: some discipline names have embedded spaces; these will have to be re-joined when a
+  # sequence of two 'keyword' tokens are found in a course list.
   tokens = ' '.join(lines).split()
   for token in tokens:
     if re.match(r'_str_\d{5}', token):
       token_type = 'string'
       value = strings[token]
+    elif '@' in token:
+      token_type = 'wildcard'
+      value = token
     elif token in ['lparen', 'rparen', 'semi', 'colon', 'and', 'or']:
       token_type = 'punctuation'
       value = token
@@ -28,12 +33,11 @@ def tokenize(lines, strings):
       nums = re.match(quant, token)
       if nums is not None:
         try:
-          lower_val = int(nums.group(1))
+          value = int(nums.group(1))
           token_type = 'int_value'
         except ValueError as ve:
-          lower_val = float(nums.group(1))
+          value = float(nums.group(1))
           token_type = 'float_value'
-        value = {'lower': lower_val}
         if nums.group(2) is not None:
           token_type = token_type.replace('_value', '_range')
           try:
@@ -41,7 +45,7 @@ def tokenize(lines, strings):
           except ValueError as ve:
             upper_val = float(nums.group(2))
             token_type = 'float_range'
-          value['upper'] = upper_val
+          value = {'from': value, 'to': upper_val}
       else:
         token_type = 'keyword'
         value = token
@@ -75,7 +79,7 @@ class Requirements():
       Fields:
         scribe_text     Raw requirements text in scribe format
         header_lines:   Scribe text between BEGIN and first semicolon, with comment lines dropped
-        body_lines:     Scribe text between first semicolon and END., with comment lines dropped
+        rule_lines:     Scribe text between first semicolon and END., with comment lines dropped
         anomalies:      Parsing anomalies
   """
 
@@ -83,10 +87,10 @@ class Requirements():
     self.scribe_text = requirement_text
     self.requirements = {'precis': {}, 'details': {}}
     self.header_lines = []
-    self.body_lines = []
+    self.rule_lines = []
+    self.anomalies = []
     self.comment_lines = []
     self.ignored_lines = []
-    self.anomalies = []
     self.lines = requirement_text.split('\n')
 
     strings = dict()
@@ -103,6 +107,7 @@ class Requirements():
          line.startswith('!') or \
          line.lower().startswith('log'):
         self.comment_lines.append(line)
+        continue
 
       # Known to-ignore lines
       if re.match('proxy(-)?advice', line, re.I):
@@ -149,7 +154,7 @@ class Requirements():
         if len(parts) > 1:
           block_state = block_state.next_section()
           if parts[1] != '':
-            self.body_lines.append(parts[1])
+            self.rule_lines.append(parts[1])
         continue
 
       if block_state == State.RULES:
@@ -157,10 +162,10 @@ class Requirements():
         # label or remark strings.
         matches = re.match(r'(.*)END\.(.*)', line)
         if matches is None:
-          self.body_lines.append(line)
+          self.rule_lines.append(line)
         else:
           if matches.group(1) != '':
-            self.body_lines.append(matches.group(0))
+            self.rule_lines.append(matches.group(0))
           if matches.group(2) != '':
             self.ignored_lines.append(matches.group(2))
           block_state = block_state.next_section()
@@ -182,24 +187,29 @@ class Requirements():
       print(f'{token["token_type"]}\t{value_str}')
 
     # Process body (details) lines
-    for line in self.body_lines:
+    for line in self.rule_lines:
       pass
 
   def __str__(self):
+    return self.requirements
+
+  def debug(self):
     return '\n'.join(['*** HEADER LINES ***']
                      + self.header_lines
-                     + ['*** BODY LINES ***']
-                     + self.body_lines
-                     + ['*** ANOMALIES ***']
+                     + ['*** RULE LINES ***']
+                     + self.rule_lines
+                     + ['*** ANOMALY LINES ***']
                      + self.anomalies
-                     + ['*** IGNORED ***']
-                     + self.comment_lines)
+                     + ['*** COMMENT LINES ***']
+                     + self.comment_lines
+                     + ['*** IGNORED LINES ***']
+                     + self.ignored_lines)
 
   def json(self):
     return json.dumps(self.__dict__, default=lambda x: x.__dict__)
 
   def html(self):
-    for line in self.header_lines + self.body_lines + self.anomalies:
+    for line in self.header_lines + self.rule_lines + self.anomalies:
       returnVal += f'<p>{line}</p>'
     return returnVal
 
