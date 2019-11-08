@@ -3,55 +3,106 @@ import json
 from json import JSONEncoder
 import re
 
+import psycopg2
+from psycopg2.extras import NamedTupleCursor
 from collections import namedtuple
 from datetime import datetime
 
-quant = r'(\d+\.?\d*)(:\d+\.?\d*)?'
-quantifier = namedtuple('Quantifier', 'lower upper')
+from reserved_words import reserved_words
+
+conn = psycopg2.connect('dbname=cuny_courses')
+cursor = conn.cursor(cursor_factory=NamedTupleCursor)
+cursor.execute("""select institution, discipline, discipline_name
+                    from cuny_disciplines
+                   where status ='A'""")
+disciplines = dict()
+discipline_names = dict()
+for row in cursor.fetchall():
+  institution = row.institution.lower().strip('0123456789')
+  if institution not in disciplines.keys():
+    disciplines[institution] = []
+  disciplines[institution].append(row.discipline.lower())
+  discipline_names[f'{institution}:{row.discipline.lower()}'] = row.discipline_name
+
+quant_re = r'(\d+\.?\d*)(:\d+\.?\d*)?'
+punctuations = ['_LBRACE_',
+                '_RBRACE_',
+                '_LPAREN_',
+                '_RPAREN_',
+                '_SEMI_',
+                '_COLON_',
+                '_AND_',
+                '_OR_',
+                '_DOT_',
+                '_EQ_',
+                '_NE_',
+                '_GT_',
+                '_LT_',
+                '_LE_',
+                '_GE_',
+                ]
 
 
-def tokenize(lines, strings):
+# tokenize()
+# ------------------------------------------------------------------------------------------
+def tokenize(lines, strings, institution):
   # NOTE: some discipline names have embedded spaces; these will have to be re-joined when a
   # sequence of two 'keyword' tokens are found in a course list.
-  tokens = ' '.join(lines).split()
-  for token in tokens:
-    if re.match(r'_str_\d{5}', token):
-      token_type = 'string'
-      value = strings[token]
-    elif '@' in token:
-      token_type = 'wildcard'
-      value = token
-    elif token in ['lparen', 'rparen', 'semi', 'colon', 'and', 'or']:
-      token_type = 'punctuation'
-      value = token
-    else:
-      # Quantifier can be:
-      #   int (int_value)
-      #   int:int (int_range)
-      #   float (float_value)
-      #   float:float, int:float, float:int (float_range)
-      nums = re.match(quant, token)
-      if nums is not None:
+  for line in lines:
+    tokens = line.split()
+    for token in tokens:
+      if re.match(r'_str_\d{5}', token):
+        token_type = 'string'
         try:
-          value = int(nums.group(1))
-          token_type = 'int_value'
-        except ValueError as ve:
-          value = float(nums.group(1))
-          token_type = 'float_value'
-        if nums.group(2) is not None:
-          token_type = token_type.replace('_value', '_range')
-          try:
-            upper_val = int(nums.group(2))
-          except ValueError as ve:
-            upper_val = float(nums.group(2))
-            token_type = 'float_range'
-          value = {'from': value, 'to': upper_val}
-      else:
-        token_type = 'keyword'
+          value = strings[token]
+        except KeyError as ke:
+          print(f'TOKENIZER ERROR: {line}\n  KeyError: "{ke}"')
+          for key in strings.keys():
+            print(f'{key}: "{strings[key]}"')
+          exit(1)
+      elif '@' in token:
+        # could be a discipline or catalog number
+        token_type = 'wildcard'
         value = token
-    yield {'token_type': token_type, 'value': value}
+      elif token in punctuations:
+        token_type = 'punctuation'
+        value = token
+      elif token.lower() in ['and', 'or']:
+        token_type = 'punctuation'
+        value = f'_{token.upper()}_'
+      elif token.lower() in disciplines[institution]:
+        token_type = 'discipline'
+        value = token.lower()
+      else:
+        # Quantifier can be:
+        #   int (int_value)
+        #   int:int (int_range)
+        #   float (float_value)
+        #   float:float, int:float, float:int (float_range)
+        nums = re.match(quant_re, token)
+        if nums is not None:
+          try:
+            value = int(nums.group(1))
+            token_type = 'int_value'
+          except ValueError as ve:
+            value = float(nums.group(1))
+            token_type = 'float_value'
+          if nums.group(2) is not None:
+            token_type = token_type.replace('_value', '_range')
+            try:
+              upper_val = int(nums.group(2)[1:])
+            except ValueError as ve:
+              upper_val = float(nums.group(2)[1:])
+              token_type = 'float_range'
+            value = {'from': value, 'to': upper_val}
+        else:
+          token_type = 'keyword'
+          value = token
+      yield {'token_type': token_type, 'value': value}
 
 
+# Class State
+# =================================================================================================
 class State(Enum):
   """ Parsing states.
   """
@@ -68,6 +119,8 @@ class State(Enum):
       return self
 
 
+# Class Requirements
+# =================================================================================================
 class Requirements():
   """ Representation of the requirements for a degree, major, minor, or concentration for one range
       of Catalog Years.
@@ -83,7 +136,9 @@ class Requirements():
         anomalies:      Parsing anomalies
   """
 
-  def __init__(self, requirement_text):
+  # init()
+  # -----------------------------------------------------------------------------------------------
+  def __init__(self, requirement_text, institution):
     self.scribe_text = requirement_text
     self.requirements = {'precis': {}, 'details': {}}
     self.header_lines = []
@@ -98,44 +153,69 @@ class Requirements():
     block_state = State.BEFORE
     line_count = 0
 
+    # Preprocess block to make tokenization easier
     for line in self.lines:
       # '(CLOB)' (Character large object) is an Oracle artifact
       line = line.replace('(CLOB)', '').strip()
 
-      # Comment lines start with # or !
-      if line.startswith('#') or \
-         line.startswith('!') or \
-         line.lower().startswith('log'):
-        self.comment_lines.append(line)
-        continue
-
-      # Known to-ignore lines
-      if re.match('proxy(-)?advice', line, re.I):
-        self.ignored_lines.append(line)
-        continue
-
-      # tokenize strings
-      if '"' in line:
-        match = re.search('".*"', line)
+      if block_state == State.HEADER:
+        print(line)
+      # Convert strings to tokens
+      string_failure = False
+      while '"' in line:
+        match = re.search('"(.*?)"', line)
         if not match:
           self.anomalies.append(f'{line}\nLine {line_count}: Unterminated string.')
           self.ignored_lines.append(line)
-          continue
+          string_failure = True
+          break
         else:
           string_count += 1
           string_id = f'_str_{string_count:05}'
-          strings[string_id] = match.group(0).strip('"').strip()
-          line = line.replace(match.group(0), string_id)
-      if len(line) == 0:
+          strings[string_id] = match.group(1).strip()
+          line = line.replace(f'"{match.group(1)}"', f' {string_id} ')
+      if string_failure:
         continue
 
-      # tokenize punctuation
-      line = line.replace(',', ' or ')
-      line = line.replace('+', ' and ')
-      line = line.replace('(', ' lparen ')
-      line = line.replace(')', ' rparen ')
-      line = line.replace(';', ' semi ')
-      line = line.replace(':', ' colon ')
+      # Comments lines start with # or ! in the docs; but also with // in practice
+      match = re.match(r'(.*?)(#|!|//)(.*$)', line)
+      if match:
+        self.comment_lines.append(match.group(2) + match.group(3))
+        line = match.group(1)
+
+      # Filter out lines with rows of 3 or more asterisks, dashes, backslashes, or equal signs
+      match = re.search(r'(\\{3,}|\*{3,}|\-{3,}|={3,})', line)
+      if match:
+        self.ignored_lines.append(line)
+        continue
+
+      # Known to-ignore keyword lines
+      if re.match('log|proxy(-)?advice', line, re.I):
+        self.ignored_lines.append(line)
+        continue
+
+      # Ignore empty lines
+      if len(line.strip()) == 0:
+        continue
+
+      # Convert punctuation to tokens
+      line = line.replace(',', ' _OR_ ')
+      line = line.replace('+', ' _AND_ ')
+      line = line.replace('{', ' _LBRACE_ ')
+      line = line.replace('}', ' _RBRACE_ ')
+      line = line.replace('(', ' _LPAREN_ ')
+      line = line.replace(')', ' _RPAREN_ ')
+      line = line.replace(';', ' _SEMI_ ')
+      # line = line.replace(':', ' _COLON_ ')
+      # line = line.replace('.', ' _DOT_ ')
+      line = line.replace('=', ' _EQ_ ')
+      line = line.replace('<>', ' _NE_ ')
+      line = line.replace('>', ' _GT_ ')
+      line = line.replace('<', ' _LT_ ')
+      line = line.replace('<=', ' _LE_ ')
+      line = line.replace('>=', ' _GE_ ')
+      line = line.replace('< =', ' _LE_ ')
+      line = line.replace('> =', ' _GE_ ')
 
       # FSM for separating block's lines into header and body parts
       if block_state == State.BEFORE:
@@ -159,8 +239,11 @@ class Requirements():
 
       if block_state == State.RULES:
         # Observation: END. may be embedded in the middle of a line, or not. It never appears in
-        # label or remark strings.
-        matches = re.match(r'(.*)END\.(.*)', line)
+        # label or remark strings. Whatever is before it is a rule line; whatever follows it gets
+        # ignored.
+        # Note: at this point ' END.' has become ' END _DOT_'
+        # (But ' end .' with a space has become ' end  _DOT__' with two spaces)
+        matches = re.match(r'(.*)END _DOT_(.*)', line, re.I)
         if matches is None:
           self.rule_lines.append(line)
         else:
@@ -178,21 +261,25 @@ class Requirements():
       self.anomalies.append(f'Incomplete requirement block in {block_state.name}.')
 
     # Process header (precis) lines
-    tokens = tokenize(self.header_lines, strings)
+    tokens = tokenize(self.header_lines, strings, institution)
     for token in tokens:
       if token['token_type'].endswith('_range'):
-        value_str = f'between {token["value"].lower} and {token["value"].upper}'
+        value_str = f'between {token["value"]["from"]} and {token["value"]["to"]}'
       else:
         value_str = token['value']
-      print(f'{token["token_type"]}\t{value_str}')
+      print(f'{token["token_type"]}\t|{value_str}|')
 
     # Process body (details) lines
     for line in self.rule_lines:
       pass
 
+  # __str__()
+  # -----------------------------------------------------------------------------------------------
   def __str__(self):
     return self.requirements
 
+  # debug()
+  # -----------------------------------------------------------------------------------------------
   def debug(self):
     return '\n'.join(['*** HEADER LINES ***']
                      + self.header_lines
@@ -205,20 +292,28 @@ class Requirements():
                      + ['*** IGNORED LINES ***']
                      + self.ignored_lines)
 
+  # json()
+  # -----------------------------------------------------------------------------------------------
   def json(self):
     return json.dumps(self.__dict__, default=lambda x: x.__dict__)
 
+  # html()
+  # -----------------------------------------------------------------------------------------------
   def html(self):
     for line in self.header_lines + self.rule_lines + self.anomalies:
       returnVal += f'<p>{line}</p>'
     return returnVal
 
 
+# Class AcademicYear
+# =================================================================================================
 class AcademicYear:
   """ This is a helper class for representing one academic year as a string.
       Academic years run from September through the following August.
       The sting will be either CCYY-YY or CCYY-CCYYY or Now
   """
+  # __init__()
+  # -----------------------------------------------------------------------------------------------
   def __init__(self, century_1=None, year_1=None, century_2=None, year_2=None):
     """ Academic_Year constructor. Second year must be one greater than the first.
         if no args, the year is “Now”
@@ -242,6 +337,8 @@ class AcademicYear:
         raise ValueError(f'{100 * self.century_1 + self.year_1}, '
                          f'{100 * self.century_2 + self.year_2} is not a valid pair of years')
 
+  # __str__()
+  # -----------------------------------------------------------------------------------------------
   def __str__(self):
     if self.is_now:
       return 'Now'
@@ -252,13 +349,16 @@ class AcademicYear:
         return f'{self.century_1}{self.year_1:02}-{self.year_2:02}'
 
 
+# Class Catalogs
+# =================================================================================================
 class Catalogs():
+  """ Represents a range of catalog years and which catalogs (graduate, undergraduate, both, or
+      unspecified) are involved. When a student starts a program, the catalog year tells what the
+      requirements are at that time.
+  """
+  # __init__()
+  # -----------------------------------------------------------------------------------------------
   def __init__(self, period_start, period_stop):
-    """ Represents a range of catalog years and which catalogs (graduate, undergraduate, both, or
-        unspecified) are involved. When a student starts a program, the catalog year tells what the
-        requirements are at that time.
-
-    """
     self.which_catalogs = []  # Serializable
     which_catalogs = set()  # Not serializable
     self.first_academic_year = None
@@ -294,6 +394,8 @@ class Catalogs():
           which_catalogs.add('Graduate')
     self.which_catalogs = sorted(list(which_catalogs), reverse=True)
 
+  # __str__()
+  # -----------------------------------------------------------------------------------------------
   def __str__(self):
     if self.first_academic_year != self.last_academic_year:
       return f'{self.first_academic_year} through {self.last_academic_year}'
