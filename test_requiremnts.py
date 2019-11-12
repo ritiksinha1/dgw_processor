@@ -59,8 +59,10 @@ if __name__ == '__main__':
   for row in requirements_cursor.fetchall():
     college_code = row.institution
     college_name = colleges[college_code]
-    if not args.development:
-      print('==================================================\n<h1>', college_name, '</h1>')
+    if args.development:
+      pass
+    else:
+      print('<h1>', college_name, '</h1>')
       print('<h2>', row.block_value, row.block_type.title(), '</h2>')
     catalogs = Catalogs(row.period_start, row.period_stop)
     num_catalogs = len(catalogs.which_catalogs)

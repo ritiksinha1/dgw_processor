@@ -8,7 +8,7 @@ from psycopg2.extras import NamedTupleCursor
 from collections import namedtuple
 from datetime import datetime
 
-from reserved_words import reserved_words
+from reserved_words import reserved_words, canonical
 
 conn = psycopg2.connect('dbname=cuny_courses')
 cursor = conn.cursor(cursor_factory=NamedTupleCursor)
@@ -47,10 +47,36 @@ punctuations = ['_LBRACE_',
 # ------------------------------------------------------------------------------------------
 def tokenize(lines, strings, institution):
   # NOTE: some discipline names have embedded spaces; these will have to be re-joined when a
-  # sequence of two 'keyword' tokens are found in a course list.
+  # sequence of two 'unknown' tokens are found in a course list.
   for line in lines:
+    # Convert punctuation to tokens
+    line = line.replace(',', ' _OR_ ')
+    line = line.replace('+', ' _AND_ ')
+    line = line.replace('{', ' _LBRACE_ ')
+    line = line.replace('}', ' _RBRACE_ ')
+    line = line.replace('(', ' _LPAREN_ ')
+    line = line.replace(')', ' _RPAREN_ ')
+    line = line.replace(';', ' _SEMI_ ')
+    line = line.replace(':', ' _COLON_ ')
+    line = line.replace('.', ' _DOT_ ')
+    line = line.replace('=', ' _EQ_ ')
+    line = line.replace('<>', ' _NE_ ')
+    line = line.replace('>', ' _GT_ ')
+    line = line.replace('<', ' _LT_ ')
+    line = line.replace('<=', ' _LE_ ')
+    line = line.replace('>=', ' _GE_ ')
+    line = line.replace('< =', ' _LE_ ')
+    line = line.replace('> =', ' _GE_ ')
+
     tokens = line.split()
+    held = None
+    index = 0
     for token in tokens:
+      index += 1
+      split_token = re.match(r'([a-z]+)(\d+)', token, re.I)
+      if split_token:
+        token = split_token.group(1)
+        tokens.insert(index, split_token.group(2))
       if re.match(r'_str_\d{5}', token):
         token_type = 'string'
         try:
@@ -96,8 +122,16 @@ def tokenize(lines, strings, institution):
               token_type = 'float_range'
             value = {'from': value, 'to': upper_val}
         else:
-          token_type = 'keyword'
-          value = token
+          # At this point, we would like everything to be a reserved word.
+          # So we try all the reservered word regexs and count how many of each is found.
+          # Create a list of unknowns for each college.
+          reserved_word = canonical(token)
+          if reserved_word is not None:
+            token_type = 'reserved'
+            value = reserved_word
+          else:
+            token_type = 'unknown'
+            value = token
       yield {'token_type': token_type, 'value': value}
 
 
@@ -158,8 +192,6 @@ class Requirements():
       # '(CLOB)' (Character large object) is an Oracle artifact
       line = line.replace('(CLOB)', '').strip()
 
-      if block_state == State.HEADER:
-        print(line)
       # Convert strings to tokens
       string_failure = False
       while '"' in line:
@@ -190,32 +222,13 @@ class Requirements():
         continue
 
       # Known to-ignore keyword lines
-      if re.match('log|proxy(-)?advice', line, re.I):
-        self.ignored_lines.append(line)
-        continue
+      # if re.match('log|proxy(-)?advice', line, re.I):
+      #   self.ignored_lines.append(line)
+      #   continue
 
       # Ignore empty lines
       if len(line.strip()) == 0:
         continue
-
-      # Convert punctuation to tokens
-      line = line.replace(',', ' _OR_ ')
-      line = line.replace('+', ' _AND_ ')
-      line = line.replace('{', ' _LBRACE_ ')
-      line = line.replace('}', ' _RBRACE_ ')
-      line = line.replace('(', ' _LPAREN_ ')
-      line = line.replace(')', ' _RPAREN_ ')
-      line = line.replace(';', ' _SEMI_ ')
-      # line = line.replace(':', ' _COLON_ ')
-      # line = line.replace('.', ' _DOT_ ')
-      line = line.replace('=', ' _EQ_ ')
-      line = line.replace('<>', ' _NE_ ')
-      line = line.replace('>', ' _GT_ ')
-      line = line.replace('<', ' _LT_ ')
-      line = line.replace('<=', ' _LE_ ')
-      line = line.replace('>=', ' _GE_ ')
-      line = line.replace('< =', ' _LE_ ')
-      line = line.replace('> =', ' _GE_ ')
 
       # FSM for separating block's lines into header and body parts
       if block_state == State.BEFORE:
@@ -223,7 +236,7 @@ class Requirements():
         if line == 'BEGIN':
           block_state = block_state.next_section()
         else:
-          self.comment_lines.append(line)
+          self.ignored_lines.append(line)
         continue
 
       if block_state == State.HEADER:
@@ -241,9 +254,7 @@ class Requirements():
         # Observation: END. may be embedded in the middle of a line, or not. It never appears in
         # label or remark strings. Whatever is before it is a rule line; whatever follows it gets
         # ignored.
-        # Note: at this point ' END.' has become ' END _DOT_'
-        # (But ' end .' with a space has become ' end  _DOT__' with two spaces)
-        matches = re.match(r'(.*)END _DOT_(.*)', line, re.I)
+        matches = re.match(r'(.*)END\.(.*)', line, re.I)
         if matches is None:
           self.rule_lines.append(line)
         else:
@@ -260,14 +271,14 @@ class Requirements():
     if block_state != State.AFTER:
       self.anomalies.append(f'Incomplete requirement block in {block_state.name}.')
 
-    # Process header (precis) lines
+    # Process header lines
     tokens = tokenize(self.header_lines, strings, institution)
     for token in tokens:
       if token['token_type'].endswith('_range'):
         value_str = f'between {token["value"]["from"]} and {token["value"]["to"]}'
       else:
         value_str = token['value']
-      print(f'{token["token_type"]}\t|{value_str}|')
+      print(f'{institution}\t{token["token_type"]}\t|{value_str}|')
 
     # Process body (details) lines
     for line in self.rule_lines:
