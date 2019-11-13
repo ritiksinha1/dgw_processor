@@ -19,11 +19,11 @@ discipline_names = dict()
 for row in cursor.fetchall():
   institution = row.institution.lower().strip('0123456789')
   if institution not in disciplines.keys():
-    disciplines[institution] = []
+    disciplines[institution] = ['any']
+    discipline_names[f'{institution}:any'] = 'Any Discipline'
   disciplines[institution].append(row.discipline.lower())
   discipline_names[f'{institution}:{row.discipline.lower()}'] = row.discipline_name
 
-quantifier_re = r'(\d+\.?\d*)(:\d+\.?\d*)?'
 Token = namedtuple('Token', 'type value')
 
 punctuations = ['_LBRACE_',
@@ -58,7 +58,7 @@ def tokenize(lines, strings, institution):
     line = line.replace('(', ' _LPAREN_ ')
     line = line.replace(')', ' _RPAREN_ ')
     line = line.replace(';', ' _SEMI_ ')
-    line = line.replace(':', ' _COLON_ ')
+#    line = line.replace(':', ' _COLON_ ')
     line = line.replace('.', ' _DOT_ ')
     line = line.replace('=', ' _EQ_ ')
     line = line.replace('<>', ' _NE_ ')
@@ -74,7 +74,7 @@ def tokenize(lines, strings, institution):
     for token in tokens:
       index += 1
 
-      # Check for splittable token
+      # Check for splittable token: <letters><digits>
       split_token = re.match(r'([a-z]+)(\d+)', token, re.I)
       if split_token:
         token = split_token.group(1)
@@ -85,8 +85,8 @@ def tokenize(lines, strings, institution):
         token_type = 'string'
         try:
           value = strings[token]
-        except KeyError as ke:
-          print(f'TOKENIZER ERROR: {line}\n  KeyError: "{ke}"')
+        except KeyError as key_error:
+          print(f'TOKENIZER ERROR: {line}\n  KeyError: "{key_error}"')
           for key in strings.keys():
             print(f'{key}: "{strings[key]}"')
           exit(1)
@@ -97,7 +97,7 @@ def tokenize(lines, strings, institution):
         #   int:int (int_range)
         #   float (float_value)
         #   float:float, int:float, float:int (float_range; promote ints)
-      nums = re.match(quantifier_re, token)
+      nums = re.match(r'(\d+\.?\d*)(:\d+\.?\d*)?', token)
       if nums is not None:
         try:
           value = int(nums.group(1))
@@ -113,7 +113,7 @@ def tokenize(lines, strings, institution):
             upper_val = float(nums.group(2)[1:])
             value = float(value)
             token_type = 'float_range'
-          value = {'from': value, 'to': upper_val}
+          value = {'min': value, 'max': upper_val}
 
       elif '@' in token:
         # could be a discipline or catalog number
@@ -195,6 +195,7 @@ def parse_header(lines, strings, institution):
 def parse_rules(lines):
   """
   """
+  parse_tree = dict()
   for token in tokenize(lines):
-    do_state_transition()
+    pass
   return parse_tree
