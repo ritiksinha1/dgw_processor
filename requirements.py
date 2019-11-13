@@ -1,138 +1,15 @@
+
+import sys
+import re
 from enum import Enum
 import json
 from json import JSONEncoder
-import re
-
-import psycopg2
-from psycopg2.extras import NamedTupleCursor
 from collections import namedtuple
 from datetime import datetime
 
-from reserved_words import reserved_words, canonical
+from parsers import parse_header, parse_rules
 
-conn = psycopg2.connect('dbname=cuny_courses')
-cursor = conn.cursor(cursor_factory=NamedTupleCursor)
-cursor.execute("""select institution, discipline, discipline_name
-                    from cuny_disciplines
-                   where status ='A'""")
-disciplines = dict()
-discipline_names = dict()
-for row in cursor.fetchall():
-  institution = row.institution.lower().strip('0123456789')
-  if institution not in disciplines.keys():
-    disciplines[institution] = []
-  disciplines[institution].append(row.discipline.lower())
-  discipline_names[f'{institution}:{row.discipline.lower()}'] = row.discipline_name
-
-quant_re = r'(\d+\.?\d*)(:\d+\.?\d*)?'
-punctuations = ['_LBRACE_',
-                '_RBRACE_',
-                '_LPAREN_',
-                '_RPAREN_',
-                '_SEMI_',
-                '_COLON_',
-                '_AND_',
-                '_OR_',
-                '_DOT_',
-                '_EQ_',
-                '_NE_',
-                '_GT_',
-                '_LT_',
-                '_LE_',
-                '_GE_',
-                ]
-
-
-# tokenize()
-# ------------------------------------------------------------------------------------------
-def tokenize(lines, strings, institution):
-  # NOTE: some discipline names have embedded spaces; these will have to be re-joined when a
-  # sequence of two 'unknown' tokens are found in a course list.
-  for line in lines:
-    # Convert punctuation to tokens
-    line = line.replace(',', ' _OR_ ')
-    line = line.replace('+', ' _AND_ ')
-    line = line.replace('{', ' _LBRACE_ ')
-    line = line.replace('}', ' _RBRACE_ ')
-    line = line.replace('(', ' _LPAREN_ ')
-    line = line.replace(')', ' _RPAREN_ ')
-    line = line.replace(';', ' _SEMI_ ')
-    line = line.replace(':', ' _COLON_ ')
-    line = line.replace('.', ' _DOT_ ')
-    line = line.replace('=', ' _EQ_ ')
-    line = line.replace('<>', ' _NE_ ')
-    line = line.replace('>', ' _GT_ ')
-    line = line.replace('<', ' _LT_ ')
-    line = line.replace('<=', ' _LE_ ')
-    line = line.replace('>=', ' _GE_ ')
-    line = line.replace('< =', ' _LE_ ')
-    line = line.replace('> =', ' _GE_ ')
-
-    tokens = line.split()
-    held = None
-    index = 0
-    for token in tokens:
-      index += 1
-      split_token = re.match(r'([a-z]+)(\d+)', token, re.I)
-      if split_token:
-        token = split_token.group(1)
-        tokens.insert(index, split_token.group(2))
-      if re.match(r'_str_\d{5}', token):
-        token_type = 'string'
-        try:
-          value = strings[token]
-        except KeyError as ke:
-          print(f'TOKENIZER ERROR: {line}\n  KeyError: "{ke}"')
-          for key in strings.keys():
-            print(f'{key}: "{strings[key]}"')
-          exit(1)
-      elif '@' in token:
-        # could be a discipline or catalog number
-        token_type = 'wildcard'
-        value = token
-      elif token in punctuations:
-        token_type = 'punctuation'
-        value = token
-      elif token.lower() in ['and', 'or']:
-        token_type = 'punctuation'
-        value = f'_{token.upper()}_'
-      elif token.lower() in disciplines[institution]:
-        token_type = 'discipline'
-        value = token.lower()
-      else:
-        # Quantifier can be:
-        #   int (int_value)
-        #   int:int (int_range)
-        #   float (float_value)
-        #   float:float, int:float, float:int (float_range)
-        nums = re.match(quant_re, token)
-        if nums is not None:
-          try:
-            value = int(nums.group(1))
-            token_type = 'int_value'
-          except ValueError as ve:
-            value = float(nums.group(1))
-            token_type = 'float_value'
-          if nums.group(2) is not None:
-            token_type = token_type.replace('_value', '_range')
-            try:
-              upper_val = int(nums.group(2)[1:])
-            except ValueError as ve:
-              upper_val = float(nums.group(2)[1:])
-              token_type = 'float_range'
-            value = {'from': value, 'to': upper_val}
-        else:
-          # At this point, we would like everything to be a reserved word.
-          # So we try all the reservered word regexs and count how many of each is found.
-          # Create a list of unknowns for each college.
-          reserved_word = canonical(token)
-          if reserved_word is not None:
-            token_type = 'reserved'
-            value = reserved_word
-          else:
-            token_type = 'unknown'
-            value = token
-      yield {'token_type': token_type, 'value': value}
+RequirementDict = namedtuple('RequirementDict', 'header rules')
 
 
 # Class State
@@ -174,21 +51,21 @@ class Requirements():
   # -----------------------------------------------------------------------------------------------
   def __init__(self, requirement_text, institution):
     self.scribe_text = requirement_text
-    self.requirements = {'precis': {}, 'details': {}}
+    self.requirements = RequirementDict({}, {})
     self.header_lines = []
     self.rule_lines = []
     self.anomalies = []
     self.comment_lines = []
     self.ignored_lines = []
-    self.lines = requirement_text.split('\n')
 
+    lines = requirement_text.split('\n')
     strings = dict()
     string_count = 0
     block_state = State.BEFORE
     line_count = 0
 
     # Preprocess block to make tokenization easier
-    for line in self.lines:
+    for line in lines:
       # '(CLOB)' (Character large object) is an Oracle artifact
       line = line.replace('(CLOB)', '').strip()
 
@@ -272,14 +149,23 @@ class Requirements():
       self.anomalies.append(f'Incomplete requirement block in {block_state.name}.')
 
     # Process header lines
-    tokens = tokenize(self.header_lines, strings, institution)
-    for token in tokens:
-      if token['token_type'].endswith('_range'):
-        value_str = f'between {token["value"]["from"]} and {token["value"]["to"]}'
-      else:
-        value_str = token['value']
-      print(f'{institution}\t{token["token_type"]}\t|{value_str}|')
-
+    # tokens = tokenize(self.header_lines, strings, institution)
+    # for token in tokens:
+    #   if token['token_type'].endswith('_range'):
+    #     value_str = f'between {token["value"]["from"]} and {token["value"]["to"]}'
+    #   else:
+    #     value_str = token['value']
+    #   if token['token_type'] == 'unknown':
+    #     if institution not in unknown_tokens_by_institution.keys():
+    #       unknown_tokens_by_institution[institution] = dict()
+    #     if token['value'] not in unknown_tokens_by_institution[institution].keys():
+    #       unknown_tokens_by_institution[institution][token['value']] = 0
+    #     unknown_tokens_by_institution[institution][token['value']] += 1
+    #   else:
+    #     if (institution, token['token_type']) not in token_types_by_institution.keys():
+    #       token_types_by_institution[(institution, token['token_type'])] = 0
+    #     token_types_by_institution[(institution, token['token_type'])] += 1
+    self.header = parse_header(self.header_lines, strings, institution)
     # Process body (details) lines
     for line in self.rule_lines:
       pass
@@ -292,6 +178,10 @@ class Requirements():
   # debug()
   # -----------------------------------------------------------------------------------------------
   def debug(self):
+    # print(f'=================================\n{self.scribe_text}\n------------------------------',
+    #       file=sys.stderr)
+    print('\n'.join(self.header_lines), '\n---------------------------------', file=sys.stderr)
+    print(self.header, file=sys.stderr)
     return '\n'.join(['*** HEADER LINES ***']
                      + self.header_lines
                      + ['*** RULE LINES ***']

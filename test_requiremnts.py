@@ -3,11 +3,12 @@
 """ Look up a degree, major, minor, concentration, or other requirement block, construct a
     Requirements object for it, and output the html/json/string representation.
 """
+import sys
 import argparse
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from requirements import Requirements, Catalogs
+from requirements import (Requirements, Catalogs)
 
 
 # Unit test
@@ -47,7 +48,7 @@ if __name__ == '__main__':
 
   # Development: whatever I want to see
   if args.development:
-    query = 'select * from requirement_blocks'
+    query = f'select * from requirement_blocks where institution in ({institutions})'
   else:
     query = f"""select *
     from requirement_blocks
@@ -89,4 +90,11 @@ if __name__ == '__main__':
     #             """
     requirements = Requirements(row.requirement_text, row.institution)
     if args.debug:
-      print(requirements.debug())
+      requirements.debug()
+  # if args.development:
+  #   for key in sorted(token_types_by_institution.keys()):
+  #     print(f'{token_types_by_institution[key]:8,} {key[1]:12} {key[0]}')
+
+  #   for inst in sorted(unknown_tokens_by_institution.keys()):
+  #     for key in unknown_tokens_by_institution[inst].keys():
+  #       print(f'{inst} {unknown_tokens_by_institution[inst][key]:6,} {key}', file=sys.stderr)
