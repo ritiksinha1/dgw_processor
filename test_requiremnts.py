@@ -8,8 +8,8 @@ import argparse
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from requirements import (Requirements, Catalogs)
-
+from requirements import RequirementsBlock
+from years import CatalogYears
 
 # Unit test
 if __name__ == '__main__':
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     else:
       print('<h1>', college_name, '</h1>')
       print('<h2>', row.block_value, row.block_type.title(), '</h2>')
-    catalogs = Catalogs(row.period_start, row.period_stop)
+    catalogs = CatalogYears(row.period_start, row.period_stop)
     num_catalogs = len(catalogs.which_catalogs)
     if num_catalogs == 0:
       catalog_str = 'College catalog.'
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     #             <p>Academic years starting in the fall of {years_str}</p>
     #             <p>This program appears in the {catalog_str}</p>
     #             """
-    requirements = Requirements(row.requirement_text, row.institution)
+    requirements = RequirementsBlock(row.requirement_text, row.institution)
     if args.debug:
       requirements.debug()
   # if args.development:
