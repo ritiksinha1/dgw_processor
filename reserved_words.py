@@ -47,7 +47,7 @@ reserved_words = [
     Reserved('^ENDSUB$', 'endsub'),
     Reserved('^EXCEPT$', 'except'),
     Reserved('^EXCLUSIVE$', 'exclusive'),
-    Reserved('^FROM$', 'from'),
+    Reserved('^FROM$', 'in'),
     Reserved('^GROUP(S)?$', 'group'),
     Reserved('^HIDE-?(RULE)?$', 'hide'),
     Reserved('^HIGH-?PRI(ORITY)?$', 'highpri'),
