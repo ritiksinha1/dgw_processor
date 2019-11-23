@@ -1,78 +1,17 @@
 
 /__pycache__/
 
-/parser/BLOCK.interp
+*.interp
 
-/parser/BLOCK.interp
+*.tokens
 
-/parser/BLOCK.interp
+*.csv
 
-/parser/BLOCK.tokens
+*.class
 
-/all_requirements_blocks.csv
+*.java
 
-/parser/BLOCKBaseListener.class
-
-/parser/BLOCKBaseListener.java
-
-/parser/BLOCKLexer.class
-
-/parser/BLOCKLexer.interp
-
-/parser/BLOCKLexer.java
-
-/parser/BLOCKLexer.tokens
-
-/parser/BLOCKListener.class
-
-/parser/BLOCKListener.java
-
-/parser/BLOCKParser$BlockContext.class
-
-/parser/BLOCKParser$CourseContext.class
-
-/parser/BLOCKParser$Course_listContext.class
-
-/parser/BLOCKParser$DiscpContext.class
-
-/parser/BLOCKParser$DocumentContext.class
-
-/parser/BLOCKParser$FileContext.class
-
-/parser/BLOCKParser$HeadersContext.class
-
-/parser/BLOCKParser$KeywordContext.class
-
-/parser/BLOCKParser$NumContext.class
-
-/parser/BLOCKParser$PunctContext.class
-
-/parser/BLOCKParser$RangeContext.class
-
-/parser/BLOCKParser$ReservedContext.class
-
-/parser/BLOCKParser$RulesContext.class
-
-/parser/BLOCKParser$StringContext.class
-
-/parser/BLOCKParser$SymbolContext.class
-
-/parser/BLOCKParser$TerminalContext.class
-
-/parser/BLOCKParser$TokenContext.class
-
-/parser/BLOCKParser$WildcardContext.class
-
-/parser/BLOCKParser.class
-
-/parser/BLOCKParser.java
-
-/parser/qns.tokens
-
-/parser/qns.txt
-
-/parser/test_block.tokens
-
-/parser/test_block.txt
+*.txt
 
 /t.py
+
