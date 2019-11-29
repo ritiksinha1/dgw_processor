@@ -1,4 +1,4 @@
-grammar BLOCK;
+grammar ReqBlock;
 
 /*
  *  The words reserved by the python antlr runtime are as follows:
@@ -54,8 +54,8 @@ headers     : (mingpa
             ;
 rules       : .*? ;
 
-and_courses : INFROM? WILDSYMBOL WILDNUMBER (AND ((SYMBOL NUMBER) | NUMBER))* ;
-or_courses  : INFROM? WILDSYMBOL WILDNUMBER (OR  ((SYMBOL NUMBER) | NUMBER))* ;
+or_courses  : INFROM? (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | WILDNUMBER) (OR  ((SYMBOL NUMBER) | NUMBER))* ;
+and_courses : INFROM? (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | WILDNUMBER) (AND ((SYMBOL NUMBER) | NUMBER))* ;
 
 mingpa      : MINGPA NUMBER ;
 minres      : MINRES NUMBER (CREDITS | CLASSES) ;
@@ -64,7 +64,7 @@ numclasses  : NUMBER CLASSES (and_courses | or_courses) ;
 numcredits  : NUMBER CREDITS (and_courses | or_courses)? ;
 maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
 proxy_advice: PROXYADVICE STRING proxy_advice* ;
-exclusive   : EXCLUSIVE '(' BLOCKTYPE ( '=' SYMBOL ( COMMA BLOCKTYPE ( '=' SYMBOL )? )* )* ')' ;
+exclusive   : EXCLUSIVE '(' ~')'* ')' ;
 maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) (TAG '=' SYMBOL)? ;
 remark      : REMARK STRING ';' remark* ;
 label       : LABEL SYMBOL? STRING ';'? label* ;
@@ -100,6 +100,7 @@ EXCLUSIVE   : [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
             | [Nn][Oo][Nn] '-'? EXCLUSIVE
             ;
 
+
 BLOCKTYPE   : ([Dd][Ee][Gg][Rr][Ee][Ee]
             | [Cc][Oo][Nn][Cc]
             | [Mm][Aa][Jj][Oo][Rr]
@@ -126,7 +127,7 @@ SYMBOL      : LETTER (LETTER | DIGIT | '_')* ;
 WILDCARD    : '@' ;
 
 fragment DOT         : '.' ;
-COMMA       : ',' ;
+fragment COMMA       : ',' ;
 fragment PLUS        : '+' ;
 fragment DIGIT       : [0-9] ;
 fragment LETTER      : [a-zA-Z] ;
