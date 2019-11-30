@@ -29,7 +29,7 @@ grammar ReqBlock;
  *     "True", "False", "None"
  *  };
  *
- *  All these raise an error. If they don’t, it’s a bug.r
+ *  All these raise an error. If they don’t, it’s a bug.
  *
  */
 
@@ -125,6 +125,11 @@ RANGE       : NUMBER ':' NUMBER ;
 NUMBER      : DIGIT+ DOT? DIGIT* ;
 SYMBOL      : LETTER (LETTER | DIGIT | '_')* ;
 WILDCARD    : '@' ;
+
+GE          : '>=' ;
+GT          : '>' ;
+LE          : '<=' ;
+LT          : '<' ;
 
 fragment DOT         : '.' ;
 fragment COMMA       : ',' ;

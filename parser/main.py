@@ -1,17 +1,31 @@
 #! /usr/local/bin/python3
 
+import inspect
+
 import sys
 from antlr4 import *
-from BLOCKLexer import BLOCKLexer
-from BLOCKParser import BLOCKParser
+from ReqBlockLexer import ReqBlockLexer
+from ReqBlockParser import ReqBlockParser
+from ReqBlockListener import ReqBlockListener
+
+
+class MinresListener(ReqBlockListener):
+  def enterMinres(self, ctx):
+    print(f'At least {ctx.NUMBER()} credits must be completed in residency.')
+
+  def enterNumcredits(self, ctx):
+    print(f'This major requires {ctx.NUMBER()} credits.')
 
 
 def main(argv):
     input_stream = FileStream(argv[1])
-    lexer = BLOCKLexer(input_stream)
+    lexer = ReqBlockLexer(input_stream)
     stream = CommonTokenStream(lexer)
-    parser = BLOCKParser(stream)
+    parser = ReqBlockParser(stream)
     tree = parser.req_block()
+    minres = MinresListener()
+    walker = ParseTreeWalker()
+    walker.walk(minres, tree)
 
 
 if __name__ == '__main__':
