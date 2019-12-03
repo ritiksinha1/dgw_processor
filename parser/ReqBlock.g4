@@ -45,6 +45,8 @@ headers     : (mingpa
             | numclasses
             | numcredits
             | maxcredits
+            | maxclasses
+            | maxcredits
             | maxpassfail
             | proxy_advice
             | exclusive
@@ -62,6 +64,7 @@ minres      : MINRES NUMBER (CREDITS | CLASSES) ;
 mingrade    : MINGRADE NUMBER ;
 numclasses  : NUMBER CLASSES (and_courses | or_courses) ;
 numcredits  : NUMBER CREDITS (and_courses | or_courses)? ;
+maxclasses  : MAXCLASSES NUMBER (and_courses | or_courses) ;
 maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
 proxy_advice: PROXYADVICE STRING proxy_advice* ;
 exclusive   : EXCLUSIVE '(' ~')'* ')' ;

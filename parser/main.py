@@ -1,5 +1,8 @@
 #! /usr/local/bin/python3
 
+import inspect
+from pprint import pprint
+
 import argparse
 import sys
 from io import StringIO
@@ -19,21 +22,30 @@ for c in range(13, 31):
 trans_table = str.maketrans(trans_dict)
 
 
-class MinresListener(ReqBlockVisitor):
-  def enterMinres(self, ctx):
+class ReqBlockInterpreter(ReqBlockVisitor):
+  def visitMinres(self, ctx):
+    print(inspect.getmembers(ctx))
     print(f'At least {ctx.NUMBER()} credits must be completed in residency.')
 
-  def enterNumcredits(self, ctx):
+  def visitNumcredits(self, ctx):
     print(f'This major requires {ctx.NUMBER()} credits.')
 
 
+# main()
+# -------------------------------------------------------------------------------------------------
 def main(argv):
-    input_stream = InputStream(argv)
-    lexer = ReqBlockLexer(input_stream)
-    stream = CommonTokenStream(lexer)
-    parser = ReqBlockParser(stream)
-    tree = parser.req_block()
-    minres = MinresListener()
+  """  Mainly, this is the main testing thing.
+  """
+  input_stream = InputStream(argv)
+  lexer = ReqBlockLexer(input_stream)
+  token_stream = CommonTokenStream(lexer)
+  parser = ReqBlockParser(token_stream)
+  tree = parser.req_block()
+  interpreter = ReqBlockInterpreter()
+  interpreter.visit(tree)
+  for child in tree.headers().getChildren():
+    pprint(dir(child))
+    print('--------------------------------------------------------------------------------------')
 
 
 if __name__ == '__main__':
@@ -88,6 +100,9 @@ if __name__ == '__main__':
         else:
           for row in cursor.fetchall():
             print(f'{institution}, {type} {value} "{row.title}" {len(row.requirement_text)} chars')
-            requirement_text = row.requirement_text.translate(trans_table).strip('"').replace('\\r', '\r').replace('\\n', '\n')
-            print(requirement_text)
+            requirement_text = row.requirement_text\
+                                  .translate(trans_table)\
+                                  .strip('"')\
+                                  .replace('\\r', '\r')\
+                                  .replace('\\n', '\n')
             main(requirement_text)
