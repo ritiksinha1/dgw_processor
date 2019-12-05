@@ -13,7 +13,7 @@ from psycopg2.extras import NamedTupleCursor
 from antlr4 import *
 from ReqBlockLexer import ReqBlockLexer
 from ReqBlockParser import ReqBlockParser
-from ReqBlockVisitor import ReqBlockVisitor
+from ReqBlockListener import ReqBlockListener
 
 trans_dict = dict()
 for c in range(13, 31):
@@ -22,30 +22,76 @@ for c in range(13, 31):
 trans_table = str.maketrans(trans_dict)
 
 
-class ReqBlockInterpreter(ReqBlockVisitor):
-  def visitMinres(self, ctx):
-    print(inspect.getmembers(ctx))
-    print(f'At least {ctx.NUMBER()} credits must be completed in residency.')
+def classes_or_credits(ctx):
+  """
+  """
+  classes_credits = ctx.CREDITS()
+  if classes_credits is None:
+    classes_credits = ctx.CLASSES()
+  return str(classes_credits).lower()
 
-  def visitNumcredits(self, ctx):
-    print(f'This major requires {ctx.NUMBER()} credits.')
+
+def build_course_list(ctx):
+  """ INFROM? (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | WILDNUMBER) (AND  ((SYMBOL NUMBER) | NUMBER))*
+      INFROM? (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | WILDNUMBER) (OR  ((SYMBOL NUMBER) | NUMBER))*
+  """
+  if ctx is None:
+    return
+  print(ctx.INFROM())
+  print(ctx.SYMBOL(), ctx.WILDSYMBOL(),)
+  print(ctx.NUMBER(), ctx.RANGE(), ctx.WILDNUMBER())
+
+
+class ReqBlockInterpreter(ReqBlockListener):
+  def __init__(self, block_type, block_value, title):
+    self.block_type = block_type.lower()
+    self.block_value = block_value
+    self.title = title
+    if self.block_type == 'conc':
+      self.block_type = 'concentration'
+
+  def enterMinres(self, ctx):
+    """ MINRES NUMBER (CREDITS | CLASSES)
+    """
+    classes_credits = classes_or_credits(ctx)
+    # print(inspect.getmembers(ctx))
+    if float(str(ctx.NUMBER())) == 1:
+      classes_credits = classes_credits.strip('es')
+    print(f'At least {ctx.NUMBER()} {str(classes_credits).lower()} must be completed in residency.')
+
+  def enterNumcredits(self, ctx):
+    """ NUMBER CREDITS (and_courses | or_courses)?
+    """
+    print('and_courses', ctx.and_courses())
+    print('or_courses: ', ctx.or_courses())
+    print(f'This {self.block_type} requires {ctx.NUMBER()} credits.')
+
+  def enterMaxcredits(self, ctx):
+    """ MAXCREDITS NUMBER (and_courses | or_courses)
+    """
+    build_course_list(ctx.and_courses())
+    build_course_list(ctx.or_courses())
+    print('enterMaxcredits() here', ctx.NUMBER())
+
+  def enterMaxpassfail(self, ctx):
+    """ MAXPASSFAIL NUMBER (CREDITS | CLASSES) (TAG '=' SYMBOL)?
+    """
+    print('enterMaxpassfail() here')
 
 
 # main()
 # -------------------------------------------------------------------------------------------------
-def main(argv):
+def main(req_text, block_type, block_value, title):
   """  Mainly, this is the main testing thing.
   """
-  input_stream = InputStream(argv)
+  input_stream = InputStream(req_text)
   lexer = ReqBlockLexer(input_stream)
   token_stream = CommonTokenStream(lexer)
   parser = ReqBlockParser(token_stream)
-  tree = parser.req_block()
-  interpreter = ReqBlockInterpreter()
-  interpreter.visit(tree)
-  for child in tree.headers().getChildren():
-    pprint(dir(child))
-    print('--------------------------------------------------------------------------------------')
+  interpreter = ReqBlockInterpreter(block_type, block_value, title)
+  walker = ParseTreeWalker()
+  tree = parser.req_text()
+  walker.walk(interpreter, tree)
 
 
 if __name__ == '__main__':
@@ -105,4 +151,4 @@ if __name__ == '__main__':
                                   .strip('"')\
                                   .replace('\\r', '\r')\
                                   .replace('\\n', '\n')
-            main(requirement_text)
+            main(requirement_text, type, value, row.title)
