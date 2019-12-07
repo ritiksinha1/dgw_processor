@@ -56,9 +56,10 @@ headers     : (mingpa
             ;
 rules       : .*? ;
 
-or_courses  : INFROM? (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | WILDNUMBER) (OR  ((SYMBOL NUMBER) | NUMBER))* ;
-and_courses : INFROM? (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | WILDNUMBER) (AND ((SYMBOL NUMBER) | NUMBER))* ;
+or_courses  : INFROM? class_item (OR class_item)* ;
+and_courses : INFROM? class_item (AND class_item)* ;
 
+class_item  : (SYMBOL | WILDSYMBOL)? (NUMBER | RANGE | WILDNUMBER) ;
 mingpa      : MINGPA NUMBER ;
 minres      : MINRES NUMBER (CREDITS | CLASSES) ;
 mingrade    : MINGRADE NUMBER ;
