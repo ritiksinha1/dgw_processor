@@ -23,9 +23,6 @@ for c in range(13, 31):
 
 trans_table = str.maketrans(trans_dict)
 
-CourseInfo = namedtuple('CourseInfo', 'institution course_id offer_nbr discipline catalog_number '
-                        'title course_status designation attributes')
-
 # Create dict of known colleges
 colleges = dict()
 course_conn = psycopg2.connect('dbname=cuny_courses')
@@ -48,7 +45,6 @@ def build_course_list(ctx) -> List[Dict]:
   """ INFROM? class_item (AND class_item)*
       INFROM? class_item (OR class_item)*
   """
-  print(f'build_course_list({ctx})')
   course_list = []
   if ctx is None:
     return course_list
@@ -63,36 +59,66 @@ def build_course_list(ctx) -> List[Dict]:
       search_discipline = display_discipline.replace('@', '.*')
     if class_item.NUMBER():
       display_number = str(class_item.NUMBER())
-      search_number = display_number
+      search_number = f"catalog_number = '{display_number}'"
     if class_item.RANGE():
       display_number = str(class_item.RANGE())
       low, high = display_number.split(':')
-      search_number = f'>= {low}\' and catalog_number <= \'{high}'
+      search_number = f""" numeric_part(catalog_number) >= {float(low)} and
+                           numeric_part(catalog_number) <' {float(high)}'
+                      """
     if class_item.WILDNUMBER():
       display_number = str(class_item.wildnumber)
-      search_number = display_number.replace('@', '.*')
-    print(display_discipline, display_number)
+      search_number = f"catalog_number ~ '{display_number.replace('@', '.*')}'"
     course_query = f"""
                       select institution, course_id, offer_nbr, discipline, catalog_number, title,
                              course_status, designation, attributes
                         from courses
                        where institution ~* '{institution}'
                          and discipline ~ '{search_discipline}'
-                         and catalog_number ~ '{search_number}'
+                         and {search_number}
                     """
     course_cursor.execute(course_query)
-    details = []
-    details = [CourseInfo._Make(row) for row in cursor.fetchall()]
+    # Convert generator to list.
+    details = [row for row in course_cursor.fetchall()]
     course_list.append({'display': f'{display_discipline} {display_number}',
-                        'info': tuple(details)})
-  pprint(course_list)
+                        'info': details})
   return course_list
 
 
-def course_list_to_html(courses: List[str]):
-  html = ''
-  for course in courses:
-    html += '<p>course</p>'
+def course_list_to_html(course_list: List[str]):
+  """ Generate a details element that has the number of courses as the summary, and the catalog
+      descriptions when opened. The total number of courses is the sum of each group of courses.
+  """
+  num_courses = 0
+  all_blanket = True
+  all_writing = True
+
+  html = '<details style="margin-left:1em;">'
+  for course in course_list:
+    for info in course['info']:
+      num_courses += 1
+      if info.course_status == 'A' and 'WRIC' not in info.attributes:
+        all_writing = False
+      if info.course_status == 'A' and 'BKCR' not in info.attributes:
+        if all_blanket: print(info.course_id, info.offer_nbr, info.discipline, info.catalog_number, 'is not blanket', file=sys.stderr)
+        all_blanket = False
+      html += f"""
+                <p title="{info.course_id}:{info.offer_nbr}">
+                  {info.discipline} {info.catalog_number} {info.title}
+                  <br>
+                  {info.designation} {info.attributes}
+                  {'<span class="error">Inactive Course</span>' * (info.course_status == 'I')}
+                </p>
+              """
+  attributes = ''
+  if all_blanket:
+    attributes = 'Blanket Credit '
+  if all_writing:
+    attributes += 'Writing Intensive '
+  summary = f'<summary> these {num_courses} {attributes} courses.</summary>'
+  if num_courses == 1:
+    summary = f'<summary> this {attributes} course.</summary>'
+  return html + summary + '</details>'
 
 
 class ReqBlockInterpreter(ReqBlockListener):
@@ -122,36 +148,49 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     self.html += (f'<p>This {self.block_type} requires {ctx.NUMBER()} credits.')
     if ctx.and_courses() is not None:
-      build_course_list(ctx.and_courses())
+      self.html += course_list_to_html(build_course_list(ctx.and_courses()))
     if ctx.or_courses() is not None:
       self.html += course_list_to_html(build_course_list(ctx.or_courses()))
+    self.html += '</p>'
 
   def enterMaxcredits(self, ctx):
     """ MAXCREDITS NUMBER (and_courses | or_courses)
     """
-    print('enterMaxcredits() here')
-    print(f'MAXCREDITS: {ctx.MAXCREDITS()}')
-    print(f'NUMBER: {ctx.NUMBER()}')
+    limit_type = 'a maximum of'
+    if ctx.NUMBER() == '0':
+      limit_type = 'zero'
+    self.html += (f'<p>This {self.block_type} allows {limit_type} of {ctx.NUMBER()} credits in ')
     if ctx.and_courses() is not None:
-      build_course_list(ctx.and_courses())
+      self.html += course_list_to_html(build_course_list(ctx.and_courses()))
     if ctx.or_courses() is not None:
-      build_course_list(ctx.or_courses())
+      self.html += course_list_to_html(build_course_list(ctx.or_courses()))
+    self.html += '</p>'
 
   def enterMaxclasses(self, ctx):
     """ MAXCLASSES NUMBER (and_courses | or_courses)
     """
-    print('enterMaxclasses() here')
-    print(f'MAXCLASSES: {ctx.MAXCLASSES()}')
-    print(f'NUMBER: {ctx.NUMBER()}')
+    num_classes = int(str(ctx.NUMBER()))
+    limit = f'no more than {num_classes}'
+    if num_classes == 0:
+      limit = 'no'
+    self.html += (f'<p>This {self.block_type} allows {limit} '
+                  f'class{"es" * (num_classes != 1)} from ')
     if ctx.and_courses() is not None:
       build_course_list(ctx.and_courses())
+    if ctx.and_courses() is not None:
+      self.html += course_list_to_html(build_course_list(ctx.and_courses()))
     if ctx.or_courses() is not None:
-      build_course_list(ctx.or_courses())
+      self.html += course_list_to_html(build_course_list(ctx.or_courses()))
+    self.html += '</p>'
 
   def enterMaxpassfail(self, ctx):
     """ MAXPASSFAIL NUMBER (CREDITS | CLASSES) (TAG '=' SYMBOL)?
     """
-    print('enterMaxpassfail() here')
+    limit = f'no more than {ctx.NUMBER()}'
+    if int(str(ctx.NUMBER())) == 0:
+      limit = 'no'
+    self.html += (f'<p>This {self.block_type} allows {limit} {classes_or_credits(ctx)} ')
+    self.html += 'to be taken Pass/Fail.</p>'
 
 
 # dgw_parser()
@@ -167,7 +206,7 @@ def dgw_parser(institution, req_text, block_type, block_value, title):
   walker = ParseTreeWalker()
   tree = parser.req_text()
   walker.walk(interpreter, tree)
-  print(interpreter.html)
+  return interpreter.html
 
 
 if __name__ == '__main__':
@@ -212,7 +251,9 @@ if __name__ == '__main__':
           print(f'No match for {institution} {type} {value}')
         else:
           for row in cursor.fetchall():
-            print(f'{institution}, {type} {value} "{row.title}" {len(row.requirement_text)} chars')
+            if args.debug:
+              print(f'{institution}, {type} {value} "{row.title}" '
+                    f'{len(row.requirement_text)} chars')
             requirement_text = row.requirement_text\
                                   .translate(trans_table)\
                                   .strip('"')\
