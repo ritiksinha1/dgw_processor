@@ -13,9 +13,9 @@ from psycopg2.extras import NamedTupleCursor
 from collections import namedtuple
 
 from antlr4 import *
-from ReqBlockLexer import ReqBlockLexer
-from ReqBlockParser import ReqBlockParser
-from ReqBlockListener import ReqBlockListener
+from .ReqBlockLexer import ReqBlockLexer
+from .ReqBlockParser import ReqBlockParser
+from .ReqBlockListener import ReqBlockListener
 
 trans_dict = dict()
 for c in range(13, 31):
