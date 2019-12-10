@@ -1,10 +1,6 @@
 
 /__pycache__/
 
-*.interp
-
-*.tokens
-
 *.csv
 
 *.class
@@ -13,15 +9,12 @@
 
 *.txt
 
-/t.py
+*.interp
 
+*.tokens
 
-/parser/__pycache__/
+ReqBlockParser.py
 
-/parser/ReqBlockLexer.py
+ReqBlockListener.py
 
-/parser/cscibs.html
-
-/parser/ReqBlockParser.py
-
-/parser/ReqBlockListener.py
+test_data/
