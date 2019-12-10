@@ -17,3 +17,11 @@
 
 
 /parser/__pycache__/
+
+/parser/ReqBlockLexer.py
+
+/parser/cscibs.html
+
+/parser/ReqBlockParser.py
+
+/parser/ReqBlockListener.py
