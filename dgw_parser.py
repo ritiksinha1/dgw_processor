@@ -13,9 +13,9 @@ from psycopg2.extras import NamedTupleCursor
 from collections import namedtuple
 
 from antlr4 import *
-from .ReqBlockLexer import ReqBlockLexer
-from .ReqBlockParser import ReqBlockParser
-from .ReqBlockListener import ReqBlockListener
+from ReqBlockLexer import ReqBlockLexer
+from ReqBlockParser import ReqBlockParser
+from ReqBlockListener import ReqBlockListener
 
 trans_dict = dict()
 for c in range(13, 31):
@@ -41,7 +41,7 @@ def classes_or_credits(ctx) -> str:
   return str(classes_credits).lower()
 
 
-def build_course_list(ctx) -> List[Dict]:
+def build_course_list(institution, ctx) -> List[Dict]:
   """ INFROM? class_item (AND class_item)*
       INFROM? class_item (OR class_item)*
   """
@@ -150,9 +150,9 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     self.html += (f'<p>This {self.block_type} requires {ctx.NUMBER()} credits.')
     if ctx.and_courses() is not None:
-      self.html += course_list_to_html(build_course_list(ctx.and_courses()))
+      self.html += course_list_to_html(build_course_list(self.institution, ctx.and_courses()))
     if ctx.or_courses() is not None:
-      self.html += course_list_to_html(build_course_list(ctx.or_courses()))
+      self.html += course_list_to_html(build_course_list(self.institution, ctx.or_courses()))
     self.html += '</p>'
 
   def enterMaxcredits(self, ctx):
@@ -163,9 +163,9 @@ class ReqBlockInterpreter(ReqBlockListener):
       limit_type = 'zero'
     self.html += (f'<p>This {self.block_type} allows {limit_type} of {ctx.NUMBER()} credits in ')
     if ctx.and_courses() is not None:
-      self.html += course_list_to_html(build_course_list(ctx.and_courses()))
+      self.html += course_list_to_html(build_course_list(self.institution, ctx.and_courses()))
     if ctx.or_courses() is not None:
-      self.html += course_list_to_html(build_course_list(ctx.or_courses()))
+      self.html += course_list_to_html(build_course_list(self.institution, ctx.or_courses()))
     self.html += '</p>'
 
   def enterMaxclasses(self, ctx):
@@ -180,9 +180,9 @@ class ReqBlockInterpreter(ReqBlockListener):
     if ctx.and_courses() is not None:
       build_course_list(ctx.and_courses())
     if ctx.and_courses() is not None:
-      self.html += course_list_to_html(build_course_list(ctx.and_courses()))
+      self.html += course_list_to_html(build_course_list(self.institution, ctx.and_courses()))
     if ctx.or_courses() is not None:
-      self.html += course_list_to_html(build_course_list(ctx.or_courses()))
+      self.html += course_list_to_html(build_course_list(self.institution, ctx.or_courses()))
     self.html += '</p>'
 
   def enterMaxpassfail(self, ctx):
