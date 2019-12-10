@@ -100,7 +100,9 @@ def course_list_to_html(course_list: List[str]):
       if info.course_status == 'A' and 'WRIC' not in info.attributes:
         all_writing = False
       if info.course_status == 'A' and 'BKCR' not in info.attributes:
-        if all_blanket: print(info.course_id, info.offer_nbr, info.discipline, info.catalog_number, 'is not blanket', file=sys.stderr)
+        if all_blanket:
+          print(info.course_id, info.offer_nbr, info.discipline, info.catalog_number,
+                'is not blanket', file=sys.stderr)
         all_blanket = False
       html += f"""
                 <p title="{info.course_id}:{info.offer_nbr}">
@@ -259,4 +261,4 @@ if __name__ == '__main__':
                                   .strip('"')\
                                   .replace('\\r', '\r')\
                                   .replace('\\n', '\n')
-            dgw_parser(institution, requirement_text + '\n', type, value, row.title)
+            print(dgw_parser(institution, requirement_text + '\n', type, value, row.title))
