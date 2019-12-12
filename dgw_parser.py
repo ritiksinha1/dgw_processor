@@ -10,6 +10,7 @@ from io import StringIO
 
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
+
 from collections import namedtuple
 
 from antlr4 import *
@@ -27,7 +28,7 @@ trans_table = str.maketrans(trans_dict)
 colleges = dict()
 course_conn = psycopg2.connect('dbname=cuny_courses')
 course_cursor = course_conn.cursor(cursor_factory=NamedTupleCursor)
-course_cursor.execute('select substr(lower(code),0,4) as code, name from institutions')
+course_cursor.execute('select code, name from institutions')
 for row in course_cursor.fetchall():
   colleges[row.code] = row.name
 
@@ -123,6 +124,8 @@ def course_list_to_html(course_list: List[str]):
   return html + summary + '</details>'
 
 
+# Class ReqBlockInterpreter
+# =================================================================================================
 class ReqBlockInterpreter(ReqBlockListener):
   def __init__(self, institution, block_type, block_value, title):
     self.institution = institution
@@ -196,19 +199,52 @@ class ReqBlockInterpreter(ReqBlockListener):
 
 
 # dgw_parser()
-# -------------------------------------------------------------------------------------------------
-def dgw_parser(institution, req_text, block_type, block_value, title):
-  """  Mainly, this is the main testing thing.
+# =================================================================================================
+def dgw_parser(institution, block_type, block_value, period='current'):
+  """  Creates a ReqBlockInterpreter, which will include a json representation of requirements.
+       For now, it returns an html string telling what it was able to extract from the requirement
+       text.
+       The period argument can be 'current', 'latest', or 'all', which will be picked out of the
+       result set for 'all'
   """
-  input_stream = InputStream(req_text)
-  lexer = ReqBlockLexer(input_stream)
-  token_stream = CommonTokenStream(lexer)
-  parser = ReqBlockParser(token_stream)
-  interpreter = ReqBlockInterpreter(institution, block_type, block_value, title)
-  walker = ParseTreeWalker()
-  tree = parser.req_text()
-  walker.walk(interpreter, tree)
-  return interpreter.html
+  conn = psycopg2.connect('dbname=cuny_programs')
+  cursor = conn.cursor(cursor_factory=NamedTupleCursor)
+  query = """
+    select requirement_id, title, period_start, period_stop, requirement_text
+    from requirement_blocks
+    where institution = %s
+      and block_type = %s
+      and block_value = %s
+    order by period_stop desc
+  """
+  cursor.execute(query, (institution, block_type.upper(), block_value.upper()))
+  if cursor.rowcount == 0:
+    # This is a bug, not an error
+    return f'<h1 class="error">No Requisites Found</h1><p>{cursor.query}</p>'
+  return_html = ''
+  for row in cursor.fetchall():
+    requirement_text = row.requirement_text\
+                          .translate(trans_table)\
+                          .strip('"')\
+                          .replace('\\r', '\r')\
+                          .replace('\\n', '\n') + '\n'
+    input_stream = InputStream(requirement_text)
+    lexer = ReqBlockLexer(input_stream)
+    token_stream = CommonTokenStream(lexer)
+    parser = ReqBlockParser(token_stream)
+    interpreter = ReqBlockInterpreter(institution, block_type, block_value, row.title)
+    walker = ParseTreeWalker()
+    tree = parser.req_text()
+    walker.walk(interpreter, tree)
+    if period == 'current' and row.period_stop != '99999999':
+      return f"""<h1 class="error">{row.title} is not a currently available {interpreter.block_type}
+                 at {interpreter.college}.
+              """
+    # ADD CATALOG YEAR INFO TO INTERPRETER HTML
+    return_html += interpreter.html
+    if period == 'current' or period == 'latest':
+      break
+  return return_html
 
 
 if __name__ == '__main__':
