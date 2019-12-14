@@ -33,6 +33,17 @@ for row in course_cursor.fetchall():
   colleges[row.code] = row.name
 
 
+def format_catalog_years(period_start: str, period_stop: str) -> str:
+  """ Just the range of years covered, not whether grad/undergrad
+  """
+  first = period_start[0:4]
+  if period_stop == '99999999':
+    last = 'until Now'
+  else:
+    last = f'through {period_stop[5:9]}'
+  return f'{first} {last}'
+
+
 def classes_or_credits(ctx) -> str:
   """
   """
@@ -127,13 +138,19 @@ def course_list_to_html(course_list: List[str]):
 # Class ReqBlockInterpreter
 # =================================================================================================
 class ReqBlockInterpreter(ReqBlockListener):
-  def __init__(self, institution, block_type, block_value, title):
+  def __init__(self, institution, block_type, block_value, title, period_start, period_stop):
     self.institution = institution
     self.block_type = block_type.lower()
     self.block_value = block_value
     self.title = title
+    self.period_start = period_start
+    self.period_stop = period_stop
     college_name = colleges[institution]
     self.html = f"""<h1>{college_name} {self.title}</h1>
+                    <p>Requirements for Catalog Years
+                    {format_catalog_years(period_start, period_stop)}
+                    </p>
+                    <div class="requirements">
                  """
     if self.block_type == 'conc':
       self.block_type = 'concentration'
@@ -232,16 +249,21 @@ def dgw_parser(institution, block_type, block_value, period='current'):
     lexer = ReqBlockLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
     parser = ReqBlockParser(token_stream)
-    interpreter = ReqBlockInterpreter(institution, block_type, block_value, row.title)
+
+    interpreter = ReqBlockInterpreter(institution,
+                                      block_type,
+                                      block_value,
+                                      row.title,
+                                      row.period_start,
+                                      row.period_stop)
     walker = ParseTreeWalker()
     tree = parser.req_text()
     walker.walk(interpreter, tree)
     if period == 'current' and row.period_stop != '99999999':
-      return f"""<h1 class="error">{row.title} is not a currently available {interpreter.block_type}
-                 at {interpreter.college}.
+      return f"""<h1 class="error">{row.title} is not a currently offered {interpreter.block_type}
+                 at {interpreter.college}.</h1>
               """
-    # ADD CATALOG YEAR INFO TO INTERPRETER HTML
-    return_html += interpreter.html
+    return_html += interpreter.html + '</div>'
     if period == 'current' or period == 'latest':
       break
   return return_html
