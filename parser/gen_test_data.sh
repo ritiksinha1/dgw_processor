@@ -7,6 +7,6 @@ fi
 
 psql cuny_programs -Xqtc "select requirement_text \
 from requirement_blocks
-where institution = 'qns'
+where institution = 'leh'
 and block_value = '$value'
 and period_stop = '99999999'" | sed s/\ *+$// |sed s/\\\\r//
