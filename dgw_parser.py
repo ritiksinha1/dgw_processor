@@ -145,8 +145,8 @@ class ReqBlockInterpreter(ReqBlockListener):
     self.title = title
     self.period_start = period_start
     self.period_stop = period_stop
-    college_name = colleges[institution]
-    self.html = f"""<h1>{college_name} {self.title}</h1>
+    self.college_name = colleges[institution]
+    self.html = f"""<h1>{self.college_name} {self.title}</h1>
                     <p>Requirements for Catalog Years
                     {format_catalog_years(period_start, period_stop)}
                     </p>
@@ -260,8 +260,8 @@ def dgw_parser(institution, block_type, block_value, period='current'):
     tree = parser.req_text()
     walker.walk(interpreter, tree)
     if period == 'current' and row.period_stop != '99999999':
-      return f"""<h1 class="error">{row.title} is not a currently offered {interpreter.block_type}
-                 at {interpreter.college}.</h1>
+      return f"""<h1 class="error">“{row.title}” is not a currently offered {interpreter.block_type}
+                 at {interpreter.college_name}.</h1>
               """
     return_html += interpreter.html + '</div>'
     if period == 'current' or period == 'latest':
