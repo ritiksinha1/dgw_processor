@@ -112,9 +112,6 @@ def course_list_to_html(course_list: List[str]):
       if info.course_status == 'A' and 'WRIC' not in info.attributes:
         all_writing = False
       if info.course_status == 'A' and 'BKCR' not in info.attributes:
-        if all_blanket:
-          print(info.course_id, info.offer_nbr, info.discipline, info.catalog_number,
-                'is not blanket', file=sys.stderr)
         all_blanket = False
       html += f"""
                 <p title="{info.course_id}:{info.offer_nbr}">
@@ -138,7 +135,8 @@ def course_list_to_html(course_list: List[str]):
 # Class ReqBlockInterpreter
 # =================================================================================================
 class ReqBlockInterpreter(ReqBlockListener):
-  def __init__(self, institution, block_type, block_value, title, period_start, period_stop):
+  def __init__(self, institution, block_type, block_value, title, period_start, period_stop,
+               requirement_text):
     self.institution = institution
     self.block_type = block_type.lower()
     self.block_value = block_value
@@ -150,7 +148,11 @@ class ReqBlockInterpreter(ReqBlockListener):
                     <p>Requirements for Catalog Years
                     {format_catalog_years(period_start, period_stop)}
                     </p>
+                    <details><summary>Degreeworks Code</summary><hr>
+                      <pre>{requirement_text}</pre>
+                    </details>
                     <div class="requirements">
+                    <h2>Description (Incomplete)</h2>
                  """
     if self.block_type == 'conc':
       self.block_type = 'concentration'
@@ -166,9 +168,16 @@ class ReqBlockInterpreter(ReqBlockListener):
                   f'must be completed in residency.</p>')
 
   def enterNumcredits(self, ctx):
-    """ NUMBER CREDITS (and_courses | or_courses)?
+    """ (NUMBER | RANGE) CREDITS (and_courses | or_courses)?
     """
-    self.html += (f'<p>This {self.block_type} requires {ctx.NUMBER()} credits.')
+    if ctx.NUMBER() is not None:
+      self.html += (f'<p>This {self.block_type} requires {ctx.NUMBER()} credits')
+    elif ctx.RANGE() is not None:
+       low, high = ctx.RANGE().split(':')
+       self.html += (f'<p>This {self.block_type} requires between {low} and {high} credits')
+    else:
+      self.html += (f'<p class="warning">This {self.block_type} requires an '
+                    f'<strong>unknown</strong> number of credits')
     if ctx.and_courses() is not None:
       self.html += course_list_to_html(build_course_list(self.institution, ctx.and_courses()))
     if ctx.or_courses() is not None:
@@ -255,7 +264,8 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                                       block_value,
                                       row.title,
                                       row.period_start,
-                                      row.period_stop)
+                                      row.period_stop,
+                                      requirement_text)
     walker = ParseTreeWalker()
     tree = parser.req_text()
     walker.walk(interpreter, tree)
