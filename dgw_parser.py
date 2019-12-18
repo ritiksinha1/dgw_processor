@@ -239,11 +239,10 @@ class ReqBlockInterpreter(ReqBlockListener):
 class DGW_Logger(ErrorListener, ReqBlockInterpreter):
 
   def __init__(self):
-    # super()
     pass
 
   def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-    logging.debug(f'{institution} {block_type} {block_value}: '
+    logging.debug(f'institution block_type block_value: '
                   f'{type(recognizer).__name__}: {line}:{column} {msg}')
 
   def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
