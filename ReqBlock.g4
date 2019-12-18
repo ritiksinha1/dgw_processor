@@ -39,7 +39,8 @@ grammar ReqBlock;
 
 req_text    : .*? req_block .*? EOF ;
 req_block   : BEGIN headers ';' rules ENDDOT ;
-headers     : (mingpa
+headers     :
+            ( mingpa
             | minres
             | mingrade
             | numclasses
@@ -71,7 +72,7 @@ proxy_advice: PROXYADVICE STRING proxy_advice* ;
 exclusive   : EXCLUSIVE '(' ~')'* ')' ;
 maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) (TAG '=' SYMBOL)? ;
 remark      : REMARK STRING ';' remark* ;
-label       : LABEL SYMBOL? STRING ';'? label* ;
+label       : LABEL ALPHANUM? STRING ';'? label* ;
 
 /*
  * Lexer Rules
@@ -128,6 +129,7 @@ WILDSYMBOL  : ((LETTER | DIGIT)*  WILDCARD (LETTER | DIGIT)*)+ ;
 RANGE       : NUMBER ':' NUMBER ;
 NUMBER      : DIGIT+ DOT? DIGIT* ;
 SYMBOL      : LETTER (LETTER | DIGIT | '_')* ;
+ALPHANUM    : (LETTER | DIGIT | DOT | '_')+ ;
 WILDCARD    : '@' ;
 
 GE          : '>=' ;
