@@ -242,24 +242,19 @@ class DGW_Logger(ErrorListener, ReqBlockInterpreter):
     pass
 
   def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-    logging.debug(f'institution block_type block_value: '
-                  f'{type(recognizer).__name__}: {line}:{column} {msg}')
+    logging.debug(f'Syntax {type(recognizer).__name__}: {line}:{column} {msg}')
 
   def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
-    raise Exception(f"""{recognizer}: Ambiguity error between {startIndex} and {stopIndex}
-                       ({ambigAlts})')
-                     """)
+    logging.debug(f'{type(recognizer).__name__}: Ambiguity {startIndex}:{stopIndex} ({ambigAlts})')
 
   def reportAttemptingFullContext(self, recognizer, dfa, startIndex, stopIndex,
                                   conflictingAlts, configs):
-    raise Exception(f"""{recognizer}: FullContext error between {startIndex} and {stopIndex}
-                        ({conflictingAlts})
-                     """)
+    logging.debug(f'{type(recognizer).__name__}: FullContext {startIndex}:{stopIndex} '
+                  f'({conflictingAlts})')
 
   def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
-    raise Exception(f"""{recognizer}: ContextSensitivity error  between {startIndex} and {stopIndex}
-                        ({prediction})
-                     """)
+    logging.debug(f'{type(recognizer).__name__}: ContextSensitivity {startIndex}:{stopIndex} '
+                  f'({prediction})')
 
 
 # dgw_parser()
