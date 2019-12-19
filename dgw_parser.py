@@ -236,25 +236,27 @@ class ReqBlockInterpreter(ReqBlockListener):
 
 # Class DGW_Logger
 # =================================================================================================
-class DGW_Logger(ErrorListener, ReqBlockInterpreter):
+class DGW_Logger(ErrorListener):
 
-  def __init__(self):
-    pass
+  def __init__(self, institution, block_type, block_value, period_stop):
+    self.block = f'{institution} {block_type} {block_value} {period_stop}'
 
   def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-    logging.debug(f'Syntax {type(recognizer).__name__}: {line}:{column} {msg}')
+    logging.debug(f'{self.block} {type(recognizer).__name__} '
+                  f'Syntax {line}:{column} {msg}')
 
   def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
-    logging.debug(f'{type(recognizer).__name__}: Ambiguity {startIndex}:{stopIndex} ({ambigAlts})')
+    logging.debug(f'{self.block}: {type(recognizer).__name__} '
+                  f'Ambiguity {startIndex}:{stopIndex} {exact} ({ambigAlts}) {configs}')
 
   def reportAttemptingFullContext(self, recognizer, dfa, startIndex, stopIndex,
                                   conflictingAlts, configs):
-    logging.debug(f'{type(recognizer).__name__}: FullContext {startIndex}:{stopIndex} '
-                  f'({conflictingAlts})')
+    logging.debug(f' {self.block}: {type(recognizer).__name__} '
+                  f'FullContext {dfa} {startIndex}:{stopIndex} ({conflictingAlts}) {configs}')
 
   def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
-    logging.debug(f'{type(recognizer).__name__}: ContextSensitivity {startIndex}:{stopIndex} '
-                  f'({prediction})')
+    logging.debug(f' {self.block}: {type(recognizer).__name__} '
+                  f'ContextSensitivity {dfa} {startIndex}:{stopIndex} ({prediction}) {configs}')
 
 
 # dgw_parser()
@@ -291,14 +293,15 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                           .strip('"')\
                           .replace('\\r', '\r')\
                           .replace('\\n', '\n') + '\n'
+    dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
     input_stream = InputStream(requirement_text)
     lexer = ReqBlockLexer(input_stream)
     lexer.removeErrorListeners()
-    lexer.addErrorListener(DGW_Logger())
+    lexer.addErrorListener(dgw_logger)
     token_stream = CommonTokenStream(lexer)
     parser = ReqBlockParser(token_stream)
     parser.removeErrorListeners()
-    parser.addErrorListener(DGW_Logger())
+    parser.addErrorListener(dgw_logger)
     interpreter = ReqBlockInterpreter(institution,
                                       block_type,
                                       block_value,
