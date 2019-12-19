@@ -89,7 +89,7 @@ def build_course_list(institution, ctx) -> list:
       search_number = f"catalog_number ~ '{display_number.replace('@', '.*')}'"
     course_query = f"""
                       select institution, course_id, offer_nbr, discipline, catalog_number, title,
-                             course_status, designation, attributes
+                             course_status, max_credits, designation, attributes
                         from courses
                        where institution ~* '{institution}'
                          and discipline ~ '{search_discipline}'
@@ -117,7 +117,7 @@ def course_list_to_html(course_list: dict):
       num_courses += 1
       if info.course_status == 'A' and 'WRIC' not in info.attributes:
         all_writing = False
-      if info.course_status == 'A' and 'BKCR' not in info.attributes:
+      if info.course_status == 'A' and info.max_credits > 0 and 'BKCR' not in info.attributes:
         all_blanket = False
       html += f"""
                 <p title="{info.course_id}:{info.offer_nbr}">
