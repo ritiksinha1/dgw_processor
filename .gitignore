@@ -9,16 +9,6 @@
 
 *.txt
 
-*.interp
-
-*.tokens
-
-ReqBlockParser.py
-
-ReqBlockLexer.py
-
-ReqBlockListener.py
-
 test_data/
 /.mypy_cache/
 /Logs/

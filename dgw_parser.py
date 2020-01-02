@@ -15,9 +15,9 @@ from collections import namedtuple
 
 from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
-from .ReqBlockLexer import ReqBlockLexer
-from .ReqBlockParser import ReqBlockParser
-from .ReqBlockListener import ReqBlockListener
+from ReqBlockLexer import ReqBlockLexer
+from ReqBlockParser import ReqBlockParser
+from ReqBlockListener import ReqBlockListener
 
 logging.basicConfig(filename='Logs/antlr.log',
                     format='%(asctime)s %(message)s',
