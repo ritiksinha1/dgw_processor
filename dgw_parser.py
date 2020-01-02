@@ -7,6 +7,7 @@ from typing import List, Set, Dict, Tuple, Optional, Union
 
 import argparse
 import sys
+import os
 from io import StringIO
 
 from pgconnection import pgconnection
@@ -19,9 +20,10 @@ from .ReqBlockLexer import ReqBlockLexer
 from .ReqBlockParser import ReqBlockParser
 from .ReqBlockListener import ReqBlockListener
 
-logging.basicConfig(filename='Logs/antlr.log',
-                    format='%(asctime)s %(message)s',
-                    level=logging.DEBUG)
+if not os.getenv('HEROKU'):
+  logging.basicConfig(filename='Logs/antlr.log',
+                      format='%(asctime)s %(message)s',
+                      level=logging.DEBUG)
 
 trans_dict: Dict[int, None] = dict()
 for c in range(13, 31):
