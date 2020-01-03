@@ -12,3 +12,5 @@
 test_data/
 /.mypy_cache/
 /Logs/
+/dgw_processor.egg-info/
+/dist/
