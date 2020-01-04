@@ -4,7 +4,7 @@ with open('README.md', 'r') as readme:
   long_description = readme.read()
 
 setuptools.setup(name='dgw_processor',
-                 version='0.0.5',
+                 version='0.0.6',
                  author='Christopher Vickery',
                  author_email='christopher.vickery@qc.cuny.edu',
                  description='Process Degreeworks Scribe Blocks',
