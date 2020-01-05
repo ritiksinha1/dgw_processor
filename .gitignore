@@ -10,11 +10,15 @@ __pycache__/
 
 *.txt
 
+*.egg-info/
+
+.bumpversion.cfg
+
+MANIFEST.in
+
 test_data/
 
 /.mypy_cache/
-
-/dgw_processor.egg-info/
 
 /dist/
 
