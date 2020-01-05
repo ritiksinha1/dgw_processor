@@ -1,0 +1,5 @@
+"""Top-level package for Degreeworks Processor."""
+
+__author__ = """Christopher Vickery"""
+__email__ = 'christopher.vickery@qc.cuny.edu'
+__version__ = '0.0.10'
