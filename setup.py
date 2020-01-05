@@ -20,6 +20,6 @@ setup(
     packages=find_packages(include=['dgw_processor', 'dgw_processor.*']),
     python_requires='>= 3.6',
     url='https://github.com/cvickery/dgw_processor',
-    version='0.0.10',
+    version='0.0.11',
     zip_safe=False,
 )
