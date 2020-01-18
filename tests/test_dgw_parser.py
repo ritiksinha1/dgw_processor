@@ -2,7 +2,7 @@
 
 import inspect
 from pprint import pprint
-from typing import List, Set, Dict, Tuple, Optional
+from typing import List, Set, Dict, Tuple, Optional, Any
 
 import argparse
 import sys
@@ -13,9 +13,9 @@ import psycopg2
 from psycopg2.extras import NamedTupleCursor
 from collections import namedtuple
 
-from dgw_parser import dgw_parser
+from dgw_processor.dgw_parser import dgw_parser
 
-trans_dict = dict()
+trans_dict: Dict[int, Any] = dict()
 for c in range(13, 31):
   trans_dict[c] = None
 

@@ -1,4 +1,4 @@
-#! /usr/local/bin/python3
+#! /usr/bin/env python3
 
 import logging
 from datetime import datetime
@@ -9,6 +9,7 @@ import argparse
 import sys
 import os
 from io import StringIO
+import re
 
 from collections import namedtuple
 
@@ -18,7 +19,8 @@ from antlr4.error.ErrorListener import ErrorListener
 from .ReqBlockLexer import ReqBlockLexer
 from .ReqBlockParser import ReqBlockParser
 from .ReqBlockListener import ReqBlockListener
-from .pgconnection import pgconnection
+sys.path.insert(0, '..')
+from pgconnection import PgConnection
 
 if not os.getenv('HEROKU'):
   logging.basicConfig(filename='Logs/antlr.log',
@@ -33,11 +35,12 @@ trans_table = str.maketrans(trans_dict)
 
 # Create dict of known colleges
 colleges = dict()
-course_conn = pgconnection()
-course_cursor = course_conn.cursor()
-course_cursor.execute('select code, name from institutions')
-for row in course_cursor.fetchall():
+conn = PgConnection()
+cursor = conn.cursor()
+cursor.execute('select code, name from institutions')
+for row in cursor.fetchall():
   colleges[row.code] = row.name
+conn.close()
 
 
 def format_catalog_years(period_start: str, period_stop: str) -> str:
@@ -96,11 +99,14 @@ def build_course_list(institution, ctx) -> list:
                          and discipline ~ '{search_discipline}'
                          and {search_number}
                     """
-    course_cursor.execute(course_query)
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(course_query)
     # Convert generator to list.
-    details = [row for row in course_cursor.fetchall()]
+    details = [row for row in cursor.fetchall()]
     course_list.append({'display': f'{display_discipline} {display_number}',
                         'info': details})
+    conn.close()
   return course_list
 
 
@@ -269,7 +275,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
        The period argument can be 'current', 'latest', or 'all', which will be picked out of the
        result set for 'all'
   """
-  conn = pgconnection()
+  conn = PgConnection()
   cursor = conn.cursor()
   query = """
     select requirement_id, title, period_start, period_stop, requirement_text
@@ -294,6 +300,11 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                           .strip('"')\
                           .replace('\\r', '\r')\
                           .replace('\\n', '\n') + '\n'
+    # if possible, suppress extraneous text outside the header and rules.
+    matches = re.match(r'^.*?(begin.*?end\.).*$', requirement_text, re.I | re.S)
+    # if matches:
+    #   requirement_text = matches.group(1) + '\n'
+    #   print(f'Trimmed block has {len(requirement_text)} characters.')
     dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
     input_stream = InputStream(requirement_text)
     lexer = ReqBlockLexer(input_stream)
@@ -312,7 +323,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                                       requirement_text)
     walker = ParseTreeWalker()
     try:
-      tree = parser.req_text()
+      tree = parser.req_block()
       walker.walk(interpreter, tree)
       return_html += interpreter.html + '</div>'
     except Exception as e:
@@ -323,6 +334,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
 
     if period == 'current' or period == 'latest':
       break
+  conn.close()
   return return_html
 
 
@@ -341,7 +353,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   # Get the top-level requirements to examine: college, block-type, and/or block value
-  conn = pgconnection()
+  conn = PgConnection()
   cursor = conn.cursor()
 
   query = """
@@ -359,3 +371,4 @@ if __name__ == '__main__':
         if args.debug:
           print(institution, block_type, block_value)
         print(dgw_parser(institution, block_type, block_value))
+  conn.close()
