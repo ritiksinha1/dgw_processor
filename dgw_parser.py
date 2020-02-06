@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import logging
+import inspect
 from datetime import datetime
 from pprint import pprint
 from typing import List, Set, Dict, Tuple, Optional, Union
@@ -20,6 +21,8 @@ from .ReqBlockLexer import ReqBlockLexer
 from .ReqBlockParser import ReqBlockParser
 from .ReqBlockListener import ReqBlockListener
 from pgconnection import PgConnection
+
+DEBUG = os.getenv('DEBUG_PARSER')
 
 if not os.getenv('HEROKU'):
   logging.basicConfig(filename='Logs/antlr.log',
@@ -56,6 +59,8 @@ def format_catalog_years(period_start: str, period_stop: str) -> str:
 def classes_or_credits(ctx) -> str:
   """
   """
+  if DEBUG:
+    print('classes_or_credits()', file=sys.stderr)
   classes_credits = ctx.CREDITS()
   if classes_credits is None:
     classes_credits = ctx.CLASSES()
@@ -66,6 +71,8 @@ def build_course_list(institution, ctx) -> list:
   """ INFROM? class_item (AND class_item)*
       INFROM? class_item (OR class_item)*
   """
+  if DEBUG:
+    print('build_course_list()', file=sys.stderr)
   course_list: list = []
   if ctx is None:
     return course_list
@@ -117,7 +124,7 @@ def course_list_to_html(course_list: dict):
   all_blanket = True
   all_writing = True
 
-  html = '<details style="margin-left:1em;">'
+  html = '<ul>'
   for course in course_list:
     for info in course['info']:
       num_courses += 1
@@ -126,22 +133,24 @@ def course_list_to_html(course_list: dict):
       if info.course_status == 'A' and info.max_credits > 0 and 'BKCR' not in info.attributes:
         all_blanket = False
       html += f"""
-                <p title="{info.course_id}:{info.offer_nbr}">
-                  {info.discipline} {info.catalog_number} {info.title}
-                  <br>
-                  {info.designation} {info.attributes}
-                  {'<span class="error">Inactive Course</span>' * (info.course_status == 'I')}
-                </p>
+                <li>
+                  <p title="{info.course_id}:{info.offer_nbr}">
+                    {info.discipline} {info.catalog_number} {info.title}
+                    <br>
+                    {info.designation} {info.attributes}
+                    {'<span class="error">Inactive Course</span>' * (info.course_status == 'I')}
+                  </p>
+                </li>
               """
   attributes = ''
   if all_blanket:
     attributes = 'Blanket Credit '
   if all_writing:
     attributes += 'Writing Intensive '
-  summary = f'<summary> these {num_courses} {attributes} courses.</summary>'
+  summary = f'<li> {num_courses} {attributes} courses.</li>'
   if num_courses == 1:
-    summary = f'<summary> this {attributes} course.</summary>'
-  return html + summary + '</details>'
+    summary = f'<li> {attributes} course.</li>'
+  return summary + html + '</ul>'
 
 
 # Class ReqBlockInterpreter
@@ -155,80 +164,112 @@ class ReqBlockInterpreter(ReqBlockListener):
     self.title = title
     self.period_start = period_start
     self.period_stop = period_stop
-    self.college_name = colleges[institution]
-    self.html = f"""<h1>{self.college_name} {self.title}</h1>
+    self.institution = colleges[institution]
+    self.requirement_text = requirement_text
+    self.header = {}
+    self.rules = {}
+
+  @property
+  def html(self):
+    html_body = f"""<h1>{self.institution} {self.title}</h1>
                     <p>Requirements for Catalog Years
-                    {format_catalog_years(period_start, period_stop)}
+                    {format_catalog_years(self.period_start, self.period_stop)}
                     </p>
-                    <details><summary>Degreeworks Code</summary><hr>
-                      <pre>{requirement_text}</pre>
-                    </details>
-                    <div class="requirements">
-                    <h2>Description (Incomplete)</h2>
+                    <section>
+                      <h1 class="closer">Degreeworks Code</h1>
+                      <div>
+                        <hr>
+                        <pre>{self.requirement_text}</pre>
+                      </div>
+                    </section>
+                    <section>
+                      <h1 class="closer">Requirements</h1>
+                      <div>
+                        <hr>
+                      </div>
+                    </section
                  """
-    if self.block_type == 'conc':
-      self.block_type = 'concentration'
+
+    return html_body
+
+  def enterHeader(self, ctx):
+    if DEBUG:
+      print('enterHeader()', file=sys.stderr)
+    pass
+
+  def enterRules(self, ctx):
+    if DEBUG:
+      print('enterRules()', file=sys.stderr)
+    pass
 
   def enterMinres(self, ctx):
     """ MINRES NUMBER (CREDITS | CLASSES)
     """
+    if DEBUG:
+      print('enterMinres()', file=sys.stderr)
     classes_credits = classes_or_credits(ctx)
     # print(inspect.getmembers(ctx))
     if float(str(ctx.NUMBER())) == 1:
       classes_credits = classes_credits.strip('es')
-    self.html += (f'<p>At least {ctx.NUMBER()} {str(classes_credits).lower()} '
-                  f'must be completed in residency.</p>')
+    print(f'At least {ctx.NUMBER()} {str(classes_credits).lower()} must be completed in residency.')
 
   def enterNumcredits(self, ctx):
     """ (NUMBER | RANGE) CREDITS (and_courses | or_courses)?
     """
+    if DEBUG:
+      print('enterNumcredits()', file=sys.stderr)
     if ctx.NUMBER() is not None:
-      self.html += (f'<p>This {self.block_type} requires {ctx.NUMBER()} credits.')
+      print(f'<p>This {self.block_type} requires {ctx.NUMBER()} credits.')
     elif ctx.RANGE() is not None:
        low, high = str(ctx.RANGE()).split(':')
-       self.html += (f'<p>This {self.block_type} requires between {low} and {high} credits.')
+       print(f'<p>This {self.block_type} requires between {low} and {high} credits.')
     else:
-      self.html += (f'<p class="warning">This {self.block_type} requires an '
-                    f'<strong>unknown</strong> number of credits.')
+      print(f'<p class="warning">This {self.block_type} requires an '
+            f'<strong>unknown</strong> number of credits.')
     if ctx.and_courses() is not None:
-      self.html += course_list_to_html(build_course_list(self.institution, ctx.and_courses()))
+      print(course_list_to_html(build_course_list(self.institution, ctx.and_courses())), end='')
     if ctx.or_courses() is not None:
-      self.html += course_list_to_html(build_course_list(self.institution, ctx.or_courses()))
-    self.html += '</p>'
+      print(course_list_to_html(build_course_list(self.institution, ctx.or_courses())), end='')
+    print()
 
   def enterMaxcredits(self, ctx):
     """ MAXCREDITS NUMBER (and_courses | or_courses)
     """
+    if DEBUG:
+      print('enterMaxcredits()', file=sys.stderr)
     limit_type = 'a maximum of'
     if ctx.NUMBER() == '0':
       limit_type = 'zero'
-    self.html += (f'<p>This {self.block_type} allows {limit_type} of {ctx.NUMBER()} credits in ')
+    print(f'<p>This {self.block_type} allows {limit_type} of {ctx.NUMBER()} credits in ', end='')
     if ctx.and_courses() is not None:
-      self.html += course_list_to_html(build_course_list(self.institution, ctx.and_courses()))
+      print(course_list_to_html(build_course_list(self.institution, ctx.and_courses())), end='')
     if ctx.or_courses() is not None:
-      self.html += course_list_to_html(build_course_list(self.institution, ctx.or_courses()))
-    self.html += '</p>'
+      print(course_list_to_html(build_course_list(self.institution, ctx.or_courses())), end='')
+    print()
 
   def enterMaxclasses(self, ctx):
     """ MAXCLASSES NUMBER (and_courses | or_courses)
     """
+    if DEBUG:
+      print('enterMaxclasses()', file=sys.stderr)
     num_classes = int(str(ctx.NUMBER()))
     limit = f'no more than {num_classes}'
     if num_classes == 0:
       limit = 'no'
-    self.html += (f'<p>This {self.block_type} allows {limit} '
-                  f'class{"es" * (num_classes != 1)} from ')
+    print(f'This {self.block_type} allows {limit} class{"es" * (num_classes != 1)} from ', end='')
     if ctx.and_courses() is not None:
       build_course_list(ctx.and_courses())
     if ctx.and_courses() is not None:
-      self.html += course_list_to_html(build_course_list(self.institution, ctx.and_courses()))
+      print(course_list_to_html(build_course_list(self.institution, ctx.and_courses())), end='')
     if ctx.or_courses() is not None:
-      self.html += course_list_to_html(build_course_list(self.institution, ctx.or_courses()))
-    self.html += '</p>'
+      print(course_list_to_html(build_course_list(self.institution, ctx.or_courses())), end='')
+    print()
 
   def enterMaxpassfail(self, ctx):
     """ MAXPASSFAIL NUMBER (CREDITS | CLASSES) (TAG '=' SYMBOL)?
     """
+    if DEBUG:
+      print('enterMaxpassfail()', file=sys.stderr)
     num = int(str(ctx.NUMBER()))
     limit = f'no more than {ctx.NUMBER()}'
     if num == 0:
@@ -236,8 +277,7 @@ class ReqBlockInterpreter(ReqBlockListener):
     which = classes_or_credits(ctx)
     if num == 1:
       which = which[0:-1].strip('e')
-    self.html += (f'<p>This {self.block_type} allows {limit} {which} ')
-    self.html += 'to be taken Pass/Fail.</p>'
+    print(f'<p>This {self.block_type} allows {limit} {which} to be taken Pass/Fail!</p>')
 
 
 # Class DGW_Logger
@@ -291,19 +331,14 @@ def dgw_parser(institution, block_type, block_value, period='current'):
   return_html = ''
   for row in cursor.fetchall():
     if period == 'current' and row.period_stop != '99999999':
-      return f"""<h1 class="error">“{row.title}” is not a currently offered {interpreter.block_type}
-                 at {interpreter.college_name}.</h1>
+      return f"""<h1 class="error">“{row.title}” is not a currently offered {block_type}
+                 at {institution}.</h1>
               """
     requirement_text = row.requirement_text\
                           .translate(trans_table)\
                           .strip('"')\
                           .replace('\\r', '\r')\
                           .replace('\\n', '\n') + '\n'
-    # if possible, suppress extraneous text outside the header and rules.
-    matches = re.match(r'^.*?(begin.*?end\.).*$', requirement_text, re.I | re.S)
-    # if matches:
-    #   requirement_text = matches.group(1) + '\n'
-    #   print(f'Trimmed block has {len(requirement_text)} characters.')
     dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
     input_stream = InputStream(requirement_text)
     lexer = ReqBlockLexer(input_stream)
@@ -320,11 +355,11 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                                       row.period_start,
                                       row.period_stop,
                                       requirement_text)
-    walker = ParseTreeWalker()
     try:
+      walker = ParseTreeWalker()
       tree = parser.req_block()
       walker.walk(interpreter, tree)
-      return_html += interpreter.html + '</div>'
+      return_html += interpreter.html
     except Exception as e:
       return_html += f"""
                         <p class="error">Currently unable to interpret this block.</p>

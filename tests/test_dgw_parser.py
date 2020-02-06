@@ -47,7 +47,7 @@ if __name__ == '__main__':
   values = [f'{v.upper()}' for v in args.values]
 
   # Get the top-level requirements to examine: college, block-type, and/or block value
-  conn = psycopg2.connect('dbname=cuny_programs')
+  conn = psycopg2.connect('dbname=cuny_courses')
   cursor = conn.cursor(cursor_factory=NamedTupleCursor)
 
   query = """

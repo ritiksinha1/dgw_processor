@@ -37,8 +37,8 @@ grammar ReqBlock;
  * Parser Rules
  */
 
-req_block   : BEGIN headers ';' rules ENDDOT <EOF>;
-headers     :
+req_block   : .*? BEGIN header ';' rules ENDDOT <EOF>;
+header     :
             ( mingpa
             | minres
             | mingrade
@@ -54,7 +54,11 @@ headers     :
             | label
             )*
             ;
-rules       : .*? ;
+rules       :
+            ( mingrade
+            | numclasses
+            )*
+            ;
 
 or_courses  : INFROM? class_item (OR class_item)* ;
 and_courses : INFROM? class_item (AND class_item)* ;
@@ -64,12 +68,12 @@ mingpa      : MINGPA NUMBER ;
 minres      : MINRES NUMBER (CREDITS | CLASSES) ;
 mingrade    : MINGRADE NUMBER ;
 numclasses  : NUMBER CLASSES (and_courses | or_courses) ;
-numcredits  : (NUMBER | RANGE) CREDITS (and_courses | or_courses)? ;
+numcredits  : (NUMBER | RANGE) CREDITS (and_courses | or_courses)? TAG? ;
 maxclasses  : MAXCLASSES NUMBER (and_courses | or_courses) ;
 maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
 proxy_advice: PROXYADVICE STRING proxy_advice* ;
 exclusive   : EXCLUSIVE '(' ~')'* ')' ;
-maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) (TAG '=' SYMBOL)? ;
+maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) TAG? ;
 remark      : REMARK STRING ';' remark* ;
 label       : LABEL ALPHANUM? STRING ';'? label* ;
 
@@ -77,7 +81,7 @@ label       : LABEL ALPHANUM? STRING ';'? label* ;
  * Lexer Rules
  */
 
-BEGIN       : .*? [Bb][Ee][Gg][Ii][Nn] ;
+BEGIN       : [Bb][Ee][Gg][Ii][Nn] ;
 ENDDOT      : [Ee][Nn][Dd]DOT .* ;
 STRING      : '"' .*? '"' ;
 
@@ -120,7 +124,7 @@ OR          : (COMMA | ([Oo][Rr])) ;
 AND         : (PLUS | ([Aa][Nn][Dd])) ;
 
 INFROM      : ([Ii][Nn])|([Ff][Rr][Oo][Mm]) ;
-TAG         : [Tt][Aa][Gg] ;
+TAG         : [Tt][Aa][Gg] ( EQ SYMBOL )?;
 
 WILDNUMBER  : (DIGIT+ WILDCARD DIGIT*) | (WILDCARD DIGIT+) ;
 WILDSYMBOL  : ((LETTER | DIGIT)*  WILDCARD (LETTER | DIGIT)*)+ ;
@@ -135,6 +139,7 @@ GE          : '>=' ;
 GT          : '>' ;
 LE          : '<=' ;
 LT          : '<' ;
+EQ          : '=' ;
 
 fragment DOT         : '.' ;
 fragment COMMA       : ',' ;
