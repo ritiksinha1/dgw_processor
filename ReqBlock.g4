@@ -37,7 +37,7 @@ grammar ReqBlock;
  * Parser Rules
  */
 
-req_block   : .*? BEGIN header ';' rules ENDDOT <EOF>;
+req_block   : BEGIN header ';' rules ENDDOT <EOF>;
 header     :
             ( mingpa
             | minres
@@ -54,11 +54,21 @@ header     :
             | label
             )*
             ;
-rules       :
-            ( mingrade
+rules       : .*? ;
+/*
+            ( mingpa
+            | mingrade
             | numclasses
-            )*
+            | numcredits
+            | maxpassfail
+            | noncourses
+            | proxy_advice
+            | remark
+            | label
+            | symbol
+            )
             ;
+*/
 
 or_courses  : INFROM? class_item (OR class_item)* ;
 and_courses : INFROM? class_item (AND class_item)* ;
@@ -74,15 +84,17 @@ maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
 proxy_advice: PROXYADVICE STRING proxy_advice* ;
 exclusive   : EXCLUSIVE '(' ~')'* ')' ;
 maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) TAG? ;
+noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
 remark      : REMARK STRING ';' remark* ;
 label       : LABEL ALPHANUM? STRING ';'? label* ;
+symbol      : SYMBOL ;
 
 /*
  * Lexer Rules
  */
 
 BEGIN       : [Bb][Ee][Gg][Ii][Nn] ;
-ENDDOT      : [Ee][Nn][Dd]DOT .* ;
+ENDDOT      : [Ee][Nn][Dd]DOT ;
 STRING      : '"' .*? '"' ;
 
 
@@ -93,7 +105,7 @@ CREDITS     : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
 MINCREDITS  : [Mm][Ii][Nn] CREDITS ;
 MAXCREDITS  : [Mm][Aa][Xx] CREDITS ;
 
-
+NONCOURSES  : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
 CLASSES     : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])? ;
 MINCLASSES  : [Mm][Ii][Nn] CLASSES ;
 MAXCLASSES  : [Mm][Aa][Xx] CLASSES ;
@@ -140,6 +152,8 @@ GT          : '>' ;
 LE          : '<=' ;
 LT          : '<' ;
 EQ          : '=' ;
+LP          : '(' ;
+RP          : ')' ;
 
 fragment DOT         : '.' ;
 fragment COMMA       : ',' ;
