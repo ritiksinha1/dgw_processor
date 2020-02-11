@@ -2,46 +2,53 @@
 """ Convert a Python data structure to an HTML structure that can be opened/collapsed to reveal/hide
     nested parts.
 """
+import sys
 
 sample_data = {
-  'title': 'The name of the thing',
-  'author': 'A. A. Person'
-  'other_books':
-  [
-    {
-      'title': 'First Other Book',
-      'author': 'First Other Author'
-    },
-    {
-      'title': 'Second Other Book',
-      'author': 'Second Other Author',
-      'coauthors':
-      [
+    'title': 'The name of the thing',
+    'author': 'A. A. Person',
+    'other_books':
+    [
         {
-          'name': 'A. Co-Author',
-          'age': 12.6,
-          'words': ['many', 'many', 'words']
+            'title': 'First Other Book',
+            'author': 'First Other Author'
         },
         {
-          'name': 'Another Co-Author',
-          'words': ['in', 'other', 'words', 'maybe'],
-          'number': 42
+            'title': 'Second Other Book',
+            'author': 'Second Other Author',
+            'coauthors':
+            [
+                {
+                    'name': 'A. Co-Author',
+                    'age': 12.6,
+                    'words': ['many', 'many', 'words']
+                },
+                {
+                    'name': 'Another Co-Author',
+                    'words': ['in', 'other', 'words', 'maybe'],
+                    'number': 42
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
 
 
 def mk_html(arg):
-
+  print(f'*** mkhtml({arg})', file=sys.stderr)
   if isinstance(arg, dict):
     html = ''
-    for key in arg.keys:
-      pass
+    for key, value in arg.items():
+      if isinstance(value, dict) or isinstance(value, list):
+        html += f'<section><h1 class="collapser"><ul><li class="collapser">{key}</li>'
+        html += mk_html(value)
+        html += '</section>'
+      else:
+        html += f'{key}: {mk_html(value)}'
+    return html
 
   if isinstance(arg, list):
-    return '<ol>' + '\n'.join([mk_html(item) for item in arg]) + '</ol>\n'
+    return '<ul>' + '\n'.join([mk_html(item) for item in arg]) + '</ul>\n'
 
   if isinstance(arg, str):
     return f'<li>{arg}</li>\n'
@@ -52,7 +59,7 @@ def mk_html(arg):
   if isinstance(arg, float):
     return f'<li>{arg}</li>\n'
 
-  return None
+  return '<unexpected>'
 
 
 if __name__ == '__main__':
