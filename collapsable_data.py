@@ -34,34 +34,34 @@ sample_data = {
 }
 
 
-def mk_html(arg):
+def mk_html(arg, root=None):
   print(f'*** mkhtml({arg})', file=sys.stderr)
   if isinstance(arg, dict):
     html = ''
     for key, value in arg.items():
       if isinstance(value, dict) or isinstance(value, list):
-        html += f'<section><h1 class="collapser"><ul><li class="collapser">{key}</li>'
+        html += f'<section><h1 class="collapser">{key}</h1><ul>'
         html += mk_html(value)
-        html += '</section>'
+        html += '</ul></section>'
       else:
-        html += f'{key}: {mk_html(value)}'
+        html += f'<li>{key}: {value}</li>'
     return html
 
   if isinstance(arg, list):
     return '<ul>' + '\n'.join([mk_html(item) for item in arg]) + '</ul>\n'
 
-  if isinstance(arg, str):
-    return f'<li>{arg}</li>\n'
+  # if isinstance(arg, str):
+  #   return f'<li>{arg}</li>\n'
 
-  if isinstance(arg, int):
-    return f'<li>{arg}</li>\n'
+  # if isinstance(arg, int):
+  #   return f'<li>{arg}</li>\n'
 
-  if isinstance(arg, float):
-    return f'<li>{arg}</li>\n'
+  # if isinstance(arg, float):
+  #   return f'<li>{arg}</li>\n'
 
   return '<unexpected>'
 
 
 if __name__ == '__main__':
-  html = mk_html(sample_data)
+  html = mk_html(sample_data, 'Sample Data')
   print(html)
