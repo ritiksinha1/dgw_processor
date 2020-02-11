@@ -340,7 +340,12 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                           .replace('\\r', '\r')\
                           .replace('\\n', '\n') + '\n'
     dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
-    input_stream = InputStream(requirement_text)
+    # Unable to get Antlr to ignore cruft before BEGIN and after END. so, reluctantly, removing the
+    # cruft here in order to get on with parsing.
+    match = re.search(r'.*?(BEGIN.*?END\.).*', requirement_text, re.I | re.S)
+    if match is None:
+      raise ValueError(f'BEGIN...;...END. not found:\n{requirement_text}')
+    input_stream = InputStream(match.group(1))
     lexer = ReqBlockLexer(input_stream)
     lexer.removeErrorListeners()
     lexer.addErrorListener(dgw_logger)

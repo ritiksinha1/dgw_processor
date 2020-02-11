@@ -55,25 +55,11 @@ header     :
             )*
             ;
 rules       : .*? ;
-/*
-            ( mingpa
-            | mingrade
-            | numclasses
-            | numcredits
-            | maxpassfail
-            | noncourses
-            | proxy_advice
-            | remark
-            | label
-            | symbol
-            )
-            ;
-*/
 
+class_item  : (SYMBOL | WILDSYMBOL)? (NUMBER | RANGE | WILDNUMBER) ;
 or_courses  : INFROM? class_item (OR class_item)* ;
 and_courses : INFROM? class_item (AND class_item)* ;
 
-class_item  : (SYMBOL | WILDSYMBOL)? (NUMBER | RANGE | WILDNUMBER) ;
 mingpa      : MINGPA NUMBER ;
 minres      : MINRES NUMBER (CREDITS | CLASSES) ;
 mingrade    : MINGRADE NUMBER ;
@@ -136,7 +122,7 @@ OR          : (COMMA | ([Oo][Rr])) ;
 AND         : (PLUS | ([Aa][Nn][Dd])) ;
 
 INFROM      : ([Ii][Nn])|([Ff][Rr][Oo][Mm]) ;
-TAG         : [Tt][Aa][Gg] ( EQ SYMBOL )?;
+TAG         : ([Tt][Aa][Gg]) ( EQ SYMBOL )?;
 
 WILDNUMBER  : (DIGIT+ WILDCARD DIGIT*) | (WILDCARD DIGIT+) ;
 WILDSYMBOL  : ((LETTER | DIGIT)*  WILDCARD (LETTER | DIGIT)*)+ ;
@@ -154,10 +140,10 @@ LT          : '<' ;
 EQ          : '=' ;
 LP          : '(' ;
 RP          : ')' ;
+COMMA       : ',' ;
+PLUS        : '+' ;
 
 fragment DOT         : '.' ;
-fragment COMMA       : ',' ;
-fragment PLUS        : '+' ;
 fragment DIGIT       : [0-9] ;
 fragment LETTER      : [a-zA-Z] ;
 
