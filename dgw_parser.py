@@ -39,7 +39,7 @@ trans_table = str.maketrans(trans_dict)
 colleges = dict()
 conn = PgConnection()
 cursor = conn.cursor()
-cursor.execute('select code, name from institutions')
+cursor.execute('select code, name from cuny_institutions')
 for row in cursor.fetchall():
   colleges[row.code] = row.name
 conn.close()
@@ -100,7 +100,7 @@ def build_course_list(institution, ctx) -> list:
     course_query = f"""
                       select institution, course_id, offer_nbr, discipline, catalog_number, title,
                              course_status, max_credits, designation, attributes
-                        from courses
+                        from cuny_courses
                        where institution ~* '{institution}'
                          and discipline ~ '{search_discipline}'
                          and {search_number}
