@@ -1,6 +1,9 @@
 #! /usr/local/bin/python3
 """ Convert a Python data structure to an HTML structure that can be opened/collapsed to reveal/hide
     nested parts.
+
+    There is a lot of overhead to make the generated html properly indented. This was for debugging,
+    not functionality. All references to indent_level should be removed at some point.
 """
 import sys
 import os
