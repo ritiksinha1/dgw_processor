@@ -46,7 +46,6 @@ header     :
             | numcredits
             | maxcredits
             | maxclasses
-            | maxcredits
             | maxpassfail
             | proxy_advice
             | exclusive

@@ -20,7 +20,11 @@ from antlr4.error.ErrorListener import ErrorListener
 from .ReqBlockLexer import ReqBlockLexer
 from .ReqBlockParser import ReqBlockParser
 from .ReqBlockListener import ReqBlockListener
+
 from pgconnection import PgConnection
+
+from closeable_objects import dict2html
+from templates import *
 
 DEBUG = os.getenv('DEBUG_PARSER')
 
@@ -166,29 +170,30 @@ class ReqBlockInterpreter(ReqBlockListener):
     self.period_stop = period_stop
     self.institution = colleges[institution]
     self.requirement_text = requirement_text
-    self.header = {}
-    self.rules = {}
+    self.requirements = {header: [], rule: []}
 
   @property
   def html(self):
-    html_body = f"""<h1>{self.institution} {self.title}</h1>
-                    <p>Requirements for Catalog Years
-                    {format_catalog_years(self.period_start, self.period_stop)}
-                    </p>
-                    <section>
-                      <h1 class="closer">Degreeworks Code</h1>
-                      <div>
-                        <hr>
-                        <pre>{self.requirement_text}</pre>
-                      </div>
-                    </section>
-                    <section>
-                      <h1 class="closer">Requirements</h1>
-                      <div>
-                        <hr>
-                      </div>
-                    </section
-                 """
+    html_body = f"""
+<h1>{self.institution} {self.title}</h1>
+<p>Requirements for Catalog Years
+{format_catalog_years(self.period_start, self.period_stop)}
+</p>
+<section>
+  <h1 class="closer">Degreeworks Code</h1>
+  <div>
+    <hr>
+    <pre>{self.requirement_text}</pre>
+  </div>
+</section>
+<section>
+  <h1 class="closer">Interpretation</h1>
+  <div>
+    <hr>
+    {dict2html(self.requirements, self.title)}
+  </div>
+</section
+"""
 
     return html_body
 
@@ -211,7 +216,9 @@ class ReqBlockInterpreter(ReqBlockListener):
     # print(inspect.getmembers(ctx))
     if float(str(ctx.NUMBER())) == 1:
       classes_credits = classes_credits.strip('es')
-    print(f'At least {ctx.NUMBER()} {str(classes_credits).lower()} must be completed in residency.')
+    self.requirements[header].append({minres:
+                                     f'At least {ctx.NUMBER()} {str(classes_credits).lower()} '
+                                      'must be completed in residency.'})
 
   def enterNumcredits(self, ctx):
     """ (NUMBER | RANGE) CREDITS (and_courses | or_courses)?

@@ -9,7 +9,7 @@ import sys
 import os
 DEBUG = os.getenv('DEBUG')
 
-indent_level = 0
+indent_level = 4
 sample_data = {
     'title': 'The name of the thing',
     'author': 'A. A. Person',
@@ -71,6 +71,8 @@ def items2html(arg, title='item'):
     item = arg[i]
     if DEBUG:
       print(f'*** [{i}]; value: {item}', file=sys.stderr)
+    if item is None:
+      continue
     html += f'{indent_level * "  "}<li><strong>{title}[{i}]:</strong> '
     if isinstance(item, dict):
       indent_level += 1
@@ -109,6 +111,8 @@ def dict2html(arg, title=''):
   for key, value in arg.items():
     if DEBUG:
       print(f'*** key: {key}; value: {value}', file=sys.stderr)
+    if value is None:
+      continue
     html += f'{indent_level * "  "}<li><strong>{key}: </strong> '
     if isinstance(value, dict):
       indent_level += 1
