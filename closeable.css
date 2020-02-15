@@ -1,12 +1,8 @@
-section, ul {
-  border: 1px solid #ccc;
-  border-radius: 0.5em;
-}
-.closer {
-  margin: 0.1em;
-}
 /* Closeable Sections
  * ---------------------------------------------------
+ * Click on an element of class closer to toggle the
+ * visibility of the next element, using JS. This css
+ * handles the triangle indicator.
  */
 
 ul {
@@ -22,11 +18,12 @@ ul {
 
 /* Style the triangle */
 .closer {
+  margin: 0.1em;
   cursor: pointer;
-  user-select: none; /* Prevent text selection */
 }
 
 /* Rotate the triangle when open*/
 .open::before {
   transform: rotate(90deg);
 }
+

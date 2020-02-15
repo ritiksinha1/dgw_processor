@@ -62,10 +62,10 @@ def items2html(arg, title='item'):
 
   n = len(arg)
   suffix = 's' if n != 1 else ''
-  html = f'\n{indent_level * "  "}<section>\n'
+  html = f'\n{indent_level * "  "}<div>\n'
   indent_level += 1
-  html += f'{indent_level * "  "}<h1 class="closer"><strong>' \
-          f'{n} {title}{suffix}</strong></h1>\n{indent_level * "  "}<ul>\n'
+  html += f'{indent_level * "  "}<h2 class="closer"><strong>' \
+          f'{n} {title}{suffix}</strong></h2>\n{indent_level * "  "}<div><hr><ul>\n'
   indent_level += 1
   for i in range(len(arg)):
     item = arg[i]
@@ -87,9 +87,9 @@ def items2html(arg, title='item'):
     else:
       html += scalar2str(item) + '</li>\n'
   indent_level -= 1
-  html += f'{indent_level * "  "}</ul>\n'
+  html += f'{indent_level * "  "}</ul></div>\n'
   indent_level -= 1
-  html += f'{indent_level * "  "}</section>\n'
+  html += f'{indent_level * "  "}</div>\n'
   return html
 
 
@@ -103,10 +103,10 @@ def dict2html(arg, title=''):
 
   n = len(arg)
   suffix = 's' if n != 1 else ''
-  html = f'\n{indent_level * "  "}<section>\n'
+  html = f'\n{indent_level * "  "}<div>\n'
   indent_level += 1
-  html += f'{indent_level * "  "}<h1 class="closer"><strong>{n} {title}{suffix}</strong>' \
-          f'</h1>\n{indent_level * "  "}<ul>\n'
+  html += f'{indent_level * "  "}<h2 class="closer"><strong>{n} {title}{suffix}</strong>' \
+          f'</h2>\n{indent_level * "  "}<div><hr><ul>\n'
   indent_level += 1
   for key, value in arg.items():
     if DEBUG:
@@ -127,9 +127,9 @@ def dict2html(arg, title=''):
     else:
       html += scalar2str(value) + '</li>\n'
   indent_level -= 1
-  html += f'{indent_level * "  "}</ul>\n'
+  html += f'{indent_level * "  "}</ul></div>\n'
   indent_level -= 1
-  return html + f'{indent_level * "  "}</section>\n'
+  return html + f'{indent_level * "  "}</div>\n'
 
 
 if __name__ == '__main__':
