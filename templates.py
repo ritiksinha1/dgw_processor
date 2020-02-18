@@ -58,14 +58,14 @@ class label:
     return 'label'
 
 
-class header:
+class head:
   def __repr__(self):
-    return 'header'
+    return 'head'
 
 
-class rule:
+class body:
   def __repr__(self):
-    return 'rule'
+    return 'body'
 
 
 mingpa = mingpa()
@@ -80,5 +80,5 @@ proxy_advice = proxy_advice()
 exclusive = exclusive()
 remark = remark()
 label = label()
-header = header()
-rule = rule()
+head = head()
+body = body()

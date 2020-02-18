@@ -7,6 +7,8 @@
 """
 import sys
 import os
+from collections import namedtuple
+
 DEBUG = os.getenv('DEBUG')
 
 indent_level = 4
@@ -52,6 +54,15 @@ def scalar2str(arg, title=''):
   return 'unexpected'
 
 
+def mk_dict(arg):
+  print(arg, file=sys.stderr, end='')
+  try:
+    return arg._asdict()
+  except AttributeError as ae:
+    print(' is not dictable', file=sys.stderr)
+    return None
+
+
 def items2html(arg, title='item'):
   """ If arg has multiple items, return a closeable list. Otherwise, return a single li.
   """
@@ -59,6 +70,10 @@ def items2html(arg, title='item'):
   if DEBUG:
     print(f'*** items2html({arg})', file=sys.stderr)
   assert isinstance(arg, list) or isinstance(arg, tuple)
+  # If arg has an _asdict method, like a namedtuple, for example, pass the dict off to dict2html.
+  d = mk_dict(arg)
+  if d is not None:
+    return dict2html(d, title)
 
   n = len(arg)
   suffix = 's' if n != 1 else ''
@@ -69,6 +84,9 @@ def items2html(arg, title='item'):
   indent_level += 1
   for i in range(len(arg)):
     item = arg[i]
+    d = mk_dict(item)
+    if d is not None:
+      item = d
     if DEBUG:
       print(f'*** [{i}]; value: {item}', file=sys.stderr)
     if item is None:
@@ -133,6 +151,9 @@ def dict2html(arg, title=''):
 
 
 if __name__ == '__main__':
+  TestTuple = namedtuple('TestTuple', 'name age gender')
+  tt = [TestTuple('No Name', 42, 'gen'),
+        TestTuple('Some Name', 22, 'neg')]
   indent_level = 3
   print(f"""<!DOCTYPE html>
   <html lang="en">
@@ -143,6 +164,7 @@ if __name__ == '__main__':
       <link rel="stylesheet" href="./closeable.css">
     </head>
     <body>
+<!--{items2html(tt, 'Book')}-->
 {dict2html(sample_data, 'Book')}
     </body>
   </html>
