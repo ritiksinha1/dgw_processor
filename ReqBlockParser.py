@@ -11,7 +11,7 @@ else:
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3/")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\60")
         buf.write("\u00c6\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
         buf.write("\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4\r\t\r\4\16")
         buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
@@ -31,65 +31,64 @@ def serializedATN():
         buf.write("\23\u00b1\n\23\f\23\16\23\u00b4\13\23\3\24\3\24\5\24\u00b8")
         buf.write("\n\24\3\24\3\24\5\24\u00bc\n\24\3\24\7\24\u00bf\n\24\f")
         buf.write("\24\16\24\u00c2\13\24\3\25\3\25\3\25\3D\2\26\2\4\6\b\n")
-        buf.write("\f\16\20\22\24\26\30\32\34\36 \"$&(\2\7\4\2\34\34\37\37")
-        buf.write("\4\2\33\33\35\36\4\2\t\t\r\r\3\2\35\36\3\2((\2\u00d1\2")
-        buf.write("*\3\2\2\2\4>\3\2\2\2\6D\3\2\2\2\bH\3\2\2\2\nM\3\2\2\2")
-        buf.write("\fX\3\2\2\2\16b\3\2\2\2\20e\3\2\2\2\22i\3\2\2\2\24l\3")
-        buf.write("\2\2\2\26r\3\2\2\2\30{\3\2\2\2\32\u0081\3\2\2\2\34\u0087")
-        buf.write("\3\2\2\2\36\u008f\3\2\2\2 \u0099\3\2\2\2\"\u009f\3\2\2")
-        buf.write("\2$\u00ac\3\2\2\2&\u00b5\3\2\2\2(\u00c3\3\2\2\2*+\7\4")
-        buf.write("\2\2+,\5\4\3\2,-\7\3\2\2-.\5\6\4\2./\7\5\2\2/\3\3\2\2")
-        buf.write("\2\60=\5\16\b\2\61=\5\20\t\2\62=\5\22\n\2\63=\5\24\13")
-        buf.write("\2\64=\5\26\f\2\65=\5\32\16\2\66=\5\30\r\2\67=\5 \21\2")
-        buf.write("8=\5\34\17\29=\5\36\20\2:=\5$\23\2;=\5&\24\2<\60\3\2\2")
-        buf.write("\2<\61\3\2\2\2<\62\3\2\2\2<\63\3\2\2\2<\64\3\2\2\2<\65")
-        buf.write("\3\2\2\2<\66\3\2\2\2<\67\3\2\2\2<8\3\2\2\2<9\3\2\2\2<")
-        buf.write(":\3\2\2\2<;\3\2\2\2=@\3\2\2\2><\3\2\2\2>?\3\2\2\2?\5\3")
-        buf.write("\2\2\2@>\3\2\2\2AC\13\2\2\2BA\3\2\2\2CF\3\2\2\2DE\3\2")
-        buf.write("\2\2DB\3\2\2\2E\7\3\2\2\2FD\3\2\2\2GI\t\2\2\2HG\3\2\2")
-        buf.write("\2HI\3\2\2\2IJ\3\2\2\2JK\t\3\2\2K\t\3\2\2\2LN\7\31\2\2")
-        buf.write("ML\3\2\2\2MN\3\2\2\2NO\3\2\2\2OT\5\b\5\2PQ\7\27\2\2QS")
-        buf.write("\5\b\5\2RP\3\2\2\2SV\3\2\2\2TR\3\2\2\2TU\3\2\2\2U\13\3")
-        buf.write("\2\2\2VT\3\2\2\2WY\7\31\2\2XW\3\2\2\2XY\3\2\2\2YZ\3\2")
-        buf.write("\2\2Z_\5\b\5\2[\\\7\30\2\2\\^\5\b\5\2][\3\2\2\2^a\3\2")
-        buf.write("\2\2_]\3\2\2\2_`\3\2\2\2`\r\3\2\2\2a_\3\2\2\2bc\7\21\2")
-        buf.write("\2cd\7\36\2\2d\17\3\2\2\2ef\7\20\2\2fg\7\36\2\2gh\t\4")
-        buf.write("\2\2h\21\3\2\2\2ij\7\22\2\2jk\7\36\2\2k\23\3\2\2\2lm\7")
-        buf.write("\36\2\2mp\7\r\2\2nq\5\f\7\2oq\5\n\6\2pn\3\2\2\2po\3\2")
-        buf.write("\2\2q\25\3\2\2\2rs\t\5\2\2sv\7\t\2\2tw\5\f\7\2uw\5\n\6")
-        buf.write("\2vt\3\2\2\2vu\3\2\2\2vw\3\2\2\2wy\3\2\2\2xz\7\32\2\2")
-        buf.write("yx\3\2\2\2yz\3\2\2\2z\27\3\2\2\2{|\7\17\2\2|\177\7\36")
-        buf.write("\2\2}\u0080\5\f\7\2~\u0080\5\n\6\2\177}\3\2\2\2\177~\3")
-        buf.write("\2\2\2\u0080\31\3\2\2\2\u0081\u0082\7\13\2\2\u0082\u0085")
-        buf.write("\7\36\2\2\u0083\u0086\5\f\7\2\u0084\u0086\5\n\6\2\u0085")
-        buf.write("\u0083\3\2\2\2\u0085\u0084\3\2\2\2\u0086\33\3\2\2\2\u0087")
-        buf.write("\u0088\7\24\2\2\u0088\u008c\7\6\2\2\u0089\u008b\5\34\17")
-        buf.write("\2\u008a\u0089\3\2\2\2\u008b\u008e\3\2\2\2\u008c\u008a")
-        buf.write("\3\2\2\2\u008c\u008d\3\2\2\2\u008d\35\3\2\2\2\u008e\u008c")
-        buf.write("\3\2\2\2\u008f\u0090\7\25\2\2\u0090\u0094\7\'\2\2\u0091")
-        buf.write("\u0093\n\6\2\2\u0092\u0091\3\2\2\2\u0093\u0096\3\2\2\2")
-        buf.write("\u0094\u0092\3\2\2\2\u0094\u0095\3\2\2\2\u0095\u0097\3")
-        buf.write("\2\2\2\u0096\u0094\3\2\2\2\u0097\u0098\7(\2\2\u0098\37")
-        buf.write("\3\2\2\2\u0099\u009a\7\23\2\2\u009a\u009b\7\36\2\2\u009b")
-        buf.write("\u009d\t\4\2\2\u009c\u009e\7\32\2\2\u009d\u009c\3\2\2")
-        buf.write("\2\u009d\u009e\3\2\2\2\u009e!\3\2\2\2\u009f\u00a0\7\36")
-        buf.write("\2\2\u00a0\u00a1\7\f\2\2\u00a1\u00a2\7\'\2\2\u00a2\u00a7")
-        buf.write("\7\37\2\2\u00a3\u00a4\7)\2\2\u00a4\u00a6\7\37\2\2\u00a5")
-        buf.write("\u00a3\3\2\2\2\u00a6\u00a9\3\2\2\2\u00a7\u00a5\3\2\2\2")
-        buf.write("\u00a7\u00a8\3\2\2\2\u00a8\u00aa\3\2\2\2\u00a9\u00a7\3")
-        buf.write("\2\2\2\u00aa\u00ab\7(\2\2\u00ab#\3\2\2\2\u00ac\u00ad\7")
-        buf.write("\b\2\2\u00ad\u00ae\7\6\2\2\u00ae\u00b2\7\3\2\2\u00af\u00b1")
-        buf.write("\5$\23\2\u00b0\u00af\3\2\2\2\u00b1\u00b4\3\2\2\2\u00b2")
-        buf.write("\u00b0\3\2\2\2\u00b2\u00b3\3\2\2\2\u00b3%\3\2\2\2\u00b4")
-        buf.write("\u00b2\3\2\2\2\u00b5\u00b7\7\7\2\2\u00b6\u00b8\7 \2\2")
-        buf.write("\u00b7\u00b6\3\2\2\2\u00b7\u00b8\3\2\2\2\u00b8\u00b9\3")
-        buf.write("\2\2\2\u00b9\u00bb\7\6\2\2\u00ba\u00bc\7\3\2\2\u00bb\u00ba")
-        buf.write("\3\2\2\2\u00bb\u00bc\3\2\2\2\u00bc\u00c0\3\2\2\2\u00bd")
-        buf.write("\u00bf\5&\24\2\u00be\u00bd\3\2\2\2\u00bf\u00c2\3\2\2\2")
-        buf.write("\u00c0\u00be\3\2\2\2\u00c0\u00c1\3\2\2\2\u00c1\'\3\2\2")
-        buf.write("\2\u00c2\u00c0\3\2\2\2\u00c3\u00c4\7\37\2\2\u00c4)\3\2")
-        buf.write("\2\2\27<>DHMTX_pvy\177\u0085\u008c\u0094\u009d\u00a7\u00b2")
-        buf.write("\u00b7\u00bb\u00c0")
+        buf.write("\f\16\20\22\24\26\30\32\34\36 \"$&(\2\7\4\2\34\34!!\4")
+        buf.write("\2\33\33\36 \4\2\t\t\r\r\3\2\37 \3\2))\2\u00d1\2*\3\2")
+        buf.write("\2\2\4>\3\2\2\2\6D\3\2\2\2\bH\3\2\2\2\nM\3\2\2\2\fX\3")
+        buf.write("\2\2\2\16b\3\2\2\2\20e\3\2\2\2\22i\3\2\2\2\24l\3\2\2\2")
+        buf.write("\26r\3\2\2\2\30{\3\2\2\2\32\u0081\3\2\2\2\34\u0087\3\2")
+        buf.write("\2\2\36\u008f\3\2\2\2 \u0099\3\2\2\2\"\u009f\3\2\2\2$")
+        buf.write("\u00ac\3\2\2\2&\u00b5\3\2\2\2(\u00c3\3\2\2\2*+\7\4\2\2")
+        buf.write("+,\5\4\3\2,-\7\3\2\2-.\5\6\4\2./\7\5\2\2/\3\3\2\2\2\60")
+        buf.write("=\5\16\b\2\61=\5\20\t\2\62=\5\22\n\2\63=\5\24\13\2\64")
+        buf.write("=\5\26\f\2\65=\5\32\16\2\66=\5\30\r\2\67=\5 \21\28=\5")
+        buf.write("\34\17\29=\5\36\20\2:=\5$\23\2;=\5&\24\2<\60\3\2\2\2<")
+        buf.write("\61\3\2\2\2<\62\3\2\2\2<\63\3\2\2\2<\64\3\2\2\2<\65\3")
+        buf.write("\2\2\2<\66\3\2\2\2<\67\3\2\2\2<8\3\2\2\2<9\3\2\2\2<:\3")
+        buf.write("\2\2\2<;\3\2\2\2=@\3\2\2\2><\3\2\2\2>?\3\2\2\2?\5\3\2")
+        buf.write("\2\2@>\3\2\2\2AC\13\2\2\2BA\3\2\2\2CF\3\2\2\2DE\3\2\2")
+        buf.write("\2DB\3\2\2\2E\7\3\2\2\2FD\3\2\2\2GI\t\2\2\2HG\3\2\2\2")
+        buf.write("HI\3\2\2\2IJ\3\2\2\2JK\t\3\2\2K\t\3\2\2\2LN\7\31\2\2M")
+        buf.write("L\3\2\2\2MN\3\2\2\2NO\3\2\2\2OT\5\b\5\2PQ\7\27\2\2QS\5")
+        buf.write("\b\5\2RP\3\2\2\2SV\3\2\2\2TR\3\2\2\2TU\3\2\2\2U\13\3\2")
+        buf.write("\2\2VT\3\2\2\2WY\7\31\2\2XW\3\2\2\2XY\3\2\2\2YZ\3\2\2")
+        buf.write("\2Z_\5\b\5\2[\\\7\30\2\2\\^\5\b\5\2][\3\2\2\2^a\3\2\2")
+        buf.write("\2_]\3\2\2\2_`\3\2\2\2`\r\3\2\2\2a_\3\2\2\2bc\7\21\2\2")
+        buf.write("cd\7 \2\2d\17\3\2\2\2ef\7\20\2\2fg\7 \2\2gh\t\4\2\2h\21")
+        buf.write("\3\2\2\2ij\7\22\2\2jk\7 \2\2k\23\3\2\2\2lm\7 \2\2mp\7")
+        buf.write("\r\2\2nq\5\f\7\2oq\5\n\6\2pn\3\2\2\2po\3\2\2\2q\25\3\2")
+        buf.write("\2\2rs\t\5\2\2sv\7\t\2\2tw\5\f\7\2uw\5\n\6\2vt\3\2\2\2")
+        buf.write("vu\3\2\2\2vw\3\2\2\2wy\3\2\2\2xz\7\32\2\2yx\3\2\2\2yz")
+        buf.write("\3\2\2\2z\27\3\2\2\2{|\7\17\2\2|\177\7 \2\2}\u0080\5\f")
+        buf.write("\7\2~\u0080\5\n\6\2\177}\3\2\2\2\177~\3\2\2\2\u0080\31")
+        buf.write("\3\2\2\2\u0081\u0082\7\13\2\2\u0082\u0085\7 \2\2\u0083")
+        buf.write("\u0086\5\f\7\2\u0084\u0086\5\n\6\2\u0085\u0083\3\2\2\2")
+        buf.write("\u0085\u0084\3\2\2\2\u0086\33\3\2\2\2\u0087\u0088\7\24")
+        buf.write("\2\2\u0088\u008c\7\6\2\2\u0089\u008b\5\34\17\2\u008a\u0089")
+        buf.write("\3\2\2\2\u008b\u008e\3\2\2\2\u008c\u008a\3\2\2\2\u008c")
+        buf.write("\u008d\3\2\2\2\u008d\35\3\2\2\2\u008e\u008c\3\2\2\2\u008f")
+        buf.write("\u0090\7\25\2\2\u0090\u0094\7(\2\2\u0091\u0093\n\6\2\2")
+        buf.write("\u0092\u0091\3\2\2\2\u0093\u0096\3\2\2\2\u0094\u0092\3")
+        buf.write("\2\2\2\u0094\u0095\3\2\2\2\u0095\u0097\3\2\2\2\u0096\u0094")
+        buf.write("\3\2\2\2\u0097\u0098\7)\2\2\u0098\37\3\2\2\2\u0099\u009a")
+        buf.write("\7\23\2\2\u009a\u009b\7 \2\2\u009b\u009d\t\4\2\2\u009c")
+        buf.write("\u009e\7\32\2\2\u009d\u009c\3\2\2\2\u009d\u009e\3\2\2")
+        buf.write("\2\u009e!\3\2\2\2\u009f\u00a0\7 \2\2\u00a0\u00a1\7\f\2")
+        buf.write("\2\u00a1\u00a2\7(\2\2\u00a2\u00a7\7!\2\2\u00a3\u00a4\7")
+        buf.write("*\2\2\u00a4\u00a6\7!\2\2\u00a5\u00a3\3\2\2\2\u00a6\u00a9")
+        buf.write("\3\2\2\2\u00a7\u00a5\3\2\2\2\u00a7\u00a8\3\2\2\2\u00a8")
+        buf.write("\u00aa\3\2\2\2\u00a9\u00a7\3\2\2\2\u00aa\u00ab\7)\2\2")
+        buf.write("\u00ab#\3\2\2\2\u00ac\u00ad\7\b\2\2\u00ad\u00ae\7\6\2")
+        buf.write("\2\u00ae\u00b2\7\3\2\2\u00af\u00b1\5$\23\2\u00b0\u00af")
+        buf.write("\3\2\2\2\u00b1\u00b4\3\2\2\2\u00b2\u00b0\3\2\2\2\u00b2")
+        buf.write("\u00b3\3\2\2\2\u00b3%\3\2\2\2\u00b4\u00b2\3\2\2\2\u00b5")
+        buf.write("\u00b7\7\7\2\2\u00b6\u00b8\7\"\2\2\u00b7\u00b6\3\2\2\2")
+        buf.write("\u00b7\u00b8\3\2\2\2\u00b8\u00b9\3\2\2\2\u00b9\u00bb\7")
+        buf.write("\6\2\2\u00ba\u00bc\7\3\2\2\u00bb\u00ba\3\2\2\2\u00bb\u00bc")
+        buf.write("\3\2\2\2\u00bc\u00c0\3\2\2\2\u00bd\u00bf\5&\24\2\u00be")
+        buf.write("\u00bd\3\2\2\2\u00bf\u00c2\3\2\2\2\u00c0\u00be\3\2\2\2")
+        buf.write("\u00c0\u00c1\3\2\2\2\u00c1\'\3\2\2\2\u00c2\u00c0\3\2\2")
+        buf.write("\2\u00c3\u00c4\7!\2\2\u00c4)\3\2\2\2\27<>DHMTX_pvy\177")
+        buf.write("\u0085\u008c\u0094\u009d\u00a7\u00b2\u00b7\u00bb\u00c0")
         return buf.getvalue()
 
 
@@ -109,19 +108,19 @@ class ReqBlockParser ( Parser ):
                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "'@'", "'>='", "'>'", "'<='", 
-                     "'<'", "'='", "'('", "')'", "','", "'+'" ]
+                     "<INVALID>", "<INVALID>", "'@'", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "'>='", "'>'", 
+                     "'<='", "'<'", "'='", "'('", "')'", "','", "'+'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "BEGIN", "ENDDOT", "STRING", 
                       "LABEL", "REMARK", "CREDITS", "MINCREDITS", "MAXCREDITS", 
                       "NONCOURSES", "CLASSES", "MINCLASSES", "MAXCLASSES", 
                       "MINRES", "MINGPA", "MINGRADE", "MAXPASSFAIL", "PROXYADVICE", 
                       "EXCLUSIVE", "BLOCKTYPE", "OR", "AND", "INFROM", "TAG", 
-                      "WILDNUMBER", "WILDSYMBOL", "RANGE", "NUMBER", "SYMBOL", 
-                      "ALPHANUM", "WILDCARD", "GE", "GT", "LE", "LT", "EQ", 
-                      "LP", "RP", "COMMA", "PLUS", "HIDE", "DECIDE", "COMMENT", 
-                      "LOG", "WHITESPACE" ]
+                      "WILDNUMBER", "WILDSYMBOL", "WILDCARD", "CATALOG_NUMBER", 
+                      "RANGE", "NUMBER", "SYMBOL", "ALPHANUM", "GE", "GT", 
+                      "LE", "LT", "EQ", "LP", "RP", "COMMA", "PLUS", "HIDE", 
+                      "DECIDE", "COMMENT", "LOG", "WHITESPACE" ]
 
     RULE_req_block = 0
     RULE_head = 1
@@ -177,25 +176,26 @@ class ReqBlockParser ( Parser ):
     TAG=24
     WILDNUMBER=25
     WILDSYMBOL=26
-    RANGE=27
-    NUMBER=28
-    SYMBOL=29
-    ALPHANUM=30
-    WILDCARD=31
-    GE=32
-    GT=33
-    LE=34
-    LT=35
-    EQ=36
-    LP=37
-    RP=38
-    COMMA=39
-    PLUS=40
-    HIDE=41
-    DECIDE=42
-    COMMENT=43
-    LOG=44
-    WHITESPACE=45
+    WILDCARD=27
+    CATALOG_NUMBER=28
+    RANGE=29
+    NUMBER=30
+    SYMBOL=31
+    ALPHANUM=32
+    GE=33
+    GT=34
+    LE=35
+    LT=36
+    EQ=37
+    LP=38
+    RP=39
+    COMMA=40
+    PLUS=41
+    HIDE=42
+    DECIDE=43
+    COMMENT=44
+    LOG=45
+    WHITESPACE=46
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -510,14 +510,17 @@ class ReqBlockParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
+        def CATALOG_NUMBER(self):
+            return self.getToken(ReqBlockParser.CATALOG_NUMBER, 0)
+
+        def WILDNUMBER(self):
+            return self.getToken(ReqBlockParser.WILDNUMBER, 0)
+
         def NUMBER(self):
             return self.getToken(ReqBlockParser.NUMBER, 0)
 
         def RANGE(self):
             return self.getToken(ReqBlockParser.RANGE, 0)
-
-        def WILDNUMBER(self):
-            return self.getToken(ReqBlockParser.WILDNUMBER, 0)
 
         def SYMBOL(self):
             return self.getToken(ReqBlockParser.SYMBOL, 0)
@@ -561,7 +564,7 @@ class ReqBlockParser ( Parser ):
 
             self.state = 72
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.WILDNUMBER) | (1 << ReqBlockParser.RANGE) | (1 << ReqBlockParser.NUMBER))) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.WILDNUMBER) | (1 << ReqBlockParser.CATALOG_NUMBER) | (1 << ReqBlockParser.RANGE) | (1 << ReqBlockParser.NUMBER))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1267,7 +1270,7 @@ class ReqBlockParser ( Parser ):
             self.state = 146
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.T__0) | (1 << ReqBlockParser.BEGIN) | (1 << ReqBlockParser.ENDDOT) | (1 << ReqBlockParser.STRING) | (1 << ReqBlockParser.LABEL) | (1 << ReqBlockParser.REMARK) | (1 << ReqBlockParser.CREDITS) | (1 << ReqBlockParser.MINCREDITS) | (1 << ReqBlockParser.MAXCREDITS) | (1 << ReqBlockParser.NONCOURSES) | (1 << ReqBlockParser.CLASSES) | (1 << ReqBlockParser.MINCLASSES) | (1 << ReqBlockParser.MAXCLASSES) | (1 << ReqBlockParser.MINRES) | (1 << ReqBlockParser.MINGPA) | (1 << ReqBlockParser.MINGRADE) | (1 << ReqBlockParser.MAXPASSFAIL) | (1 << ReqBlockParser.PROXYADVICE) | (1 << ReqBlockParser.EXCLUSIVE) | (1 << ReqBlockParser.BLOCKTYPE) | (1 << ReqBlockParser.OR) | (1 << ReqBlockParser.AND) | (1 << ReqBlockParser.INFROM) | (1 << ReqBlockParser.TAG) | (1 << ReqBlockParser.WILDNUMBER) | (1 << ReqBlockParser.WILDSYMBOL) | (1 << ReqBlockParser.RANGE) | (1 << ReqBlockParser.NUMBER) | (1 << ReqBlockParser.SYMBOL) | (1 << ReqBlockParser.ALPHANUM) | (1 << ReqBlockParser.WILDCARD) | (1 << ReqBlockParser.GE) | (1 << ReqBlockParser.GT) | (1 << ReqBlockParser.LE) | (1 << ReqBlockParser.LT) | (1 << ReqBlockParser.EQ) | (1 << ReqBlockParser.LP) | (1 << ReqBlockParser.COMMA) | (1 << ReqBlockParser.PLUS) | (1 << ReqBlockParser.HIDE) | (1 << ReqBlockParser.DECIDE) | (1 << ReqBlockParser.COMMENT) | (1 << ReqBlockParser.LOG) | (1 << ReqBlockParser.WHITESPACE))) != 0):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.T__0) | (1 << ReqBlockParser.BEGIN) | (1 << ReqBlockParser.ENDDOT) | (1 << ReqBlockParser.STRING) | (1 << ReqBlockParser.LABEL) | (1 << ReqBlockParser.REMARK) | (1 << ReqBlockParser.CREDITS) | (1 << ReqBlockParser.MINCREDITS) | (1 << ReqBlockParser.MAXCREDITS) | (1 << ReqBlockParser.NONCOURSES) | (1 << ReqBlockParser.CLASSES) | (1 << ReqBlockParser.MINCLASSES) | (1 << ReqBlockParser.MAXCLASSES) | (1 << ReqBlockParser.MINRES) | (1 << ReqBlockParser.MINGPA) | (1 << ReqBlockParser.MINGRADE) | (1 << ReqBlockParser.MAXPASSFAIL) | (1 << ReqBlockParser.PROXYADVICE) | (1 << ReqBlockParser.EXCLUSIVE) | (1 << ReqBlockParser.BLOCKTYPE) | (1 << ReqBlockParser.OR) | (1 << ReqBlockParser.AND) | (1 << ReqBlockParser.INFROM) | (1 << ReqBlockParser.TAG) | (1 << ReqBlockParser.WILDNUMBER) | (1 << ReqBlockParser.WILDSYMBOL) | (1 << ReqBlockParser.WILDCARD) | (1 << ReqBlockParser.CATALOG_NUMBER) | (1 << ReqBlockParser.RANGE) | (1 << ReqBlockParser.NUMBER) | (1 << ReqBlockParser.SYMBOL) | (1 << ReqBlockParser.ALPHANUM) | (1 << ReqBlockParser.GE) | (1 << ReqBlockParser.GT) | (1 << ReqBlockParser.LE) | (1 << ReqBlockParser.LT) | (1 << ReqBlockParser.EQ) | (1 << ReqBlockParser.LP) | (1 << ReqBlockParser.COMMA) | (1 << ReqBlockParser.PLUS) | (1 << ReqBlockParser.HIDE) | (1 << ReqBlockParser.DECIDE) | (1 << ReqBlockParser.COMMENT) | (1 << ReqBlockParser.LOG) | (1 << ReqBlockParser.WHITESPACE))) != 0):
                 self.state = 143
                 _la = self._input.LA(1)
                 if _la <= 0 or _la==ReqBlockParser.RP:

@@ -89,33 +89,43 @@ def build_course_list(institution, ctx) -> list:
     list_type = 'or'
   else:
     list_type = 'and'
+
   for class_item in ctx.class_item():
     if class_item.SYMBOL():
       display_discipline = str(class_item.SYMBOL())
       search_discipline = display_discipline
-    if class_item.WILDSYMBOL():
+    elif class_item.WILDSYMBOL():
       display_discipline = str(class_item.WILDSYMBOL())
       search_discipline = display_discipline.replace('@', '.*')
       list_type = 'or'
-    if class_item.NUMBER():
+    if class_item.CATALOG_NUMBER():
+      display_number = str(class_item.CATALOG_NUMBER())
+      search_number = f"catalog_number = '{display_number}'"
+    elif class_item.NUMBER():
       display_number = str(class_item.NUMBER())
       search_number = f"catalog_number = '{display_number}'"
-    if class_item.RANGE():
+    elif class_item.RANGE():
       display_number = str(class_item.RANGE())
       low, high = display_number.split(':')
       list_type = 'or'
       search_number = f""" numeric_part(catalog_number) >= {float(low)} and
-                           numeric_part(catalog_number) <' {float(high)}'
+                           numeric_part(catalog_number) <=' {float(high)}'
                       """
-    if class_item.WILDNUMBER():
-      display_number = str(class_item.wildnumber)
+    elif class_item.WILDNUMBER():
+      display_number = str(class_item.WILDNUMBER())
       search_number = f"catalog_number ~ '{display_number.replace('@', '.*')}'"
       list_type = 'or'
+
+    # Note change of attributes from a semicolon-separated list of name:value pairs to a comma-
+    # separated list of values.
     course_query = f"""
                       select institution, course_id, offer_nbr, discipline, catalog_number, title,
-                             description, course_status, max_credits, designation, attributes
+                             requisites, description, contact_hours, max_credits, designation,
+                             replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
+                             as attributes
                         from cuny_courses
                        where institution ~* '{institution}'
+                         and course_status = 'A'
                          and discipline ~ '{search_discipline}'
                          and {search_number}
                          order by numeric_part(catalog_number), discipline
@@ -123,6 +133,7 @@ def build_course_list(institution, ctx) -> list:
     conn = PgConnection()
     cursor = conn.cursor()
     cursor.execute(course_query)
+
     # Convert generator to list.
     details = [row for row in cursor.fetchall()]
     course_list.append({'display': f'{display_discipline} {display_number}',
@@ -140,23 +151,25 @@ def course_list2html(course_list: dict):
   return_list = []
   for course in course_list:
     for info in course['info']:
-      if all_writing and info.course_status == 'A' and 'WRIC' not in info.attributes:
+      if all_writing and 'WRIC' not in info.attributes:
         all_writing = False
-      if all_blanket and info.course_status == 'A' and 'BKCR' not in info.attributes \
+      if all_blanket and 'BKCR' not in info.attributes \
          and info.max_credits > 0:
         if DEBUG:
           print('***', info.discipline, info.catalog_number, 'is a wet blanket', file=sys.stderr)
         all_blanket = False
-      if info.course_status == 'A':  # include only active courses.
-        return_list.append(f"""
-                    <div title="{info.course_id}:{info.offer_nbr}">
-                      <strong>{info.discipline} {info.catalog_number} {info.title}</strong>
-                      <br>
-                      {info.description}
-                      <br>
-                      {info.designation} {info.attributes}
-                    </div>
-                """)
+      return_list.append(f"""
+                  <div title="{info.course_id}:{info.offer_nbr}">
+                    <strong>{info.discipline} {info.catalog_number} {info.title}</strong>
+                    <br>
+                    {info.contact_hours:0.1f} hr; {info.max_credits:0.1f} cr Requisites:
+                    <em>{info.requisites}</em>
+                    <br>
+                    {info.description}
+                    <br>
+                    <em>Designation: {info.designation}; Attributes: {info.attributes}</em>
+                  </div>
+              """)
   attributes = []
   if all_blanket:
     attributes.append('blanket credit')

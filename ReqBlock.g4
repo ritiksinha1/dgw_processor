@@ -55,7 +55,7 @@ head       :
             ;
 body        : .*? ;
 
-class_item  : (SYMBOL | WILDSYMBOL)? (NUMBER | RANGE | WILDNUMBER) ;
+class_item  : (SYMBOL | WILDSYMBOL)? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
 or_courses  : INFROM? class_item (OR class_item)* ;
 and_courses : INFROM? class_item (AND class_item)* ;
 
@@ -95,7 +95,6 @@ CLASSES     : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])? ;
 MINCLASSES  : [Mm][Ii][Nn] CLASSES ;
 MAXCLASSES  : [Mm][Aa][Xx] CLASSES ;
 
-
 MINRES      : [Mm][Ii][Nn][Rr][Ee][Ss] ;
 MINGPA      : [Mm][Ii][Nn][Gg][Pp][Aa] ;
 MINGRADE    : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
@@ -104,7 +103,6 @@ PROXYADVICE : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] ;
 EXCLUSIVE   : [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
             | [Nn][Oo][Nn] '-'? EXCLUSIVE
             ;
-
 
 BLOCKTYPE   : ([Dd][Ee][Gg][Rr][Ee][Ee]
             | [Cc][Oo][Nn][Cc]
@@ -123,14 +121,15 @@ AND         : (PLUS | ([Aa][Nn][Dd])) ;
 INFROM      : ([Ii][Nn])|([Ff][Rr][Oo][Mm]) ;
 TAG         : ([Tt][Aa][Gg]) ( EQ SYMBOL )?;
 
-WILDNUMBER  : (DIGIT+ WILDCARD DIGIT*) | (WILDCARD DIGIT+) ;
+WILDNUMBER  : (DIGIT+ WILDCARD DIGIT* LETTER?) | (WILDCARD DIGIT+ LETTER?) ;
 WILDSYMBOL  : ((LETTER | DIGIT)*  WILDCARD (LETTER | DIGIT)*)+ ;
+WILDCARD    : '@' ;
 
+CATALOG_NUMBER : NUMBER LETTER ;
 RANGE       : NUMBER ':' NUMBER ;
 NUMBER      : DIGIT+ DOT? DIGIT* ;
 SYMBOL      : LETTER (LETTER | DIGIT | '_' | '-' | '&')* ;
 ALPHANUM    : (LETTER | DIGIT | DOT | '_')+ ;
-WILDCARD    : '@' ;
 
 GE          : '>=' ;
 GT          : '>' ;
