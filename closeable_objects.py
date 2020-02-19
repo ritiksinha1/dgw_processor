@@ -55,11 +55,9 @@ def scalar2str(arg, title=''):
 
 
 def mk_dict(arg):
-  print(arg, file=sys.stderr, end='')
   try:
     return arg._asdict()
   except AttributeError as ae:
-    print(' is not dictable', file=sys.stderr)
     return None
 
 
@@ -68,7 +66,7 @@ def items2html(arg, title='item'):
   """
   global indent_level
   if DEBUG:
-    print(f'*** items2html({arg})', file=sys.stderr)
+    print(f'*** items2html()', file=sys.stderr)
   assert isinstance(arg, list) or isinstance(arg, tuple)
   # If arg has an _asdict method, like a namedtuple, for example, pass the dict off to dict2html.
   d = mk_dict(arg)
@@ -116,7 +114,7 @@ def dict2html(arg, title=''):
   """
   global indent_level
   if DEBUG:
-    print(f'*** dict2html({arg})', file=sys.stderr)
+    print(f'*** dict2html()', file=sys.stderr)
   assert isinstance(arg, dict)
 
   n = len(arg)
