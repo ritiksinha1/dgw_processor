@@ -244,6 +244,13 @@ class ReqBlockInterpreter(ReqBlockListener):
   def enterBody(self, ctx):
     if DEBUG:
       print('*** enterBody()', file=sys.stderr)
+
+# numclasses  : NUMBER CLASSES (and_courses | or_courses) ;
+# proxy_advice: PROXYADVICE STRING proxy_advice* ;
+# noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
+
+# symbol      : SYMBOL ;
+
     self.scribe_section = ScribeSection.BODY
 
   def enterMinres(self, ctx):
@@ -261,8 +268,11 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'must be completed in residency.',
                     None))
 
+# mingpa      : MINGPA NUMBER ;
+# mingrade    : MINGRADE NUMBER ;
+
   def enterNumcredits(self, ctx):
-    """ (NUMBER | RANGE) CREDITS (and_courses | or_courses)?
+    """ (NUMBER | RANGE) CREDITS (and_courses | or_courses)? TAG? ;
     """
     if DEBUG:
       print('*** enterNumcredits()', file=sys.stderr)
@@ -390,6 +400,30 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'{num} {which}',
                     f'{text}',
                     None))
+
+  def enterRemark(self, ctx):
+    """ REMARK STRING ';' remark* ;
+    """
+    if DEBUG:
+      print('*** enterRemark()', file=sys.stderr)
+    pass
+
+  def enterLabel(self, ctx):
+    """ REMARK STRING ';' remark* ;
+    """
+    if DEBUG:
+      print('*** enterLabel()', file=sys.stderr)
+    pass
+
+  def enterExclusive(self, ctx):
+    """ EXCLUSIVE EXCLUSIVE_LIST
+    """
+    if DEBUG:
+      print('*** enterExclusive()', file=sys.stderr)
+      print(ctx.EXCLUSIVE())
+      print(str(ctx.EXCLUSIVE_LIST()).strip('()'))
+    pass
+
 
 
 # Class DGW_Logger
