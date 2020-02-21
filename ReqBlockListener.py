@@ -134,12 +134,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#exclusive.
-    def enterExclusive(self, ctx:ReqBlockParser.ExclusiveContext):
+    # Enter a parse tree produced by ReqBlockParser#share.
+    def enterShare(self, ctx:ReqBlockParser.ShareContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#exclusive.
-    def exitExclusive(self, ctx:ReqBlockParser.ExclusiveContext):
+    # Exit a parse tree produced by ReqBlockParser#share.
+    def exitShare(self, ctx:ReqBlockParser.ShareContext):
         pass
 
 

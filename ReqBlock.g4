@@ -48,7 +48,7 @@ head       :
             | maxclasses
             | maxpassfail
             | proxy_advice
-            | exclusive
+            | share
             | remark
             | label
             )*
@@ -72,7 +72,7 @@ numcredits  : (NUMBER | RANGE) CREDITS (and_courses | or_courses)? TAG? ;
 maxclasses  : MAXCLASSES NUMBER (and_courses | or_courses) ;
 maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
 proxy_advice: PROXYADVICE STRING proxy_advice* ;
-exclusive   : EXCLUSIVE EXCLUSIVE_LIST ;
+share       : SHARE SHARE_LIST ;
 maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) TAG? ;
 noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
 remark      : REMARK STRING ';' remark* ;
@@ -105,11 +105,13 @@ MINGPA      : [Mm][Ii][Nn][Gg][Pp][Aa] ;
 MINGRADE    : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
 MAXPASSFAIL : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll] ;
 PROXYADVICE : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] ;
-EXCLUSIVE   : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
+SHARE       : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
+            | [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
+            | [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
             ;
 
-EXCLUSIVE_LIST  : LP EXCLUSIVE_ITEM (COMMA EXCLUSIVE_ITEM)* RP ;
-EXCLUSIVE_ITEM  : BLOCKTYPE (EQ SYMBOL)? ;
+SHARE_LIST  : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
+SHARE_ITEM  : BLOCKTYPE (EQ SYMBOL)? ;
 
 BLOCKTYPE   : ([Dd][Ee][Gg][Rr][Ee][Ee]
             | [Cc][Oo][Nn][Cc]

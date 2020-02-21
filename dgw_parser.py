@@ -415,15 +415,24 @@ class ReqBlockInterpreter(ReqBlockListener):
       print('*** enterLabel()', file=sys.stderr)
     pass
 
-  def enterExclusive(self, ctx):
-    """ EXCLUSIVE EXCLUSIVE_LIST
+  def enterShare(self, ctx):
+    """ SHARE SHARE_LIST
     """
     if DEBUG:
-      print('*** enterExclusive()', file=sys.stderr)
-      print(ctx.EXCLUSIVE())
-      print(str(ctx.EXCLUSIVE_LIST()).strip('()'))
+      print('*** enterShare()', file=sys.stderr)
+      token = str(ctx.SHARE())
+      share_type = 'share' \
+          if token.lower() in ['share', 'sharewith', 'nonexclusive'] \
+          else 'exclusive'
+      print(share_type)
+      # this_section = self.sections[self.scribe_section.value]
+      # for item in this_section:
+      #   if
+      # if share_type not in [' '.join([key for key in item.keys()]) for item in this_section]:
+      #   this_section.append({share_type: []})
+      # print(share_type)
+      print(str(ctx.SHARE_LIST()).strip('()'))
     pass
-
 
 
 # Class DGW_Logger
