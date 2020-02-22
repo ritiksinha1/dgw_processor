@@ -35,6 +35,7 @@ if not os.getenv('HEROKU'):
                       level=logging.DEBUG)
 
 Requirement = namedtuple('Requirement', 'keyword, value, text, course')
+ShareList = namedtuple('ShareList', 'keyword share_list')
 
 trans_dict: Dict[int, None] = dict()
 for c in range(13, 31):
@@ -424,15 +425,14 @@ class ReqBlockInterpreter(ReqBlockListener):
       share_type = 'share' \
           if token.lower() in ['share', 'sharewith', 'nonexclusive'] \
           else 'exclusive'
-      print(share_type)
-      # this_section = self.sections[self.scribe_section.value]
-      # for item in this_section:
-      #   if
-      # if share_type not in [' '.join([key for key in item.keys()]) for item in this_section]:
-      #   this_section.append({share_type: []})
-      # print(share_type)
-      print(str(ctx.SHARE_LIST()).strip('()'))
-    pass
+      this_section = self.sections[self.scribe_section.value]
+      for i, item in enumerate(this_section):
+        if item.keyword == share_type:
+          break
+      else:
+        i += 1
+        this_section.append(ShareList(share_type, []))
+      this_section[i].share_list.append(str(ctx.SHARE_LIST()).strip('()'))
 
 
 # Class DGW_Logger
