@@ -14,6 +14,7 @@ import re
 
 from collections import namedtuple
 from enum import Enum
+from urllib import parse
 
 from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
@@ -541,12 +542,24 @@ def dgw_parser(institution, block_type, block_value, period='current'):
       walker = ParseTreeWalker()
       tree = parser.req_block()
       walker.walk(interpreter, tree)
-      return_html += interpreter.html
     except Exception as e:
-      return_html += f"""
-                        <p class="error">Currently unable to interpret this block.</p>
-                        <p>Internal Error Message: “<em>{e}</em>”</p>
-                      """
+      msg_body = f"""College: {interpreter.institution}
+                     Block Type: {interpreter.block_type}
+                     Block Value: {interpreter.block_value}
+                     Period Start: {interpreter.period_start}
+                     Period Stop: {interpreter.period_stop}
+                     Error: {e}"""
+      msg_body = parse.quote(re.sub(r'\n\s*', r'\n', msg_body))
+      email_link = f"""
+      <a href="mailto:cvickery@qc.cuny.edu?subject=DGW%20Parser%20Failure&body={msg_body}"
+         class="button">report this problem (optional)</a>"""
+
+      return_html = (f"""<div class="error-box">
+                        <p class="error">Currently unable to interpret this block completely.</p>
+                        <p class="error">Internal Error Message: “<em>{e}</em>”</p>
+                        <p>{email_link}</p></div>"""
+                     + return_html)
+    return_html += interpreter.html
 
     if period == 'current' or period == 'latest':
       break
