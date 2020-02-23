@@ -53,21 +53,25 @@ head       :
             | label
             )*
             ;
-body        :
+body        : rule_subset
+            | mingrade
+            | label
+            | remark
             | numclasses
             | numcredits
-            | remark
-            | label
             ;
 
 class_item  : (SYMBOL | WILDSYMBOL)? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
 or_courses  : INFROM? class_item (OR class_item)* ;
 and_courses : INFROM? class_item (AND class_item)* ;
 
+rule_subset : BEGINSUB (numclasses | numcredits label)+ ENDSUB ;
+label       : LABEL ALPHANUM*? STRING ';' label* ;
+remark      : REMARK STRING ';' remark* ;
 mingpa      : MINGPA NUMBER ;
 minres      : MINRES NUMBER (CREDITS | CLASSES) ;
 mingrade    : MINGRADE NUMBER ;
-numclasses  : NUMBER CLASSES (and_courses | or_courses)? ;
+numclasses  : (NUMBER | RANGE) CLASSES (and_courses | or_courses)? TAG? label*;
 numcredits  : (NUMBER | RANGE) CREDITS (and_courses | or_courses)? TAG? ;
 maxclasses  : MAXCLASSES NUMBER (and_courses | or_courses) ;
 maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
@@ -75,8 +79,6 @@ proxy_advice: PROXYADVICE STRING proxy_advice* ;
 share       : SHARE SHARE_LIST ;
 maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) TAG? ;
 noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
-remark      : REMARK STRING ';' remark* ;
-label       : LABEL ALPHANUM? STRING ';' label* ;
 symbol      : SYMBOL ;
 
 /*
@@ -87,7 +89,8 @@ BEGIN       : [Bb][Ee][Gg][Ii][Nn] ;
 ENDDOT      : [Ee][Nn][Dd]DOT ;
 STRING      : '"' .*? '"' ;
 
-
+BEGINSUB    : [Bb][Ee][Gg][Ii][Nn][Ss][Uu][Bb] ;
+ENDSUB      : [Ee][Nn][Dd][Ss][Uu][Bb] ;
 LABEL       : [Ll][Aa][Bb][Ee][Ll] ;
 REMARK      : [Rr][Ee][Mm][Aa][Rr][Kk] ;
 

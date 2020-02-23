@@ -62,6 +62,33 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#rule_subset.
+    def enterRule_subset(self, ctx:ReqBlockParser.Rule_subsetContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#rule_subset.
+    def exitRule_subset(self, ctx:ReqBlockParser.Rule_subsetContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#label.
+    def enterLabel(self, ctx:ReqBlockParser.LabelContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#label.
+    def exitLabel(self, ctx:ReqBlockParser.LabelContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#remark.
+    def enterRemark(self, ctx:ReqBlockParser.RemarkContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#remark.
+    def exitRemark(self, ctx:ReqBlockParser.RemarkContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#mingpa.
     def enterMingpa(self, ctx:ReqBlockParser.MingpaContext):
         pass
@@ -158,24 +185,6 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#noncourses.
     def exitNoncourses(self, ctx:ReqBlockParser.NoncoursesContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#remark.
-    def enterRemark(self, ctx:ReqBlockParser.RemarkContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#remark.
-    def exitRemark(self, ctx:ReqBlockParser.RemarkContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#label.
-    def enterLabel(self, ctx:ReqBlockParser.LabelContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#label.
-    def exitLabel(self, ctx:ReqBlockParser.LabelContext):
         pass
 
 

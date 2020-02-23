@@ -226,7 +226,7 @@ class ReqBlockInterpreter(ReqBlockListener):
   </div>
 </section>
 <section>
-  <h1 class="closer">Interpretation</h1>
+  <h1 class="closer">Extracted Requirements</h1>
   <div>
     <hr>
     {items2html(self.sections[ScribeSection.HEAD.value], 'Head Item')}
@@ -401,6 +401,26 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'{num} {which}',
                     f'{text}',
                     None))
+
+  def enterNumclasses(self, ctx):
+    if DEBUG:
+      print('*** enterNumClasses', file=sys.stderr)
+    pass
+
+  def enterRule_subset(self, ctx):
+    if DEBUG:
+      print('*** enterRule_subset', file=sys.stderr)
+    pass
+
+  def enterBeginsub(self, ctx):
+    if DEBUG:
+      print('*** enterBeginSub', file=sys.stderr)
+    pass
+
+  def enterEndsub(self, ctx):
+    if DEBUG:
+      print('*** enterEndSub', file=sys.stderr)
+    pass
 
   def enterRemark(self, ctx):
     """ REMARK STRING ';' remark* ;
