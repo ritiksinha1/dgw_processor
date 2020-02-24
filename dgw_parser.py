@@ -413,6 +413,14 @@ class ReqBlockInterpreter(ReqBlockListener):
       print('*** enterRule_subset', file=sys.stderr)
     pass
 
+  def enterBlocktype(self, ctx):
+    """ NUMBER BLOCKTYPE LP DEGREE|CONC|MAJOR|MINOR RP label
+    """
+    if DEBUG:
+      print('*** enterBlocktype', file=sys.stderr)
+      print(ctx.SHARE_LIST())
+    pass
+
   def enterBeginsub(self, ctx):
     if DEBUG:
       print('*** enterBeginSub', file=sys.stderr)

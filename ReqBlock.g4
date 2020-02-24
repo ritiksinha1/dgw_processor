@@ -68,7 +68,7 @@ or_courses  : INFROM? class_item (OR class_item)* ;
 and_courses : INFROM? class_item (AND class_item)* ;
 
 rule_subset : BEGINSUB (numclasses | numcredits label)+ ENDSUB label ;
-blocktype   : NUMBER BLOCKTYPE LP DEGREE|CONC|MAJOR|MINOR RP label ;
+blocktype   : NUMBER BLOCKTYPE SHARE_LIST label ;
 label       : LABEL ALPHANUM*? STRING ';' label* ;
 remark      : REMARK STRING ';' remark* ;
 mingpa      : MINGPA NUMBER ;
@@ -122,7 +122,7 @@ SHARE       : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
 BLOCKTYPE   : [Bb][Ll][Oo][Cc][Kk][Tt][Yy][Pp][Ee][Ss]? ;
 
 SHARE_LIST  : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
-SHARE_ITEM  : (DEGREE | CONC | MAJOR | MINOR | OTHER) (EQ SYMBOL)? ;
+SHARE_ITEM  : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) ;
 
 DEGREE      : [Dd][Ee][Gg][Rr][Ee][Ee] ;
 CONC        : [Cc][Oo][Nn][Cc] ;
