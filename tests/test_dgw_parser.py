@@ -8,9 +8,7 @@ import argparse
 import sys
 from io import StringIO
 
-
-import psycopg2
-from psycopg2.extras import NamedTupleCursor
+from pgconnection import PgConnection
 from collections import namedtuple
 
 from dgw_processor.dgw_parser import dgw_parser
@@ -23,9 +21,9 @@ trans_table = str.maketrans(trans_dict)
 
 # Create dict of known colleges
 colleges = dict()
-course_conn = psycopg2.connect('dbname=cuny_courses')
-course_cursor = course_conn.cursor(cursor_factory=NamedTupleCursor)
-course_cursor.execute('select substr(lower(code),0,4) as code, name from institutions')
+course_conn = PgConnection()
+course_cursor = course_conn.cursor()
+course_cursor.execute('select substr(lower(code),0,4) as code, name from cuny_institutions')
 for row in course_cursor.fetchall():
   colleges[row.code] = row.name
 
@@ -47,8 +45,8 @@ if __name__ == '__main__':
   values = [f'{v.upper()}' for v in args.values]
 
   # Get the top-level requirements to examine: college, block-type, and/or block value
-  conn = psycopg2.connect('dbname=cuny_courses')
-  cursor = conn.cursor(cursor_factory=NamedTupleCursor)
+  conn = PgConnection()
+  cursor = conn.cursor()
 
   query = """
       select requirement_id, title, requirement_text
