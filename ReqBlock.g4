@@ -54,18 +54,21 @@ head       :
             )*
             ;
 body        : rule_subset
+            | blocktype
             | mingrade
             | label
             | remark
             | numclasses
             | numcredits
+            | maxperdisc
             ;
 
 class_item  : (SYMBOL | WILDSYMBOL)? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
 or_courses  : INFROM? class_item (OR class_item)* ;
 and_courses : INFROM? class_item (AND class_item)* ;
 
-rule_subset : BEGINSUB (numclasses | numcredits label)+ ENDSUB ;
+rule_subset : BEGINSUB (numclasses | numcredits label)+ ENDSUB label ;
+blocktype   : NUMBER BLOCKTYPE LP DEGREE|CONC|MAJOR|MINOR RP label ;
 label       : LABEL ALPHANUM*? STRING ';' label* ;
 remark      : REMARK STRING ';' remark* ;
 mingpa      : MINGPA NUMBER ;
@@ -77,6 +80,7 @@ maxclasses  : MAXCLASSES NUMBER (and_courses | or_courses) ;
 maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
 proxy_advice: PROXYADVICE STRING proxy_advice* ;
 share       : SHARE SHARE_LIST ;
+maxperdisc  : MAXPERDISC NUMBER (CREDITS | CLASSES) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) TAG? ;
 noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
 symbol      : SYMBOL ;
@@ -103,6 +107,8 @@ CLASSES     : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])? ;
 MINCLASSES  : [Mm][Ii][Nn] CLASSES ;
 MAXCLASSES  : [Mm][Aa][Xx] CLASSES ;
 
+MAXPERDISC  : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
+
 MINRES      : [Mm][Ii][Nn][Rr][Ee][Ss] ;
 MINGPA      : [Mm][Ii][Nn][Gg][Pp][Aa] ;
 MINGRADE    : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
@@ -113,15 +119,16 @@ SHARE       : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
             | [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
             ;
 
-SHARE_LIST  : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
-SHARE_ITEM  : BLOCKTYPE (EQ SYMBOL)? ;
+BLOCKTYPE   : [Bb][Ll][Oo][Cc][Kk][Tt][Yy][Pp][Ee][Ss]? ;
 
-BLOCKTYPE   : ([Dd][Ee][Gg][Rr][Ee][Ee]
-            | [Cc][Oo][Nn][Cc]
-            | [Mm][Aa][Jj][Oo][Rr]
-            | [Mm][Ii][Nn][Oo][Rr]
-            | [Oo][Tt][Hh][Ee][Rr])
-            ;
+SHARE_LIST  : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
+SHARE_ITEM  : (DEGREE | CONC | MAJOR | MINOR | OTHER) (EQ SYMBOL)? ;
+
+DEGREE      : [Dd][Ee][Gg][Rr][Ee][Ee] ;
+CONC        : [Cc][Oo][Nn][Cc] ;
+MAJOR       : [Mm][Aa][Jj][Oo][Rr] ;
+MINOR       : [Mm][Ii][Nn][Oo][Rr] ;
+OTHER       : [Oo][Tt][Hh][Ee][Rr] ;
 
 /* DWResident, DW... etc. are DWIDs */
 /* (Decide=DWID) is a phrase used for tie-breaking by the auditor.*/
@@ -139,7 +146,7 @@ WILDCARD    : '@' ;
 
 CATALOG_NUMBER : NUMBER LETTER ;
 RANGE       : NUMBER ':' NUMBER ;
-NUMBER      : DIGIT+ DOT? DIGIT* ;
+NUMBER      : DIGIT+ (DOT DIGIT*)? ;
 SYMBOL      : LETTER (LETTER | DIGIT | '_' | '-' | '&')* ;
 ALPHANUM    : (LETTER | DIGIT | DOT | '_')+ ;
 

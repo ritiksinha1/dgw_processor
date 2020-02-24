@@ -71,6 +71,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#blocktype.
+    def enterBlocktype(self, ctx:ReqBlockParser.BlocktypeContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#blocktype.
+    def exitBlocktype(self, ctx:ReqBlockParser.BlocktypeContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#label.
     def enterLabel(self, ctx:ReqBlockParser.LabelContext):
         pass
@@ -167,6 +176,15 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#share.
     def exitShare(self, ctx:ReqBlockParser.ShareContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#maxperdisc.
+    def enterMaxperdisc(self, ctx:ReqBlockParser.MaxperdiscContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#maxperdisc.
+    def exitMaxperdisc(self, ctx:ReqBlockParser.MaxperdiscContext):
         pass
 
 
