@@ -96,3 +96,101 @@ s3-7->:s4^=>1
  223:226 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
 2020-02-24 11:24:20,572 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 223:226 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
 2020-02-24 11:24:20,573 QNS01 MAJOR CSCI-BS 99999999 ReqBlockParser Syntax 80:6 mismatched input 'MinGrade' expecting LABEL
+2020-02-24 11:31:51,009  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-21->s1
+s1-4->:s2^=>1
+ 5:6 ({1, 2}) [(193,1,[[65 $, 197 $]],up=1), (147,1,[65 $],up=1), (150,1,[65 $],up=1), (154,1,[65 $],up=1), (157,1,[65 $],up=1), (172,1,[65 $],up=1), (187,1,[65 $],up=1), (181,1,[65 $],up=1), (222,1,[65 $],up=1), (201,1,[65 $],up=1), (138,1,[65 $],up=1), (123,1,[65 $],up=1), (48,1,[$],up=2), (193,2,[[65 $, 197 $]],up=2), (147,2,[65 $],up=2), (150,2,[65 $],up=2), (154,2,[65 $],up=2), (157,2,[65 $],up=2), (172,2,[65 $],up=2), (187,2,[65 $],up=2), (181,2,[65 $],up=2), (222,2,[65 $],up=2), (201,2,[65 $],up=2), (138,2,[65 $],up=2), (123,2,[65 $],up=2), (48,2,[$],up=2)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,012 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 5:7 False (None) [(148,1,[65 48 $]), (148,2,[65 48 $])]
+2020-02-24 11:31:51,046  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-36->s2
+s1-41->s2
+s2-39->s3
+s2-40->s3
+s3-15->:s5^=>1
+s3-31->:s4=>2
+ 62:65 ({1, 2}) [(182,1,[65 $],up=1), (182,2,[65 $],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,046 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 62:65 False (None) [(182,1,[65 48 $]), (182,2,[65 48 $])]
+2020-02-24 11:31:51,058  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 119:122 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,059 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 119:122 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,071  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 127:130 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,072 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 127:130 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,073  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 135:138 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,073 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 135:138 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,074  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 143:146 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,075 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 143:146 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,076  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 151:154 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,076 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 151:154 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,077  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 159:162 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,077 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 159:162 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,078  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 167:170 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,078 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 167:170 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,079  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 175:178 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,079 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 175:178 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,080  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 183:186 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,080 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 183:186 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,081  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 191:194 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,081 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 191:194 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,082  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 199:202 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,082 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 199:202 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,083  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 207:210 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,083 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 207:210 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,084  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 215:218 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,084 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 215:218 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,085  QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser FullContext s0-33->s1
+s1-41->s2
+s2-40->s3
+s3-7->:s4^=>1
+ 223:226 ({1, 2}) [(130,1,[[65 $, 168 $]],up=1), (124,1,[[65 $, 168 $]],up=1), (130,2,[[65 $, 168 $]],up=1), (124,2,[[65 $, 168 $]],up=1)],conflictingAlts={1, 2},dipsIntoOuterContext
+2020-02-24 11:31:51,085 QNS01 MAJOR CSCI-BS 99999999: ReqBlockParser Ambiguity 223:226 False (None) [(130,1,[168 112 78 50 $]), (124,1,[168 112 78 50 $]), (130,2,[168 112 78 50 $]), (124,2,[168 112 78 50 $])]
+2020-02-24 11:31:51,086 QNS01 MAJOR CSCI-BS 99999999 ReqBlockParser Syntax 80:6 mismatched input 'MinGrade' expecting LABEL

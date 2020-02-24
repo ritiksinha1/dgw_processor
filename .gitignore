@@ -25,3 +25,4 @@ test_data/
 /Logs/
 /tests/__init.py__
 /setup.py
+/tests/Logs/antlr.log
