@@ -19,9 +19,9 @@ from urllib import parse
 from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
 
-from .ReqBlockLexer import ReqBlockLexer
-from .ReqBlockParser import ReqBlockParser
-from .ReqBlockListener import ReqBlockListener
+from ReqBlockLexer import ReqBlockLexer
+from ReqBlockParser import ReqBlockParser
+from ReqBlockListener import ReqBlockListener
 
 from pgconnection import PgConnection
 
@@ -198,7 +198,9 @@ class ReqBlockInterpreter(ReqBlockListener):
       print(f'*** ReqBlockInterpreter({institution}, {block_type}, {block_value})', file=sys.stderr)
     self.institution = institution
     self.block_type = block_type
-    self.block_type_str = block_type.lower().replace('conc', 'concentration')
+    self.block_type_str = (block_type.lower()
+                           .replace('conc', 'concentration')
+                           .replace('other', 'other requirement'))
     self.block_value = block_value
     self.title = title
     self.period_start = period_start

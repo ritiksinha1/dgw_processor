@@ -18,8 +18,8 @@ setup(
     long_description_content_type='text/markdown',
     name='dgw_processor',
     packages=find_packages(include=['src']),
-    python_requires='>= 3.6',
+    python_requires='>= 3.8',
     url='https://github.com/cvickery/dgw_processor',
-    version='0.0.1',
+    version='0.1.1',
     zip_safe=False,
 )

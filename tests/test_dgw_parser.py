@@ -11,7 +11,7 @@ from io import StringIO
 from pgconnection import PgConnection
 from collections import namedtuple
 
-from dgw_processor.dgw_parser import dgw_parser
+from dgw_parser import dgw_parser
 
 trans_dict: Dict[int, Any] = dict()
 for c in range(13, 31):
