@@ -39,14 +39,17 @@ grammar ReqBlock;
 
 req_block   : BEGIN head ';' body ENDDOT <EOF>;
 head       :
-            ( mingpa
+            ( checkelectives
+            | mingpa
             | minres
+            | lastres
             | mingrade
             | numclasses
             | numcredits
             | maxcredits
             | maxclasses
             | maxpassfail
+            | under
             | proxy_advice
             | share
             | remark
@@ -63,6 +66,7 @@ body        : rule_subset
             | maxperdisc
             ;
 
+checkelectives : CHECKELECTIVES ;
 class_item  : (SYMBOL | WILDSYMBOL)? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
 or_courses  : INFROM? class_item (OR class_item)* ;
 and_courses : INFROM? class_item (AND class_item)* ;
@@ -70,9 +74,10 @@ and_courses : INFROM? class_item (AND class_item)* ;
 rule_subset : BEGINSUB (numclasses | numcredits label)+ ENDSUB label ;
 blocktype   : NUMBER BLOCKTYPE SHARE_LIST label ;
 label       : LABEL ALPHANUM*? STRING ';' label* ;
-remark      : REMARK STRING ';' remark* ;
+remark      : REMARK STRING (SEMI? remark)* ;
 mingpa      : MINGPA NUMBER ;
 minres      : MINRES NUMBER (CREDITS | CLASSES) ;
+lastres     : LASTRES NUMBER (OF NUMBER (CREDITS | CLASSES))? ;
 mingrade    : MINGRADE NUMBER ;
 numclasses  : (NUMBER | RANGE) CLASSES (and_courses | or_courses)? TAG? label*;
 numcredits  : (NUMBER | RANGE) CREDITS (and_courses | or_courses)? TAG? ;
@@ -80,6 +85,7 @@ maxclasses  : MAXCLASSES NUMBER (and_courses | or_courses) ;
 maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
 proxy_advice: PROXYADVICE STRING proxy_advice* ;
 share       : SHARE SHARE_LIST ;
+under       : UNDER NUMBER (CREDITS | CLASSES) or_courses proxy_advice label ;
 maxperdisc  : MAXPERDISC NUMBER (CREDITS | CLASSES) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) TAG? ;
 noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
@@ -110,14 +116,22 @@ MAXCLASSES  : [Mm][Aa][Xx] CLASSES ;
 MAXPERDISC  : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
 
 MINRES      : [Mm][Ii][Nn][Rr][Ee][Ss] ;
+LASTRES     : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
 MINGPA      : [Mm][Ii][Nn][Gg][Pp][Aa] ;
 MINGRADE    : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
 MAXPASSFAIL : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll] ;
+UNDER       : [Uu][Nn][Dd][Ee][Rr] ;
 PROXYADVICE : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] ;
 SHARE       : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
             | [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
             | [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
             ;
+
+// CheckElectiveCreditsAllowed is a directive to the auditor, not a degree requirement.
+CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
+                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
+                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
+                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] ;
 
 BLOCKTYPE   : [Bb][Ll][Oo][Cc][Kk][Tt][Yy][Pp][Ee][Ss]? ;
 
@@ -137,6 +151,7 @@ OTHER       : [Oo][Tt][Hh][Ee][Rr] ;
 OR          : (COMMA | ([Oo][Rr])) ;
 AND         : (PLUS | ([Aa][Nn][Dd])) ;
 
+OF          : [Oo][Ff] ;
 INFROM      : ([Ii][Nn])|([Ff][Rr][Oo][Mm]) ;
 TAG         : ([Tt][Aa][Gg]) ( EQ SYMBOL )?;
 
@@ -159,6 +174,7 @@ LP          : '(' ;
 RP          : ')' ;
 COMMA       : ',' ;
 PLUS        : '+' ;
+SEMI        : ';' ;
 
 fragment DOT         : '.' ;
 fragment DIGIT       : [0-9] ;

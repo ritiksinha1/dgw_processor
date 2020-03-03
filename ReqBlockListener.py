@@ -35,6 +35,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#checkelectives.
+    def enterCheckelectives(self, ctx:ReqBlockParser.CheckelectivesContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#checkelectives.
+    def exitCheckelectives(self, ctx:ReqBlockParser.CheckelectivesContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#class_item.
     def enterClass_item(self, ctx:ReqBlockParser.Class_itemContext):
         pass
@@ -116,6 +125,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#lastres.
+    def enterLastres(self, ctx:ReqBlockParser.LastresContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#lastres.
+    def exitLastres(self, ctx:ReqBlockParser.LastresContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#mingrade.
     def enterMingrade(self, ctx:ReqBlockParser.MingradeContext):
         pass
@@ -176,6 +194,15 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#share.
     def exitShare(self, ctx:ReqBlockParser.ShareContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#under.
+    def enterUnder(self, ctx:ReqBlockParser.UnderContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#under.
+    def exitUnder(self, ctx:ReqBlockParser.UnderContext):
         pass
 
 

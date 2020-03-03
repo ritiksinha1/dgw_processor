@@ -242,12 +242,12 @@ class ReqBlockInterpreter(ReqBlockListener):
 
   def enterHead(self, ctx):
     if DEBUG:
-      print('*** enterHead()', file=sys.stderr)
+      print('*** ENTERHEAD()', file=sys.stderr)
     self.scribe_section = ScribeSection.HEAD
 
   def enterBody(self, ctx):
     if DEBUG:
-      print('*** enterBody()', file=sys.stderr)
+      print('*** ENTERBODY()', file=sys.stderr)
 
 # numclasses  : NUMBER CLASSES (and_courses | or_courses) ;
 # proxy_advice: PROXYADVICE STRING proxy_advice* ;
@@ -434,10 +434,11 @@ class ReqBlockInterpreter(ReqBlockListener):
     pass
 
   def enterRemark(self, ctx):
-    """ REMARK STRING ';' remark* ;
+    """ REMARK STRING remark* ;
     """
     if DEBUG:
       print('*** enterRemark()', file=sys.stderr)
+      print(ctx.STRING(), file=sys.stderr)
     pass
 
   def enterLabel(self, ctx):
@@ -445,6 +446,7 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterLabel()', file=sys.stderr)
+      print(ctx.STRING(), file=sys.stderr)
     pass
 
   def enterShare(self, ctx):
