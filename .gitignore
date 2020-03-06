@@ -26,3 +26,11 @@ test_data/
 /tests/Logs/
 /tests/__init.py__
 /setup.py
+/testing/ReqBlock.g4
+/testing/ReqBlock.g4
+/testing/ReqBlock.g4
+/testing/req_block
+/testing/ReqBlock.interp
+/testing/ReqBlock.tokens
+/testing/ReqBlockLexer.interp
+/testing/ReqBlockLexer.tokens
