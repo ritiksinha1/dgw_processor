@@ -36,6 +36,6 @@ echo Generating $outfile
 psql cuny_curriculum -Xqtc "select requirement_text \
 from requirement_blocks
 where institution ~* '$institution'
-and block_type ~* '$type'
-and block_value ~* '$value'
+and block_type = upper('$type')
+and block_value = upper('$value')
 and period_stop = '99999999'"  | sed s/\ *+$// |sed s/\\\\r// > $outfile
