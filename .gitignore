@@ -2,35 +2,20 @@
 
 __pycache__/
 
-*.csv
-
-*.class
-
 *.java
-
+*.class
+*.interp
+*.tokens
 *.txt
-
 *.egg-info/
 
-/.bumpversion.cfg
-
+.bumpversion.cfg
 MANIFEST.in
+setup.py
+dist/
+__init.py__
 
 test_data/
-
-/.mypy_cache/
-
-/dist/
-
-/Logs/
-/tests/Logs/
-/tests/__init.py__
-/setup.py
-/testing/ReqBlock.g4
-/testing/ReqBlock.g4
+Logs/
 /testing/ReqBlock.g4
 /testing/req_block
-/testing/ReqBlock.interp
-/testing/ReqBlock.tokens
-/testing/ReqBlockLexer.interp
-/testing/ReqBlockLexer.tokens
