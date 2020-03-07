@@ -35,42 +35,6 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#checkelectives.
-    def enterCheckelectives(self, ctx:ReqBlockParser.CheckelectivesContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#checkelectives.
-    def exitCheckelectives(self, ctx:ReqBlockParser.CheckelectivesContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#class_item.
-    def enterClass_item(self, ctx:ReqBlockParser.Class_itemContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#class_item.
-    def exitClass_item(self, ctx:ReqBlockParser.Class_itemContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#or_courses.
-    def enterOr_courses(self, ctx:ReqBlockParser.Or_coursesContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#or_courses.
-    def exitOr_courses(self, ctx:ReqBlockParser.Or_coursesContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#and_courses.
-    def enterAnd_courses(self, ctx:ReqBlockParser.And_coursesContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#and_courses.
-    def exitAnd_courses(self, ctx:ReqBlockParser.And_coursesContext):
-        pass
-
-
     # Enter a parse tree produced by ReqBlockParser#rule_subset.
     def enterRule_subset(self, ctx:ReqBlockParser.Rule_subsetContext):
         pass
@@ -80,12 +44,84 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#blocktype.
-    def enterBlocktype(self, ctx:ReqBlockParser.BlocktypeContext):
+    # Enter a parse tree produced by ReqBlockParser#group.
+    def enterGroup(self, ctx:ReqBlockParser.GroupContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#blocktype.
-    def exitBlocktype(self, ctx:ReqBlockParser.BlocktypeContext):
+    # Exit a parse tree produced by ReqBlockParser#group.
+    def exitGroup(self, ctx:ReqBlockParser.GroupContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#group_list.
+    def enterGroup_list(self, ctx:ReqBlockParser.Group_listContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#group_list.
+    def exitGroup_list(self, ctx:ReqBlockParser.Group_listContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#block.
+    def enterBlock(self, ctx:ReqBlockParser.BlockContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#block.
+    def exitBlock(self, ctx:ReqBlockParser.BlockContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#block_type.
+    def enterBlock_type(self, ctx:ReqBlockParser.Block_typeContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#block_type.
+    def exitBlock_type(self, ctx:ReqBlockParser.Block_typeContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#course_list.
+    def enterCourse_list(self, ctx:ReqBlockParser.Course_listContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#course_list.
+    def exitCourse_list(self, ctx:ReqBlockParser.Course_listContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#course.
+    def enterCourse(self, ctx:ReqBlockParser.CourseContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#course.
+    def exitCourse(self, ctx:ReqBlockParser.CourseContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#course_item.
+    def enterCourse_item(self, ctx:ReqBlockParser.Course_itemContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#course_item.
+    def exitCourse_item(self, ctx:ReqBlockParser.Course_itemContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#and_list.
+    def enterAnd_list(self, ctx:ReqBlockParser.And_listContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#and_list.
+    def exitAnd_list(self, ctx:ReqBlockParser.And_listContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#or_list.
+    def enterOr_list(self, ctx:ReqBlockParser.Or_listContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#or_list.
+    def exitOr_list(self, ctx:ReqBlockParser.Or_listContext):
         pass
 
 
@@ -98,12 +134,48 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#remark.
-    def enterRemark(self, ctx:ReqBlockParser.RemarkContext):
+    # Enter a parse tree produced by ReqBlockParser#lastres.
+    def enterLastres(self, ctx:ReqBlockParser.LastresContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#remark.
-    def exitRemark(self, ctx:ReqBlockParser.RemarkContext):
+    # Exit a parse tree produced by ReqBlockParser#lastres.
+    def exitLastres(self, ctx:ReqBlockParser.LastresContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#maxclass.
+    def enterMaxclass(self, ctx:ReqBlockParser.MaxclassContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#maxclass.
+    def exitMaxclass(self, ctx:ReqBlockParser.MaxclassContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#maxcredit.
+    def enterMaxcredit(self, ctx:ReqBlockParser.MaxcreditContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#maxcredit.
+    def exitMaxcredit(self, ctx:ReqBlockParser.MaxcreditContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#maxpassfail.
+    def enterMaxpassfail(self, ctx:ReqBlockParser.MaxpassfailContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#maxpassfail.
+    def exitMaxpassfail(self, ctx:ReqBlockParser.MaxpassfailContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#maxperdisc.
+    def enterMaxperdisc(self, ctx:ReqBlockParser.MaxperdiscContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#maxperdisc.
+    def exitMaxperdisc(self, ctx:ReqBlockParser.MaxperdiscContext):
         pass
 
 
@@ -116,24 +188,6 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#minres.
-    def enterMinres(self, ctx:ReqBlockParser.MinresContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#minres.
-    def exitMinres(self, ctx:ReqBlockParser.MinresContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#lastres.
-    def enterLastres(self, ctx:ReqBlockParser.LastresContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#lastres.
-    def exitLastres(self, ctx:ReqBlockParser.LastresContext):
-        pass
-
-
     # Enter a parse tree produced by ReqBlockParser#mingrade.
     def enterMingrade(self, ctx:ReqBlockParser.MingradeContext):
         pass
@@ -143,39 +197,39 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#numclasses.
-    def enterNumclasses(self, ctx:ReqBlockParser.NumclassesContext):
+    # Enter a parse tree produced by ReqBlockParser#minres.
+    def enterMinres(self, ctx:ReqBlockParser.MinresContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#numclasses.
-    def exitNumclasses(self, ctx:ReqBlockParser.NumclassesContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#numcredits.
-    def enterNumcredits(self, ctx:ReqBlockParser.NumcreditsContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#numcredits.
-    def exitNumcredits(self, ctx:ReqBlockParser.NumcreditsContext):
+    # Exit a parse tree produced by ReqBlockParser#minres.
+    def exitMinres(self, ctx:ReqBlockParser.MinresContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#maxclasses.
-    def enterMaxclasses(self, ctx:ReqBlockParser.MaxclassesContext):
+    # Enter a parse tree produced by ReqBlockParser#numclass.
+    def enterNumclass(self, ctx:ReqBlockParser.NumclassContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#maxclasses.
-    def exitMaxclasses(self, ctx:ReqBlockParser.MaxclassesContext):
+    # Exit a parse tree produced by ReqBlockParser#numclass.
+    def exitNumclass(self, ctx:ReqBlockParser.NumclassContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#maxcredits.
-    def enterMaxcredits(self, ctx:ReqBlockParser.MaxcreditsContext):
+    # Enter a parse tree produced by ReqBlockParser#numcredit.
+    def enterNumcredit(self, ctx:ReqBlockParser.NumcreditContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#maxcredits.
-    def exitMaxcredits(self, ctx:ReqBlockParser.MaxcreditsContext):
+    # Exit a parse tree produced by ReqBlockParser#numcredit.
+    def exitNumcredit(self, ctx:ReqBlockParser.NumcreditContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#noncourse.
+    def enterNoncourse(self, ctx:ReqBlockParser.NoncourseContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#noncourse.
+    def exitNoncourse(self, ctx:ReqBlockParser.NoncourseContext):
         pass
 
 
@@ -185,6 +239,24 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#proxy_advice.
     def exitProxy_advice(self, ctx:ReqBlockParser.Proxy_adviceContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#remark.
+    def enterRemark(self, ctx:ReqBlockParser.RemarkContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#remark.
+    def exitRemark(self, ctx:ReqBlockParser.RemarkContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#qualifier.
+    def enterQualifier(self, ctx:ReqBlockParser.QualifierContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#qualifier.
+    def exitQualifier(self, ctx:ReqBlockParser.QualifierContext):
         pass
 
 
@@ -203,33 +275,6 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#under.
     def exitUnder(self, ctx:ReqBlockParser.UnderContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#maxperdisc.
-    def enterMaxperdisc(self, ctx:ReqBlockParser.MaxperdiscContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#maxperdisc.
-    def exitMaxperdisc(self, ctx:ReqBlockParser.MaxperdiscContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#maxpassfail.
-    def enterMaxpassfail(self, ctx:ReqBlockParser.MaxpassfailContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#maxpassfail.
-    def exitMaxpassfail(self, ctx:ReqBlockParser.MaxpassfailContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#noncourses.
-    def enterNoncourses(self, ctx:ReqBlockParser.NoncoursesContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#noncourses.
-    def exitNoncourses(self, ctx:ReqBlockParser.NoncoursesContext):
         pass
 
 

@@ -33,155 +33,170 @@ grammar ReqBlock;
  *
  */
 
-/*
- * Parser Rules
+/* Grammar
+ * ------------------------------------------------------------------------------------------------
  */
 
 req_block   : BEGIN head ';' body ENDDOT <EOF>;
-head       :
-            ( checkelectives
+head        :
+            ( lastres
+            | maxclass
+            | maxcredit
+            | maxpassfail
+            | mingrade
             | mingpa
             | minres
-            | lastres
-            | mingrade
-            | numclasses
-            | numcredits
-            | maxcredits
-            | maxclasses
-            | maxpassfail
-            | under
+            | numclass
+            | numcredit
             | proxy_advice
-            | share
             | remark
-            | label
+            | share
+            | under
             )*
             ;
-body        : rule_subset
-            | blocktype
-            | mingrade
+body        :
+            ( rule_subset
+            | block_type
             | label
             | remark
-            | numclasses
-            | numcredits
+            | numclass
+            | numcredit
             | maxperdisc
+            )*
             ;
 
-checkelectives : CHECKELECTIVES ;
-class_item  : (SYMBOL | WILDSYMBOL)? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
-or_courses  : INFROM? class_item (OR class_item)* ;
-and_courses : INFROM? class_item (AND class_item)* ;
+rule_subset : BEGINSUB (numclass | numcredit label)+ ENDSUB qualifier* label ;
+group       : NUMBER GROUP IN group_list qualifier* label ;
+group_list  : LP course_list
+            | block
+            | block_type
+            | group
+            | RULE_COMPLETE
+            | noncourse (OR group_list)* ;
 
-rule_subset : BEGINSUB (numclasses | numcredits label)+ ENDSUB label ;
-blocktype   : NUMBER BLOCKTYPE SHARE_LIST label ;
-label       : LABEL ALPHANUM*? STRING ';' label* ;
-remark      : REMARK STRING (SEMI? remark)* ;
-mingpa      : MINGPA NUMBER ;
-minres      : MINRES NUMBER (CREDITS | CLASSES) ;
-lastres     : LASTRES NUMBER (OF NUMBER (CREDITS | CLASSES))? ;
-mingrade    : MINGRADE NUMBER ;
-numclasses  : (NUMBER | RANGE) CLASSES (and_courses | or_courses)? TAG? label*;
-numcredits  : (NUMBER | RANGE) CREDITS (and_courses | or_courses)? TAG? ;
-maxclasses  : MAXCLASSES NUMBER (and_courses | or_courses) ;
-maxcredits  : MAXCREDITS NUMBER (and_courses | or_courses) ;
-proxy_advice: PROXYADVICE STRING proxy_advice* ;
-share       : SHARE SHARE_LIST ;
-under       : UNDER NUMBER (CREDITS | CLASSES) or_courses proxy_advice label ;
-maxperdisc  : MAXPERDISC NUMBER (CREDITS | CLASSES) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
-maxpassfail : MAXPASSFAIL NUMBER (CREDITS | CLASSES) TAG? ;
-noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
-symbol      : SYMBOL ;
+/* Parser
+ * ------------------------------------------------------------------------------------------------
+ */
+block       : NUMBER BLOCK LP SHARE_LIST RP ;
+block_type  : NUMBER BLOCKTYPE SHARE_LIST label ;
 
-/*
- * Lexer Rules
+course_list     : course (and_list | or_list)? ;
+course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
+course_item     : DISCIPLINE? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
+and_list        : (AND course_item)+ ;
+or_list         : (OR course_item)+ ;
+
+label           : LABEL ALPHANUM*? STRING ';' label* ;
+lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
+maxclass        : MAXCLASS NUMBER INFROM? course_list ;
+maxcredit       : MAXCREDIT NUMBER INFROM? course_list ;
+maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) TAG? ;
+maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
+mingpa          : MINGPA NUMBER ;
+mingrade        : MINGRADE NUMBER ;
+minres          : MINRES NUMBER (CREDIT | CLASS) ;
+numclass        : (NUMBER | RANGE) CLASS INFROM? course_list? TAG? label* ;
+numcredit       : (NUMBER | RANGE) CREDIT INFROM? course_list? TAG? ;
+noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
+proxy_advice    : PROXYADVICE STRING proxy_advice* ;
+remark          : REMARK STRING (SEMI? remark)* ;
+qualifier       : mingpa | mingrade ;
+share           : SHARE SHARE_LIST ;
+under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? proxy_advice label ;
+symbol          : SYMBOL ;
+
+/* Lexer
+ * ------------------------------------------------------------------------------------------------
  */
 
-BEGIN       : [Bb][Ee][Gg][Ii][Nn] ;
-ENDDOT      : [Ee][Nn][Dd]DOT ;
-STRING      : '"' .*? '"' ;
+//  Keywords
+BEGIN         : [Bb][Ee][Gg][Ii][Nn] ;
+BEGINSUB      : BEGIN [Ss][Uu][Bb] ;
+BLOCK         : [Bb][Ll][Oo][Cc][Kk] ;
+BLOCKTYPE     : BLOCK [Tt][Yy][Pp][Ee][Ss]? ;
+CLASS         : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])? ;
+CONC          : [Cc][Oo][Nn][Cc] ;
+CREDIT        : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
+DEGREE        : [Dd][Ee][Gg][Rr][Ee][Ee] ;
+ENDDOT        : [Ee][Nn][Dd]DOT ;
+ENDSUB        : [Ee][Nn][Dd][Ss][Uu][Bb] ;
+GROUP         : [Gg][Rr][Oo][Uu][Pp] ;
+LABEL         : [Ll][Aa][Bb][Ee][Ll] ;
+LASTRES       : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
+MAJOR         : [Mm][Aa][Jj][Oo][Rr] ;
+MAXCLASS      : [Mm][Aa][Xx] CLASS ;
+MAXCREDIT     : [Mm][Aa][Xx] CREDIT ;
+MINGPA        : [Mm][Ii][Nn][Gg][Pp][Aa] ;
+MINGRADE      : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
+MAXPASSFAIL   : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll] ;
+MAXPERDISC    : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
+MINOR         : [Mm][Ii][Nn][Oo][Rr] ;
+MINCLASS      : [Mm][Ii][Nn] CLASS ;
+MINCREDITS    : [Mm][Ii][Nn] CREDIT ;
+MINRES        : [Mm][Ii][Nn][Rr][Ee][Ss] ;
+NONCOURSE     : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
+OTHER         : [Oo][Tt][Hh][Ee][Rr] ;
+PROXYADVICE   : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] ;
+REMARK        : [Rr][Ee][Mm][Aa][Rr][Kk] ;
+RULE_COMPLETE : [Rr][Uu][Ll][Ee]([Ii][Nn])?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] ;
+SHARE         : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
+              | [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
+              | [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
+              ;
+SHARE_LIST    : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
+SHARE_ITEM    : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) ;
+UNDER         : [Uu][Nn][Dd][Ee][Rr] ;
 
-BEGINSUB    : [Bb][Ee][Gg][Ii][Nn][Ss][Uu][Bb] ;
-ENDSUB      : [Ee][Nn][Dd][Ss][Uu][Bb] ;
-LABEL       : [Ll][Aa][Bb][Ee][Ll] ;
-REMARK      : [Rr][Ee][Mm][Aa][Rr][Kk] ;
-
-CREDITS     : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
-MINCREDITS  : [Mm][Ii][Nn] CREDITS ;
-MAXCREDITS  : [Mm][Aa][Xx] CREDITS ;
-
-NONCOURSES  : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
-CLASSES     : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])? ;
-MINCLASSES  : [Mm][Ii][Nn] CLASSES ;
-MAXCLASSES  : [Mm][Aa][Xx] CLASSES ;
-
-MAXPERDISC  : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
-
-MINRES      : [Mm][Ii][Nn][Rr][Ee][Ss] ;
-LASTRES     : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
-MINGPA      : [Mm][Ii][Nn][Gg][Pp][Aa] ;
-MINGRADE    : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
-MAXPASSFAIL : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll] ;
-UNDER       : [Uu][Nn][Dd][Ee][Rr] ;
-PROXYADVICE : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] ;
-SHARE       : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
-            | [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
-            | [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
-            ;
-
-// CheckElectiveCreditsAllowed is a directive to the auditor, not a degree requirement.
-CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
-                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
-                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
-                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] ;
-
-BLOCKTYPE   : [Bb][Ll][Oo][Cc][Kk][Tt][Yy][Pp][Ee][Ss]? ;
-
-SHARE_LIST  : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
-SHARE_ITEM  : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) ;
-
-DEGREE      : [Dd][Ee][Gg][Rr][Ee][Ee] ;
-CONC        : [Cc][Oo][Nn][Cc] ;
-MAJOR       : [Mm][Aa][Jj][Oo][Rr] ;
-MINOR       : [Mm][Ii][Nn][Oo][Rr] ;
-OTHER       : [Oo][Tt][Hh][Ee][Rr] ;
 
 /* DWResident, DW... etc. are DWIDs */
 /* (Decide=DWID) is a phrase used for tie-breaking by the auditor.*/
 
+STRING      : '"' .*? '"' ;
 
-OR          : (COMMA | ([Oo][Rr])) ;
-AND         : (PLUS | ([Aa][Nn][Dd])) ;
+INFROM      : IN | FROM ;
+OR          : COMMA | [Oo][Rr] ;
+AND         : PLUS | [Aa][Nn][Dd] ;
 
+FROM        : [Ff][Rr][Oo][Mm] ;
+IN          : [Ii][Nn] ;
 OF          : [Oo][Ff] ;
-INFROM      : ([Ii][Nn])|([Ff][Rr][Oo][Mm]) ;
-TAG         : ([Tt][Aa][Gg]) ( EQ SYMBOL )?;
+TAG         : [Tt][Aa][Gg] (EQ SYMBOL)?;
 
-WILDNUMBER  : (DIGIT+ WILDCARD DIGIT* LETTER?) | (WILDCARD DIGIT+ LETTER?) ;
-WILDSYMBOL  : ((LETTER | DIGIT)*  WILDCARD (LETTER | DIGIT)*)+ ;
-WILDCARD    : '@' ;
-
-CATALOG_NUMBER : NUMBER LETTER ;
-RANGE       : NUMBER ':' NUMBER ;
+DISCIPLINE      : (LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)* ;
 NUMBER      : DIGIT+ (DOT DIGIT*)? ;
 SYMBOL      : LETTER (LETTER | DIGIT | '_' | '-' | '&')* ;
 ALPHANUM    : (LETTER | DIGIT | DOT | '_')+ ;
+RANGE       : NUMBER ':' NUMBER ;
 
+CATALOG_NUMBER  : (NUMBER | WILDNUMBER) LETTER? ;
+WILDNUMBER      : (DIGIT+ AT DIGIT* LETTER?) | (AT DIGIT+ LETTER?) ;
+
+AT          : '@' ;
+COMMA       : ',' ;
+EQ          : '=' ;
 GE          : '>=' ;
 GT          : '>' ;
+HYPHEN      : '-' ;
 LE          : '<=' ;
-LT          : '<' ;
-EQ          : '=' ;
 LP          : '(' ;
-RP          : ')' ;
-COMMA       : ',' ;
+LT          : '<' ;
 PLUS        : '+' ;
+RP          : ')' ;
 SEMI        : ';' ;
 
 fragment DOT         : '.' ;
 fragment DIGIT       : [0-9] ;
 fragment LETTER      : [a-zA-Z] ;
 
-HIDE        : '{' [Hh][Ii][Dd][Ee] .*? '}' -> skip ;
-DECIDE      : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
-COMMENT     : '#' .*? '\n' -> skip ;
-LOG         : [Ll][Oo][Gg] .*? '\n' -> skip ;
+// Directives to the auditor, not requirements.
+CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
+                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
+                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
+                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip ;
+COMMENT        : '#' .*? '\n' -> skip ;
+DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
+HIDE           : '{' [Hh][Ii][Dd][Ee] .*? '}' -> skip ;
+HIDERULE       : [Hh][Ii][Dd][Ee][Rr][Uu][Ll][Ee] -> skip ;
+LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
+
 WHITESPACE  : [ \t\n\r]+ -> skip ;

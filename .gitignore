@@ -19,3 +19,6 @@ test_data/
 Logs/
 /testing/ReqBlock.g4
 /testing/req_block
+/testing/tokens
+/testing/tree
+/req_block

@@ -9,10 +9,10 @@ gui: req_block
 	grun ReqBlock req_block -gui < $(TEST_DATA)
 
 tree: req_block
-	grun ReqBlock req_block -tree < $(TEST_DATA) > tree.txt
+	grun ReqBlock req_block -tree < $(TEST_DATA) > tree
 
 tokens: req_block
-	grun ReqBlock req_block -tokens < $(TEST_DATA) > tokens.txt
+	grun ReqBlock req_block -tokens < $(TEST_DATA) > tokens
 
 req_block: ReqBlock.g4
 	antlr ReqBlock.g4
@@ -20,4 +20,4 @@ req_block: ReqBlock.g4
 	touch req_block
 
 clean:
-	 rm -f *.java *.class *.interp *.tokens tokens.txt tree.txt
+	 rm -f *.java *.class *.interp *.tokens tokens tree
