@@ -65,20 +65,47 @@ def format_catalog_years(period_start: str, period_stop: str) -> str:
   return f'{first} {last}'
 
 
-def classes_or_credits(ctx) -> str:
+def get_number(ctx):
+  """ Return int or float depending on value
   """
+  value = float(str(ctx.NUMBER()))
+  if value == int(value):
+    value = int(value)
+  return value
+
+
+def get_range(ctx):
+  """ Like get_number, but for range
+  """
+  low, high = [float(n) for n in str(ctx.RANGE()).split(':')]
+  if int(low) == low and int(high) == high:
+    low = int(low)
+    high = int(high)
+  return low, high
+
+
+def class_or_credit(ctx, number=0) -> str:
+  """ (CLASS | CREDIT)
+      Number, if present, tells whether to return singular or plural form of the keyword
   """
   if DEBUG:
-    print('*** classes_or_credits()', file=sys.stderr)
-  classes_credits = ctx.CREDITS()
-  if classes_credits is None:
-    classes_credits = ctx.CLASSES()
-  return str(classes_credits).lower()
+    print('*** class_or_credit()', file=sys.stderr)
+  which = ctx.CREDIT()
+  if which is None:
+    which = ctx.CLASS()
+  which = str(which).lower().strip('es')
+  if number != 1:
+    which = classes if which == 'class' else 'credits'
+  return which
 
 
 def build_course_list(institution, ctx) -> list:
-  """ INFROM? class_item (AND class_item)*
-      INFROM? class_item (OR class_item)*
+  """ course_list     : course (and_list | or_list)? ;
+      course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
+      course_item     : DISCIPLINE? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
+      and_list        : (AND course_item)+ ;
+      or_list         : (OR course_item)+ ;
+
       If the list is an AND list, but there are wildcards, say it's an OR list. This is a parser
       ambiguity that needs to be resolved ...
   """
@@ -87,60 +114,65 @@ def build_course_list(institution, ctx) -> list:
   if ctx is None:
     return None
   course_list: list = []
-  if type(ctx).__name__ == 'Or_coursesContext':
-    list_type = 'or'
-  else:
-    list_type = 'and'
+  list_type = 'or'  # default
 
   for class_item in ctx.class_item():
-    if class_item.SYMBOL():
-      display_discipline = str(class_item.SYMBOL())
-      search_discipline = display_discipline
-    elif class_item.WILDSYMBOL():
-      display_discipline = str(class_item.WILDSYMBOL())
-      search_discipline = display_discipline.replace('@', '.*')
-      list_type = 'or'
-    if class_item.CATALOG_NUMBER():
-      display_number = str(class_item.CATALOG_NUMBER())
-      search_number = f"catalog_number = '{display_number}'"
-    elif class_item.NUMBER():
-      display_number = str(class_item.NUMBER())
-      search_number = f"catalog_number = '{display_number}'"
-    elif class_item.RANGE():
-      display_number = str(class_item.RANGE())
-      low, high = display_number.split(':')
-      list_type = 'or'
-      search_number = f""" numeric_part(catalog_number) >= {float(low)} and
-                           numeric_part(catalog_number) <=' {float(high)}'
-                      """
-    elif class_item.WILDNUMBER():
-      display_number = str(class_item.WILDNUMBER())
-      search_number = f"catalog_number ~ '{display_number.replace('@', '.*')}'"
-      list_type = 'or'
+    print(class_item, file=sys.stderr)
 
-    # Note change of attributes from a semicolon-separated list of name:value pairs to a comma-
-    # separated list of values.
-    course_query = f"""
-                      select institution, course_id, offer_nbr, discipline, catalog_number, title,
-                             requisites, description, contact_hours, max_credits, designation,
-                             replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
-                             as attributes
-                        from cuny_courses
-                       where institution ~* '{institution}'
-                         and course_status = 'A'
-                         and discipline ~ '{search_discipline}'
-                         and {search_number}
-                         order by numeric_part(catalog_number), discipline
-                    """
-    conn = PgConnection()
-    cursor = conn.cursor()
-    cursor.execute(course_query)
+  # if type(ctx).__name__ == 'Or_coursesContext':
+  #   list_type = 'or'
+  # else:
+  #   list_type = 'and'
 
-    # Convert generator to list.
-    details = [row for row in cursor.fetchall()]
-    course_list.append({'display': f'{display_discipline} {display_number}',
-                        'info': details})
-    conn.close()
+  # for class_item in ctx.class_item():
+  #   if class_item.SYMBOL():
+  #     display_discipline = str(class_item.SYMBOL())
+  #     search_discipline = display_discipline
+  #   elif class_item.WILDSYMBOL():
+  #     display_discipline = str(class_item.WILDSYMBOL())
+  #     search_discipline = display_discipline.replace('@', '.*')
+  #     list_type = 'or'
+  #   if class_item.CATALOG_NUMBER():
+  #     display_number = str(class_item.CATALOG_NUMBER())
+  #     search_number = f"catalog_number = '{display_number}'"
+  #   elif class_item.NUMBER():
+  #     display_number = str(class_item.NUMBER())
+  #     search_number = f"catalog_number = '{display_number}'"
+  #   elif class_item.RANGE():
+  #     display_number = str(class_item.RANGE())
+  #     low, high = display_number.split(':')
+  #     list_type = 'or'
+  #     search_number = f""" numeric_part(catalog_number) >= {float(low)} and
+  #                          numeric_part(catalog_number) <=' {float(high)}'
+  #                     """
+  #   elif class_item.WILDNUMBER():
+  #     display_number = str(class_item.WILDNUMBER())
+  #     search_number = f"catalog_number ~ '{display_number.replace('@', '.*')}'"
+  #     list_type = 'or'
+
+  #   # Note change of attributes from a semicolon-separated list of name:value pairs to a comma-
+  #   # separated list of values.
+  #   course_query = f"""
+  #                     select institution, course_id, offer_nbr, discipline, catalog_number, title,
+  #                            requisites, description, contact_hours, max_credits, designation,
+  #                            replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
+  #                            as attributes
+  #                       from cuny_courses
+  #                      where institution ~* '{institution}'
+  #                        and course_status = 'A'
+  #                        and discipline ~ '{search_discipline}'
+  #                        and {search_number}
+  #                        order by numeric_part(catalog_number), discipline
+  #                   """
+  #   conn = PgConnection()
+  #   cursor = conn.cursor()
+  #   cursor.execute(course_query)
+
+  #   # Convert generator to list.
+  #   details = [row for row in cursor.fetchall()]
+  #   course_list.append({'display': f'{display_discipline} {display_number}',
+  #                       'info': details})
+  #   conn.close()
   return {'courses': course_list, 'list_type': list_type}
 
 
@@ -258,41 +290,40 @@ class ReqBlockInterpreter(ReqBlockListener):
     self.scribe_section = ScribeSection.BODY
 
   def enterMinres(self, ctx):
-    """ MINRES NUMBER (CREDITS | CLASSES)
+    """ MINRES NUMBER (CREDIT | CLASS)
     """
     if DEBUG:
       print('*** enterMinres()', file=sys.stderr)
-    classes_credits = classes_or_credits(ctx)
-    if float(str(ctx.NUMBER())) == 1:
-      classes_credits = classes_credits.strip('es')
+    number = get_number(ctx)
+    which = class_or_credit(ctx, number)
     self.sections[self.scribe_section.value].append(
         Requirement('minres',
-                    f'{ctx.NUMBER()} {classes_credits}',
-                    f'At least {ctx.NUMBER()} {str(classes_credits).lower()} '
+                    f'{number} {which}',
+                    f'At least {number} {which.lower()} '
                     f'must be completed in residency.',
                     None))
 
 # mingpa      : MINGPA NUMBER ;
 # mingrade    : MINGRADE NUMBER ;
 
-  def enterNumcredits(self, ctx):
-    """ (NUMBER | RANGE) CREDITS (and_courses | or_courses)? TAG? ;
+  def enterNumcredit(self, ctx):
+    """ (NUMBER | RANGE) CREDIT INFROM? course_list? TAG? ; ;
     """
     if DEBUG:
-      print('*** enterNumcredits()', file=sys.stderr)
+      print('*** enterNumcredit()', file=sys.stderr)
     text = f'This {self.block_type_str} requires '
     if ctx.NUMBER() is not None:
-      text += f'{ctx.NUMBER()} credits'
+      number = get_number(ctx)
+      suffix = '' if number == 1 else 's'
+      text += f'{number} credit{suffix}'
     elif ctx.RANGE() is not None:
-      low, high = str(ctx.RANGE()).split(':')
+      low, high = get_range(ctx)
       text += f'between {low} and {high} credits'
     else:
       text += f'an <span class="error">unknown</span> number of credits'
     course_list = None
-    if ctx.and_courses() is not None:
-      course_list = build_course_list(self.institution, ctx.and_courses())
-    if ctx.or_courses() is not None:
-      course_list = build_course_list(self.institution, ctx.or_courses())
+    if ctx.course_list() is not None:
+      course_list = build_course_list(self.institution, ctx.course_list())
 
     if course_list is None:
       text += '.'
@@ -314,11 +345,11 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'{text}',
                     courses))
 
-  def enterMaxcredits(self, ctx):
-    """ MAXCREDITS NUMBER (and_courses | or_courses)
+  def enterMaxcredit(self, ctx):
+    """ MAXCREDIT NUMBER (and_courses | or_courses)
     """
     if DEBUG:
-      print(f'*** enterMaxcredits()', file=sys.stderr)
+      print(f'*** enterMaxcredit()', file=sys.stderr)
     limit = f'a maximum of {ctx.NUMBER()}'
     if ctx.NUMBER() == 0:
       limit = 'zero'
@@ -349,11 +380,11 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'{text}',
                     courses))
 
-  def enterMaxclasses(self, ctx):
-    """ MAXCLASSES NUMBER (and_courses | or_courses)
+  def enterMaxclass(self, ctx):
+    """ MAXCLASS NUMBER (and_course | or_course)
     """
     if DEBUG:
-      print('*** enterMaxclasses()', file=sys.stderr)
+      print('*** enterMaxclass()', file=sys.stderr)
     num_classes = int(str(ctx.NUMBER()))
     suffix = '' if num_classes == 1 else 'es'
     limit = f'no more than {num_classes} class{suffix}'
@@ -387,7 +418,7 @@ class ReqBlockInterpreter(ReqBlockListener):
                     courses))
 
   def enterMaxpassfail(self, ctx):
-    """ MAXPASSFAIL NUMBER (CREDITS | CLASSES) (TAG '=' SYMBOL)?
+    """ MAXPASSFAIL NUMBER (CREDIT | CLASS) (TAG '=' SYMBOL)?
     """
     if DEBUG:
       print('*** enterMaxpassfail()', file=sys.stderr)
@@ -395,7 +426,7 @@ class ReqBlockInterpreter(ReqBlockListener):
     limit = f'no more than {ctx.NUMBER()}'
     if num == 0:
       limit = 'no'
-    which = classes_or_credits(ctx)
+    which = class_or_credit(ctx)
     if num == 1:
       which = which[0:-1].strip('e')
     text = f'This {self.block_type_str} allows {limit} {which} to be taken Pass/Fail.'
@@ -405,9 +436,9 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'{text}',
                     None))
 
-  def enterNumclasses(self, ctx):
+  def enterNumclass(self, ctx):
     if DEBUG:
-      print('*** enterNumClasses', file=sys.stderr)
+      print('*** enterNumClass', file=sys.stderr)
     pass
 
   def enterRule_subset(self, ctx):
@@ -573,7 +604,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                      + return_html)
     return_html += interpreter.html
 
-    if period == 'current' or period == 'latest':
+    if period == 'current' or period == 'recent':
       break
   conn.close()
   return return_html

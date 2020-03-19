@@ -8,6 +8,7 @@ __pycache__/
 *.tokens
 *.txt
 *.egg-info/
+*.log
 
 .bumpversion.cfg
 MANIFEST.in
