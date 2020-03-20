@@ -9,6 +9,7 @@ from typing import List, Set, Dict, Tuple, Optional, Union
 import argparse
 import sys
 import os
+import traceback
 from io import StringIO
 import re
 
@@ -139,7 +140,44 @@ def build_course_list(institution, ctx) -> list:
       else:
         discipline, catalog_number = items
       course_list.append((discipline, catalog_number))
-  print(course_list)
+
+  # Expand the list of scribe-encoded courses into courses that actually exist
+  if DEBUG:
+    print(course_list)
+  conn = PgConnection()
+  cursor = conn.cursor()
+  for course in course_list:
+    # discipline part
+    discipline, catalog_number = course
+    op = '='
+    if '@' in discipline:
+      discp_op = '~*'
+      # if @ is not at the beginning or the end, anchor the regex with whatever precedes or follows
+      # it. Otherwise, just drop it.
+      matches = re.match(r'^(.*)(@)?(.*)$', discipline)
+    # catalog number part
+    #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
+    #   numbers that start with zero. But other patterns might be used: 1@, for example.
+    catalog_numbers = catalog_number.split(':')
+    if len(catalog_numbers) == 1:
+      search_number = f"catalog_number = '{catalog_numbers[0]}'"
+    else:
+      search_number = f""" numeric_part(catalog_number) >= {float(low)} and
+                           numeric_part(catalog_number) <=' {float(high)}'
+                      """
+    query = f"""
+select institution, course_id, offer_nbr, discipline, catalog_number, title,
+       requisites, description, contact_hours, max_credits, designation,
+       replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
+       as attributes
+  from cuny_courses
+ where institution ~* '{institution}'
+   and course_status = 'A'
+   and discipline {discp_op} '{discipline}'
+   and {search_number}
+   order by discipline, numeric_part(catalog_number)
+              """
+    cursor.execute(course_query)
 
   # for class_item in ctx.class_item():
   #   if class_item.SYMBOL():
@@ -159,9 +197,6 @@ def build_course_list(institution, ctx) -> list:
   #     display_number = str(class_item.RANGE())
   #     low, high = display_number.split(':')
   #     list_type = 'or'
-  #     search_number = f""" numeric_part(catalog_number) >= {float(low)} and
-  #                          numeric_part(catalog_number) <=' {float(high)}'
-  #                     """
   #   elif class_item.WILDNUMBER():
   #     display_number = str(class_item.WILDNUMBER())
   #     search_number = f"catalog_number ~ '{display_number.replace('@', '.*')}'"
@@ -169,21 +204,6 @@ def build_course_list(institution, ctx) -> list:
 
   #   # Note change of attributes from a semicolon-separated list of name:value pairs to a comma-
   #   # separated list of values.
-  #   course_query = f"""
-  #                     select institution, course_id, offer_nbr, discipline, catalog_number, title,
-  #                            requisites, description, contact_hours, max_credits, designation,
-  #                            replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
-  #                            as attributes
-  #                       from cuny_courses
-  #                      where institution ~* '{institution}'
-  #                        and course_status = 'A'
-  #                        and discipline ~ '{search_discipline}'
-  #                        and {search_number}
-  #                        order by numeric_part(catalog_number), discipline
-  #                   """
-  #   conn = PgConnection()
-  #   cursor = conn.cursor()
-  #   cursor.execute(course_query)
 
   #   # Convert generator to list.
   #   details = [row for row in cursor.fetchall()]
@@ -610,6 +630,9 @@ def dgw_parser(institution, block_type, block_value, period='current'):
       tree = parser.req_block()
       walker.walk(interpreter, tree)
     except Exception as e:
+      if DEBUG:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_tb(exc_traceback, limit=30, file=sys.stdout)
       msg_body = f"""College: {interpreter.institution}
                      Block Type: {interpreter.block_type}
                      Block Value: {interpreter.block_value}
