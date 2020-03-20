@@ -96,7 +96,7 @@ mingpa          : MINGPA NUMBER ;
 mingrade        : MINGRADE NUMBER ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
 numclass        : (NUMBER | RANGE) CLASS INFROM? course_list? TAG? label* ;
-numcredit       : (NUMBER | RANGE) CREDIT INFROM? course_list? TAG? ;
+numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
 noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
 proxy_advice    : PROXYADVICE STRING proxy_advice* ;
 remark          : REMARK STRING (SEMI? remark)* ;
@@ -137,6 +137,7 @@ MINRES        : [Mm][Ii][Nn][Rr][Ee][Ss] ;
 NONCOURSE     : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
 OTHER         : [Oo][Tt][Hh][Ee][Rr] ;
 PROXYADVICE   : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] ;
+PSEUDO        : [Pp][Ss][Ee][Uu][Dd][Oo] ;
 REMARK        : [Rr][Ee][Mm][Aa][Rr][Kk] ;
 RULE_COMPLETE : [Rr][Uu][Ll][Ee]([Ii][Nn])?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] ;
 SHARE         : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
@@ -144,7 +145,8 @@ SHARE         : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
               | [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
               ;
 SHARE_LIST    : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
-SHARE_ITEM    : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) ;
+SHARE_ITEM    : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) | THIS_BLOCK;
+THIS_BLOCK    : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk] ;
 UNDER         : [Uu][Nn][Dd][Ee][Rr] ;
 
 

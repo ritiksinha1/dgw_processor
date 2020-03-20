@@ -36,7 +36,7 @@ if not os.getenv('HEROKU'):
                       level=logging.DEBUG)
 
 Requirement = namedtuple('Requirement', 'keyword, value, text, course')
-ShareList = namedtuple('ShareList', 'keyword share_list')
+ShareList = namedtuple('ShareList', 'keyword text share_list')
 
 trans_dict: Dict[int, None] = dict()
 for c in range(13, 31):
@@ -114,15 +114,32 @@ def build_course_list(institution, ctx) -> list:
   if ctx is None:
     return None
   course_list: list = []
+
+  # The list has to start with both a discipline and catalog number
+  course_ctx = ctx.course()
+  discipline, catalog_number = (str(c) for c in course_ctx.children)
+  course_list.append((discipline, catalog_number))
+  # Drill into ctx to determine which type of list
   list_type = 'or'  # default
+  if ctx.and_list():
+    list_type = 'and'
+    list_fun = ctx.and_list
+  elif ctx.or_list():
+    list_type = 'or'
+    list_fun = ctx.or_list
+  else:
+    list_fun = None
 
-  for class_item in ctx.class_item():
-    print(class_item, file=sys.stderr)
-
-  # if type(ctx).__name__ == 'Or_coursesContext':
-  #   list_type = 'or'
-  # else:
-  #   list_type = 'and'
+  if list_fun is not None:
+    course_items = list_fun().course_item()
+    for course_item in course_items:
+      items = [str(c) for c in course_item.children]
+      if len(items) == 1:
+        catalog_number = items[0]
+      else:
+        discipline, catalog_number = items
+      course_list.append((discipline, catalog_number))
+  print(course_list)
 
   # for class_item in ctx.class_item():
   #   if class_item.SYMBOL():
@@ -307,11 +324,14 @@ class ReqBlockInterpreter(ReqBlockListener):
 # mingrade    : MINGRADE NUMBER ;
 
   def enterNumcredit(self, ctx):
-    """ (NUMBER | RANGE) CREDIT INFROM? course_list? TAG? ; ;
+    """ (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ; ;
     """
     if DEBUG:
       print('*** enterNumcredit()', file=sys.stderr)
-    text = f'This {self.block_type_str} requires '
+    if ctx.PSEUDO() is None:
+      text = f'This {self.block_type_str} requires '
+    else:
+      text = f'This {self.block_type_str} generally requires '
     if ctx.NUMBER() is not None:
       number = get_number(ctx)
       suffix = '' if number == 1 else 's'
@@ -381,7 +401,7 @@ class ReqBlockInterpreter(ReqBlockListener):
                     courses))
 
   def enterMaxclass(self, ctx):
-    """ MAXCLASS NUMBER (and_course | or_course)
+    """ MAXCLASS NUMBER INFROM? course_list
     """
     if DEBUG:
       print('*** enterMaxclass()', file=sys.stderr)
@@ -392,10 +412,8 @@ class ReqBlockInterpreter(ReqBlockListener):
       limit = 'no classes'
     text = f'This {self.block_type_str} allows {limit}'
     course_list = None
-    if ctx.and_courses() is not None:
-      course_list = build_course_list(self.institution, ctx.and_courses())
-    if ctx.or_courses() is not None:
-      course_list = build_course_list(self.institution, ctx.or_courses())
+    if ctx.course_list() is not None:
+      course_list = build_course_list(self.institution, ctx.course_list())
 
     if course_list is None:  # Weird: no classes allowed, but no course list provided.
       text += '.'
@@ -485,18 +503,24 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterShare()', file=sys.stderr)
-      token = str(ctx.SHARE())
-      share_type = 'share' \
-          if token.lower() in ['share', 'sharewith', 'nonexclusive'] \
-          else 'exclusive'
-      this_section = self.sections[self.scribe_section.value]
-      for i, item in enumerate(this_section):
-        if item.keyword == share_type:
-          break
-      else:
-        i += 1
-        this_section.append(ShareList(share_type, []))
-      this_section[i].share_list.append(str(ctx.SHARE_LIST()).strip('()'))
+    token = str(ctx.SHARE())
+    if token.lower() in ['share', 'sharewith', 'nonexclusive']:
+      share_type = 'share'
+      neg = ''
+    else:
+      share_type = 'exclusive'
+      neg = ' not'
+    text = (f'Courses used to satisfy this requirement may{neg} also be used to satisfy'
+            f' the following requirements:')
+    this_section = self.sections[self.scribe_section.value]
+    for i, item in enumerate(this_section):
+      if item.keyword == share_type:
+        break
+    else:
+      i += 1
+      this_section.append(ShareList(share_type, text, []))
+
+    this_section[i].share_list.append(str(ctx.SHARE_LIST()).strip('()'))
 
 
 # Class DGW_Logger
