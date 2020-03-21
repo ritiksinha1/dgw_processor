@@ -149,12 +149,14 @@ def build_course_list(institution, ctx) -> list:
   for course in course_list:
     # discipline part
     discipline, catalog_number = course
-    op = '='
+    discp_op = '='
     if '@' in discipline:
       discp_op = '~*'
       # if @ is not at the beginning or the end, anchor the regex with whatever precedes or follows
       # it. Otherwise, just drop it.
-      matches = re.match(r'^(.*)(@)?(.*)$', discipline)
+      matches = re.match(r'^(.*?)@(.*)$', discipline)
+      discipline = f"^{matches.group(1)}.*{matches.group(2).replace('@', '.*')}$"
+
     # catalog number part
     #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
     #   numbers that start with zero. But other patterns might be used: 1@, for example.
@@ -165,7 +167,7 @@ def build_course_list(institution, ctx) -> list:
       search_number = f""" numeric_part(catalog_number) >= {float(low)} and
                            numeric_part(catalog_number) <=' {float(high)}'
                       """
-    query = f"""
+    course_query = f"""
 select institution, course_id, offer_nbr, discipline, catalog_number, title,
        requisites, description, contact_hours, max_credits, designation,
        replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
