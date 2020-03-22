@@ -238,9 +238,7 @@ def course_list2html(course_list: dict):
 
   return_list = []
   for course in course_list:
-    print(f'course.courses {course.courses}')
     for found_course in course.courses:
-      print(f'found_course {found_course}')
       if all_writing and 'WRIC' not in found_course.attributes:
         all_writing = False
       if all_blanket and 'BKCR' not in found_course.attributes \
@@ -431,6 +429,8 @@ class ReqBlockInterpreter(ReqBlockListener):
       text += '.'
       courses = None
     else:
+      # *** the number of scribed courses and the number of found courses can be different
+      # *** and need to be shown: "This rule applies to the following active courses"
       list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
       attributes, html_list = course_list2html(course_list['courses'])
       len_list = len(html_list)
@@ -466,14 +466,16 @@ class ReqBlockInterpreter(ReqBlockListener):
       text += '.'
       courses = None
     else:
-      # *** either if 2 ****
-      list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
       attributes, html_list = course_list2html(course_list['courses'])
       len_list = len(html_list)
       if len_list == 1:
         preamble = f' in '
         courses = html_list[0]
       else:
+        if len_list == 2:
+          list_quantifier = 'either' if course_list['list_type'] == 'or' else 'both'
+        else:
+          list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
         preamble = f' in {list_quantifier} of these {len_list} {" and ".join(attributes)} courses:'
         courses = html_list
       text += f' {preamble} '
