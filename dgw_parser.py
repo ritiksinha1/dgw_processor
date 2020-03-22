@@ -29,6 +29,8 @@ from pgconnection import PgConnection
 from closeable_objects import dict2html, items2html
 from templates import *
 
+# Module initialization
+# -------------------------------------------------------------------------------------------------
 DEBUG = os.getenv('DEBUG_PARSER')
 
 if not os.getenv('HEROKU'):
@@ -38,6 +40,7 @@ if not os.getenv('HEROKU'):
 
 Requirement = namedtuple('Requirement', 'keyword, value, text, course')
 ShareList = namedtuple('ShareList', 'keyword text share_list')
+ScribedCourse = namedtuple('ScribedCourse', 'discipline catalog_number courses')
 
 trans_dict: Dict[int, None] = dict()
 for c in range(13, 31):
@@ -54,7 +57,12 @@ for row in cursor.fetchall():
   colleges[row.code] = row.name
 conn.close()
 
+# Utilities
+# =================================================================================================
 
+
+# format_catalog_years
+# -------------------------------------------------------------------------------------------------
 def format_catalog_years(period_start: str, period_stop: str) -> str:
   """ Just the range of years covered, not whether grad/undergrad
   """
@@ -66,6 +74,8 @@ def format_catalog_years(period_start: str, period_stop: str) -> str:
   return f'{first} {last}'
 
 
+# get_number()
+# -------------------------------------------------------------------------------------------------
 def get_number(ctx):
   """ Return int or float depending on value
   """
@@ -75,6 +85,8 @@ def get_number(ctx):
   return value
 
 
+# get_range()
+# -------------------------------------------------------------------------------------------------
 def get_range(ctx):
   """ Like get_number, but for range
   """
@@ -85,6 +97,8 @@ def get_range(ctx):
   return low, high
 
 
+# class_or_credit()
+# -------------------------------------------------------------------------------------------------
 def class_or_credit(ctx, number=0) -> str:
   """ (CLASS | CREDIT)
       Number, if present, tells whether to return singular or plural form of the keyword
@@ -100,6 +114,8 @@ def class_or_credit(ctx, number=0) -> str:
   return which
 
 
+# build_course_list()
+# -------------------------------------------------------------------------------------------------
 def build_course_list(institution, ctx) -> list:
   """ course_list     : course (and_list | or_list)? ;
       course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
@@ -109,17 +125,20 @@ def build_course_list(institution, ctx) -> list:
 
       If the list is an AND list, but there are wildcards, say it's an OR list. This is a parser
       ambiguity that needs to be resolved ...
+
+      The returned list has the list of courses as extracted from the Scribe block and, for each
+      scribed course, a list of actual courses with their catalog descriptions.
   """
   if DEBUG:
     print(f'*** build_course_list()', file=sys.stderr)
   if ctx is None:
     return None
-  course_list: list = []
+  scribed_courses: list = []
 
   # The list has to start with both a discipline and catalog number
   course_ctx = ctx.course()
   discipline, catalog_number = (str(c) for c in course_ctx.children)
-  course_list.append((discipline, catalog_number))
+  scribed_courses.append(ScribedCourse._make((discipline, catalog_number, [])))
   # Drill into ctx to determine which type of list
   list_type = 'or'  # default
   if ctx.and_list():
@@ -139,19 +158,16 @@ def build_course_list(institution, ctx) -> list:
         catalog_number = items[0]
       else:
         discipline, catalog_number = items
-      course_list.append((discipline, catalog_number))
+      scribed_courses.append(ScribedCourse._make((discipline, catalog_number, [])))
 
   # Expand the list of scribe-encoded courses into courses that actually exist
-  if DEBUG:
-    print(course_list)
   conn = PgConnection()
   cursor = conn.cursor()
-  print(len(course_list))
-  for course in course_list:
+  for scribed_course in scribed_courses:
     # For display to users
-    display_discipline, display_catalog_number = course
+    display_discipline, display_catalog_number, _ = scribed_course
     # For course db query
-    discipline, catalog_number = course
+    discipline, catalog_number, _ = scribed_course
     # discipline part
     discp_op = '='
     if '@' in discipline:
@@ -166,7 +182,7 @@ def build_course_list(institution, ctx) -> list:
       if '@' in catalog_numbers[0]:
         catnum_clause = "catalog_number ~* '^" + catalog_numbers[0].replace('@', '.*') + '$'
       else:
-        catnum_clause = "catalog_number = '{catalog_numbers[0]}'"
+        catnum_clause = f"catalog_number = '{catalog_numbers[0]}'"
     else:
       low, high = catalog_number
       #  Assume no wildcards in range
@@ -205,41 +221,15 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
               """
     cursor.execute(course_query)
 
-  # for class_item in ctx.class_item():
-  #   if class_item.SYMBOL():
-  #     display_discipline = str(class_item.SYMBOL())
-  #     search_discipline = display_discipline
-  #   elif class_item.WILDSYMBOL():
-  #     display_discipline = str(class_item.WILDSYMBOL())
-  #     search_discipline = display_discipline.replace('@', '.*')
-  #     list_type = 'or'
-  #   if class_item.CATALOG_NUMBER():
-  #     display_number = str(class_item.CATALOG_NUMBER())
-  #     search_number = f"catalog_number = '{display_number}'"
-  #   elif class_item.NUMBER():
-  #     display_number = str(class_item.NUMBER())
-  #     search_number = f"catalog_number = '{display_number}'"
-  #   elif class_item.RANGE():
-  #     display_number = str(class_item.RANGE())
-  #     low, high = display_number.split(':')
-  #     list_type = 'or'
-  #   elif class_item.WILDNUMBER():
-  #     display_number = str(class_item.WILDNUMBER())
-  #     search_number = f"catalog_number ~ '{display_number.replace('@', '.*')}'"
-  #     list_type = 'or'
-
-  #   # Note change of attributes from a semicolon-separated list of name:value pairs to a comma-
-  #   # separated list of values.
-
     # Convert generator to list.
-    details = [row for row in cursor.fetchall()]
-    # No, use a different list for the details versus the spec list
-    course_list.append({'display': f'{display_discipline} {display_catalog_number}',
-                        'info': details})
+    for row in cursor.fetchall():
+      scribed_course.courses.append(row)
   conn.close()
-  return {'courses': course_list, 'list_type': list_type}
+  return {'courses': scribed_courses, 'list_type': list_type}
 
 
+# course_list2html()
+# -------------------------------------------------------------------------------------------------
 def course_list2html(course_list: dict):
   """ Look up all the courses in course_list, and return their catalog entries as HTML divs
   """
@@ -248,24 +238,32 @@ def course_list2html(course_list: dict):
 
   return_list = []
   for course in course_list:
-    for info in course['info']:
-      if all_writing and 'WRIC' not in info.attributes:
+    print(f'course.courses {course.courses}')
+    for found_course in course.courses:
+      print(f'found_course {found_course}')
+      if all_writing and 'WRIC' not in found_course.attributes:
         all_writing = False
-      if all_blanket and 'BKCR' not in info.attributes \
-         and info.max_credits > 0:
+      if all_blanket and 'BKCR' not in found_course.attributes \
+         and found_course.max_credits > 0:
         if DEBUG:
-          print('***', info.discipline, info.catalog_number, 'is a wet blanket', file=sys.stderr)
+          print('***', found_course.discipline, found_course.catalog_number, 'is a wet blanket',
+                file=sys.stderr)
         all_blanket = False
       return_list.append(f"""
-                  <div title="{info.course_id}:{info.offer_nbr}">
-                    <strong>{info.discipline} {info.catalog_number} {info.title}</strong>
+                  <div title="{found_course.course_id}:{found_course.offer_nbr}">
+                    <strong>
+                      {found_course.discipline} {found_course.catalog_number}
+                      {found_course.title}</strong>
                     <br>
-                    {info.contact_hours:0.1f} hr; {info.max_credits:0.1f} cr Requisites:
-                    <em>{info.requisites}</em>
+                    {found_course.contact_hours:0.1f} hr; {found_course.max_credits:0.1f} cr
+                    Requisites: <em>{found_course.requisites}</em>
                     <br>
-                    {info.description}
+                    {found_course.description}
                     <br>
-                    <em>Designation: {info.designation}; Attributes: {info.attributes}</em>
+                    <em>
+                      Designation: {found_course.designation};
+                      Attributes: {found_course.attributes}
+                    </em>
                   </div>
               """)
   attributes = []
@@ -277,6 +275,8 @@ def course_list2html(course_list: dict):
   return attributes, return_list
 
 
+# class ScribeSection(Enum)
+# -------------------------------------------------------------------------------------------------
 class ScribeSection(Enum):
   """ Keep track of which section of a Scribe Block is being processed.
   """
@@ -466,6 +466,7 @@ class ReqBlockInterpreter(ReqBlockListener):
       text += '.'
       courses = None
     else:
+      # *** either if 2 ****
       list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
       attributes, html_list = course_list2html(course_list['courses'])
       len_list = len(html_list)
