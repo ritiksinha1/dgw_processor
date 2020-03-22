@@ -47,7 +47,7 @@ def serializedATN():
         buf.write("\3\36\3\36\3\36\3\37\3\37\3\37\3\37\5\37\u0148\n\37\3")
         buf.write("\37\3\37\5\37\u014c\n\37\3\37\3\37\3\37\3 \3 \3 \3\u00ba")
         buf.write("\2!\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\60")
-        buf.write("\62\64\668:<>\2\5\4\2//\62\64\4\2\7\7\t\t\4\2//\62\62")
+        buf.write("\62\64\668:<>\2\5\4\2/\60\63\64\4\2\7\7\t\t\4\2//\63\63")
         buf.write("\2\u016f\2@\3\2\2\2\4U\3\2\2\2\6a\3\2\2\2\bd\3\2\2\2\n")
         buf.write("v\3\2\2\2\f\u0090\3\2\2\2\16\u0092\3\2\2\2\20\u0098\3")
         buf.write("\2\2\2\22\u009d\3\2\2\2\24\u00a2\3\2\2\2\26\u00a6\3\2")
@@ -97,7 +97,7 @@ def serializedATN():
         buf.write("\3\2\2\2\u00ae\u00af\3\2\2\2\u00af\31\3\2\2\2\u00b0\u00b1")
         buf.write("\7(\2\2\u00b1\u00b3\5\26\f\2\u00b2\u00b0\3\2\2\2\u00b3")
         buf.write("\u00b4\3\2\2\2\u00b4\u00b2\3\2\2\2\u00b4\u00b5\3\2\2\2")
-        buf.write("\u00b5\33\3\2\2\2\u00b6\u00ba\7\16\2\2\u00b7\u00b9\7\61")
+        buf.write("\u00b5\33\3\2\2\2\u00b6\u00ba\7\16\2\2\u00b7\u00b9\7\62")
         buf.write("\2\2\u00b8\u00b7\3\2\2\2\u00b9\u00bc\3\2\2\2\u00ba\u00bb")
         buf.write("\3\2\2\2\u00ba\u00b8\3\2\2\2\u00bb\u00bd\3\2\2\2\u00bc")
         buf.write("\u00ba\3\2\2\2\u00bd\u00be\7&\2\2\u00be\u00c2\7@\2\2\u00bf")
@@ -118,8 +118,8 @@ def serializedATN():
         buf.write("\u00e0%\3\2\2\2\u00e1\u00e2\7\26\2\2\u00e2\u00e3\7/\2")
         buf.write("\2\u00e3\u00e5\t\3\2\2\u00e4\u00e6\7\'\2\2\u00e5\u00e4")
         buf.write("\3\2\2\2\u00e5\u00e6\3\2\2\2\u00e6\u00e7\3\2\2\2\u00e7")
-        buf.write("\u00e8\7<\2\2\u00e8\u00ed\7\60\2\2\u00e9\u00ea\7\66\2")
-        buf.write("\2\u00ea\u00ec\7\60\2\2\u00eb\u00e9\3\2\2\2\u00ec\u00ef")
+        buf.write("\u00e8\7<\2\2\u00e8\u00ed\7\61\2\2\u00e9\u00ea\7\66\2")
+        buf.write("\2\u00ea\u00ec\7\61\2\2\u00eb\u00e9\3\2\2\2\u00ec\u00ef")
         buf.write("\3\2\2\2\u00ed\u00eb\3\2\2\2\u00ed\u00ee\3\2\2\2\u00ee")
         buf.write("\u00f1\3\2\2\2\u00ef\u00ed\3\2\2\2\u00f0\u00f2\7-\2\2")
         buf.write("\u00f1\u00f0\3\2\2\2\u00f1\u00f2\3\2\2\2\u00f2\'\3\2\2")
@@ -142,7 +142,7 @@ def serializedATN():
         buf.write("\2\u0118\u011a\3\2\2\2\u0119\u011b\7-\2\2\u011a\u0119")
         buf.write("\3\2\2\2\u011a\u011b\3\2\2\2\u011b\61\3\2\2\2\u011c\u011d")
         buf.write("\7/\2\2\u011d\u011e\7\33\2\2\u011e\u011f\7<\2\2\u011f")
-        buf.write("\u0124\7\60\2\2\u0120\u0121\7\66\2\2\u0121\u0123\7\60")
+        buf.write("\u0124\7\61\2\2\u0120\u0121\7\66\2\2\u0121\u0123\7\61")
         buf.write("\2\2\u0122\u0120\3\2\2\2\u0123\u0126\3\2\2\2\u0124\u0122")
         buf.write("\3\2\2\2\u0124\u0125\3\2\2\2\u0125\u0127\3\2\2\2\u0126")
         buf.write("\u0124\3\2\2\2\u0127\u0128\7?\2\2\u0128\63\3\2\2\2\u0129")
@@ -162,7 +162,7 @@ def serializedATN():
         buf.write("\3\2\2\2\u0149\u014b\5\24\13\2\u014a\u014c\5\32\16\2\u014b")
         buf.write("\u014a\3\2\2\2\u014b\u014c\3\2\2\2\u014c\u014d\3\2\2\2")
         buf.write("\u014d\u014e\5\64\33\2\u014e\u014f\5\34\17\2\u014f=\3")
-        buf.write("\2\2\2\u0150\u0151\7\60\2\2\u0151?\3\2\2\2(SU_aikq}\u008d")
+        buf.write("\2\2\2\u0150\u0151\7\61\2\2\u0151?\3\2\2\2(SU_aikq}\u008d")
         buf.write("\u0090\u00a0\u00a6\u00ae\u00b4\u00ba\u00c2\u00cb\u00d0")
         buf.write("\u00d7\u00df\u00e5\u00ed\u00f1\u0100\u0103\u0106\u010b")
         buf.write("\u0111\u0114\u0117\u011a\u0124\u012e\u0134\u0139\u013e")
@@ -205,7 +205,7 @@ class ReqBlockParser ( Parser ):
                       "RULE_COMPLETE", "SHARE", "SHARE_LIST", "SHARE_ITEM", 
                       "THIS_BLOCK", "UNDER", "STRING", "INFROM", "OR", "AND", 
                       "FROM", "IN", "OF", "TAG", "DISCIPLINE", "NUMBER", 
-                      "SYMBOL", "ALPHANUM", "RANGE", "CATALOG_NUMBER", "WILDNUMBER", 
+                      "CATALOG_NUMBER", "SYMBOL", "ALPHANUM", "RANGE", "WILDNUMBER", 
                       "AT", "COMMA", "EQ", "GE", "GT", "HYPHEN", "LE", "LP", 
                       "LT", "PLUS", "RP", "SEMI", "CHECKELECTIVES", "COMMENT", 
                       "DECIDE", "HIDE", "HIDERULE", "LOG", "WHITESPACE" ]
@@ -296,10 +296,10 @@ class ReqBlockParser ( Parser ):
     TAG=43
     DISCIPLINE=44
     NUMBER=45
-    SYMBOL=46
-    ALPHANUM=47
-    RANGE=48
-    CATALOG_NUMBER=49
+    CATALOG_NUMBER=46
+    SYMBOL=47
+    ALPHANUM=48
+    RANGE=49
     WILDNUMBER=50
     AT=51
     COMMA=52
@@ -1271,7 +1271,7 @@ class ReqBlockParser ( Parser ):
             self.match(ReqBlockParser.DISCIPLINE)
             self.state = 161
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.NUMBER) | (1 << ReqBlockParser.RANGE) | (1 << ReqBlockParser.CATALOG_NUMBER) | (1 << ReqBlockParser.WILDNUMBER))) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.NUMBER) | (1 << ReqBlockParser.CATALOG_NUMBER) | (1 << ReqBlockParser.RANGE) | (1 << ReqBlockParser.WILDNUMBER))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1337,7 +1337,7 @@ class ReqBlockParser ( Parser ):
 
             self.state = 166
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.NUMBER) | (1 << ReqBlockParser.RANGE) | (1 << ReqBlockParser.CATALOG_NUMBER) | (1 << ReqBlockParser.WILDNUMBER))) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.NUMBER) | (1 << ReqBlockParser.CATALOG_NUMBER) | (1 << ReqBlockParser.RANGE) | (1 << ReqBlockParser.WILDNUMBER))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

@@ -146,27 +146,51 @@ def build_course_list(institution, ctx) -> list:
     print(course_list)
   conn = PgConnection()
   cursor = conn.cursor()
+  print(len(course_list))
   for course in course_list:
-    # discipline part
+    # For display to users
+    display_discipline, display_catalog_number = course
+    # For course db query
     discipline, catalog_number = course
+    # discipline part
     discp_op = '='
     if '@' in discipline:
       discp_op = '~*'
-      # if @ is not at the beginning or the end, anchor the regex with whatever precedes or follows
-      # it. Otherwise, just drop it.
-      matches = re.match(r'^(.*?)@(.*)$', discipline)
-      discipline = f"^{matches.group(1)}.*{matches.group(2).replace('@', '.*')}$"
+      discipline = '^' + discipline.replace('@', '.*') + '$'
 
     # catalog number part
     #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
     #   numbers that start with zero. But other patterns might be used: 1@, for example.
     catalog_numbers = catalog_number.split(':')
     if len(catalog_numbers) == 1:
-      search_number = f"catalog_number = '{catalog_numbers[0]}'"
+      if '@' in catalog_numbers[0]:
+        catnum_clause = "catalog_number ~* '^" + catalog_numbers[0].replace('@', '.*') + '$'
+      else:
+        catnum_clause = "catalog_number = '{catalog_numbers[0]}'"
     else:
-      search_number = f""" numeric_part(catalog_number) >= {float(low)} and
-                           numeric_part(catalog_number) <=' {float(high)}'
-                      """
+      low, high = catalog_number
+      #  Assume no wildcards in range
+      try:
+        catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
+                             numeric_part(catalog_number) <=' {float(high)}')
+                         """
+      except ValueError:
+        #  There is no good way to turn this into a db query (that I know of), so the following
+        #  assumptions are used:
+        #    - the range is being used for a range of course levels (1@:3@, for example)
+        #    - catalog numbers are 3 digits (so 1@ means 100 to 199, for example
+        matches = re.match('(.*?)@(.*)', low)
+        if matches.group(1).isdigit():
+          low = matches.group(1) + '00'
+          matches = re.match('(.*?)@(.*)', high)
+          if matches.group(1).isdigit():
+            high = matches.group(1) + '99'
+            catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
+                                 numeric_part(catalog_number) <=' {float(high)}')
+                             """
+        else:
+          # Either low or high is not in the form \d+@
+          catnum_clause = "catalog_number = ''"  # Will match no courses
     course_query = f"""
 select institution, course_id, offer_nbr, discipline, catalog_number, title,
        requisites, description, contact_hours, max_credits, designation,
@@ -176,7 +200,7 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
  where institution ~* '{institution}'
    and course_status = 'A'
    and discipline {discp_op} '{discipline}'
-   and {search_number}
+   and {catnum_clause}
    order by discipline, numeric_part(catalog_number)
               """
     cursor.execute(course_query)
@@ -207,11 +231,12 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
   #   # Note change of attributes from a semicolon-separated list of name:value pairs to a comma-
   #   # separated list of values.
 
-  #   # Convert generator to list.
-  #   details = [row for row in cursor.fetchall()]
-  #   course_list.append({'display': f'{display_discipline} {display_number}',
-  #                       'info': details})
-  #   conn.close()
+    # Convert generator to list.
+    details = [row for row in cursor.fetchall()]
+    # No, use a different list for the details versus the spec list
+    course_list.append({'display': f'{display_discipline} {display_catalog_number}',
+                        'info': details})
+  conn.close()
   return {'courses': course_list, 'list_type': list_type}
 
 
