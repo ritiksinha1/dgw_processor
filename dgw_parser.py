@@ -189,13 +189,14 @@ def build_course_list(institution, ctx) -> list:
       else:
         catnum_clause = f"catalog_number = '{catalog_numbers[0]}'"
     else:
-      low, high = catalog_number
-      #  Assume no wildcards in range
+      low, high = catalog_numbers
+      #  Assume no wildcards in range ...
       try:
         catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
                              numeric_part(catalog_number) <=' {float(high)}')
                          """
       except ValueError:
+        #  ... but it looks like there were.
         #  There is no good way to turn this into a db query (that I know of), so the following
         #  assumptions are used:
         #    - the range is being used for a range of course levels (1@:3@, for example)
@@ -441,7 +442,7 @@ class ReqBlockInterpreter(ReqBlockListener):
   # enterMaxcredit()
   # -----------------------------------------------------------------------------------------------
   def enterMaxcredit(self, ctx):
-    """ MAXCREDIT NUMBER (and_courses | or_courses)
+    """ MAXCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
     """
     if DEBUG:
       print(f'*** enterMaxcredit()', file=sys.stderr)
@@ -450,10 +451,12 @@ class ReqBlockInterpreter(ReqBlockListener):
       limit = 'zero'
     text = f'This {self.block_type_str} allows {limit} credits'
     course_list = None
-    if ctx.and_courses() is not None:
-      course_list = build_course_list(self.institution, ctx.and_courses())
-    if ctx.or_courses() is not None:
-      course_list = build_course_list(self.institution, ctx.or_courses())
+    # There can be two course lists, the main one, and an EXCEPT one
+    course_lists = ctx.course_list()
+    if len(course_lists) > 0:
+      course_list = build_course_list(self.institution, course_lists[0])
+    if len(course_lists) > 1:
+      except_list = build_course_list(self.institution, course_lists[1])
 
     if course_list is None:  # Weird: no credits allowed, but no course list provided.
       text += '.'
