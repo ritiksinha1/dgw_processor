@@ -231,13 +231,30 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
 # course_list2html()
 # -------------------------------------------------------------------------------------------------
 def course_list2html(course_list: dict):
-  """ Look up all the courses in course_list, and return their catalog entries as HTML divs
+  """ Look up all the courses in course_list, and return their catalog entries as a list of HTML
+      divs.
   """
   all_blanket = True
   all_writing = True
 
   return_list = []
   for course in course_list:
+    num_courses = len(course.courses)
+    if num_courses == 0:
+      summary = '<p>There are no active courses that match this course specification.</p>'
+    elif num_courses == 1:
+      summary = ''  # Nothing to say about this: it's normal.
+    else:
+      summary = (f'<p>The following {num_courses} active courses match this course '
+                 f'specification.</p>')
+
+    suffix = '' if len(course.courses) == 1 else 's'
+    this_course_list = f"""
+    <section>
+      <h1>{course.discipline} {course.catalog_number}</h1>
+      {summary}
+      <ul class="openable">
+    """
     for found_course in course.courses:
       if all_writing and 'WRIC' not in found_course.attributes:
         all_writing = False
@@ -247,8 +264,8 @@ def course_list2html(course_list: dict):
           print('***', found_course.discipline, found_course.catalog_number, 'is a wet blanket',
                 file=sys.stderr)
         all_blanket = False
-      return_list.append(f"""
-                  <div title="{found_course.course_id}:{found_course.offer_nbr}">
+      this_course_list += f"""
+                  <li title="{found_course.course_id}:{found_course.offer_nbr}">
                     <strong>
                       {found_course.discipline} {found_course.catalog_number}
                       {found_course.title}</strong>
@@ -262,8 +279,10 @@ def course_list2html(course_list: dict):
                       Designation: {found_course.designation};
                       Attributes: {found_course.attributes}
                     </em>
-                  </div>
-              """)
+                  </li>
+              """
+    this_course_list += '</ul></section>'
+    return_list.append(this_course_list)
   attributes = []
   if all_blanket:
     attributes.append('blanket credit')
