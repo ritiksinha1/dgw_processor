@@ -76,20 +76,27 @@ group_list  : LP course_list
 
 /* Parser
  * ------------------------------------------------------------------------------------------------
+ *  UNRESOLVED: The Scribe manual gives an example
+ *                # Disallow classes older than 10 years – but allow any ANTH to be older
+ *                MaxCredits 0 in @ (With DWAge>10)
+ *                Except ANTH @ tag=MAX10
+ *              In this case, the first course_list is "@ (WITH DWAge>10)"
+ *              This has to be recognized and reported in English, but omit the course lookup step.
+ *              I've added the WITH clause below to get past parser errors.
  */
 block       : NUMBER BLOCK LP SHARE_LIST RP ;
 block_type  : NUMBER BLOCKTYPE SHARE_LIST label ;
 
 course_list     : course (and_list | or_list)? ;
-course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
+course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE | WITH) ;
 course_item     : DISCIPLINE? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
 and_list        : (AND course_item)+ ;
 or_list         : (OR course_item)+ ;
 
 label           : LABEL ALPHANUM*? STRING ';' label* ;
 lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
-maxclass        : MAXCLASS NUMBER INFROM? course_list ;
-maxcredit       : MAXCREDIT NUMBER INFROM? course_list ;
+maxclass        : MAXCLASS NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
+maxcredit       : MAXCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) TAG? ;
 maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 mingpa          : MINGPA NUMBER ;
@@ -159,10 +166,12 @@ INFROM      : IN | FROM ;
 OR          : COMMA | [Oo][Rr] ;
 AND         : PLUS | [Aa][Nn][Dd] ;
 
+EXCEPT      : [Ee][Xx][Cc][Ee][Pp][Tt] ;
 FROM        : [Ff][Rr][Oo][Mm] ;
 IN          : [Ii][Nn] ;
 OF          : [Oo][Ff] ;
-TAG         : [Tt][Aa][Gg] (EQ SYMBOL)?;
+TAG         : [Tt][Aa][Gg] (EQ SYMBOL)? ;
+WITH        : LP [Ww][Ii][Tt][Hh] .*? RP ;
 
 DISCIPLINE      : (LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)* ;
 NUMBER      : DIGIT+ (DOT DIGIT*)? ;

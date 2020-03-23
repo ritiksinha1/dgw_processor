@@ -118,16 +118,18 @@ def class_or_credit(ctx, number=0) -> str:
 # -------------------------------------------------------------------------------------------------
 def build_course_list(institution, ctx) -> list:
   """ course_list     : course (and_list | or_list)? ;
-      course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
+      course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE | WITH) ;
       course_item     : DISCIPLINE? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
       and_list        : (AND course_item)+ ;
       or_list         : (OR course_item)+ ;
 
-      If the list is an AND list, but there are wildcards, say it's an OR list. This is a parser
-      ambiguity that needs to be resolved ...
+      If the list is an AND list, but there are wildcards, say it's an OR list.
+      This should not be an issue because my grammar allows either type of list in places where the
+      Scribe language actually restricts the rules to OR lists.
 
       The returned list has the list of courses as extracted from the Scribe block and, for each
-      scribed course, a list of actual courses with their catalog descriptions.
+      scribed course, a list of actual courses with their catalog descriptions, with the exception
+      where the "course" part has a WITH qualifier as the catalog number.
   """
   if DEBUG:
     print(f'*** build_course_list()', file=sys.stderr)
@@ -175,6 +177,9 @@ def build_course_list(institution, ctx) -> list:
       discipline = '^' + discipline.replace('@', '.*') + '$'
 
     # catalog number part
+    #   If the catalog_number is a WITH qualifier, skip the lookup for this course.
+    if catalog_number.lower().startswith('(with'):
+      continue
     #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
     #   numbers that start with zero. But other patterns might be used: 1@, for example.
     catalog_numbers = catalog_number.split(':')
@@ -242,6 +247,7 @@ def course_list2html(course_list: dict):
     num_courses = len(course.courses)
     if num_courses == 0:
       summary = '<p>There are no active courses that match this course specification.</p>'
+      num_courses = 'No'
     elif num_courses == 1:
       summary = ''  # Nothing to say about this: it's normal.
     else:
@@ -251,18 +257,19 @@ def course_list2html(course_list: dict):
     suffix = '' if len(course.courses) == 1 else 's'
     this_course_list = f"""
     <section>
-      <h1>{course.discipline} {course.catalog_number}</h1>
+      <h1>Degreeworks specification: “{course.discipline} {course.catalog_number}”</h1>
       {summary}
-      <ul class="openable">
+      <h2 class="closer">{num_courses} Active Course{suffix}</h2>
+      <ul class="closeable">
     """
     for found_course in course.courses:
       if all_writing and 'WRIC' not in found_course.attributes:
         all_writing = False
       if all_blanket and 'BKCR' not in found_course.attributes \
          and found_course.max_credits > 0:
-        if DEBUG:
-          print('***', found_course.discipline, found_course.catalog_number, 'is a wet blanket',
-                file=sys.stderr)
+        # if DEBUG:
+        #   print('***', found_course.discipline, found_course.catalog_number, 'is a wet blanket',
+        #         file=sys.stderr)
         all_blanket = False
       this_course_list += f"""
                   <li title="{found_course.course_id}:{found_course.offer_nbr}">
@@ -471,7 +478,7 @@ class ReqBlockInterpreter(ReqBlockListener):
   # enterMaxclass()
   # -----------------------------------------------------------------------------------------------
   def enterMaxclass(self, ctx):
-    """ MAXCLASS NUMBER INFROM? course_list
+    """ MAXCLASS NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
     """
     if DEBUG:
       print('*** enterMaxclass()', file=sys.stderr)
@@ -482,8 +489,12 @@ class ReqBlockInterpreter(ReqBlockListener):
       limit = 'no classes'
     text = f'This {self.block_type_str} allows {limit}'
     course_list = None
-    if ctx.course_list() is not None:
-      course_list = build_course_list(self.institution, ctx.course_list())
+    # There can be two course lists, the main one, and an EXCEPT one
+    course_lists = ctx.course_list()
+    if len(course_lists) > 0:
+      course_list = build_course_list(self.institution, course_lists[0])
+    if len(course_lists) > 1:
+      except_list = build_course_list(self.institution, course_lists[1])
 
     if course_list is None:  # Weird: no classes allowed, but no course list provided.
       text += '.'
