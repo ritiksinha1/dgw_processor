@@ -387,6 +387,8 @@ class ReqBlockInterpreter(ReqBlockListener):
 # mingpa      : MINGPA NUMBER ;
 # mingrade    : MINGRADE NUMBER ;
 
+  # enterNumcredit()
+  # -----------------------------------------------------------------------------------------------
   def enterNumcredit(self, ctx):
     """ (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ; ;
     """
@@ -429,6 +431,8 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'{text}',
                     courses))
 
+  # enterMaxcredit()
+  # -----------------------------------------------------------------------------------------------
   def enterMaxcredit(self, ctx):
     """ MAXCREDIT NUMBER (and_courses | or_courses)
     """
@@ -448,8 +452,6 @@ class ReqBlockInterpreter(ReqBlockListener):
       text += '.'
       courses = None
     else:
-      # *** the number of scribed courses and the number of found courses can be different
-      # *** and need to be shown: "This rule applies to the following active courses"
       list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
       attributes, html_list = course_list2html(course_list['courses'])
       len_list = len(html_list)
@@ -466,6 +468,8 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'{text}',
                     courses))
 
+  # enterMaxclass()
+  # -----------------------------------------------------------------------------------------------
   def enterMaxclass(self, ctx):
     """ MAXCLASS NUMBER INFROM? course_list
     """
@@ -504,6 +508,8 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'{text}',
                     courses))
 
+  # enterMaxpassfail()
+  # -----------------------------------------------------------------------------------------------
   def enterMaxpassfail(self, ctx):
     """ MAXPASSFAIL NUMBER (CREDIT | CLASS) (TAG '=' SYMBOL)?
     """
