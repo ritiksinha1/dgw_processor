@@ -206,21 +206,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#numclass.
-    def enterNumclass(self, ctx:ReqBlockParser.NumclassContext):
+    # Enter a parse tree produced by ReqBlockParser#numclass_credit.
+    def enterNumclass_credit(self, ctx:ReqBlockParser.Numclass_creditContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#numclass.
-    def exitNumclass(self, ctx:ReqBlockParser.NumclassContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#numcredit.
-    def enterNumcredit(self, ctx:ReqBlockParser.NumcreditContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#numcredit.
-    def exitNumcredit(self, ctx:ReqBlockParser.NumcreditContext):
+    # Exit a parse tree produced by ReqBlockParser#numclass_credit.
+    def exitNumclass_credit(self, ctx:ReqBlockParser.Numclass_creditContext):
         pass
 
 

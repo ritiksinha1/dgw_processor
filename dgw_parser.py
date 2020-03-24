@@ -300,6 +300,91 @@ def course_list2html(course_list: dict):
   return attributes, return_list
 
 
+# numcredit()
+# -------------------------------------------------------------------------------------------------
+def numcredit(institution, block_type_str, ctx):
+  """ (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
+  """
+  if DEBUG:
+    print('*** numcredit()', file=sys.stderr)
+  try:
+    if ctx.visited:
+      return None
+  except AttributeError:
+    ctx.visited = True
+  if ctx.PSEUDO() is None:
+    text = f'This {block_type_str} requires '
+  else:
+    text = f'This {block_type_str} generally requires '
+  if ctx.NUMBER() is not None:
+    number = get_number(ctx)
+    suffix = '' if number == 1 else 's'
+    text += f'{number} credit{suffix}'
+  elif ctx.RANGE() is not None:
+    low, high = get_range(ctx)
+    text += f'between {low} and {high} credits'
+  else:
+    text += f'an <span class="error">unknown</span> number of credits'
+  course_list = None
+  if ctx.course_list() is not None:
+    course_list = build_course_list(self.institution, ctx.course_list())
+
+  if course_list is None:
+    text += '.'
+    courses = None
+  else:
+    list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
+    attributes, html_list = course_list2html(course_list['courses'])
+    len_list = len(html_list)
+    if len_list == 1:
+      preamble = f' in '
+      courses = html_list[0]
+    else:
+      preamble = f' in {list_quantifier} of these {len_list} {" and ".join(attributes)} courses:'
+      courses = html_list
+    text += f' {preamble} '
+  return Requirement('credits',
+                     f'{ctx.NUMBER()} credits',
+                     f'{text}',
+                     courses)
+
+
+# numclass()
+# -------------------------------------------------------------------------------------------------
+def numclass(institution, ctx):
+  """ (NUMBER | RANGE) CLASS INFROM? course_list? TAG? label* ;
+      Could be a standalone rule or as part of a group. This is the implementation for either.
+  """
+  if DEBUG:
+    print('*** numclass()', file=sys.stderr)
+  try:
+    if ctx.visited:
+      return None
+  except AttributeError:
+    ctx.visited = True
+  if ctx.NUMBER():
+    num_classes = int(str(ctx.NUMBER()))
+  else:
+    num_classes = None
+  if ctx.RANGE():
+    low, high = str(ctx.RANGE()).split(':')
+  else:
+    low = high = None
+  if ctx.course_list():
+    course_list = build_course_list(institution, ctx.course_list())
+  else:
+    course_list = None
+  label_str = ''
+  if ctx.label is not None:
+    for label in ctx.label():
+      label_str += str(label.STRING())
+      label.visited = True
+  return {'number': num_classes,
+          'low': low,
+          'high': high,
+          'courses': course_list,
+          'label': label_str}
+
 # class ScribeSection(Enum)
 # -------------------------------------------------------------------------------------------------
 class ScribeSection(Enum):
@@ -370,10 +455,8 @@ class ReqBlockInterpreter(ReqBlockListener):
     if DEBUG:
       print('*** ENTERBODY()', file=sys.stderr)
 
-# numclasses  : NUMBER CLASSES (and_courses | or_courses) ;
 # proxy_advice: PROXYADVICE STRING proxy_advice* ;
 # noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
-
 # symbol      : SYMBOL ;
 
     self.scribe_section = ScribeSection.BODY
@@ -398,46 +481,13 @@ class ReqBlockInterpreter(ReqBlockListener):
   # enterNumcredit()
   # -----------------------------------------------------------------------------------------------
   def enterNumcredit(self, ctx):
-    """ (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ; ;
+    """ (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
     """
     if DEBUG:
       print('*** enterNumcredit()', file=sys.stderr)
-    if ctx.PSEUDO() is None:
-      text = f'This {self.block_type_str} requires '
-    else:
-      text = f'This {self.block_type_str} generally requires '
-    if ctx.NUMBER() is not None:
-      number = get_number(ctx)
-      suffix = '' if number == 1 else 's'
-      text += f'{number} credit{suffix}'
-    elif ctx.RANGE() is not None:
-      low, high = get_range(ctx)
-      text += f'between {low} and {high} credits'
-    else:
-      text += f'an <span class="error">unknown</span> number of credits'
-    course_list = None
-    if ctx.course_list() is not None:
-      course_list = build_course_list(self.institution, ctx.course_list())
-
-    if course_list is None:
-      text += '.'
-      courses = None
-    else:
-      list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
-      attributes, html_list = course_list2html(course_list['courses'])
-      len_list = len(html_list)
-      if len_list == 1:
-        preamble = f' in '
-        courses = html_list[0]
-      else:
-        preamble = f' in {list_quantifier} of these {len_list} {" and ".join(attributes)} courses:'
-        courses = html_list
-      text += f' {preamble} '
-    self.sections[self.scribe_section.value].append(
-        Requirement('credits',
-                    f'{ctx.NUMBER()} credits',
-                    f'{text}',
-                    courses))
+    self.sections[self.scribe_section.value].append(numcredit(self.institution,
+                                                              self.block_type_str,
+                                                              ctx))
 
   # enterMaxcredit()
   # -----------------------------------------------------------------------------------------------
@@ -544,14 +594,45 @@ class ReqBlockInterpreter(ReqBlockListener):
                     None))
 
   def enterNumclass(self, ctx):
+    """ (NUMBER | RANGE) CLASS INFROM? course_list? TAG? label* ;
+    """
     if DEBUG:
       print('*** enterNumClass', file=sys.stderr)
-    pass
+    # Sometimes this is part of a rule subset (but not necessarily?)
+    if hasattr(ctx, 'visited'):
+      return
+    else:
+      return numclass(ctx)
 
+  # enterRule_subset()
+  # -----------------------------------------------------------------------------------------------
   def enterRule_subset(self, ctx):
+    """ BEGINSUB (numclass_credit)+ ENDSUB qualifier* label ;
+        numclass_credit : (NUMBER | RANGE) (CLASS | CREDIT)
+                          (ANDOR (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
+                          INFROM? course_list? TAG? label? ;
+        qualifier       : mingpa | mingrade ;
+        mingpa          : MINGPA NUMBER ;
+        mingrade        : MINGRADE NUMBER ;
+    """
     if DEBUG:
       print('*** enterRule_subset', file=sys.stderr)
-    pass
+    for class_credit_ctx in ctx.numclass_credit():
+      print(str(class_credit_ctx.NUMBER()[0]))
+
+    classes_list = []
+
+    label_ctx = ctx.label()
+    label_str = label_ctx.STRING()
+    print(label_str)
+    label_ctx.visited = True
+
+    # self.sections[self.scribe_section.value].append(
+    #     Requirement('subset',
+    #                 f'{len(classes_list)} classes or {len(credits_list)}',
+    #                 label_str,
+    #                 classes_list))
+
 
   def enterBlocktype(self, ctx):
     """ NUMBER BLOCKTYPE LP DEGREE|CONC|MAJOR|MINOR RP label
@@ -561,15 +642,16 @@ class ReqBlockInterpreter(ReqBlockListener):
       print(ctx.SHARE_LIST())
     pass
 
-  def enterBeginsub(self, ctx):
-    if DEBUG:
-      print('*** enterBeginSub', file=sys.stderr)
-    pass
+  # These two are in the superclass, but should be covered by enterRule_subset() above
+  # def enterBeginsub(self, ctx):
+  #   if DEBUG:
+  #     print('*** enterBeginSub', file=sys.stderr)
+  #   pass
 
-  def enterEndsub(self, ctx):
-    if DEBUG:
-      print('*** enterEndSub', file=sys.stderr)
-    pass
+  # def enterEndsub(self, ctx):
+  #   if DEBUG:
+  #     print('*** enterEndSub', file=sys.stderr)
+  #   pass
 
   def enterRemark(self, ctx):
     """ REMARK STRING remark* ;
@@ -584,8 +666,13 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterLabel()', file=sys.stderr)
-      print(ctx.STRING(), file=sys.stderr)
-    pass
+      try:
+        if ctx.visited:
+          return None
+      except AttributeError:
+        # All labels should be processed as part of a rule
+        print(ctx.STRING(), file=sys.stderr)
+
 
   def enterShare(self, ctx):
     """ SHARE SHARE_LIST

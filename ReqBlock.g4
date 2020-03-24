@@ -46,8 +46,7 @@ head        :
             | mingrade
             | mingpa
             | minres
-            | numclass
-            | numcredit
+            | numclass_credit
             | proxy_advice
             | remark
             | share
@@ -59,13 +58,12 @@ body        :
             | block_type
             | label
             | remark
-            | numclass
-            | numcredit
+            | numclass_credit
             | maxperdisc
             )*
             ;
 
-rule_subset : BEGINSUB (numclass | numcredit label)+ ENDSUB qualifier* label ;
+rule_subset : BEGINSUB (numclass_credit)+ ENDSUB qualifier* label ;
 group       : NUMBER GROUP IN group_list qualifier* label ;
 group_list  : LP course_list
             | block
@@ -102,8 +100,10 @@ maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMB
 mingpa          : MINGPA NUMBER ;
 mingrade        : MINGRADE NUMBER ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
-numclass        : (NUMBER | RANGE) CLASS INFROM? course_list? TAG? label* ;
-numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
+numclass_credit : (NUMBER | RANGE) (CLASS | CREDIT)
+                  (ANDOR (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
+                  INFROM? course_list? TAG? label? ;
+//numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
 noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
 proxy_advice    : PROXYADVICE STRING proxy_advice* ;
 remark          : REMARK STRING (SEMI? remark)* ;
@@ -162,6 +162,7 @@ UNDER         : [Uu][Nn][Dd][Ee][Rr] ;
 
 STRING      : '"' .*? '"' ;
 
+ANDOR       : ([Aa][Nn][Dd])|([Oo][Rr]) ;
 INFROM      : IN | FROM ;
 OR          : COMMA | [Oo][Rr] ;
 AND         : PLUS | [Aa][Nn][Dd] ;
