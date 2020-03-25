@@ -46,7 +46,7 @@ head        :
             | mingrade
             | mingpa
             | minres
-            | numclass_credit
+            | class_credit
             | proxy_advice
             | remark
             | share
@@ -55,22 +55,16 @@ head        :
             ;
 body        :
             ( rule_subset
+            | group
             | block_type
             | label
             | remark
-            | numclass_credit
+            | class_credit
             | maxperdisc
             )*
             ;
 
-rule_subset : BEGINSUB (numclass_credit)+ ENDSUB qualifier* label ;
-group       : NUMBER GROUP IN group_list qualifier* label ;
-group_list  : LP course_list
-            | block
-            | block_type
-            | group
-            | RULE_COMPLETE
-            | noncourse (OR group_list)* ;
+rule_subset : BEGINSUB (class_credit | group)+ ENDSUB qualifier* label ;
 
 /* Parser
  * ------------------------------------------------------------------------------------------------
@@ -82,33 +76,88 @@ group_list  : LP course_list
  *              This has to be recognized and reported in English, but omit the course lookup step.
  *              I've added the WITH clause below to get past parser errors.
  */
+
+/* Groups
+ * 1. Group must be followed by a list of one or more rules. The list of rules following the Group
+   keyword is referred to as the group list. Each rule in the group list is a group item. Each group
+   item is enclosed in parentheses and does not end with a semicolon.
+ * 2. Each rule in the Group list is one of the following types of rules: Course, Block, BlockType,
+   Group, RuleComplete, RuleIncomplete or NonCourse. A group item cannot be an If rule or a subset
+   rule.
+ * 3. Each rule in the list is connected to the next rule by “or”.
+ * 4. A Group statement can be nested within another Group statement. There is no limit to the
+   number of times you can embed a Group within a Group. However, the worksheet display of a
+   requirement with many depths may be difficult to understand.
+ * 5. Qualifiers that must be applied to all rules in the group list must occur after the last right
+   parenthesis and before the label at the end of the Group statement. Qualifiers that apply only to
+   a specific rule in the group list must appear inside the parentheses for that group item rule.
+ * 6. Allowable rule qualifiers: DontShare, Hide, HideRule, HighPriority, LowPriority,
+   LowestPriority, MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA, ProxyAdvice,
+   SameDisc, ShareWith, MinClass, MinCredit, RuleTag.
+ * 7. Do not mix course rules with Block rules in a group. Although this will parse, the auditor may
+   not handle this as expected. Putting Block rules into Groups is not a best practice.
+ */
+group       : NUMBER GROUP INFROM? group_list group_qualifier* label ;
+group_list  : group_item (OR group_item)* ;
+group_item  : LP
+            (course
+            | block
+            | block_type
+            | group
+            | rule_complete
+            | noncourse
+            ) RP label? ;
+group_qualifier : maxpassfail
+                | maxperdisc
+                | maxtransfer
+                | mingrade
+                | minperdisc
+                | samedisc
+                | share
+                | minclass
+                | mincredit
+                | ruletag ;
+
+/* Blocks
+ */
 block       : NUMBER BLOCK LP SHARE_LIST RP ;
 block_type  : NUMBER BLOCKTYPE SHARE_LIST label ;
 
+/* Course Lists
+ */
 course_list     : course (and_list | or_list)? ;
 course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE | WITH) ;
 course_item     : DISCIPLINE? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
 and_list        : (AND course_item)+ ;
 or_list         : (OR course_item)+ ;
 
-label           : LABEL ALPHANUM*? STRING ';' label* ;
+/* Other Rules
+ */
+label           : LABEL ALPHANUM*? STRING ';'? label* ;
 lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
 maxclass        : MAXCLASS NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
 maxcredit       : MAXCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
+minclass        : MINCLASS NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
+mincredit       : MINCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) TAG? ;
 maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
+maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 mingpa          : MINGPA NUMBER ;
 mingrade        : MINGRADE NUMBER ;
+minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
-numclass_credit : (NUMBER | RANGE) (CLASS | CREDIT)
+class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
                   (ANDOR (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
                   INFROM? course_list? TAG? label? ;
 //numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
 noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
 proxy_advice    : PROXYADVICE STRING proxy_advice* ;
 remark          : REMARK STRING (SEMI? remark)* ;
+rule_complete   : RULE_COMPLETE | RULE_INCOMPLETE ;
 qualifier       : mingpa | mingrade ;
-share           : SHARE SHARE_LIST ;
+ruletag         : RULE_TAG SYMBOL EQ STRING ;
+samedisc        : SAME_DISC LP SYMBOL EQ SYMBOL (COMMA SYMBOL EQ SYMBOL)* RP TAG? ;
+share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? SHARE_LIST ;
 under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? proxy_advice label ;
 symbol          : SYMBOL ;
 
@@ -117,44 +166,49 @@ symbol          : SYMBOL ;
  */
 
 //  Keywords
-BEGIN         : [Bb][Ee][Gg][Ii][Nn] ;
-BEGINSUB      : BEGIN [Ss][Uu][Bb] ;
-BLOCK         : [Bb][Ll][Oo][Cc][Kk] ;
-BLOCKTYPE     : BLOCK [Tt][Yy][Pp][Ee][Ss]? ;
-CLASS         : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])? ;
-CONC          : [Cc][Oo][Nn][Cc] ;
-CREDIT        : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
-DEGREE        : [Dd][Ee][Gg][Rr][Ee][Ee] ;
-ENDDOT        : [Ee][Nn][Dd]DOT ;
-ENDSUB        : [Ee][Nn][Dd][Ss][Uu][Bb] ;
-GROUP         : [Gg][Rr][Oo][Uu][Pp] ;
-LABEL         : [Ll][Aa][Bb][Ee][Ll] ;
-LASTRES       : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
-MAJOR         : [Mm][Aa][Jj][Oo][Rr] ;
-MAXCLASS      : [Mm][Aa][Xx] CLASS ;
-MAXCREDIT     : [Mm][Aa][Xx] CREDIT ;
-MINGPA        : [Mm][Ii][Nn][Gg][Pp][Aa] ;
-MINGRADE      : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
-MAXPASSFAIL   : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll] ;
-MAXPERDISC    : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
-MINOR         : [Mm][Ii][Nn][Oo][Rr] ;
-MINCLASS      : [Mm][Ii][Nn] CLASS ;
-MINCREDITS    : [Mm][Ii][Nn] CREDIT ;
-MINRES        : [Mm][Ii][Nn][Rr][Ee][Ss] ;
-NONCOURSE     : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
-OTHER         : [Oo][Tt][Hh][Ee][Rr] ;
-PROXYADVICE   : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] ;
-PSEUDO        : [Pp][Ss][Ee][Uu][Dd][Oo] ;
-REMARK        : [Rr][Ee][Mm][Aa][Rr][Kk] ;
-RULE_COMPLETE : [Rr][Uu][Ll][Ee]([Ii][Nn])?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] ;
-SHARE         : ([Nn][Oo][Nn] '-'?)?[Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee]
-              | [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
-              | [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
-              ;
-SHARE_LIST    : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
-SHARE_ITEM    : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) | THIS_BLOCK;
-THIS_BLOCK    : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk] ;
-UNDER         : [Uu][Nn][Dd][Ee][Rr] ;
+BEGIN           : [Bb][Ee][Gg][Ii][Nn] ;
+BEGINSUB        : BEGIN [Ss][Uu][Bb] ;
+BLOCK           : [Bb][Ll][Oo][Cc][Kk] ;
+BLOCKTYPE       : BLOCK [Tt][Yy][Pp][Ee][Ss]? ;
+CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])? ;
+CONC            : [Cc][Oo][Nn][Cc] ;
+CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
+DEGREE          : [Dd][Ee][Gg][Rr][Ee][Ee] ;
+ENDDOT          : [Ee][Nn][Dd]DOT ;
+ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb] ;
+GROUP           : [Gg][Rr][Oo][Uu][Pp] ;
+LABEL           : [Ll][Aa][Bb][Ee][Ll] ;
+LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
+MAJOR           : [Mm][Aa][Jj][Oo][Rr] ;
+MAXCLASS        : [Mm][Aa][Xx] CLASS ;
+MAXCREDIT       : [Mm][Aa][Xx] CREDIT ;
+MINGPA          : [Mm][Ii][Nn][Gg][Pp][Aa] ;
+MINGRADE        : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
+MAXPASSFAIL     : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll] ;
+MAXPERDISC      : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
+MINPERDISC      : [Mm][Ii][Nn][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
+MAXTRANSFER     : [Mm][Aa][Xx][Tt][Rr][Aa][Nn][Ss][Ff][Ee][Rr] ;
+MINOR           : [Mm][Ii][Nn][Oo][Rr] ;
+MINCLASS        : [Mm][Ii][Nn] CLASS ;
+MINCREDIT       : [Mm][Ii][Nn] CREDIT ;
+MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss] ;
+NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
+OTHER           : [Oo][Tt][Hh][Ee][Rr] ;
+PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] ;
+PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo] ;
+REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk] ;
+RULE_COMPLETE   : [Rr][Uu][Ll][Ee][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] ;
+RULE_INCOMPLETE : [Rr][Uu][Ll][Ee][Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] ;
+RULE_TAG        : [Rr][Uu][Ll][Ee][Tt][Aa][Gg] ;
+SHARE           : [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
+                | [Nn][Oo][Nn][Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
+DONT_SHARE      : [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
+                | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
+SAME_DISC       : [Ss][Aa][Mm][Ee][Dd][Ii][Ss][Cc] ;
+SHARE_LIST      : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
+SHARE_ITEM      : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) | THIS_BLOCK;
+THIS_BLOCK      : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk] ;
+UNDER           : [Uu][Nn][Dd][Ee][Rr] ;
 
 
 /* DWResident, DW... etc. are DWIDs */
@@ -209,6 +263,9 @@ COMMENT        : '#' .*? '\n' -> skip ;
 DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
 HIDE           : '{' [Hh][Ii][Dd][Ee] .*? '}' -> skip ;
 HIDERULE       : [Hh][Ii][Dd][Ee][Rr][Uu][Ll][Ee] -> skip ;
+NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
+PRIORITY       : ([Ll][Oo][Ww]([Ee][Ss][Tt])?)?([Hh][Ii][Gg][Hh])?
+                 [Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy] -> skip ;
 LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
 
 WHITESPACE  : [ \t\n\r]+ -> skip ;

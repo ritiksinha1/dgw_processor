@@ -1,4 +1,13 @@
 #! /usr/bin/env python3
+"""
+    The goal of this project is to produce lists of courses that are required and/or can be used to
+    satisfy a requirement. So the course_lists have to be tagged somehow. For now the only
+    distinction is courses listed in the head (generally exclusions) and those listed in the body
+    (mostly requirements.) This has to be refined: what courses are required, what ones can be used,
+    and what ones are prohibited. There are parameters associated with each of these three classes
+    that need to be worked out if this is going to be useful for transfer guidance. Not so much,
+    though, for generating catalog descriptions.
+"""
 
 import logging
 import inspect
@@ -385,6 +394,7 @@ def numclass(institution, ctx):
           'courses': course_list,
           'label': label_str}
 
+
 # class ScribeSection(Enum)
 # -------------------------------------------------------------------------------------------------
 class ScribeSection(Enum):
@@ -395,7 +405,7 @@ class ScribeSection(Enum):
   BODY = 2
 
 
-# Class ReqBlockInterpreter
+# Class ReqBlockInterpreter(ReqBlockListener)
 # =================================================================================================
 class ReqBlockInterpreter(ReqBlockListener):
   def __init__(self, institution, block_type, block_value, title, period_start, period_stop,
@@ -604,11 +614,47 @@ class ReqBlockInterpreter(ReqBlockListener):
     else:
       return numclass(ctx)
 
+  # enterGroup()
+  # -----------------------------------------------------------------------------------------------
+  def enterGroup(self, ctx):
+    """ group       : NUMBER GROUP INFROM? group_list group_qualifier* label ;
+        group_list  : group_item (OR group_item)* ;
+        group_item  : LP
+                    (course
+                    | block
+                    | block_type
+                    | group
+                    | rule_complete
+                    | noncourse
+                    ) RP label? ;
+        group_qualifier : maxpassfail
+                        | maxperdisc
+                        | maxtransfer
+                        | mingrade
+                        | minperdisc
+                        | samedisc
+                        | share
+                        | minclass
+                        | mincredit
+                        | ruletag ;
+    """
+    if DEBUG:
+      print('*** enterGroup', file=sys.stderr)
+    num_required = str(ctx.NUMBER())
+    group_list = ctx.group_list()
+    print('group_list.children:', group_list.children)
+    label_ctx = ctx.label()
+    label_str = label_ctx.STRING()
+    label_ctx.visited = True
+    if DEBUG:
+      print('    ', label_str)
+      print(f'    Require {num_required} of num_provided groups.')
+
   # enterRule_subset()
   # -----------------------------------------------------------------------------------------------
   def enterRule_subset(self, ctx):
-    """ BEGINSUB (numclass_credit)+ ENDSUB qualifier* label ;
-        numclass_credit : (NUMBER | RANGE) (CLASS | CREDIT)
+    """ BEGINSUB (class_credit | group)+ ENDSUB qualifier* label ;
+        class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
                           (ANDOR (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
                           INFROM? course_list? TAG? label? ;
         qualifier       : mingpa | mingrade ;
@@ -617,7 +663,7 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterRule_subset', file=sys.stderr)
-    for class_credit_ctx in ctx.numclass_credit():
+    for class_credit_ctx in ctx.class_credit():
       print(str(class_credit_ctx.NUMBER()[0]))
 
     classes_list = []
@@ -813,6 +859,11 @@ def dgw_parser(institution, block_type, block_value, period='current'):
   return return_html
 
 
+# main()
+# =================================================================================================
+# You could use this to test this module, but there are tests and testing subdirectories that serve
+# that purpose better. For development, the transfer app and its log files provide a good way to
+# look at how the processor handles different requirement blocks.
 if __name__ == '__main__':
 
   # Command line args
