@@ -142,7 +142,7 @@ mincredit       : MINCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) TAG? ;
 maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
-mingpa          : MINGPA NUMBER ;
+mingpa          : MINGPA NUMBER (INFROM? course_list)? except_clause? ;
 mingrade        : MINGRADE NUMBER ;
 minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
@@ -150,6 +150,7 @@ class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
                   (ANDOR (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
                   INFROM? course_list? TAG? label? ;
 //numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
+except_clause   : EXCEPT course_list with_phrase? ;
 noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
 proxy_advice    : PROXYADVICE STRING proxy_advice* ;
 remark          : REMARK STRING (SEMI? remark)* ;
@@ -159,6 +160,7 @@ ruletag         : RULE_TAG SYMBOL EQ STRING ;
 samedisc        : SAME_DISC LP SYMBOL EQ SYMBOL (COMMA SYMBOL EQ SYMBOL)* RP TAG? ;
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? SHARE_LIST ;
 under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? proxy_advice label ;
+with_phrase     : LP WITH .*? RP ;
 symbol          : SYMBOL ;
 
 /* Lexer
@@ -176,6 +178,7 @@ CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
 DEGREE          : [Dd][Ee][Gg][Rr][Ee][Ee] ;
 ENDDOT          : [Ee][Nn][Dd]DOT ;
 ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb] ;
+EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt] ;
 GROUP           : [Gg][Rr][Oo][Uu][Pp] ;
 LABEL           : [Ll][Aa][Bb][Ee][Ll] ;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
@@ -209,6 +212,7 @@ SHARE_LIST      : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
 SHARE_ITEM      : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) | THIS_BLOCK;
 THIS_BLOCK      : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk] ;
 UNDER           : [Uu][Nn][Dd][Ee][Rr] ;
+WITH            : [Ww][Ii][Tt][Hh] ;
 
 
 /* DWResident, DW... etc. are DWIDs */
@@ -221,12 +225,10 @@ INFROM      : IN | FROM ;
 OR          : COMMA | [Oo][Rr] ;
 AND         : PLUS | [Aa][Nn][Dd] ;
 
-EXCEPT      : [Ee][Xx][Cc][Ee][Pp][Tt] ;
 FROM        : [Ff][Rr][Oo][Mm] ;
 IN          : [Ii][Nn] ;
 OF          : [Oo][Ff] ;
 TAG         : [Tt][Aa][Gg] (EQ SYMBOL)? ;
-WITH        : LP [Ww][Ii][Tt][Hh] .*? RP ;
 
 DISCIPLINE      : (LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)* ;
 NUMBER      : DIGIT+ (DOT DIGIT*)? ;

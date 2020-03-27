@@ -47,8 +47,11 @@ if not os.getenv('HEROKU'):
                       format='%(asctime)s %(message)s',
                       level=logging.DEBUG)
 
+# Lists of tuples of these types get added to lists for the Head and Body sections.
 Requirement = namedtuple('Requirement', 'keyword, value, text, course')
 ShareList = namedtuple('ShareList', 'keyword text share_list')
+
+# Used for lists of active courses found for particular scribed discipline-catalog_number pairs.
 ScribedCourse = namedtuple('ScribedCourse', 'discipline catalog_number courses')
 
 trans_dict: Dict[int, None] = dict()
@@ -410,6 +413,11 @@ class ScribeSection(Enum):
 class ReqBlockInterpreter(ReqBlockListener):
   def __init__(self, institution, block_type, block_value, title, period_start, period_stop,
                requirement_text):
+    """ Lists of Requirements, ShareLists, and possibly other named tuples for the Head and Body
+        setions of a Requirement Block are populated as the parse tree is walked for a particular
+        Block. Each named tuple starts with a keyword
+    """
+
     if DEBUG:
       print(f'*** ReqBlockInterpreter({institution}, {block_type}, {block_value})', file=sys.stderr)
     self.institution = institution
@@ -424,14 +432,10 @@ class ReqBlockInterpreter(ReqBlockListener):
     self.institution_name = colleges[institution]
     self.requirement_text = requirement_text
     self.scribe_section = ScribeSection.NONE
-    self.sections = [[], [], []]  # NONE, HEAD, BODY
+    self.sections = [None, [], []]  # NONE, HEAD, BODY
 
   @property
   def html(self):
-    len_empty = len(self.sections[ScribeSection.NONE.value])
-    assert len_empty == 0, (
-        f'ERROR: Scribe Block Section {ScribeSection.NONE.name} has'
-        f'{len_empty} item{"" if len_empty == 1 else "s"} instead of none.')
     html_body = f"""
 <h1>{self.institution_name} {self.title}</h1>
 <p>Requirements for Catalog Years
@@ -719,9 +723,12 @@ class ReqBlockInterpreter(ReqBlockListener):
         # All labels should be processed as part of a rule
         print(ctx.STRING(), file=sys.stderr)
 
-
+  # enterShare()
+  # -----------------------------------------------------------------------------------------------
   def enterShare(self, ctx):
-    """ SHARE SHARE_LIST
+    """ share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? SHARE_LIST ;
+        SHARE_LIST      : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
+        SHARE_ITEM      : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) | THIS_BLOCK;
     """
     if DEBUG:
       print('*** enterShare()', file=sys.stderr)
@@ -734,13 +741,15 @@ class ReqBlockInterpreter(ReqBlockListener):
       neg = ' not'
     text = (f'Courses used to satisfy this requirement may{neg} also be used to satisfy'
             f' the following requirements:')
+
+    # There are separate share and exclusive SHARE_ITEM lists for the head and body.
     this_section = self.sections[self.scribe_section.value]
     for i, item in enumerate(this_section):
       if item.keyword == share_type:
         break
-    else:
-      i += 1
+    else:   # This really is for the for loop: add the appropriate type of share list to the section
       this_section.append(ShareList(share_type, text, []))
+      i = len(this_section) - 1
 
     this_section[i].share_list.append(str(ctx.SHARE_LIST()).strip('()'))
 

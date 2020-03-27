@@ -269,6 +269,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#except_clause.
+    def enterExcept_clause(self, ctx:ReqBlockParser.Except_clauseContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#except_clause.
+    def exitExcept_clause(self, ctx:ReqBlockParser.Except_clauseContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#noncourse.
     def enterNoncourse(self, ctx:ReqBlockParser.NoncourseContext):
         pass
@@ -347,6 +356,15 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#under.
     def exitUnder(self, ctx:ReqBlockParser.UnderContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#with_phrase.
+    def enterWith_phrase(self, ctx:ReqBlockParser.With_phraseContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#with_phrase.
+    def exitWith_phrase(self, ctx:ReqBlockParser.With_phraseContext):
         pass
 
 
