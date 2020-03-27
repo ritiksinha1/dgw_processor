@@ -507,6 +507,9 @@ class ReqBlockInterpreter(ReqBlockListener):
   # -----------------------------------------------------------------------------------------------
   def enterMaxcredit(self, ctx):
     """ MAXCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
+
+        UNRESOLVED: the WITH clause applies only to the last course in the course list unless it's a
+        range, in which cass it applies to all. Not clear what a wildcard catalog number means yet.
     """
     if DEBUG:
       print(f'*** enterMaxcredit()', file=sys.stderr)
