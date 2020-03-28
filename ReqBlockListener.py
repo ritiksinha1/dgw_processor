@@ -368,6 +368,24 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#with_list.
+    def enterWith_list(self, ctx:ReqBlockParser.With_listContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#with_list.
+    def exitWith_list(self, ctx:ReqBlockParser.With_listContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#with_expr.
+    def enterWith_expr(self, ctx:ReqBlockParser.With_exprContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#with_expr.
+    def exitWith_expr(self, ctx:ReqBlockParser.With_exprContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#symbol.
     def enterSymbol(self, ctx:ReqBlockParser.SymbolContext):
         pass

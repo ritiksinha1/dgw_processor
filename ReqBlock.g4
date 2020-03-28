@@ -44,6 +44,7 @@ head        :
             | maxcredit
             | maxpassfail
             | mingrade
+            | mincredit
             | mingpa
             | minres
             | class_credit
@@ -133,12 +134,12 @@ or_list         : (OR course_item)+ ;
 
 /* Other Rules
  */
-label           : LABEL ALPHANUM*? STRING ';'? label* ;
+label           : LABEL ALPHA_NUM*? STRING ';'? label* ;
 lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
-maxclass        : MAXCLASS NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
-maxcredit       : MAXCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
-minclass        : MINCLASS NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
-mincredit       : MINCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
+maxclass        : MAXCLASS NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
+maxcredit       : MAXCREDIT NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
+minclass        : MINCLASS NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
+mincredit       : MINCREDIT NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) TAG? ;
 maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
@@ -147,7 +148,7 @@ mingrade        : MINGRADE NUMBER ;
 minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
-                  (ANDOR (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
+                  (LOG_OP (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
                   INFROM? course_list? TAG? label? ;
 //numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
 except_clause   : EXCEPT course_list with_phrase? ;
@@ -160,7 +161,9 @@ ruletag         : RULE_TAG SYMBOL EQ STRING ;
 samedisc        : SAME_DISC LP SYMBOL EQ SYMBOL (COMMA SYMBOL EQ SYMBOL)* RP TAG? ;
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? SHARE_LIST ;
 under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? proxy_advice label ;
-with_phrase     : LP WITH .*? RP ;
+with_phrase     : LP WITH with_list RP ;
+with_list       : with_expr (LOG_OP with_expr)* ;
+with_expr       : SYMBOL REL_OP (STRING | ALPHA_NUM) (OR (STRING + ALPHA_NUM))* ;
 symbol          : SYMBOL ;
 
 /* Lexer
@@ -220,7 +223,6 @@ WITH            : [Ww][Ii][Tt][Hh] ;
 
 STRING      : '"' .*? '"' ;
 
-ANDOR       : ([Aa][Nn][Dd])|([Oo][Rr]) ;
 INFROM      : IN | FROM ;
 OR          : COMMA | [Oo][Rr] ;
 AND         : PLUS | [Aa][Nn][Dd] ;
@@ -234,10 +236,12 @@ DISCIPLINE      : (LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)* ;
 NUMBER      : DIGIT+ (DOT DIGIT*)? ;
 CATALOG_NUMBER  : (NUMBER | WILDNUMBER) LETTER? ;
 SYMBOL      : LETTER (LETTER | DIGIT | '_' | '-' | '&')* ;
-ALPHANUM    : (LETTER | DIGIT | DOT | '_')+ ;
+ALPHA_NUM   : (LETTER | DIGIT | DOT | '_')+ ;
 RANGE       : NUMBER ':' NUMBER ;
 
 WILDNUMBER      : (DIGIT+ AT DIGIT* LETTER?) | (AT DIGIT+ LETTER?) ;
+LOG_OP      : ([Aa][Nn][Dd])|([Oo][Rr]) ;
+REL_OP      : EQ | GE | GT | LE | LT | NE ;
 
 AT          : '@' ;
 COMMA       : ',' ;
@@ -248,6 +252,7 @@ HYPHEN      : '-' ;
 LE          : '<=' ;
 LP          : '(' ;
 LT          : '<' ;
+NE          : '<>' ;
 PLUS        : '+' ;
 RP          : ')' ;
 SEMI        : ';' ;

@@ -189,15 +189,13 @@ def build_course_list(institution, ctx) -> list:
       discipline = '^' + discipline.replace('@', '.*') + '$'
 
     # catalog number part
-    #   If the catalog_number is a WITH qualifier, skip the lookup for this course.
-    if catalog_number.lower().startswith('(with'):
-      continue
+
     #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
     #   numbers that start with zero. But other patterns might be used: 1@, for example.
     catalog_numbers = catalog_number.split(':')
     if len(catalog_numbers) == 1:
       if '@' in catalog_numbers[0]:
-        catnum_clause = "catalog_number ~* '^" + catalog_numbers[0].replace('@', '.*') + '$'
+        catnum_clause = "catalog_number ~* '^" + catalog_numbers[0].replace('@', '.*') + "$'"
       else:
         catnum_clause = f"catalog_number = '{catalog_numbers[0]}'"
     else:
@@ -220,7 +218,7 @@ def build_course_list(institution, ctx) -> list:
           if matches.group(1).isdigit():
             high = matches.group(1) + '99'
             catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
-                                 numeric_part(catalog_number) <=' {float(high)}')
+                                 numeric_part(catalog_number) <= {float(high)})
                              """
         else:
           # Either low or high is not in the form \d+@
@@ -492,6 +490,17 @@ class ReqBlockInterpreter(ReqBlockListener):
 # mingpa      : MINGPA NUMBER ;
 # mingrade    : MINGRADE NUMBER ;
 
+  # enterMinCredit()
+  # -----------------------------------------------------------------------------------------------
+  def enterMinCredit(self, ctx):
+    """ mincredit   :MINCREDIT NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
+    """
+    if DEBUG:
+      print('*** enterMinCredit()', file=sys.stderr)
+    num_credits = float(str(ctx.NUMBER()))
+    course_lists = ctx.course_list()
+    print(course_lists)
+
   # enterNumcredit()
   # -----------------------------------------------------------------------------------------------
   def enterNumcredit(self, ctx):
@@ -506,7 +515,7 @@ class ReqBlockInterpreter(ReqBlockListener):
   # enterMaxcredit()
   # -----------------------------------------------------------------------------------------------
   def enterMaxcredit(self, ctx):
-    """ MAXCREDIT NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
+    """ MAXCREDIT NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
 
         UNRESOLVED: the WITH clause applies only to the last course in the course list unless it's a
         range, in which cass it applies to all. Not clear what a wildcard catalog number means yet.
@@ -526,8 +535,8 @@ class ReqBlockInterpreter(ReqBlockListener):
       except_list = build_course_list(self.institution, course_lists[1])
 
     if course_list is None:  # Weird: no credits allowed, but no course list provided.
-      text += '.'
-      courses = None
+      raise ValueError(f'MaxCredit rule with no courses specified.')
+
     else:
       list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
       attributes, html_list = course_list2html(course_list['courses'])
@@ -536,8 +545,10 @@ class ReqBlockInterpreter(ReqBlockListener):
         preamble = f' in '
         courses = html_list[0]
       else:
-        preamble = f' in {list_quantifier} of these {len_list} {" and ".join(attributes)} courses:'
+        preamble = f' in {list_quantifier} of these {len_list} courses:'
         courses = html_list
+      # Need to report what attributes all the found courses share and need to process any WITH
+      # and EXCEPT clauses. YOU ARE HERE******************************************************
       text += f' {preamble} '
     self.sections[self.scribe_section.value].append(
         Requirement('maxcredits',
