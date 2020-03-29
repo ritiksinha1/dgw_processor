@@ -52,7 +52,9 @@ Requirement = namedtuple('Requirement', 'keyword, value, text, course')
 ShareList = namedtuple('ShareList', 'keyword text share_list')
 
 # Used for lists of active courses found for particular scribed discipline-catalog_number pairs.
-ScribedCourse = namedtuple('ScribedCourse', 'discipline catalog_number courses')
+CourseList = namedtuple('CourseList',
+                        'scribed_courses list_type customizations exclusions '
+                        'active_courses attributes')
 
 trans_dict: Dict[int, None] = dict()
 for c in range(13, 31):
@@ -126,44 +128,79 @@ def class_or_credit(ctx, number=0) -> str:
   return which
 
 
+# do_with()
+# -------------------------------------------------------------------------------------------------
+def do_with(ctx):
+  """ with_clause     : LP WITH with_list RP ;
+      with_list       : with_expr (LOG_OP with_expr)* ;
+      with_expr       : SYMBOL REL_OP (STRING | ALPHA_NUM) (OR (STRING + ALPHA_NUM))* ;
+  """
+  if DEBUG:
+    print('*** do_with()', file=sys.stderr)
+  with_list = ctx.with_list()
+  return 'There was a WITH clause'
+
+
 # build_course_list()
 # -------------------------------------------------------------------------------------------------
 def build_course_list(institution, ctx) -> list:
-  """ course_list     : course (and_list | or_list)? ;
-      course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE | WITH) ;
+  """ course_list     : course (and_list | or_list)? with_clause? except_clause? ;
+      course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
       course_item     : DISCIPLINE? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
-      and_list        : (AND course_item)+ ;
-      or_list         : (OR course_item)+ ;
+      and_list        : (AND course_item with_clause?)+ ;
+      or_list         : (OR course_item with_clause?)+ ;
 
       If the list is an AND list, but there are wildcards, say it's an OR list.
-      This should not be an issue because my grammar allows either type of list in places where the
-      Scribe language actually restricts the rules to OR lists.
+      This should not be an issue because this grammar allows either type of list in places where
+      the Scribe language actually restricts the rules to OR lists.
 
-      The returned list has the list of courses as extracted from the Scribe block and, for each
-      scribed course, a list of actual courses with their catalog descriptions, with the exception
-      where the "course" part has a WITH qualifier as the catalog number.
+      The returned object has the following structure:
+        scribed_courses     List of all discipline:catalog_number pairs specified after distributing
+                            disciplines across catalog_numbers. (Show "BIOL 1, 2" as "BIOL 1, BIOL
+                            2")
+        list_type           'and' or 'or'
+        customizations      Information about WITH pharases, and which scribed_courses they apply
+                            to
+        exclusions          List of course_lists for excluded courses
+        active_courses      List of all active courses that match the scribed_courses list after
+                            expanding wildcards and catalog_number ranges.
+        attributes          List of all attribute values the active courses list have in common,
+                            currently limited to WRIC and BKCR
+
   """
   if DEBUG:
     print(f'*** build_course_list()', file=sys.stderr)
   if ctx is None:
     return None
-  scribed_courses: list = []
 
-  # The list has to start with both a discipline and catalog number
-  course_ctx = ctx.course()
-  discipline, catalog_number = (str(c) for c in course_ctx.children)
-  scribed_courses.append(ScribedCourse._make((discipline, catalog_number, [])))
+  # The object to be returned (as a namedtuple), and shortcuts to the fields
+  return_object = {'scribed_courses': [],
+                   'list_type': '',
+                   'customizations': '',
+                   'exclusions': [],
+                   'active_courses': [],
+                   'attributes': []}
+  scribed_courses = return_object['scribed_courses']
+  exclusions = return_object['exclusions']
+  active_courses = return_object['active_courses']
+  attributes = return_object['attributes']
+
   # Drill into ctx to determine which type of list
-  list_type = 'or'  # default
   if ctx.and_list():
-    list_type = 'and'
+    return_object['list_type'] = 'and'
     list_fun = ctx.and_list
   elif ctx.or_list():
-    list_type = 'or'
+    return_object['list_type'] = 'or'
     list_fun = ctx.or_list
   else:
     list_fun = None
 
+  # The list has to start with both a discipline and catalog number
+  course_ctx = ctx.course()
+  discipline, catalog_number = (str(c) for c in course_ctx.children)
+  scribed_courses.append((discipline, catalog_number))
+
+  # For the remaining scribed courses, distribute disciplines across elided elements
   if list_fun is not None:
     course_items = list_fun().course_item()
     for course_item in course_items:
@@ -172,16 +209,25 @@ def build_course_list(institution, ctx) -> list:
         catalog_number = items[0]
       else:
         discipline, catalog_number = items
-      scribed_courses.append(ScribedCourse._make((discipline, catalog_number, [])))
+      scribed_courses.append((discipline, catalog_number))
 
-  # Expand the list of scribe-encoded courses into courses that actually exist
+  # Customizations (WITH clause)
+  if ctx.with_clause():
+    return_object['customizations'] = do_with(ctx.with_clause())
+
+  # Exclusions (EXCEPT clauses)
+  if ctx.except_clause():
+    exclusions_ctx = ctx.except_clause()
+    return_object['exceptions'] = build_course_list(institution, exclusions_ctx)
+
+  # Active Courses
   conn = PgConnection()
   cursor = conn.cursor()
   for scribed_course in scribed_courses:
     # For display to users
-    display_discipline, display_catalog_number, _ = scribed_course
+    display_discipline, display_catalog_number = scribed_course
     # For course db query
-    discipline, catalog_number, _ = scribed_course
+    discipline, catalog_number = scribed_course
     # discipline part
     discp_op = '='
     if '@' in discipline:
@@ -207,10 +253,12 @@ def build_course_list(institution, ctx) -> list:
                          """
       except ValueError:
         #  ... but it looks like there were.
-        #  There is no good way to turn this into a db query (that I know of), so the following
-        #  assumptions are used:
+        #  Assume:
         #    - the range is being used for a range of course levels (1@:3@, for example)
         #    - catalog numbers are 3 digits (so 1@ means 100 to 199, for example
+        #  Otherwise, 1@ would match 1, 10-19, 100-199, and 1000-1999, which would be strange, or
+        #  at least fragile in the case of Lehman, which uses 2000-level numbers for blanket credit
+        #  courses at the 200 level.
         matches = re.match('(.*?)@(.*)', low)
         if matches.group(1).isdigit():
           low = matches.group(1) + '00'
@@ -236,78 +284,76 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
    order by discipline, numeric_part(catalog_number)
               """
     cursor.execute(course_query)
-
-    # Convert generator to list.
-    for row in cursor.fetchall():
-      scribed_course.courses.append(row)
+    if cursor.rowcount > 0:
+      all_blanket = True
+      all_writing = True
+      for row in cursor.fetchall():
+        active_courses.append(row)
+        if 'BKCR' not in row.attributes:
+          all_blanket = False
+        if 'WRIC' not in row.attributes:
+          all_writing = False
+      if all_blanket:
+        attributes.append('blanket')
+      if all_writing:
+        attributes.append('writing')
   conn.close()
-  return {'courses': scribed_courses, 'list_type': list_type}
+
+  #
+
+  return CourseList._make(return_object.values())
 
 
 # course_list2html()
 # -------------------------------------------------------------------------------------------------
-def course_list2html(course_list: dict):
-  """ Look up all the courses in course_list, and return their catalog entries as a list of HTML
-      divs.
+def course_list2html(course_list: List):
+  """ Turn a list of active courses into a list of HTML sections.
   """
-  all_blanket = True
-  all_writing = True
-
   return_list = []
-  for course in course_list:
-    num_courses = len(course.courses)
-    if num_courses == 0:
-      summary = '<p>There are no active courses that match this course specification.</p>'
-      num_courses = 'No'
-    elif num_courses == 1:
-      summary = ''  # Nothing to say about this: it's normal.
-    else:
-      summary = (f'<p>The following {num_courses} active courses match this course '
-                 f'specification.</p>')
 
-    suffix = '' if len(course.courses) == 1 else 's'
-    this_course_list = f"""
+  for course in course_list:
+    num_courses = len(course.active_courses)
+    if num_courses == 0:
+      num_courses = 'No'
+    summary = (f'<p>There are {num_courses} active courses that match this course '
+               f'specification.</p>')
+    if num_courses == len(course.scribed_courses):
+      summary = ''  # No need to say anything about this normal case.
+
+    suffix = '' if len(course.active_courses) == 1 else 's'
+
+    # With
+    if len(course_list.customizations) > 0:
+      suffix += '<h2>Customizations</h2><p>This list applies only when:</p>'
+      if len(course_list.customizations) == 1:
+        suffix += f'<p>{course_list.customizations[0]}</p>'
+      else:
+        suffix += '<ul class="closeable">'
+        for customization in course_list.customizations:
+          suffix += f'<li>{customization}</li>'
+        suffix += '</ul>'
+
+    # Except
+    if len(course_list.exceptions) > 0:
+      suffix += '<h2>Exceptions</h2>'
+      if len(course_list.exceptions) == 1:
+        suffix += f'<p>{course_list.exceptions[0]}</p>'
+      else:
+        suffix += '<ul class="closeable">'
+        for exception in course_list.exceptions:
+          suffix += f'<li>{exception}</li>'
+        suffix += '</ul>'
+
+    html = """
     <section>
       <h1>Degreeworks specification: “{course.discipline} {course.catalog_number}”</h1>
       {summary}
       <h2 class="closer">{num_courses} Active Course{suffix}</h2>
+      <p></p>
       <ul class="closeable">
     """
-    for found_course in course.courses:
-      if all_writing and 'WRIC' not in found_course.attributes:
-        all_writing = False
-      if all_blanket and 'BKCR' not in found_course.attributes \
-         and found_course.max_credits > 0:
-        # if DEBUG:
-        #   print('***', found_course.discipline, found_course.catalog_number, 'is a wet blanket',
-        #         file=sys.stderr)
-        all_blanket = False
-      this_course_list += f"""
-                  <li title="{found_course.course_id}:{found_course.offer_nbr}">
-                    <strong>
-                      {found_course.discipline} {found_course.catalog_number}
-                      {found_course.title}</strong>
-                    <br>
-                    {found_course.contact_hours:0.1f} hr; {found_course.max_credits:0.1f} cr
-                    Requisites: <em>{found_course.requisites}</em>
-                    <br>
-                    {found_course.description}
-                    <br>
-                    <em>
-                      Designation: {found_course.designation};
-                      Attributes: {found_course.attributes}
-                    </em>
-                  </li>
-              """
-    this_course_list += '</ul></section>'
-    return_list.append(this_course_list)
-  attributes = []
-  if all_blanket:
-    attributes.append('blanket credit')
-  if all_writing:
-    attributes.append('writing intensive')
 
-  return attributes, return_list
+  return return_list
 
 
 # numcredit()
@@ -492,14 +538,14 @@ class ReqBlockInterpreter(ReqBlockListener):
 
   # enterMinCredit()
   # -----------------------------------------------------------------------------------------------
-  def enterMinCredit(self, ctx):
-    """ mincredit   :MINCREDIT NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
+  def enterMincredit(self, ctx):
+    """ mincredit   :MINCREDIT NUMBER course_list TAG? ;
     """
     if DEBUG:
-      print('*** enterMinCredit()', file=sys.stderr)
+      print('*** enterMincredit()', file=sys.stderr)
     num_credits = float(str(ctx.NUMBER()))
-    course_lists = ctx.course_list()
-    print(course_lists)
+    course_list = build_course_list(self, ctx.course_list())
+    print(course_list)
 
   # enterNumcredit()
   # -----------------------------------------------------------------------------------------------
@@ -515,7 +561,7 @@ class ReqBlockInterpreter(ReqBlockListener):
   # enterMaxcredit()
   # -----------------------------------------------------------------------------------------------
   def enterMaxcredit(self, ctx):
-    """ MAXCREDIT NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
+    """ MAXCREDIT NUMBER course_list TAG? ;
 
         UNRESOLVED: the WITH clause applies only to the last course in the course list unless it's a
         range, in which cass it applies to all. Not clear what a wildcard catalog number means yet.
@@ -559,7 +605,7 @@ class ReqBlockInterpreter(ReqBlockListener):
   # enterMaxclass()
   # -----------------------------------------------------------------------------------------------
   def enterMaxclass(self, ctx):
-    """ MAXCLASS NUMBER INFROM? course_list WITH? (EXCEPT course_list)? TAG? ;
+    """ MAXCLASS NUMBER course_list TAG? ;
     """
     if DEBUG:
       print('*** enterMaxclass()', file=sys.stderr)
@@ -578,27 +624,26 @@ class ReqBlockInterpreter(ReqBlockListener):
       except_list = build_course_list(self.institution, course_lists[1])
 
     if course_list is None:  # Weird: no classes allowed, but no course list provided.
-      text += '.'
-      courses = None
-    else:
-      attributes, html_list = course_list2html(course_list['courses'])
-      len_list = len(html_list)
-      if len_list == 1:
-        preamble = f' in '
-        courses = html_list[0]
-      else:
-        if len_list == 2:
-          list_quantifier = 'either' if course_list['list_type'] == 'or' else 'both'
-        else:
-          list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
-        preamble = f' in {list_quantifier} of these {len_list} {" and ".join(attributes)} courses:'
-        courses = html_list
-      text += f' {preamble} '
-    self.sections[self.scribe_section.value].append(
-        Requirement('maxlasses',
-                    f'{num_classes} class{suffix}',
-                    f'{text}',
-                    courses))
+      raise ValueError('MaxClass with no list of courses.')
+    # else:
+    #   attributes, html_list = course_list2html(course_list['courses'])
+    #   len_list = len(html_list)
+    #   if len_list == 1:
+    #     preamble = f' in '
+    #     courses = html_list[0]
+    #   else:
+    #     if len_list == 2:
+    #       list_quantifier = 'either' if course_list['list_type'] == 'or' else 'both'
+    #     else:
+    #       list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
+    #     preamble = f' in {list_quantifier} of these {len_list} {" and ".join(attributes)} courses:'
+    #     courses = html_list
+    #   text += f' {preamble} '
+    # self.sections[self.scribe_section.value].append(
+    #     Requirement('maxlasses',
+    #                 f'{num_classes} class{suffix}',
+    #                 f'{text}',
+    #                 courses))
 
   # enterMaxpassfail()
   # -----------------------------------------------------------------------------------------------

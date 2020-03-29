@@ -69,13 +69,6 @@ rule_subset : BEGINSUB (class_credit | group)+ ENDSUB qualifier* label ;
 
 /* Parser
  * ------------------------------------------------------------------------------------------------
- *  UNRESOLVED: The Scribe manual gives an example
- *                # Disallow classes older than 10 years – but allow any ANTH to be older
- *                MaxCredits 0 in @ (With DWAge>10)
- *                Except ANTH @ tag=MAX10
- *              In this case, the first course_list is "@ (WITH DWAge>10)"
- *              This has to be recognized and reported in English, but omit the course lookup step.
- *              I've added the WITH clause below to get past parser errors.
  */
 
 /* Groups
@@ -126,32 +119,32 @@ block_type  : NUMBER BLOCKTYPE SHARE_LIST label ;
 
 /* Course Lists
  */
-course_list     : course (and_list | or_list)? ;
-course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE | WITH) ;
+course_list     : INFROM? course (and_list | or_list)? with_clause? except_clause? ;
+course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
 course_item     : DISCIPLINE? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
-and_list        : (AND course_item)+ ;
-or_list         : (OR course_item)+ ;
+and_list        : (AND course_item with_clause?)+ ;
+or_list         : (OR course_item with_clause?)+ ;
 
 /* Other Rules
  */
 label           : LABEL ALPHA_NUM*? STRING ';'? label* ;
 lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
-maxclass        : MAXCLASS NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
-maxcredit       : MAXCREDIT NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
-minclass        : MINCLASS NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
-mincredit       : MINCREDIT NUMBER INFROM? course_list with_phrase? (EXCEPT course_list)? TAG? ;
-maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) TAG? ;
+maxclass        : MAXCLASS NUMBER course_list TAG? ;
+maxcredit       : MAXCREDIT NUMBER course_list TAG? ;
+minclass        : MINCLASS NUMBER course_list TAG? ;
+mincredit       : MINCREDIT NUMBER course_list TAG? ;
+maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG? ;
 maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
-mingpa          : MINGPA NUMBER (INFROM? course_list)? except_clause? ;
+mingpa          : MINGPA NUMBER (course_list)? ;
 mingrade        : MINGRADE NUMBER ;
 minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
                   (LOG_OP (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
                   INFROM? course_list? TAG? label? ;
-//numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
-except_clause   : EXCEPT course_list with_phrase? ;
+//numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? course_list? TAG? ;
+except_clause   : EXCEPT course_list ;
 noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
 proxy_advice    : PROXYADVICE STRING proxy_advice* ;
 remark          : REMARK STRING (SEMI? remark)* ;
@@ -161,7 +154,7 @@ ruletag         : RULE_TAG SYMBOL EQ STRING ;
 samedisc        : SAME_DISC LP SYMBOL EQ SYMBOL (COMMA SYMBOL EQ SYMBOL)* RP TAG? ;
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? SHARE_LIST ;
 under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? proxy_advice label ;
-with_phrase     : LP WITH with_list RP ;
+with_clause     : LP WITH with_list RP ;
 with_list       : with_expr (LOG_OP with_expr)* ;
 with_expr       : SYMBOL REL_OP (STRING | ALPHA_NUM) (OR (STRING + ALPHA_NUM))* ;
 symbol          : SYMBOL ;
