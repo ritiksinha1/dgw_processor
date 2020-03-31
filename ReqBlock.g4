@@ -120,14 +120,18 @@ block_type  : NUMBER BLOCKTYPE SHARE_LIST label ;
 /* Course Lists
  */
 course_list     : INFROM? course (and_list | or_list)? with_clause? except_clause? ;
-course          : DISCIPLINE (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
-course_item     : DISCIPLINE? (CATALOG_NUMBER | WILDNUMBER | NUMBER | RANGE) ;
+course          : (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | SYMBOL | WILDSYMBOL) ;
+course_item     : SYMBOL? (NUMBER | SYMBOL) ;
 and_list        : (AND course_item with_clause?)+ ;
 or_list         : (OR course_item with_clause?)+ ;
+/* A hide list ends with OR if another course_item follows it, but not if not.
+ * How do you deal with that, I hear you ask.
+ */
+hide_list       : LB HIDE course_item RB ;
 
 /* Other Rules
  */
-label           : LABEL ALPHA_NUM*? STRING ';'? label* ;
+label           : LABEL SYMBOL? STRING ';'? label* ;
 lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
 maxclass        : MAXCLASS NUMBER course_list TAG? ;
 maxcredit       : MAXCREDIT NUMBER course_list TAG? ;
@@ -156,8 +160,7 @@ share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? SHARE_LIST ;
 under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? proxy_advice label ;
 with_clause     : LP WITH with_list RP ;
 with_list       : with_expr (LOG_OP with_expr)* ;
-with_expr       : SYMBOL REL_OP (STRING | ALPHA_NUM) (OR (STRING + ALPHA_NUM))* ;
-symbol          : SYMBOL ;
+with_expr       : SYMBOL REL_OP (STRING | SYMBOL) (OR with_expr)* ;
 
 /* Lexer
  * ------------------------------------------------------------------------------------------------
@@ -176,6 +179,7 @@ ENDDOT          : [Ee][Nn][Dd]DOT ;
 ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb] ;
 EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt] ;
 GROUP           : [Gg][Rr][Oo][Uu][Pp] ;
+HIDE            : [Hh][Ii][Dd][Ee]([Ff][Rr][Oo][Mm][Aa][Dd][Vv][Ii][Cc][Ee])? ;
 LABEL           : [Ll][Aa][Bb][Ee][Ll] ;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
 MAJOR           : [Mm][Aa][Jj][Oo][Rr] ;
@@ -225,17 +229,27 @@ IN          : [Ii][Nn] ;
 OF          : [Oo][Ff] ;
 TAG         : [Tt][Aa][Gg] (EQ SYMBOL)? ;
 
-DISCIPLINE      : (LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)* ;
+/* There are three overlapping classes of tokens used as identifiers:
+ * The overlap is in what characters are allowed for each. Since the Scribe parser ensures that
+ * the "allowed character set" is correct, this grammar lumps everthing together as a SYMBOL.
+ *   Discipline names
+ *   With clause names
+ *   Named values
+ * Keeping original defs here for back reference:
+ *   ALPHA_NUM   : (LETTER | DIGIT | DOT | '_')+ ;
+ *   DISCIPLINE  : ALPHA_NUM | ((LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)*) ;
+ *   SYMBOL      : ALPHA_NUM | (LETTER (LETTER | DIGIT | '_' | '-' | '&')*) ;
+ */
 NUMBER      : DIGIT+ (DOT DIGIT*)? ;
-CATALOG_NUMBER  : (NUMBER | WILDNUMBER) LETTER? ;
-SYMBOL      : LETTER (LETTER | DIGIT | '_' | '-' | '&')* ;
-ALPHA_NUM   : (LETTER | DIGIT | DOT | '_')+ ;
 RANGE       : NUMBER ':' NUMBER ;
 
-WILDNUMBER      : (DIGIT+ AT DIGIT* LETTER?) | (AT DIGIT+ LETTER?) ;
+SYMBOL      : (LETTER | DIGIT | DOT | HYPHEN | USCORE | AMP)+ ;
+WILDSYMBOL  : (LETTER|DIGIT)* AT (LETTER|DIGIT)* ;
+
 LOG_OP      : ([Aa][Nn][Dd])|([Oo][Rr]) ;
 REL_OP      : EQ | GE | GT | LE | LT | NE ;
 
+AMP         : '&' ;
 AT          : '@' ;
 COMMA       : ',' ;
 EQ          : '=' ;
@@ -249,10 +263,13 @@ NE          : '<>' ;
 PLUS        : '+' ;
 RP          : ')' ;
 SEMI        : ';' ;
+USCORE      : '_' ;
 
 fragment DOT         : '.' ;
 fragment DIGIT       : [0-9] ;
+fragment LB          : '{' ;
 fragment LETTER      : [a-zA-Z] ;
+fragment RB          : '}' ;
 
 // Directives to the auditor, not requirements.
 CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
@@ -261,7 +278,6 @@ CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
                  [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip ;
 COMMENT        : '#' .*? '\n' -> skip ;
 DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
-HIDE           : '{' [Hh][Ii][Dd][Ee] .*? '}' -> skip ;
 HIDERULE       : [Hh][Ii][Dd][Ee][Rr][Uu][Ll][Ee] -> skip ;
 NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
 PRIORITY       : ([Ll][Oo][Ww]([Ee][Ss][Tt])?)?([Hh][Ii][Gg][Hh])?

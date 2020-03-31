@@ -62,7 +62,7 @@ for c in range(13, 31):
 
 trans_table = str.maketrans(trans_dict)
 
-# Create dict of known colleges
+# Dict of known colleges
 colleges = dict()
 conn = PgConnection()
 cursor = conn.cursor()
@@ -70,6 +70,16 @@ cursor.execute('select code, name from cuny_institutions')
 for row in cursor.fetchall():
   colleges[row.code] = row.name
 conn.close()
+
+# Known named fields for WITH clauses
+with_named_fields = ['DWAge', 'DWCredits', 'DWCreditType', 'DWCourseNumber', 'DWDiscipline',
+                     'DWGradeNumber', 'DWGradeLetter', 'DWGradeType', 'DWLocation', 'DWPassFail',
+                     'DWResident', 'DWSchool', 'DWSection', 'DWTer', 'DWTitle', 'DWTransfer',
+                     'DWTransferCourse', 'DWTransferSchool', 'DWInprogress', 'DWPreregistered',
+                     'DWTermType', 'DWPassed']
+# The ones of interest here:
+known_with_qualifiers = ['DWPassFail', 'DWResident', 'DWTransfer', 'DWTransferCourse']
+
 
 # Utilities
 # =================================================================================================
@@ -134,10 +144,23 @@ def do_with(ctx):
   """ with_clause     : LP WITH with_list RP ;
       with_list       : with_expr (LOG_OP with_expr)* ;
       with_expr       : SYMBOL REL_OP (STRING | ALPHA_NUM) (OR (STRING + ALPHA_NUM))* ;
+
+      Return a string describing the customization. Four cases are interpreted; others are reported
+      as scribed.
   """
   if DEBUG:
     print('*** do_with()', file=sys.stderr)
   with_list = ctx.with_list()
+  for with_expr in with_list.children:
+    print(with_expr)
+    print(with_expr.children)
+    print('symbol:', with_expr.symbol().children, '\nrel_op:', str(with_expr.REL_OP()))
+    if with_expr.STRING():
+      print(' str:', str(with_expr.STRING()))
+    elif with_expr.ALPHA_NUM():
+      print(' alpha_num:', str(with_expr.ALPHA_NUM()))
+    else:
+      print('neither string nor alpha_num')
   return 'There was a WITH clause'
 
 

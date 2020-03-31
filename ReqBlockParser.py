@@ -62,7 +62,7 @@ def serializedATN():
         buf.write("\n+\f+\16+\u01ef\13+\3,\3,\3,\3\u00f2\2-\2\4\6\b\n\f\16")
         buf.write("\20\22\24\26\30\32\34\36 \"$&(*,.\60\62\64\668:<>@BDF")
         buf.write("HJLNPRTV\2\b\4\2\678;<\4\2\7\7\t\t\4\2\67\67;;\3\2#$\3")
-        buf.write("\2&\'\4\2..::\2\u0222\2X\3\2\2\2\4m\3\2\2\2\6y\3\2\2\2")
+        buf.write("\2&\'\4\2..99\2\u0222\2X\3\2\2\2\4m\3\2\2\2\6y\3\2\2\2")
         buf.write("\b|\3\2\2\2\n\u008c\3\2\2\2\f\u009a\3\2\2\2\16\u00a2\3")
         buf.write("\2\2\2\20\u00b9\3\2\2\2\22\u00bb\3\2\2\2\24\u00c1\3\2")
         buf.write("\2\2\26\u00c7\3\2\2\2\30\u00d4\3\2\2\2\32\u00d8\3\2\2")
@@ -137,7 +137,7 @@ def serializedATN():
         buf.write("\2\u00e8\u00e7\3\2\2\2\u00e8\u00e9\3\2\2\2\u00e9\u00eb")
         buf.write("\3\2\2\2\u00ea\u00e5\3\2\2\2\u00eb\u00ec\3\2\2\2\u00ec")
         buf.write("\u00ea\3\2\2\2\u00ec\u00ed\3\2\2\2\u00ed\37\3\2\2\2\u00ee")
-        buf.write("\u00f2\7\17\2\2\u00ef\u00f1\7:\2\2\u00f0\u00ef\3\2\2\2")
+        buf.write("\u00f2\7\17\2\2\u00ef\u00f1\79\2\2\u00f0\u00ef\3\2\2\2")
         buf.write("\u00f1\u00f4\3\2\2\2\u00f2\u00f3\3\2\2\2\u00f2\u00f0\3")
         buf.write("\2\2\2\u00f3\u00f5\3\2\2\2\u00f4\u00f2\3\2\2\2\u00f5\u00f7")
         buf.write("\7.\2\2\u00f6\u00f8\7K\2\2\u00f7\u00f6\3\2\2\2\u00f7\u00f8")
@@ -164,16 +164,16 @@ def serializedATN():
         buf.write("\2\u0126\u0127\3\2\2\2\u0127-\3\2\2\2\u0128\u0129\7\27")
         buf.write("\2\2\u0129\u012a\7\67\2\2\u012a\u012c\t\3\2\2\u012b\u012d")
         buf.write("\7/\2\2\u012c\u012b\3\2\2\2\u012c\u012d\3\2\2\2\u012d")
-        buf.write("\u012e\3\2\2\2\u012e\u012f\7F\2\2\u012f\u0134\79\2\2\u0130")
-        buf.write("\u0131\7@\2\2\u0131\u0133\79\2\2\u0132\u0130\3\2\2\2\u0133")
+        buf.write("\u012e\3\2\2\2\u012e\u012f\7F\2\2\u012f\u0134\7:\2\2\u0130")
+        buf.write("\u0131\7@\2\2\u0131\u0133\7:\2\2\u0132\u0130\3\2\2\2\u0133")
         buf.write("\u0136\3\2\2\2\u0134\u0132\3\2\2\2\u0134\u0135\3\2\2\2")
         buf.write("\u0135\u0138\3\2\2\2\u0136\u0134\3\2\2\2\u0137\u0139\7")
         buf.write("\65\2\2\u0138\u0137\3\2\2\2\u0138\u0139\3\2\2\2\u0139")
         buf.write("/\3\2\2\2\u013a\u013b\7\31\2\2\u013b\u013c\7\67\2\2\u013c")
         buf.write("\u013e\t\3\2\2\u013d\u013f\7/\2\2\u013e\u013d\3\2\2\2")
         buf.write("\u013e\u013f\3\2\2\2\u013f\u0140\3\2\2\2\u0140\u0141\7")
-        buf.write("F\2\2\u0141\u0146\79\2\2\u0142\u0143\7@\2\2\u0143\u0145")
-        buf.write("\79\2\2\u0144\u0142\3\2\2\2\u0145\u0148\3\2\2\2\u0146")
+        buf.write("F\2\2\u0141\u0146\7:\2\2\u0142\u0143\7@\2\2\u0143\u0145")
+        buf.write("\7:\2\2\u0144\u0142\3\2\2\2\u0145\u0148\3\2\2\2\u0146")
         buf.write("\u0144\3\2\2\2\u0146\u0147\3\2\2\2\u0147\u014a\3\2\2\2")
         buf.write("\u0148\u0146\3\2\2\2\u0149\u014b\7\65\2\2\u014a\u0149")
         buf.write("\3\2\2\2\u014a\u014b\3\2\2\2\u014b\61\3\2\2\2\u014c\u014d")
@@ -183,7 +183,7 @@ def serializedATN():
         buf.write("\u0154\u0155\7\30\2\2\u0155\u0156\7\67\2\2\u0156\u0158")
         buf.write("\t\3\2\2\u0157\u0159\7/\2\2\u0158\u0157\3\2\2\2\u0158")
         buf.write("\u0159\3\2\2\2\u0159\u015a\3\2\2\2\u015a\u015b\7F\2\2")
-        buf.write("\u015b\u0160\79\2\2\u015c\u015d\7@\2\2\u015d\u015f\79")
+        buf.write("\u015b\u0160\7:\2\2\u015c\u015d\7@\2\2\u015d\u015f\7:")
         buf.write("\2\2\u015e\u015c\3\2\2\2\u015f\u0162\3\2\2\2\u0160\u015e")
         buf.write("\3\2\2\2\u0160\u0161\3\2\2\2\u0161\u0164\3\2\2\2\u0162")
         buf.write("\u0160\3\2\2\2\u0163\u0165\7\65\2\2\u0164\u0163\3\2\2")
@@ -201,8 +201,8 @@ def serializedATN():
         buf.write("\u017d\u017f\5 \21\2\u017e\u017d\3\2\2\2\u017e\u017f\3")
         buf.write("\2\2\2\u017f;\3\2\2\2\u0180\u0181\7\r\2\2\u0181\u0182")
         buf.write("\5\26\f\2\u0182=\3\2\2\2\u0183\u0184\7\67\2\2\u0184\u0185")
-        buf.write("\7\36\2\2\u0185\u0186\7F\2\2\u0186\u018b\79\2\2\u0187")
-        buf.write("\u0188\7@\2\2\u0188\u018a\79\2\2\u0189\u0187\3\2\2\2\u018a")
+        buf.write("\7\36\2\2\u0185\u0186\7F\2\2\u0186\u018b\7:\2\2\u0187")
+        buf.write("\u0188\7@\2\2\u0188\u018a\7:\2\2\u0189\u0187\3\2\2\2\u018a")
         buf.write("\u018d\3\2\2\2\u018b\u0189\3\2\2\2\u018b\u018c\3\2\2\2")
         buf.write("\u018c\u018e\3\2\2\2\u018d\u018b\3\2\2\2\u018e\u018f\7")
         buf.write("J\2\2\u018f?\3\2\2\2\u0190\u0191\7 \2\2\u0191\u0195\7")
@@ -216,11 +216,11 @@ def serializedATN():
         buf.write("\3\2\2\2\u01a3\u01a4\t\5\2\2\u01a4E\3\2\2\2\u01a5\u01a8")
         buf.write("\5\62\32\2\u01a6\u01a8\5\64\33\2\u01a7\u01a5\3\2\2\2\u01a7")
         buf.write("\u01a6\3\2\2\2\u01a8G\3\2\2\2\u01a9\u01aa\7%\2\2\u01aa")
-        buf.write("\u01ab\79\2\2\u01ab\u01ac\7A\2\2\u01ac\u01ad\7.\2\2\u01ad")
+        buf.write("\u01ab\7:\2\2\u01ab\u01ac\7A\2\2\u01ac\u01ad\7.\2\2\u01ad")
         buf.write("I\3\2\2\2\u01ae\u01af\7(\2\2\u01af\u01b0\7F\2\2\u01b0")
-        buf.write("\u01b1\79\2\2\u01b1\u01b2\7A\2\2\u01b2\u01b9\79\2\2\u01b3")
-        buf.write("\u01b4\7@\2\2\u01b4\u01b5\79\2\2\u01b5\u01b6\7A\2\2\u01b6")
-        buf.write("\u01b8\79\2\2\u01b7\u01b3\3\2\2\2\u01b8\u01bb\3\2\2\2")
+        buf.write("\u01b1\7:\2\2\u01b1\u01b2\7A\2\2\u01b2\u01b9\7:\2\2\u01b3")
+        buf.write("\u01b4\7@\2\2\u01b4\u01b5\7:\2\2\u01b5\u01b6\7A\2\2\u01b6")
+        buf.write("\u01b8\7:\2\2\u01b7\u01b3\3\2\2\2\u01b8\u01bb\3\2\2\2")
         buf.write("\u01b9\u01b7\3\2\2\2\u01b9\u01ba\3\2\2\2\u01ba\u01bc\3")
         buf.write("\2\2\2\u01bb\u01b9\3\2\2\2\u01bc\u01be\7J\2\2\u01bd\u01bf")
         buf.write("\7\65\2\2\u01be\u01bd\3\2\2\2\u01be\u01bf\3\2\2\2\u01bf")
@@ -237,13 +237,13 @@ def serializedATN():
         buf.write("\2\2\u01d9\u01de\5T+\2\u01da\u01db\7=\2\2\u01db\u01dd")
         buf.write("\5T+\2\u01dc\u01da\3\2\2\2\u01dd\u01e0\3\2\2\2\u01de\u01dc")
         buf.write("\3\2\2\2\u01de\u01df\3\2\2\2\u01dfS\3\2\2\2\u01e0\u01de")
-        buf.write("\3\2\2\2\u01e1\u01e2\79\2\2\u01e2\u01e3\7>\2\2\u01e3\u01ed")
+        buf.write("\3\2\2\2\u01e1\u01e2\5V,\2\u01e2\u01e3\7>\2\2\u01e3\u01ed")
         buf.write("\t\7\2\2\u01e4\u01e6\7\60\2\2\u01e5\u01e7\7.\2\2\u01e6")
         buf.write("\u01e5\3\2\2\2\u01e7\u01e8\3\2\2\2\u01e8\u01e6\3\2\2\2")
         buf.write("\u01e8\u01e9\3\2\2\2\u01e9\u01ea\3\2\2\2\u01ea\u01ec\7")
-        buf.write(":\2\2\u01eb\u01e4\3\2\2\2\u01ec\u01ef\3\2\2\2\u01ed\u01eb")
+        buf.write("9\2\2\u01eb\u01e4\3\2\2\2\u01ec\u01ef\3\2\2\2\u01ed\u01eb")
         buf.write("\3\2\2\2\u01ed\u01ee\3\2\2\2\u01eeU\3\2\2\2\u01ef\u01ed")
-        buf.write("\3\2\2\2\u01f0\u01f1\79\2\2\u01f1W\3\2\2\2?kmwy\177\u0081")
+        buf.write("\3\2\2\2\u01f0\u01f1\7:\2\2\u01f1W\3\2\2\2?kmwy\177\u0081")
         buf.write("\u0087\u008f\u0095\u009f\u00a9\u00ad\u00b9\u00c7\u00cc")
         buf.write("\u00cf\u00d2\u00d8\u00df\u00e3\u00e8\u00ec\u00f2\u00f7")
         buf.write("\u00fc\u0105\u010b\u0111\u0117\u011d\u0123\u0126\u012c")
@@ -293,7 +293,7 @@ class ReqBlockParser ( Parser ):
                       "SAME_DISC", "SHARE_LIST", "SHARE_ITEM", "THIS_BLOCK", 
                       "UNDER", "WITH", "STRING", "INFROM", "OR", "AND", 
                       "FROM", "IN", "OF", "TAG", "DISCIPLINE", "NUMBER", 
-                      "CATALOG_NUMBER", "SYMBOL", "ALPHA_NUM", "RANGE", 
+                      "CATALOG_NUMBER", "ALPHA_NUM", "SYMBOL", "RANGE", 
                       "WILDNUMBER", "LOG_OP", "REL_OP", "AT", "COMMA", "EQ", 
                       "GE", "GT", "HYPHEN", "LE", "LP", "LT", "NE", "PLUS", 
                       "RP", "SEMI", "CHECKELECTIVES", "COMMENT", "DECIDE", 
@@ -409,8 +409,8 @@ class ReqBlockParser ( Parser ):
     DISCIPLINE=52
     NUMBER=53
     CATALOG_NUMBER=54
-    SYMBOL=55
-    ALPHA_NUM=56
+    ALPHA_NUM=55
+    SYMBOL=56
     RANGE=57
     WILDNUMBER=58
     LOG_OP=59
@@ -3824,8 +3824,9 @@ class ReqBlockParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def SYMBOL(self):
-            return self.getToken(ReqBlockParser.SYMBOL, 0)
+        def symbol(self):
+            return self.getTypedRuleContext(ReqBlockParser.SymbolContext,0)
+
 
         def REL_OP(self):
             return self.getToken(ReqBlockParser.REL_OP, 0)
@@ -3870,7 +3871,7 @@ class ReqBlockParser ( Parser ):
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 479
-            self.match(ReqBlockParser.SYMBOL)
+            self.symbol()
             self.state = 480
             self.match(ReqBlockParser.REL_OP)
             self.state = 481
