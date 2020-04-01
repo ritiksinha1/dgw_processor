@@ -503,6 +503,13 @@ class ReqBlockInterpreter(ReqBlockListener):
 
   @property
   def html(self):
+    # Add line numbers to requirements text for development purposes.
+    num_lines = self.requirement_text.count('\n')
+    lines_pre = '<pre class="line-numbers">'
+    for line in range(num_lines):
+      lines_pre += f'{line + 1:03d}  \n'
+    lines_pre += '</pre>'
+
     html_body = f"""
 <h1>{self.institution_name} {self.title}</h1>
 <p>Requirements for Catalog Years
@@ -512,7 +519,10 @@ class ReqBlockInterpreter(ReqBlockListener):
   <h1 class="closer">Degreeworks Code</h1>
   <div>
     <hr>
-    <pre>{self.requirement_text.replace('<','&lt;')}</pre>
+    <section class=with-numbers>
+      {lines_pre}
+      <pre>{self.requirement_text.replace('<','&lt;')}</pre>
+    </section
   </div>
 </section>
 <section>
@@ -764,7 +774,6 @@ class ReqBlockInterpreter(ReqBlockListener):
     #                 f'{len(classes_list)} classes or {len(credits_list)}',
     #                 label_str,
     #                 classes_list))
-
 
   def enterBlocktype(self, ctx):
     """ NUMBER BLOCKTYPE LP DEGREE|CONC|MAJOR|MINOR RP label
