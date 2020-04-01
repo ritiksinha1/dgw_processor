@@ -55,7 +55,7 @@ head        :
             )*
             ;
 body        :
-            ( rule_subset
+            ( subset
             | group
             | block_type
             | label
@@ -64,8 +64,6 @@ body        :
             | maxperdisc
             )*
             ;
-
-rule_subset : BEGINSUB (class_credit | group)+ ENDSUB qualifier* label ;
 
 /* Parser
  * ------------------------------------------------------------------------------------------------
@@ -94,7 +92,7 @@ rule_subset : BEGINSUB (class_credit | group)+ ENDSUB qualifier* label ;
 group       : NUMBER GROUP INFROM? group_list group_qualifier* label ;
 group_list  : group_item (OR group_item)* ;
 group_item  : LP
-            (course
+            (class_credit
             | block
             | block_type
             | group
@@ -112,6 +110,9 @@ group_qualifier : maxpassfail
                 | mincredit
                 | ruletag ;
 
+subset            : BEGINSUB (class_credit | group)+ ENDSUB subset_qualifier* label ;
+subset_qualifier  : mingpa | mingrade | maxtransfer;
+
 /* Blocks
  */
 block       : NUMBER BLOCK LP SHARE_LIST RP ;
@@ -119,48 +120,44 @@ block_type  : NUMBER BLOCKTYPE SHARE_LIST label ;
 
 /* Course Lists
  */
-course_list     : INFROM? course (and_list | or_list)? with_clause? except_clause? ;
+course_list     : INFROM? course (and_list | or_list)? with_clause? except_clause? HIDE? ;
 course          : (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | SYMBOL | WILDSYMBOL) ;
-course_item     : SYMBOL? (NUMBER | SYMBOL) ;
-and_list        : (AND course_item with_clause?)+ ;
-or_list         : (OR course_item with_clause?)+ ;
-/* A hide list ends with OR if another course_item follows it, but not if not.
- * How do you deal with that, I hear you ask.
- */
-hide_list       : LB HIDE course_item RB ;
+course_item     : SYMBOL? (NUMBER | SYMBOL) with_clause?;
+and_list        : ( AND course_item )+ ;
+or_list         : ( OR (course_item|hide_item) )+ ;
+hide_item       : LB HIDE course_item (OR course_item)* OR? RB ;
 
 /* Other Rules
  */
-label           : LABEL SYMBOL? STRING ';'? label* ;
+label           : LABEL (SYMBOL|NUMBER)? STRING ';'? label* ;
 lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
 maxclass        : MAXCLASS NUMBER course_list TAG? ;
 maxcredit       : MAXCREDIT NUMBER course_list TAG? ;
 minclass        : MINCLASS NUMBER course_list TAG? ;
 mincredit       : MINCREDIT NUMBER course_list TAG? ;
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG? ;
-maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
-maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
-mingpa          : MINGPA NUMBER (course_list)? ;
+maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* RP TAG? ;
+maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) (INFROM? LP SYMBOL (',' SYMBOL)* RP)? TAG? ;
+mingpa          : MINGPA NUMBER course_list? ;
 mingrade        : MINGRADE NUMBER ;
 minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
                   (LOG_OP (NUMBER | RANGE) (CLASS | CREDIT))? PSEUDO?
-                  INFROM? course_list? TAG? label? ;
+                  INFROM? course_list? share? TAG? label? ;
 //numcredit       : (NUMBER | RANGE) CREDIT PSEUDO? course_list? TAG? ;
 except_clause   : EXCEPT course_list ;
 noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
 proxy_advice    : PROXYADVICE STRING proxy_advice* ;
-remark          : REMARK STRING (SEMI? remark)* ;
+remark          : REMARK STRING SEMI? remark* ;
 rule_complete   : RULE_COMPLETE | RULE_INCOMPLETE ;
-qualifier       : mingpa | mingrade ;
 ruletag         : RULE_TAG SYMBOL EQ STRING ;
 samedisc        : SAME_DISC LP SYMBOL EQ SYMBOL (COMMA SYMBOL EQ SYMBOL)* RP TAG? ;
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? SHARE_LIST ;
 under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? proxy_advice label ;
-with_clause     : LP WITH with_list RP ;
+with_clause     : LP WITH HIDE? with_list RP ;
 with_list       : with_expr (LOG_OP with_expr)* ;
-with_expr       : SYMBOL REL_OP (STRING | SYMBOL) (OR with_expr)* ;
+with_expr       : SYMBOL REL_OP (STRING | SYMBOL | NUMBER) (OR with_expr)* ;
 
 /* Lexer
  * ------------------------------------------------------------------------------------------------
@@ -179,7 +176,10 @@ ENDDOT          : [Ee][Nn][Dd]DOT ;
 ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb] ;
 EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt] ;
 GROUP           : [Gg][Rr][Oo][Uu][Pp] ;
-HIDE            : [Hh][Ii][Dd][Ee]([Ff][Rr][Oo][Mm][Aa][Dd][Vv][Ii][Cc][Ee])? ;
+/* Hide, HideRule, HideFromAdvice */
+HIDE            : [Hh][Ii][Dd][Ee]
+                    ((HYPHEN?[Ff][Rr][Oo][Mm]HYPHEN?[Aa][Dd][Vv][Ii][Cc][Ee])
+                                      | (HYPHEN?[Rr][Uu][Ll][Ee]))? ;
 LABEL           : [Ll][Aa][Bb][Ee][Ll] ;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
 MAJOR           : [Mm][Aa][Jj][Oo][Rr] ;
@@ -256,20 +256,20 @@ EQ          : '=' ;
 GE          : '>=' ;
 GT          : '>' ;
 HYPHEN      : '-' ;
+LB          : '{' ;
 LE          : '<=' ;
 LP          : '(' ;
 LT          : '<' ;
 NE          : '<>' ;
 PLUS        : '+' ;
+RB          : '}' ;
 RP          : ')' ;
 SEMI        : ';' ;
 USCORE      : '_' ;
 
 fragment DOT         : '.' ;
 fragment DIGIT       : [0-9] ;
-fragment LB          : '{' ;
 fragment LETTER      : [a-zA-Z] ;
-fragment RB          : '}' ;
 
 // Directives to the auditor, not requirements.
 CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
