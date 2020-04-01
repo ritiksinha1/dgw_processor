@@ -16,9 +16,10 @@ setup.py
 dist/
 __init.py__
 
+tests/
 test_data/
 Logs/
-/testing/ReqBlock.g4
+/testing/ReqBlock*
 /testing/req_block
 /testing/tokens
 /testing/tree
