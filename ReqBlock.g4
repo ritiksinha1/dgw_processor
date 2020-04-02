@@ -33,13 +33,14 @@ grammar ReqBlock;
  *
  */
 
-/* Grammar
- * ------------------------------------------------------------------------------------------------
- */
+//  Scribe Block Structure
+//  ===============================================================================================
 
-req_block   : BEGIN head ';' body ENDDOT <EOF>;
+req_block   : BEGIN head ';' body ENDDOT <EOF> ;
 head        :
-            ( lastres
+            ( if_then
+            | class_credit
+            | lastres
             | maxclass
             | maxcredit
             | maxpassfail
@@ -47,7 +48,6 @@ head        :
             | mincredit
             | mingpa
             | minres
-            | class_credit
             | proxy_advice
             | remark
             | share
@@ -55,40 +55,32 @@ head        :
             )*
             ;
 body        :
-            ( subset
-            | group
+            ( if_then
             | block_type
-            | label
-            | remark
             | class_credit
+            | label
             | maxperdisc
+            | group
+            | remark
+            | subset
             )*
             ;
 
 /* Parser
- * ------------------------------------------------------------------------------------------------
+ * ================================================================================================
  */
 
-/* Groups
- * 1. Group must be followed by a list of one or more rules. The list of rules following the Group
-   keyword is referred to as the group list. Each rule in the group list is a group item. Each group
-   item is enclosed in parentheses and does not end with a semicolon.
- * 2. Each rule in the Group list is one of the following types of rules: Course, Block, BlockType,
-   Group, RuleComplete, RuleIncomplete or NonCourse. A group item cannot be an If rule or a subset
-   rule.
- * 3. Each rule in the list is connected to the next rule by “or”.
- * 4. A Group statement can be nested within another Group statement. There is no limit to the
-   number of times you can embed a Group within a Group. However, the worksheet display of a
-   requirement with many depths may be difficult to understand.
- * 5. Qualifiers that must be applied to all rules in the group list must occur after the last right
-   parenthesis and before the label at the end of the Group statement. Qualifiers that apply only to
-   a specific rule in the group list must appear inside the parentheses for that group item rule.
- * 6. Allowable rule qualifiers: DontShare, Hide, HideRule, HighPriority, LowPriority,
-   LowestPriority, MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA, ProxyAdvice,
-   SameDisc, ShareWith, MinClass, MinCredit, RuleTag.
- * 7. Do not mix course rules with Block rules in a group. Although this will parse, the auditor may
-   not handle this as expected. Putting Block rules into Groups is not a best practice.
- */
+//  if-then
+//  -----------------------------------------------------------------------------------------------
+if_then      : IF IF_CONDITION THEN (stmt |stmt_group) ;
+stmt_group   : (begin_if stmt+ end_if) ;
+stmt         : subset | group | block | class_credit ;
+begin_if     : BEGINIF | BEGINELSE ;
+end_if       : ENDIF | ENDELSE ;
+
+
+//  Groups
+//  -----------------------------------------------------------------------------------------------
 group       : NUMBER GROUP INFROM? group_list group_qualifier* label ;
 group_list  : group_item (OR group_item)* ;
 group_item  : LP
@@ -113,21 +105,22 @@ group_qualifier : maxpassfail
 subset            : BEGINSUB (class_credit | group)+ ENDSUB subset_qualifier* label ;
 subset_qualifier  : mingpa | mingrade | maxtransfer;
 
-/* Blocks
- */
-block       : NUMBER BLOCK LP SHARE_LIST RP ;
-block_type  : NUMBER BLOCKTYPE SHARE_LIST label ;
+// Blocks
+// ------------------------------------------------------------------------------------------------
+block       : NUMBER BLOCK LP  RP label;
+block_type  : NUMBER BLOCKTYPE LP (CONC | MAJOR | MINOR) RP label ;
 
-/* Course Lists
- */
+// Course Lists
+// ------------------------------------------------------------------------------------------------
 course_list     : INFROM? course (and_list | or_list)? with_clause? except_clause? HIDE? ;
-course          : (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | SYMBOL | WILDSYMBOL) ;
-course_item     : SYMBOL? (NUMBER | SYMBOL) with_clause?;
+course          : (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | SYMBOL | WILDSYMBOL) with_clause? ;
+course_item     : SYMBOL? (NUMBER | RANGE | SYMBOL | WILDSYMBOL) with_clause? ;
 and_list        : ( AND course_item )+ ;
-or_list         : ( OR (course_item|hide_item) )+ ;
+or_list         : ( OR (course_item | hide_item) )+ ;
 hide_item       : LB HIDE course_item (OR course_item)* OR? RB ;
 
-/* Other Rules
+/* Other Rules and Rule Components
+ * ------------------------------------------------------------------------------------------------
  */
 label           : LABEL (SYMBOL|NUMBER)? STRING ';'? label* ;
 lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
@@ -136,8 +129,8 @@ maxcredit       : MAXCREDIT NUMBER course_list TAG? ;
 minclass        : MINCLASS NUMBER course_list TAG? ;
 mincredit       : MINCREDIT NUMBER course_list TAG? ;
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG? ;
-maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* RP TAG? ;
-maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) (INFROM? LP SYMBOL (',' SYMBOL)* RP)? TAG? ;
+maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (OR SYMBOL)* RP TAG? ;
+maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) (INFROM? LP SYMBOL (OR SYMBOL)* RP)? TAG? ;
 mingpa          : MINGPA NUMBER course_list? ;
 mingrade        : MINGRADE NUMBER ;
 minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
@@ -156,14 +149,15 @@ samedisc        : SAME_DISC LP SYMBOL EQ SYMBOL (COMMA SYMBOL EQ SYMBOL)* RP TAG
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? SHARE_LIST ;
 under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? proxy_advice label ;
 with_clause     : LP WITH HIDE? with_list RP ;
-with_list       : with_expr (LOG_OP with_expr)* ;
-with_expr       : SYMBOL REL_OP (STRING | SYMBOL | NUMBER) (OR with_expr)* ;
+with_list       : expression (LOG_OP expression)* ;
+expression      : SYMBOL REL_OP (STRING | SYMBOL | NUMBER) (OR expression)* ;
 
-/* Lexer
- * ------------------------------------------------------------------------------------------------
- */
+
+// Lexer
+// ================================================================================================
 
 //  Keywords
+//  -----------------------------------------------------------------------------------------------
 BEGIN           : [Bb][Ee][Gg][Ii][Nn] ;
 BEGINSUB        : BEGIN [Ss][Uu][Bb] ;
 BLOCK           : [Bb][Ll][Oo][Cc][Kk] ;
@@ -176,10 +170,12 @@ ENDDOT          : [Ee][Nn][Dd]DOT ;
 ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb] ;
 EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt] ;
 GROUP           : [Gg][Rr][Oo][Uu][Pp] ;
-/* Hide, HideRule, HideFromAdvice */
+
+// Hide, HideRule, HideFromAdvice
 HIDE            : [Hh][Ii][Dd][Ee]
                     ((HYPHEN?[Ff][Rr][Oo][Mm]HYPHEN?[Aa][Dd][Vv][Ii][Cc][Ee])
                                       | (HYPHEN?[Rr][Uu][Ll][Ee]))? ;
+
 LABEL           : [Ll][Aa][Bb][Ee][Ll] ;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
 MAJOR           : [Mm][Aa][Jj][Oo][Rr] ;
@@ -207,16 +203,28 @@ SHARE           : [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Nn][Oo][Nn][Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
 DONT_SHARE      : [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
                 | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
-SAME_DISC       : [Ss][Aa][Mm][Ee][Dd][Ii][Ss][Cc] ;
+
+// Share structures
 SHARE_LIST      : LP SHARE_ITEM (COMMA SHARE_ITEM)* RP ;
-SHARE_ITEM      : DEGREE | CONC | MAJOR | MINOR | (OTHER (EQ SYMBOL)?) | THIS_BLOCK;
+SHARE_ITEM      : DEGREE | CONC | MAJOR | MINOR | THIS_BLOCK | (OTHER (EQ SYMBOL)?) ;
+
+SAME_DISC       : [Ss][Aa][Mm][Ee][Dd][Ii][Ss][Cc] ;
 THIS_BLOCK      : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk] ;
 UNDER           : [Uu][Nn][Dd][Ee][Rr] ;
 WITH            : [Ww][Ii][Tt][Hh] ;
 
-
-/* DWResident, DW... etc. are DWIDs */
-/* (Decide=DWID) is a phrase used for tie-breaking by the auditor.*/
+// If-Else keywords & structure
+BEGINELSE       : BEGIN ELSE ;
+BEGINIF         : BEGIN IF ;
+ELSE            : [Ee][Ll][Ss][Ee] ;
+ENDELSE         : [Ee][Nn][Dd]ELSE ;
+ENDIF           : [Ee][Nn][Dd] IF ;
+IF              : [Ii][Ff] ;
+IS              : ([Ii][Ss])|([Ww][Aa][Ss]) ;
+ISNT            : ([Ii][Ss][Nn][Tt])|([Ww][Aa][Ss][Nn][Tt]) ;
+THEN            : [Tt][Hh][Ee][Nn] ;
+IF_CONDITION    : LP IF_EXPR ((LOG_OP LP IF_EXPR RP) | (LOG_OP IF_EXPR))* RP ;
+IF_EXPR         : (DEGREE | CONC | MAJOR | MINOR | SYMBOL) REL_OP (SYMBOL | WILDSYMBOL) ;
 
 STRING      : '"' .*? '"' ;
 
@@ -246,6 +254,8 @@ RANGE       : NUMBER ':' NUMBER ;
 SYMBOL      : (LETTER | DIGIT | DOT | HYPHEN | USCORE | AMP)+ ;
 WILDSYMBOL  : (LETTER|DIGIT)* AT (LETTER|DIGIT)* ;
 
+//  Punctuation and operator tokens
+//  -----------------------------------------------------------------------------------------------
 LOG_OP      : ([Aa][Nn][Dd])|([Oo][Rr]) ;
 REL_OP      : EQ | GE | GT | LE | LT | NE ;
 
@@ -267,16 +277,25 @@ RP          : ')' ;
 SEMI        : ';' ;
 USCORE      : '_' ;
 
+//  Fragments
+//  -----------------------------------------------------------------------------------------------
+/*  By prefixing the rule with fragment, we let ANTLR know that the rule will be used only by other
+ *  lexical rules. It is not a token in and of itself.
+ */
 fragment DOT         : '.' ;
 fragment DIGIT       : [0-9] ;
 fragment LETTER      : [a-zA-Z] ;
 
+//  Skips
+//  -----------------------------------------------------------------------------------------------
 // Directives to the auditor, not requirements.
 CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
                  [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
                  [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
                  [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip ;
 COMMENT        : '#' .*? '\n' -> skip ;
+/* DWResident, DW... etc. are DWIDs
+ * (Decide=DWID) is a phrase used for tie-breaking by the auditor. */
 DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
 HIDERULE       : [Hh][Ii][Dd][Ee][Rr][Uu][Ll][Ee] -> skip ;
 NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
@@ -284,4 +303,6 @@ PRIORITY       : ([Ll][Oo][Ww]([Ee][Ss][Tt])?)?([Hh][Ii][Gg][Hh])?
                  [Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy] -> skip ;
 LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
 
-WHITESPACE  : [ \t\n\r]+ -> skip ;
+// Including / as whitespace is a hack to reduce token recognition errors: I can't figure out how to
+// ignore text following ENDDOT.
+WHITESPACE  : [ \t\n\r/]+ -> skip ;
