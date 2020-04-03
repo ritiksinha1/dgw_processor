@@ -186,7 +186,9 @@ GROUP           : [Gg][Rr][Oo][Uu][Pp] ;
 // Hide, HideRule, HideFromAdvice
 // HIDESTAR        : HIDE | HIDEFROMADVICE ;
 // HIDERULE        : HIDE HYPHEN? [Rr][Uu][Ll][Ee] ;
-HIDE            : [Hh][Ii][Dd][Ee] ;
+HIDE            : [Hh][Ii][Dd][Ee] | HIDERULE | HIDEFROMADVICE;
+HIDERULE        : [Hh][Ii][Dd][Ee][\-]?[Rr][Uu][Ll][Ee] ;
+HIDEFROMADVICE  : LB [Hh][Ii][Dd][Ee] HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii][Cc][Ee] .*? RB ;
 
 LABEL           : [Ll][Aa][Bb][Ee][Ll] ;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
@@ -302,8 +304,6 @@ COMMENT        : '#' .*? '\n' -> skip ;
 /* DWResident, DW... etc. are DWIDs
  * (Decide=DWID) is a phrase used for tie-breaking by the auditor. */
 DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
-HIDERULE       : [Hh][Ii][Dd][Ee][\-]?[Rr][Uu][Ll][Ee] -> skip ;
-HIDEFROMADVICE : LB HIDE HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii][Cc][Ee] .*? RB -> skip ;
 PROXYADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
 NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
 PRIORITY       : ([Ll][Oo][Ww]([Ee][Ss][Tt])?)?([Hh][Ii][Gg][Hh])?
