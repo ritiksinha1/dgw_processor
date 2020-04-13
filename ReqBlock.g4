@@ -73,7 +73,8 @@ body        :
 
 //  if-then
 //  -----------------------------------------------------------------------------------------------
-if_then      : IF expression THEN (stmt |stmt_group) (ELSE if_then)* ;
+if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause? ;
+else_clause  : ELSE (stmt | stmt_group) group_qualifier* label? ;
 stmt_group   : (begin_if stmt+ end_if) ;
 stmt         : subset | group | block | class_credit | rule_complete | remark;
 begin_if     : BEGINIF | BEGINELSE ;
@@ -82,9 +83,14 @@ end_if       : ENDIF | ENDELSE ;
 
 //  Groups
 //  -----------------------------------------------------------------------------------------------
-group       : NUMBER GROUP INFROM? group_list group_qualifier* label ;
-group_item  : LP (class_credit | block | block_type | group | rule_complete | noncourse ) RP label? ;
-group_list  : group_item (OP group_item)* ;
+group           : NUMBER GROUP INFROM? group_list group_qualifier* label ;
+group_item      : LP
+                    (class_credit | block | block_type | group | rule_complete | noncourse )
+                    group_qualifier*
+                    label
+                  RP
+                  group_qualifier* label;
+group_list      : group_item (OP group_item)* ;
 group_qualifier : maxpassfail
                 | maxperdisc
                 | maxtransfer
@@ -108,13 +114,14 @@ block_type  : NUMBER BLOCKTYPE expression label ;
 
 // Course Lists
 // ------------------------------------------------------------------------------------------------
-course_list     : INFROM? course (and_list | or_list)? with_clause? except_clause? HIDE? ;
+course_list     : INFROM? course (and_list | or_list)? with_clause? except_clause? ;
 course          : (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | SYMBOL | WILDSYMBOL) with_clause? ;
-course_item     : SYMBOL? (NUMBER | RANGE | SYMBOL | WILDSYMBOL) with_clause? ;
+course_item     : SYMBOL? (NUMBER | RANGE | SYMBOL | WILDSYMBOL | hidden_item) with_clause? ;
 and_list        : ( LIST_AND course_item )+ ;
-or_list         : ( LIST_OR (course_item | hide_item) )+ ;
-// hide_item       : LB HIDE course_item (LIST_OR course_item)* LIST_OR? RB ;
-hide_item       : LB HIDE course_item or_list* LIST_OR? RB ;
+or_list         : ( (LIST_OR | hidden_or) course_item )+ ;
+
+hidden_or       : LB HIDE_ITEM .*? COMMA_RB ;
+hidden_item     : LB HIDE_ITEM .*? RB ;
 
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
@@ -134,6 +141,7 @@ mingpa          : MINGPA NUMBER course_list? ;
 mingrade        : MINGRADE NUMBER ;
 minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
+minspread       : MINSPREAD NUMBER TAG? ;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) expression? PSEUDO?
                   INFROM? course_list? share? TAG? label? ;
 except_clause   : EXCEPT course_list ;
@@ -181,14 +189,7 @@ CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
 ENDDOT          : [Ee][Nn][Dd]DOT ;
 ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb] ;
 EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt] ;
-GROUP           : [Gg][Rr][Oo][Uu][Pp] ;
-
-// Hide, HideRule, HideFromAdvice
-// HIDESTAR        : HIDE | HIDEFROMADVICE ;
-// HIDERULE        : HIDE HYPHEN? [Rr][Uu][Ll][Ee] ;
-HIDE            : [Hh][Ii][Dd][Ee] | HIDERULE | HIDEFROMADVICE;
-HIDERULE        : [Hh][Ii][Dd][Ee][\-]?[Rr][Uu][Ll][Ee] ;
-HIDEFROMADVICE  : LB [Hh][Ii][Dd][Ee] HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii][Cc][Ee] .*? RB ;
+GROUP           : [Gg][Rr][Oo][Uu][Pp][Ss]? ;
 
 LABEL           : [Ll][Aa][Bb][Ee][Ll] ;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
@@ -203,6 +204,7 @@ MAXTRANSFER     : [Mm][Aa][Xx][Tt][Rr][Aa][Nn][Ss][Ff][Ee][Rr] ;
 MINCLASS        : [Mm][Ii][Nn] CLASS ;
 MINCREDIT       : [Mm][Ii][Nn] CREDIT ;
 MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss] ;
+MINSPREAD       : [Mm][Ii][Nn][Ss][Pp][Rr][Ee][Aa][Dd] ;
 NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
 PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo] ;
 REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk] ;
@@ -243,6 +245,14 @@ IN          : [Ii][Nn] ;
 OF          : [Oo][Ff] ;
 TAG         : [Tt][Aa][Gg] (EQ SYMBOL)? ;
 
+// Hide, HideRule, HideFromAdvice
+HIDE_ITEM_NO_COMMA  : LB (HIDE | HIDERULE | HIDEFROMADVICE) .*? RB;
+HIDE_ITEM           : HIDE | HIDERULE | HIDEFROMADVICE ;
+HIDE                : [Hh][Ii][Dd][Ee] ;
+HIDERULE            : [Hh][Ii][Dd][Ee] HYPHEN? [Rr][Uu][Ll][Ee] ;
+HIDEFROMADVICE      : [Hh][Ii][Dd][Ee] HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii][Cc][Ee];
+
+
 /* There are three overlapping classes of tokens used as identifiers:
  * The overlap is in what characters are allowed for each. Since the Scribe parser ensures that
  * the "allowed character set" is correct, this grammar lumps everthing together as a SYMBOL.
@@ -263,9 +273,7 @@ STRING      : '"' .*? '"' ;
 
 //  Punctuation and operator tokens
 //  -----------------------------------------------------------------------------------------------
-//LOG_OP      : ([Aa][Nn][Dd])|([Oo][Rr]) ;
-//REL_OP      : EQ | GE | GT | LE | LT | NE ;
-
+COMMA_RB    : COMMA RB ;
 AMP         : '&' ;
 AT          : '@' ;
 COMMA       : ',' ;
@@ -310,6 +318,6 @@ PRIORITY       : ([Ll][Oo][Ww]([Ee][Ss][Tt])?)?([Hh][Ii][Gg][Hh])?
                  [Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy] -> skip ;
 LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
 
-// Including / as whitespace is a hack to reduce token recognition errors: I can't figure out how to
-// ignore text following ENDDOT.
+// Including '/' as whitespace is a hack to reduce token recognition errors: I can't figure out how
+// to ignore text following ENDDOT.
 WHITESPACE  : [ \t\n\r/]+ -> skip ;
