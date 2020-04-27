@@ -1,0 +1,138 @@
+##RA000901
+##Queens College
+##BIOL-BA
+##BA in Biology
+##20132014-99999999
+
+
+BEGIN
+
+
+56 Credits
+   Proxy-Advice "56 credits are required.  You currently have <APPLIED>, "
+   Proxy-Advice "you still need <NEEDED> more."
+MinGrade 1.7
+MinGPA 2.0
+
+
+##Queens policy allows a course to share with the Degree, Major, Minor
+##Concentrations and in either Primary or LASAR.
+##NonExclusive headers with one block type specified such as Major,
+##Minor, Degree and Concentrations, allows the course to share in
+##these programs.
+##NonExclusive with more than one block type specified e.g. Primary and LASAR
+##means the course can only share in either area.
+
+NonExclusive (DEGREE)
+NonExclusive (MAJOR)
+NonExclusive (MINOR)
+NonExclusive (CONC)
+NonExclusive (OTHER=LASAR)
+NonExclusive (Other=GENED)
+NonExclusive (OTHER=GEPATH,OTHER=COLLOPT_GE)
+NonExclusive (OTHER=WRITINTENS)
+
+
+##NonExclusive (OTHER=PRIMARY) removed as courses used for Major can't be used
+##for ACE Lang option in PRIMARY (10-14-08)
+
+##Minimum of 20 credits above BIOL 107 & 108 must be taken at Queens
+MinCredits 20 in BIOL 200:399 (WITH DWResident=Y)
+MaxPassfail 0 Credits
+
+##No Transfer 499@ courses can be used to fulfill elective courses.
+MaxCredits 0 in @ 499, 4991, 4992, 4993, 4994, 4995, 4996, 4997, 4998, 4999
+
+MaxCredits 3 in BIOL 390, 391, 395, 396
+MaxClass 1 in BIOL 345, 345W
+MaxClass 0 in BIOL 344, 390, 391, 395, 396
+
+
+MaxCredits 16 in BIOL @ (WITH DWTransfer=Y)
+
+;
+
+1 Class in BIOL 105, {HIDE 1050, 108}
+  Label 1 "General Biology: Physiology and Cell Biology";
+1 Class BIOL 106, {HIDE 1060, 107}
+  Label 2 "General Biology: Life-forms and Ecosystems";
+2 Classes in BIOL 285, 286, 287
+  Label 3 "Two Principles Courses";
+
+
+BeginSub
+20:21 Credits in BIOL 200, 201, 213, 220, 226, 230, 241, 245, 262, 263,
+        280, 310, 312, 315, 320, 321, 325, 326, 330, 340,
+        344, 345W, 346, 347, 348, 349, 350, 352, 355,
+        360, 362, 363, 364, 365, 366, 371, 372, 373, 380,
+        381, 3853, 3854, 386, 387
+  NonExclusive (THISBLOCK)
+  Label 4 "Biology Electives";
+
+4 Classes in BIOL 201, 213, 220, 226, 230, 241, 262, 263, 310, 312, 315,
+    320, 321, 325, 326, 330, 340, 346, 347, 349, 350, 352,
+    355, 360, 362, 363, 364, 365, 366, 371, 372, 373, 380,
+    3853, 3854, 386, 387
+  NonExclusive (THISBLOCK)
+  Label 5 "Four Courses with Lab Electives";
+
+3 Classes in BIOL 310, 312, 315, 320, 321, 325, 326, 330, 340, 344, 345W,
+    346, 347, 349, 350, 352, 355, 360, 362, 363, 364, 365,
+    366, 371, 372, 373, 380, 3853, 3854, 386, 387
+  NonExclusive (THISBLOCK)
+  Label 6 "300-level Electives";
+EndSub
+MaxTransfer 0 credits
+
+  Label 7 "20-21 Credits in Biology Electives";
+
+REMARK "Students must complete 20-21 credits in 200-300 level Biology electives.";
+REMARK "Of which, four must be lab courses and three must be at the 300-level.";
+REMARK "The full list of eligible courses are listed in the 'Biology ";
+REMARK "Electives' section. The four lab courses and three 300-level courses will";
+REMARK " also appear separately in the lists below.";
+REMARK "BIOL 344, 381, 390, 391, 395, or 396 may not count towards the 300-level electives.";
+REMARK "Tutorial or research courses (BIOL 387, 390, 391, 395, 396) may";
+REMARK "not be credited towards the Biology major. All exceptions must";
+REMARK "be submitted to the Office of the Regsitrar as a subsitution.";
+
+
+
+1 Group in
+  (2 Classes in CHEM 1134 + 1131
+  Label 8 "General Chemistry I: Lecture and Lab") OR
+  (1 Class in CHEM 113
+   Hide-From-Advice
+   Label 9 "General Chemistry I")
+ Label 10 "General Chemistry I Requirement";
+1 Group in
+  (2 Classes in CHEM 1144 + 1141
+  Label 11 "General Chemistry II: Lecture and Lab") OR
+  (1 Class in CHEM 114
+   Hide-From-Advice
+   Label 12 "General Chemistry II")
+   Label 13 "General Chemistry II Requirement";
+1 Group in
+  (2 Classes in CHEM 2514 + 2511
+  Label 14 "Organic Chemistry I: Lecture and Lab") OR
+  (1 Class in CHEM 251
+   Hide-From-Advice
+   Label 15 "Organic Chemistry I") OR
+  (2 Classes in CHEM 1023 + 1021
+   Label 16 "Basic Organic Chemistry")
+  Label 17 "Organic Chemistry Requirement";
+
+1 Class in BIOL 230, MATH 142, 151
+  Label 18 "Biostatistics or Calculus";
+
+
+
+
+
+
+
+END.
+
+LOG: 01-31-13 KH  Opened block for Pathways.
+LOG: 02-23-18 KH  Recoded block to match 20132014 bulletin requirements
+LOG: 09-18-18 DA  Recoded Transfer rules to match 20132014 bulletin requirements
