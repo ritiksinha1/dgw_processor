@@ -73,6 +73,9 @@ body        :
 
 //  if-then
 //  -----------------------------------------------------------------------------------------------
+/*  When Major is used in ShareWith it refers to the Major block in the audit. When used in an If-
+ *  statement it refers to the major on the student’s curriculum.
+ */
 if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause? ;
 else_clause  : ELSE (stmt | stmt_group) group_qualifier* label? ;
 stmt_group   : (begin_if stmt+ end_if) ;
@@ -114,14 +117,16 @@ block_type  : NUMBER BLOCKTYPE expression label ;
 
 // Course Lists
 // ------------------------------------------------------------------------------------------------
-course_list     : INFROM? course (and_list | or_list)? with_clause? except_clause? ;
-course          : (SYMBOL | WILDSYMBOL) (NUMBER | RANGE | SYMBOL | WILDSYMBOL) with_clause? ;
-course_item     : SYMBOL? (NUMBER | RANGE | SYMBOL | WILDSYMBOL | hidden_item) with_clause? ;
+course_list     : INFROM? full_course (and_list | or_list)? with_clause? except_clause? ;
+full_course     : discipline catalog_number with_clause? ;
+course_item     : ((discipline catalog_number) | catalog_number | hidden_item) with_clause? ;
 and_list        : ( LIST_AND course_item )+ ;
 or_list         : ( (LIST_OR | hidden_or) course_item )+ ;
+discipline      : SYMBOL | WILDSYMBOL ;
+catalog_number  : NUMBER | CATALOG_NUMBER | RANGE | WILDNUMBER ;
 
-hidden_or       : LB HIDE_ITEM .*? COMMA_RB ;
-hidden_item     : LB HIDE_ITEM .*? RB ;
+hidden_or       : LB ~(COMMA_RB | RB)*? COMMA_RB ;
+hidden_item     : LB ~(COMMA_RB | RB)*? RB ;
 
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
@@ -150,7 +155,7 @@ remark          : REMARK STRING SEMI? remark* ;
 rule_complete   : RULE_COMPLETE | RULE_INCOMPLETE ;
 ruletag         : RULE_TAG SYMBOL EQ STRING ;
 samedisc        : SAME_DISC LP SYMBOL OP SYMBOL (LIST_OR SYMBOL OP SYMBOL)* RP TAG? ;
-under           : UNDER NUMBER (CREDIT | CLASS) INFROM? course or_list? label ;
+under           : UNDER NUMBER (CREDIT | CLASS) INFROM? full_course or_list? label ;
 
 with_clause     : WITH HIDE? expression RP ;
 
@@ -245,15 +250,11 @@ IN          : [Ii][Nn] ;
 OF          : [Oo][Ff] ;
 TAG         : [Tt][Aa][Gg] (EQ SYMBOL)? ;
 
-// Hide, HideRule, HideFromAdvice
-HIDE_ITEM_NO_COMMA  : LB (HIDE | HIDERULE | HIDEFROMADVICE) .*? RB;
-HIDE_ITEM           : HIDE | HIDERULE | HIDEFROMADVICE ;
-HIDE                : [Hh][Ii][Dd][Ee] ;
-HIDERULE            : [Hh][Ii][Dd][Ee] HYPHEN? [Rr][Uu][Ll][Ee] ;
-HIDEFROMADVICE      : [Hh][Ii][Dd][Ee] HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii][Cc][Ee];
+// Hide (= HideFromAdvice)
+HIDE        : [Hh][Ii][Dd][Ee] (HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii][Cc][Ee])?;
 
 
-/* There are three overlapping classes of tokens used as identifiers:
+/* There are three overlapping classes of tokens used as identifiers.
  * The overlap is in what characters are allowed for each. Since the Scribe parser ensures that
  * the "allowed character set" is correct, this grammar lumps everthing together as a SYMBOL.
  *   Discipline names
@@ -264,16 +265,19 @@ HIDEFROMADVICE      : [Hh][Ii][Dd][Ee] HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd]
  *   DISCIPLINE  : ALPHA_NUM | ((LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)*) ;
  *   SYMBOL      : ALPHA_NUM | (LETTER (LETTER | DIGIT | '_' | '-' | '&')*) ;
  */
-NUMBER      : DIGIT+ (DOT DIGIT*)? ;
-RANGE       : NUMBER ':' NUMBER ;
+NUMBER          : DIGIT+ (DOT DIGIT*)? ;
+RANGE           : NUMBER ':' NUMBER ;
 
-SYMBOL      : (LETTER | DIGIT | DOT | HYPHEN | USCORE | AMP)+ ;
-WILDSYMBOL  : (LETTER|DIGIT)* AT (LETTER|DIGIT)* ;
+CATALOG_NUMBER  : DIGIT+ LETTER+ ;
+WILDNUMBER      : NUMBER* AT NUMBER* ;
+WILDSYMBOL      : LETTER* AT (LETTER|DIGIT)* ;
+
+SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | USCORE | AMP)+ ;
+
 STRING      : '"' .*? '"' ;
 
 //  Punctuation and operator tokens
 //  -----------------------------------------------------------------------------------------------
-COMMA_RB    : COMMA RB ;
 AMP         : '&' ;
 AT          : '@' ;
 COMMA       : ',' ;
@@ -291,6 +295,7 @@ RB          : '}' ;
 RP          : ')' ;
 SEMI        : ';' ;
 USCORE      : '_' ;
+COMMA_RB    : COMMA RB ;
 
 //  Fragments
 //  -----------------------------------------------------------------------------------------------
@@ -316,6 +321,7 @@ PROXYADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> s
 NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
 PRIORITY       : ([Ll][Oo][Ww]([Ee][Ss][Tt])?)?([Hh][Ii][Gg][Hh])?
                  [Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy] -> skip ;
+HIDERULE       : [Hh][Ii][Dd][Ee] HYPHEN? [Rr][Uu][Ll][Ee] -> skip ;
 LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
 
 // Including '/' as whitespace is a hack to reduce token recognition errors: I can't figure out how

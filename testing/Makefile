@@ -6,13 +6,13 @@ grun := java -Xmx500M -cp .:/usr/local/lib/antlr-4.8-complete.jar org.antlr.v4.g
 default: req_block
 
 gui: req_block
-	$(grun) ReqBlock req_block -gui < $(TEST_DATA)
+	$(grun) ReqBlock req_block -diagnostics -gui < $(TEST_DATA)
 
 tree: req_block
-	$(grun) ReqBlock req_block -tree < $(TEST_DATA) > tree
+	$(grun) ReqBlock req_block -diagnostics -tree < $(TEST_DATA) > tree
 
 tokens: req_block
-	$(grun) ReqBlock req_block -tokens < $(TEST_DATA) > tokens
+	$(grun) ReqBlock req_block -diagnostics -tokens < $(TEST_DATA) > tokens
 
 req_block: ReqBlock.g4
 	$(antlr4) ReqBlock.g4

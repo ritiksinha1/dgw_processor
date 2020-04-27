@@ -1,16 +1,16 @@
 grammar Temp;
 
-tempest         : sentence <EOF> ;
+paragraph       : (or_phrase | end_phrase | list)* ;
 
-sentence        : (with_comma | without_comma)* ;
+list            : WORD+ ':' (or_phrase | (WORD COMMA))* (end_phrase | WORD) ;
+end_phrase      : LB ~(COMMA_RB|RB)*? RB ;
+or_phrase       : LB ~(COMMA_RB|RB)*? COMMA_RB {System.err.println($COMMA_RB.text);};
 
-without_comma   : LB .*? RB ;
-with_comma      : LB .*? COMMA_RB ;
-
-WORD            : [,'!.a-zA-Z0-9]+ ;
-COMMA_RB        : COMMA RB;
+WORD            : ([a-zA-Z0-9]|'’')+ ;
+ENDMARKER       : '.' | '?' | '!' ;
 COMMA           : ',' ;
 LB              : '{' ;
 RB              : '}' ;
+COMMA_RB        : COMMA ' '* RB;
 
 WS              : [ \t\n\r]+ -> skip ;
