@@ -260,8 +260,30 @@ TAG         : [Tt][Aa][Gg] (EQ SYMBOL)? ;
  *   DISCIPLINE  : ALPHA_NUM | ((LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)*) ;
  *   SYMBOL      : ALPHA_NUM | (LETTER (LETTER | DIGIT | '_' | '-' | '&')*) ;
  */
+
+//  Skips
+//  -----------------------------------------------------------------------------------------------
+// Comments and auditor directives, not requirements.
+// Defined here so they won't match Symbols.
+CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
+                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
+                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
+                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip ;
+COMMENT        : '#' .*? '\n' -> skip ;
+DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
 HIDE           : [Hh][Ii][Dd][Ee]
                  ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
+HIDE_RULE      : [Hh][Ii][Dd][Ee][\-]?[Rr][Uu][Ll][Ee] -> skip ;
+NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
+LOW_PRIORITY   : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
+HIGH_PRIORITY  : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
+PROXYADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
+// Including '/' as whitespace is a hack to reduce token recognition errors: I can't figure out how
+// to ignore text following ENDDOT.
+WHITESPACE  : [ \t\n\r/}{]+ -> skip ;
+
+// Things outside the BEGIN...ENDDOT that cause unnecessary grief
+LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
 
 NUMBER          : DIGIT+ (DOT DIGIT*)? ;
 RANGE           : NUMBER ':' NUMBER ;
@@ -301,23 +323,3 @@ fragment DOT         : '.' ;
 fragment DIGIT       : [0-9] ;
 fragment LETTER      : [a-zA-Z] ;
 
-//  Skips
-//  -----------------------------------------------------------------------------------------------
-// Comments and auditor directives, not requirements.
-CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
-                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
-                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
-                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip ;
-COMMENT        : '#' .*? '\n' -> skip ;
-DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
-HIDE_RULE      : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip ;
-NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
-LOW_PRIORITY   : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
-HIGH_PRIORITY  : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
-PROXYADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
-
-// Things outside the BEGIN...ENDDOT that cause unnecessary grief
-LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
-// Including '/' as whitespace is a hack to reduce token recognition errors: I can't figure out how
-// to ignore text following ENDDOT.
-WHITESPACE  : [ \t\n\r/}{]+ -> skip ;

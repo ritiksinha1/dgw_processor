@@ -1,0 +1,3 @@
+#! /usr/local/bin/bash
+
+tr -d '}{' | gsed -E 's/hide(-?from-?advice)? *//i'

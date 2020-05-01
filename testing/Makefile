@@ -9,7 +9,7 @@ args :=
 default: req_block
 
 gui: req_block
-	$(grun) ReqBlock req_block $(args) -gui < $(TEST_DATA)
+	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(args) -gui
 
 tree: req_block
 	$(grun) ReqBlock req_block $(args) -tree < $(TEST_DATA) > tree
