@@ -38,7 +38,7 @@ grammar ReqBlock;
 /*  Cruft before BEGIN and after ENDDOT can generate syntax errors. One solution is to filter it
  *  out before parsing the block. I haven't managed to filter it out within the grammar.
  */
-req_block   : BEGIN head ';' body ENDDOT <EOF> ;
+req_block   : BEGIN head ';' body ENDDOT ;
 head        :
             ( if_then
             | class_credit
@@ -119,14 +119,11 @@ block_type  : NUMBER BLOCKTYPE expression label ;
 // ------------------------------------------------------------------------------------------------
 course_list     : INFROM? full_course (and_list | or_list)? with_clause? except_clause? ;
 full_course     : discipline catalog_number with_clause? ;
-course_item     : ((discipline catalog_number) | catalog_number | hidden_item) with_clause? ;
-and_list        : ( LIST_AND course_item )+ ;
-or_list         : ( (LIST_OR | hidden_or) course_item )+ ;
-discipline      : SYMBOL | WILDSYMBOL ;
-catalog_number  : NUMBER | CATALOG_NUMBER | RANGE | WILDNUMBER ;
-
-hidden_or       : LB ~(COMMA_RB | RB)*? COMMA_RB ;
-hidden_item     : LB ~(COMMA_RB | RB)*? RB ;
+course_item     : discipline? catalog_number with_clause? ;
+and_list        : (LIST_AND course_item )+ ;
+or_list         : (LIST_OR course_item)+ ;
+discipline      : SYMBOL | WILDSYMBOL | HIDE;
+catalog_number  : (NUMBER | CATALOG_NUMBER | RANGE | WILDNUMBER) RB? ;
 
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
@@ -151,13 +148,13 @@ class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) expression? PSEUDO?
                   INFROM? course_list? share? TAG? label? ;
 except_clause   : EXCEPT course_list ;
 noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
-remark          : REMARK STRING SEMI? remark* ;
+remark          : REMARK STRING SEMICOLON? remark* ;
 rule_complete   : RULE_COMPLETE | RULE_INCOMPLETE ;
 ruletag         : RULE_TAG SYMBOL EQ STRING ;
 samedisc        : SAME_DISC LP SYMBOL OP SYMBOL (LIST_OR SYMBOL OP SYMBOL)* RP TAG? ;
 under           : UNDER NUMBER (CREDIT | CLASS) INFROM? full_course or_list? label ;
 
-with_clause     : WITH HIDE? expression RP ;
+with_clause     : LP WITH HIDE? expression RP ;
 
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP ;
 share_item      : SYMBOL (OP (SYMBOL | NUMBER | STRING))? ;
@@ -250,8 +247,6 @@ IN          : [Ii][Nn] ;
 OF          : [Oo][Ff] ;
 TAG         : [Tt][Aa][Gg] (EQ SYMBOL)? ;
 
-// Hide (= HideFromAdvice)
-HIDE        : [Hh][Ii][Dd][Ee] (HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii][Cc][Ee])?;
 
 
 /* There are three overlapping classes of tokens used as identifiers.
@@ -265,6 +260,7 @@ HIDE        : [Hh][Ii][Dd][Ee] (HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii
  *   DISCIPLINE  : ALPHA_NUM | ((LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)*) ;
  *   SYMBOL      : ALPHA_NUM | (LETTER (LETTER | DIGIT | '_' | '-' | '&')*) ;
  */
+
 NUMBER          : DIGIT+ (DOT DIGIT*)? ;
 RANGE           : NUMBER ':' NUMBER ;
 
@@ -272,30 +268,27 @@ CATALOG_NUMBER  : DIGIT+ LETTER+ ;
 WILDNUMBER      : NUMBER* AT NUMBER* ;
 WILDSYMBOL      : LETTER* AT (LETTER|DIGIT)* ;
 
-SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | USCORE | AMP)+ ;
+SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND)+ ;
 
 STRING      : '"' .*? '"' ;
 
 //  Punctuation and operator tokens
 //  -----------------------------------------------------------------------------------------------
-AMP         : '&' ;
+AMPERSAND   : '&' ;
 AT          : '@' ;
 COMMA       : ',' ;
 EQ          : '=' ;
 GE          : '>=' ;
 GT          : '>' ;
 HYPHEN      : '-' ;
-LB          : '{' ;
 LE          : '<=' ;
 LP          : '(' ;
 LT          : '<' ;
 NE          : '<>' ;
 PLUS        : '+' ;
-RB          : '}' ;
 RP          : ')' ;
-SEMI        : ';' ;
-USCORE      : '_' ;
-COMMA_RB    : COMMA RB ;
+SEMICOLON   : ';' ;
+UNDERSCORE  : '_' ;
 
 //  Fragments
 //  -----------------------------------------------------------------------------------------------
@@ -317,13 +310,17 @@ COMMENT        : '#' .*? '\n' -> skip ;
 /* DWResident, DW... etc. are DWIDs
  * (Decide=DWID) is a phrase used for tie-breaking by the auditor. */
 DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
+
 PROXYADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
 NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
 PRIORITY       : ([Ll][Oo][Ww]([Ee][Ss][Tt])?)?([Hh][Ii][Gg][Hh])?
                  [Pp][Rr][Ii][Oo][Rr][Ii][Tt][Yy] -> skip ;
-HIDERULE       : [Hh][Ii][Dd][Ee] HYPHEN? [Rr][Uu][Ll][Ee] -> skip ;
-LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
+HIDE_RULE      : [Hh][Ii][Dd][Ee] HYPHEN? [Rr][Uu][Ll][Ee] -> skip ;
 
+// Hide (=== HideFromAdvice)
+HIDE        : '{' ' '* [Hh][Ii][Dd][Ee] (HYPHEN? [Ff][Rr][Oo][Mm] HYPHEN? [Aa][Dd][Vv][Ii][Cc][Ee])?;
+// Things outside the BEGIN...ENDDOT that cause unnecessary grief
+LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
 // Including '/' as whitespace is a hack to reduce token recognition errors: I can't figure out how
 // to ignore text following ENDDOT.
 WHITESPACE  : [ \t\n\r/]+ -> skip ;
