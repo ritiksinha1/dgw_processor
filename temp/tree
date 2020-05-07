@@ -1,5 +1,0 @@
-,}
-,}
-, }
-,}
-(paragraph (end_phrase { yes , we have no commas }) (end_phrase { we have no commas today ! }) (or_phrase { but , if we did have a ,}) (end_phrase { I wouldn’t know what I should say . }) (list A list : this , that , (or_phrase { hidden inside ,}) the , other , (end_phrase { this is the end of the first list })) (list Another list : this , that , (or_phrase { hidden inside , }) the , other , (end_phrase { this is the end of the other list })) (list Last : (or_phrase { something ,}) good , could , come , of , that))
