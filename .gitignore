@@ -20,7 +20,6 @@ tests/
 test_data/
 Logs/
 /testing/ReqBlock*
-/testing/req_block
-/testing/tokens
-/testing/tree
-/req_block
+tokens
+tree
+req_block
