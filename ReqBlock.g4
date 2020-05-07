@@ -278,7 +278,6 @@ OR          : [Oo][Rr] ;
 FROM        : [Ff][Rr][Oo][Mm] -> skip;
 IN          : [Ii][Nn] -> skip;
 
-
 //  Skips
 //  -----------------------------------------------------------------------------------------------
 // Comments and auditor directives, not requirements.
