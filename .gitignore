@@ -18,6 +18,7 @@ __init.py__
 
 tests/
 test_data/
+test_results/
 Logs/
 /testing/ReqBlock*
 tokens
