@@ -4,10 +4,18 @@
 """
 from pathlib import Path
 from collections import Counter
-sizes = Counter()
+all_sizes = Counter()
+school_sizes = Counter()
 for file in Path('test_results').glob('*'):
-  sizes[file.stat().st_size] += 1
+  size = file.stat().st_size
+  all_sizes[file.stat().st_size] += 1
+  school = file.name[0:3]
+  school_sizes[f'{school}-{size}'] += 1
 
-print(f'{100 * sizes[0] / sum(sizes.values()):.1f}%')
-for key in sorted(sizes.keys()):
-  print(f'{key:04}: {sizes[key]:,}')
+print(f'{100 * all_sizes[0] / sum(all_sizes.values()):.1f}%')
+for key in sorted(all_sizes.keys()):
+  print(f'{key:04}: {all_sizes[key]:,}')
+
+for key in sorted(school_sizes.keys()):
+  print(f'{key}: {school_sizes[key]:,}')
+
