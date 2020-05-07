@@ -1,0 +1,11 @@
+#! /usr/local/bin/bash
+
+# Parse all requirement blocks in the test_data directory.
+# Capture error messages in the results_directory.
+#  Empty result files indicate complete parsing with no errors.
+
+for file in test_data/*
+do
+  echo "$file"
+  grun ReqBlock req_block < "$file" > "${file/data/results}" 2>&1
+done
