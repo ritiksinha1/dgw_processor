@@ -33,12 +33,10 @@ grammar ReqBlock;
  *
  */
 
-//  Scribe Requirements Block Structure (the start rule)
-//  ===============================================================================================
-/*  Cruft before BEGIN and after ENDDOT can generate syntax errors. One solution is to filter it
- *  out before parsing the block. I haven't managed to filter it out within the grammar.
+/* Parser
+ * ================================================================================================
  */
-req_block   : BEGIN head ';' body ENDDOT ;
+req_block   : .*? BEGIN head ';' body ENDOT .*? EOF;
 head        :
             ( if_then
             | class_credit
@@ -67,33 +65,74 @@ body        :
             )*
             ;
 
-/* Parser
- * ================================================================================================
- */
-
-//  if-then
-//  -----------------------------------------------------------------------------------------------
 /*  When Major is used in ShareWith it refers to the Major block in the audit. When used in an If-
  *  statement it refers to the major on the student’s curriculum.
  */
+
+// Course List
+// ------------------------------------------------------------------------------------------------
+course_list     : full_course (and_list | or_list)? course_qualifier* label?;
+full_course     : discipline catalog_number with_clause? ;
+course_item     : discipline? catalog_number with_clause? ;
+and_list        : (LIST_AND course_item )+ ;
+or_list         : (LIST_OR course_item)+ ;
+discipline      : SYMBOL | WILD;
+catalog_number  : NUMBER | CATALOG_NUMBER | RANGE | WILD;
+course_qualifier: with_clause | except_clause | mingrade | minspread | share;
+
+//  if-then
+//  -----------------------------------------------------------------------------------------------
 if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause? ;
 else_clause  : ELSE (stmt | stmt_group) group_qualifier* label? ;
 stmt_group   : (begin_if stmt+ end_if) ;
-stmt         : subset | group | block | class_credit | rule_complete | remark;
+stmt         : block | class_credit | group | if_then | remark | rule_complete | subset;
 begin_if     : BEGINIF | BEGINELSE ;
 end_if       : ENDIF | ENDELSE ;
 
 
 //  Groups
 //  -----------------------------------------------------------------------------------------------
-group           : NUMBER GROUP INFROM? group_list group_qualifier* label ;
+/*
+  Notes
+  1. Group must be followed by a list of one or more rules. The list of rules following the Group
+     keyword is referred to as the group list. Each rule in the group list is a group item. Each
+     group item is enclosed in parentheses and does not end with a semicolon.
+
+  2. Each rule in the Group list is one of the following types of rules: Course, Block, BlockType,
+     Group, RuleComplete, RuleIncomplete or NonCourse. A group item cannot be an If rule or a subset
+     rule.
+
+  3. Each rule in the list is connected to the next rule by “or”.
+
+  4. A Group statement can be nested within another Group statement. There is no limit to the number
+     of times you can embed a Group within a Group. However, the worksheet display of a requirement
+     with many depths may be difficult to understand.
+
+  5. Qualifiers that must be applied to all rules in the group list must occur after the last right
+     parenthesis and before the label at the end of the Group statement. Qualifiers that apply only
+     to a specific rule in the group list must appear inside the parentheses for that group item
+     rule.
+
+  6. Allowable rule qualifiers: DontShare, Hide, HideRule, HighPriority, LowPriority,
+     LowestPriority, MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA,
+     ProxyAdvice, SameDisc, ShareWith, MinClass, MinCredit, RuleTag.
+
+  7. Do not mix course rules with Block rules in a group. Although this will parse, the auditor may
+     not handle this as expected. Putting Block rules into Groups is not a best practice.
+ */
+group           : NUMBER GROUP group_list
+                  group_qualifier*
+                  label?
+                ;
+group_list      : group_item (OP group_item)* ; // Not clear why this has to be OP rather than OR.
 group_item      : LP
-                    (class_credit | block | block_type | group | rule_complete | noncourse )
+                    (class_credit | group | block | block_type | rule_complete | noncourse)
                     group_qualifier*
-                    label
+                    label?
                   RP
-                  group_qualifier* label;
-group_list      : group_item (OP group_item)* ;
+                  group_qualifier*
+                  label?
+                ;
 group_qualifier : maxpassfail
                 | maxperdisc
                 | maxtransfer
@@ -103,7 +142,8 @@ group_qualifier : maxpassfail
                 | share
                 | minclass
                 | mincredit
-                | ruletag ;
+                | ruletag
+                ;
 
 //  Rule Subset
 //  -----------------------------------------------------------------------------------------------
@@ -115,19 +155,12 @@ subset_qualifier  : mingpa | mingrade | maxtransfer;
 block       : NUMBER BLOCK expression label;
 block_type  : NUMBER BLOCKTYPE expression label ;
 
-// Course Lists
-// ------------------------------------------------------------------------------------------------
-course_list     : INFROM? full_course (and_list | or_list)? with_clause? except_clause? ;
-full_course     : discipline catalog_number with_clause? ;
-course_item     : discipline? catalog_number with_clause? ;
-and_list        : (LIST_AND course_item )+ ;
-or_list         : (LIST_OR course_item)+ ;
-discipline      : SYMBOL | WILDSYMBOL | HIDE;
-catalog_number  : NUMBER | CATALOG_NUMBER | RANGE | WILDNUMBER;
-
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
  */
+class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
+                  (expression | PSEUDO | course_list | share | TAG)* label? ;
+except_clause   : EXCEPT course_list ;
 label           : LABEL (SYMBOL|NUMBER)? STRING ';'? label* ;
 lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
 maxclass        : MAXCLASS NUMBER course_list TAG? ;
@@ -136,25 +169,22 @@ minclass        : MINCLASS NUMBER course_list TAG? ;
 mincredit       : MINCREDIT NUMBER course_list TAG? ;
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG? ;
 maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS)
-                  INFROM? LP SYMBOL (LIST_OR SYMBOL)* RP TAG? ;
+                   LP SYMBOL (LIST_OR SYMBOL)* RP TAG? ;
 maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS)
-                  (INFROM? LP SYMBOL (LIST_OR SYMBOL)* RP)? TAG? ;
+                  ( LP SYMBOL (LIST_OR SYMBOL)* RP)? TAG? ;
 mingpa          : MINGPA NUMBER course_list? ;
 mingrade        : MINGRADE NUMBER ;
-minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS) INFROM? LP SYMBOL (',' SYMBOL)* TAG? ;
+minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (',' SYMBOL)* TAG? ;
 minres          : MINRES NUMBER (CREDIT | CLASS) ;
 minspread       : MINSPREAD NUMBER TAG? ;
-class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) expression? PSEUDO?
-                  INFROM? course_list? share? TAG? label? ;
-except_clause   : EXCEPT course_list ;
 noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
 remark          : REMARK STRING SEMICOLON? remark* ;
 rule_complete   : RULE_COMPLETE | RULE_INCOMPLETE ;
 ruletag         : RULE_TAG SYMBOL EQ STRING ;
 samedisc        : SAME_DISC LP SYMBOL OP SYMBOL (LIST_OR SYMBOL OP SYMBOL)* RP TAG? ;
-under           : UNDER NUMBER (CREDIT | CLASS) INFROM? full_course or_list? label ;
+under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label ;
 
-with_clause     : LP WITH HIDE? expression RP ;
+with_clause     : LP WITH expression RP ;
 
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP ;
 share_item      : SYMBOL (OP (SYMBOL | NUMBER | STRING))? ;
@@ -163,6 +193,7 @@ share_list      : share_item (LIST_OR share_item)* ;
 expression      : expression OP expression
                 | NUMBER
                 | SYMBOL
+                | STRING
                 | LP expression RP
                 ;
 
@@ -188,7 +219,9 @@ CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
   THIS_BLOCK      : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk] ;
  */
 
-ENDDOT          : [Ee][Nn][Dd]DOT ;
+DONT_SHARE      : [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
+                | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
+ENDOT           : [Ee][Nn][Dd]DOT ;
 ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb] ;
 EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt] ;
 GROUP           : [Gg][Rr][Oo][Uu][Pp][Ss]? ;
@@ -208,6 +241,7 @@ MINCREDIT       : [Mm][Ii][Nn] CREDIT ;
 MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss] ;
 MINSPREAD       : [Mm][Ii][Nn][Ss][Pp][Rr][Ee][Aa][Dd] ;
 NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
+OF              : [Oo][Ff] ;
 PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo] ;
 REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk] ;
 RULE_COMPLETE   : [Rr][Uu][Ll][Ee][\-]?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] ;
@@ -215,12 +249,11 @@ RULE_INCOMPLETE : [Rr][Uu][Ll][Ee][\-]?[Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] 
 RULE_TAG        : [Rr][Uu][Ll][Ee][Tt][Aa][Gg] ;
 SHARE           : [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Nn][Oo][Nn][Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
-DONT_SHARE      : [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
-                | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
 
+TAG             : [Tt][Aa][Gg] (EQ SYMBOL)? ;
 SAME_DISC       : [Ss][Aa][Mm][Ee][Dd][Ii][Ss][Cc] ;
 UNDER           : [Uu][Nn][Dd][Ee][Rr] ;
-WITH            : LP [Ww][Ii][Tt][Hh] ;
+WITH            : [Ww][Ii][Tt][Hh] ;
 
 // If-Else keywords
 BEGINELSE       : BEGIN ELSE ;
@@ -233,6 +266,7 @@ IS              : ([Ii][Ss])|([Ww][Aa][Ss]) ;
 ISNT            : ([Ii][Ss][Nn][Tt])|([Ww][Aa][Ss][Nn][Tt]) ;
 THEN            : [Tt][Hh][Ee][Nn] ;
 
+// Operators and punctuation
 OP          : AND | OR | EQ | GE | GT | LE | LT | NE ;
 
 LIST_OR     : COMMA | OR ;
@@ -240,35 +274,41 @@ LIST_AND    : PLUS | AND ;
 AND         : [Aa][Nn][Dd] ;
 OR          : [Oo][Rr] ;
 
-INFROM      : IN | FROM ;
-FROM        : [Ff][Rr][Oo][Mm] ;
-IN          : [Ii][Nn] ;
-
-OF          : [Oo][Ff] ;
-TAG         : [Tt][Aa][Gg] (EQ SYMBOL)? ;
+//INFROM      : IN | FROM -> skip;
+FROM        : [Ff][Rr][Oo][Mm] -> skip;
+IN          : [Ii][Nn] -> skip;
 
 
-
-/* There are three overlapping classes of tokens used as identifiers.
- * The overlap is in what characters are allowed for each. Since the Scribe parser ensures that
- * the "allowed character set" is correct, this grammar lumps everthing together as a SYMBOL.
- *   Discipline names
- *   With clause names
- *   Named values
- * Keeping expanded defs here, for reference:
- *   ALPHA_NUM   : (LETTER | DIGIT | DOT | '_')+ ;
- *   DISCIPLINE  : ALPHA_NUM | ((LETTER | AT) (DIGIT | DOT | HYPHEN | LETTER)*) ;
- *   SYMBOL      : ALPHA_NUM | (LETTER (LETTER | DIGIT | '_' | '-' | '&')*) ;
- */
+//  Skips
+//  -----------------------------------------------------------------------------------------------
+// Comments and auditor directives, not requirements.
+CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
+                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
+                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
+                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip ;
+COMMENT        : '#' .*? '\n' -> skip ;
+CURLY_BRACES   : [}{] -> skip;
+DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
 HIDE           : [Hh][Ii][Dd][Ee]
                  ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
+HIDE_RULE      : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip ;
+HIGH_PRIORITY  : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
+LOW_PRIORITY   : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
+NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
+PROXYADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
+
+// Before BEGIN and fter ENDOT, the lexer does token recognition.
+// To avoid errors from text that can't be tokenized, skip Log lines and otherwise-illegal chars.
+LOGS           : [Ll][Oo][Gg] .*? '\n' -> skip;
+CRUFT          : [:/'*]+ -> skip ;
+
+WHITESPACE     : [ \t\n\r]+ -> skip ;
 
 NUMBER          : DIGIT+ (DOT DIGIT*)? ;
 RANGE           : NUMBER ':' NUMBER ;
 
 CATALOG_NUMBER  : DIGIT+ LETTER+ ;
-WILDNUMBER      : NUMBER* AT NUMBER* ;
-WILDSYMBOL      : LETTER* AT (LETTER|DIGIT)* ;
+WILD            : (LETTER|DIGIT)* AT (LETTER|DIGIT)*;
 
 SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND)+ ;
 
@@ -301,23 +341,3 @@ fragment DOT         : '.' ;
 fragment DIGIT       : [0-9] ;
 fragment LETTER      : [a-zA-Z] ;
 
-//  Skips
-//  -----------------------------------------------------------------------------------------------
-// Comments and auditor directives, not requirements.
-CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
-                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
-                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
-                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip ;
-COMMENT        : '#' .*? '\n' -> skip ;
-DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
-HIDE_RULE      : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip ;
-NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
-LOW_PRIORITY   : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
-HIGH_PRIORITY  : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
-PROXYADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
-
-// Things outside the BEGIN...ENDDOT that cause unnecessary grief
-LOG            : [Ll][Oo][Gg] .*? '\n' -> skip ;
-// Including '/' as whitespace is a hack to reduce token recognition errors: I can't figure out how
-// to ignore text following ENDDOT.
-WHITESPACE  : [ \t\n\r/}{]+ -> skip ;
