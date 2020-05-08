@@ -5,7 +5,8 @@
 # Capture error messages in the test_results directory.
 #  Empty result files indicate complete parsing with no errors.
 
-rm test_results/*
+rm -fr test_results
+mkdir test_results
 for file in test_data/*
 do
   echo "$file"
