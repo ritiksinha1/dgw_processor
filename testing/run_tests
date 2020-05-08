@@ -4,11 +4,22 @@
 # Parse all requirement blocks in the test_data directory.
 # Capture error messages in the test_results directory.
 #  Empty result files indicate complete parsing with no errors.
-
-rm -fr test_results
-mkdir test_results
-for file in test_data/*
+SECONDS=0
+for dir in test_data.*
 do
-  echo "$file"
-  grun ReqBlock req_block < "$file" > "${file/data/results}" 2>&1
+  block_type=${dir##*.}
+  block_str=`echo $block_type|tr a-z A-Z`
+  rm -fr test_results.$block_type
+  mkdir test_results.$block_type
+  num_files=`dir test_data.$block_type|wc -l`
+  echo -e "\nThere are $num_files $block_str files"
+  let count=0
+  for file in test_data.$block_type/*
+  do
+    let $((count = count + 1))
+    grun ReqBlock req_block < "$file" > "${file/data/results}" 2>&1
+    echo -en "               \r$count/$num_files\r"
+  done
+  echo -e "\n$block_str completed after $SECONDS seconds"
+  SECONDS=0
 done

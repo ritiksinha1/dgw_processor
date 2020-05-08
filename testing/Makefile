@@ -11,10 +11,10 @@ default: req_block
 gui: req_block
 	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(args) -gui
 
-tree: req_block tree
+tree: req_block
 	$(grun) ReqBlock req_block $(args) -tree < $(TEST_DATA) > tree
 
-tokens: req_block tokens
+tokens: req_block
 	$(grun) ReqBlock req_block $(args) -tokens < $(TEST_DATA) > tokens
 
 atn: ReqBlock.g4

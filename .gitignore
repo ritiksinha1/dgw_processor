@@ -25,3 +25,11 @@ test_data/
 test_results/
 Logs/
 /testing/ReqBlock*
+/testing/test_data.conc/
+/testing/test_data.degree/
+/testing/test_data.minor/
+/testing/test_results.degree/
+/testing/test_data.major/
+/testing/test_results.conc/
+/testing/test_results.major/
+/testing/test_results.minor/
