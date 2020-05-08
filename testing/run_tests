@@ -1,9 +1,11 @@
 #! /usr/local/bin/bash
 
+# Clean out the test_results directory.
 # Parse all requirement blocks in the test_data directory.
 # Capture error messages in the test_results directory.
 #  Empty result files indicate complete parsing with no errors.
 
+rm test_results/*
 for file in test_data/*
 do
   echo "$file"
