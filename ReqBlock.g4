@@ -36,7 +36,7 @@ grammar ReqBlock;
 /* Parser
  * ================================================================================================
  */
-req_block   : .*? BEGIN head ';' body ENDOT .*? EOF;
+req_block   : .*? BEGIN head SEMICOLON body ENDOT .*? EOF;
 head        :
             ( if_then
             | class_credit
@@ -45,6 +45,7 @@ head        :
             | maxcredit
             | maxpassfail
             | mingrade
+            | minclass
             | mincredit
             | mingpa
             | minres
@@ -71,23 +72,23 @@ body        :
 
 // Course List
 // ------------------------------------------------------------------------------------------------
-course_list     : full_course (and_list | or_list)? course_qualifier* label?;
-full_course     : discipline catalog_number with_clause? ;
-course_item     : discipline? catalog_number with_clause? ;
-and_list        : (LIST_AND course_item )+ ;
-or_list         : (LIST_OR course_item)+ ;
+course_list     : ((full_course (and_list | or_list)? | AT) course_qualifier* label?);
+full_course     : discipline catalog_number with_clause?;
+course_item     : discipline? catalog_number with_clause?;
+and_list        : (LIST_AND course_item )+;
+or_list         : (LIST_OR course_item)+;
 discipline      : SYMBOL | WILD;
 catalog_number  : NUMBER | CATALOG_NUMBER | RANGE | WILD;
-course_qualifier: with_clause | except_clause | mingrade | minspread | share;
+course_qualifier: with_clause | except_clause | including_clause | mingrade | minspread | share;
 
 //  if-then
 //  -----------------------------------------------------------------------------------------------
-if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause? ;
-else_clause  : ELSE (stmt | stmt_group) group_qualifier* label? ;
-stmt_group   : (begin_if stmt+ end_if) ;
+if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause?;
+else_clause  : ELSE (stmt | stmt_group) group_qualifier* label?;
+stmt_group   : (begin_if stmt+ end_if);
 stmt         : block | class_credit | group | if_then | remark | rule_complete | subset;
-begin_if     : BEGINIF | BEGINELSE ;
-end_if       : ENDIF | ENDELSE ;
+begin_if     : BEGINIF | BEGINELSE;
+end_if       : ENDIF | ENDELSE;
 
 
 //  Groups
@@ -124,7 +125,7 @@ group           : NUMBER GROUP group_list
                   group_qualifier*
                   label?
                 ;
-group_list      : group_item (OP group_item)* ; // Not clear why this has to be OP rather than OR.
+group_list      : group_item (OP group_item)*; // Not clear why this has to be OP rather than OR.
 group_item      : LP
                     (class_credit | group | block | block_type | rule_complete | noncourse)
                     group_qualifier*
@@ -147,48 +148,56 @@ group_qualifier : maxpassfail
 
 //  Rule Subset
 //  -----------------------------------------------------------------------------------------------
-subset            : BEGINSUB (class_credit | group)+ ENDSUB subset_qualifier* label ;
+subset            : BEGINSUB (class_credit | group)+ ENDSUB subset_qualifier* label;
 subset_qualifier  : mingpa | mingrade | maxtransfer;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
 block       : NUMBER BLOCK expression label;
-block_type  : NUMBER BLOCKTYPE expression label ;
+block_type  : NUMBER BLOCKTYPE expression label;
 
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
  */
-class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
-                  (expression | PSEUDO | course_list | share | TAG)* label? ;
-except_clause   : EXCEPT course_list ;
-label           : LABEL (SYMBOL|NUMBER)? STRING ';'? label* ;
-lastres         : LASTRES NUMBER (OF NUMBER CREDIT | CLASS)? ;
-maxclass        : MAXCLASS NUMBER course_list TAG? ;
-maxcredit       : MAXCREDIT NUMBER course_list TAG? ;
-minclass        : MINCLASS NUMBER course_list TAG? ;
-mincredit       : MINCREDIT NUMBER course_list TAG? ;
-maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG? ;
+class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) (OP NUMBER (CLASS | CREDIT))?
+                  (expression | PSEUDO | course_list | share | TAG)* label?;
+except_clause   : EXCEPT course_list;
+including_clause: INCLUDING course_list;
+label           : LABEL (SYMBOL|NUMBER)? STRING SEMICOLON? label*;
+// LastRes 15 of 30 Credits in @ (With DWResident=Y or Attribute=SE)
+// Except PE @ Tag=LASTRES
+lastres         : LASTRES NUMBER (OF NUMBER (CREDIT | CLASS))? course_list? TAG?;
+
+maxclass        : MAXCLASS NUMBER course_list? TAG?;
+maxcredit       : MAXCREDIT NUMBER course_list? TAG?;
+
+maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG?;
 maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS)
-                   LP SYMBOL (LIST_OR SYMBOL)* RP TAG? ;
+                   LP SYMBOL (LIST_OR SYMBOL)* RP TAG?;
 maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS)
-                  ( LP SYMBOL (LIST_OR SYMBOL)* RP)? TAG? ;
-mingpa          : MINGPA NUMBER course_list? ;
-mingrade        : MINGRADE NUMBER ;
-minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (',' SYMBOL)* TAG? ;
-minres          : MINRES NUMBER (CREDIT | CLASS) ;
-minspread       : MINSPREAD NUMBER TAG? ;
-noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP ;
-remark          : REMARK STRING SEMICOLON? remark* ;
-rule_complete   : RULE_COMPLETE | RULE_INCOMPLETE ;
-ruletag         : RULE_TAG SYMBOL EQ STRING ;
-samedisc        : SAME_DISC LP SYMBOL OP SYMBOL (LIST_OR SYMBOL OP SYMBOL)* RP TAG? ;
-under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label ;
+                  ( LP SYMBOL (LIST_OR SYMBOL)* RP)? TAG?;
 
-with_clause     : LP WITH expression RP ;
+minclass        : MINCLASS NUMBER course_list TAG?;
+mincredit       : MINCREDIT NUMBER course_list TAG?;
 
-share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP ;
-share_item      : SYMBOL (OP (SYMBOL | NUMBER | STRING))? ;
-share_list      : share_item (LIST_OR share_item)* ;
+mingpa          : MINGPA NUMBER course_list?;
+mingrade        : MINGRADE NUMBER;
+minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (',' SYMBOL)* TAG?;
+minres          : MINRES NUMBER (CREDIT | CLASS);
+minspread       : MINSPREAD NUMBER TAG?;
+
+noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP;
+remark          : REMARK STRING SEMICOLON? remark*;
+rule_complete   : RULE_COMPLETE | RULE_INCOMPLETE;
+ruletag         : RULE_TAG SYMBOL EQ STRING;
+samedisc        : SAME_DISC LP SYMBOL OP SYMBOL (LIST_OR SYMBOL OP SYMBOL)* RP TAG?;
+under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label;
+
+with_clause     : LP WITH expression RP;
+
+share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP;
+share_item      : SYMBOL (OP (SYMBOL | NUMBER | STRING))?;
+share_list      : share_item (LIST_OR share_item)*;
 
 expression      : expression OP expression
                 | NUMBER
@@ -202,141 +211,139 @@ expression      : expression OP expression
 
 //  Keywords
 //  -----------------------------------------------------------------------------------------------
-BEGIN           : [Bb][Ee][Gg][Ii][Nn] ;
-BEGINSUB        : BEGIN [Ss][Uu][Bb] ;
-BLOCK           : [Bb][Ll][Oo][Cc][Kk] ;
-BLOCKTYPE       : BLOCK [Tt][Yy][Pp][Ee][Ss]? ;
-CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])? ;
-CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]? ;
-
 /*  These symbols appear in SHARE expressions, but they get in the way of recognizing other
  *  expressions, so recognizing them is left to dgw_processor to recognize on an as-needed basis.
-  CONC            : [Cc][Oo][Nn][Cc] ;
-  DEGREE          : [Dd][Ee][Gg][Rr][Ee][Ee] ;
-  MAJOR           : [Mm][Aa][Jj][Oo][Rr] ;
-  MINOR           : [Mm][Ii][Nn][Oo][Rr] ;
-  OTHER           : [Oo][Tt][Hh][Ee][Rr] ;
-  THIS_BLOCK      : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk] ;
+  CONC            : [Cc][Oo][Nn][Cc];
+  DEGREE          : [Dd][Ee][Gg][Rr][Ee][Ee];
+  MAJOR           : [Mm][Aa][Jj][Oo][Rr];
+  MINOR           : [Mm][Ii][Nn][Oo][Rr];
+  OTHER           : [Oo][Tt][Hh][Ee][Rr];
+  THIS_BLOCK      : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk];
  */
-
+BEGIN           : [Bb][Ee][Gg][Ii][Nn];
+BEGINSUB        : BEGIN [Ss][Uu][Bb];
+BLOCK           : [Bb][Ll][Oo][Cc][Kk];
+BLOCKTYPE       : BLOCK [Tt][Yy][Pp][Ee][Ss]?;
+CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])?;
+CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]?;
 DONT_SHARE      : [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
-                | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
-ENDOT           : [Ee][Nn][Dd]DOT ;
-ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb] ;
-EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt] ;
-GROUP           : [Gg][Rr][Oo][Uu][Pp][Ss]? ;
-
-LABEL           : [Ll][Aa][Bb][Ee][Ll] ;
-LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss] ;
-MAXCLASS        : [Mm][Aa][Xx] CLASS ;
-MAXCREDIT       : [Mm][Aa][Xx] CREDIT ;
-MINGPA          : [Mm][Ii][Nn][Gg][Pp][Aa] ;
-MINGRADE        : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee] ;
-MAXPASSFAIL     : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll] ;
-MAXPERDISC      : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
-MINPERDISC      : [Mm][Ii][Nn][Pp][Ee][Rr][Dd][Ii][Ss][Cc] ;
-MAXTRANSFER     : [Mm][Aa][Xx][Tt][Rr][Aa][Nn][Ss][Ff][Ee][Rr] ;
-MINCLASS        : [Mm][Ii][Nn] CLASS ;
-MINCREDIT       : [Mm][Ii][Nn] CREDIT ;
-MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss] ;
-MINSPREAD       : [Mm][Ii][Nn][Ss][Pp][Rr][Ee][Aa][Dd] ;
-NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]? ;
-OF              : [Oo][Ff] ;
-PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo] ;
-REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk] ;
-RULE_COMPLETE   : [Rr][Uu][Ll][Ee][\-]?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] ;
-RULE_INCOMPLETE : [Rr][Uu][Ll][Ee][\-]?[Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee] ;
-RULE_TAG        : [Rr][Uu][Ll][Ee][Tt][Aa][Gg] ;
+                | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
+ENDOT           : [Ee][Nn][Dd]DOT;
+ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb];
+EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt];
+GROUP           : [Gg][Rr][Oo][Uu][Pp][Ss]?;
+INCLUDING       : [Ii][Nn][Cc][Ll][Uu][Dd][Ii][Nn][Gg];
+LABEL           : [Ll][Aa][Bb][Ee][Ll];
+LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss];
+MAXCLASS        : [Mm][Aa][Xx] CLASS;
+MAXCREDIT       : [Mm][Aa][Xx] CREDIT;
+MINGPA          : [Mm][Ii][Nn][Gg][Pp][Aa];
+MINGRADE        : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee];
+MAXPASSFAIL     : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll];
+MAXPERDISC      : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
+MINPERDISC      : [Mm][Ii][Nn][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
+MAXTRANSFER     : [Mm][Aa][Xx][Tt][Rr][Aa][Nn][Ss][Ff][Ee][Rr];
+MINCLASS        : [Mm][Ii][Nn] CLASS;
+MINCREDIT       : [Mm][Ii][Nn] CREDIT;
+MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss];
+MINSPREAD       : [Mm][Ii][Nn][Ss][Pp][Rr][Ee][Aa][Dd];
+NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]?;
+OF              : [Oo][Ff];
+PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo];
+REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk];
+RULE_COMPLETE   : [Rr][Uu][Ll][Ee][\-]?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
+RULE_INCOMPLETE : [Rr][Uu][Ll][Ee][\-]?[Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
+RULE_TAG        : [Rr][Uu][Ll][Ee][Tt][Aa][Gg];
 SHARE           : [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
-                | [Nn][Oo][Nn][Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee] ;
-
-TAG             : [Tt][Aa][Gg] (EQ SYMBOL)? ;
-SAME_DISC       : [Ss][Aa][Mm][Ee][Dd][Ii][Ss][Cc] ;
-UNDER           : [Uu][Nn][Dd][Ee][Rr] ;
-WITH            : [Ww][Ii][Tt][Hh] ;
+                | [Nn][Oo][Nn][Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
+TAG             : [Tt][Aa][Gg] (EQ SYMBOL)?;
+SAME_DISC       : [Ss][Aa][Mm][Ee][Dd][Ii][Ss][Cc];
+UNDER           : [Uu][Nn][Dd][Ee][Rr];
+WITH            : [Ww][Ii][Tt][Hh];
 
 // If-Else keywords
-BEGINELSE       : BEGIN ELSE ;
-BEGINIF         : BEGIN IF ;
-ELSE            : [Ee][Ll][Ss][Ee] ;
-ENDELSE         : [Ee][Nn][Dd]ELSE ;
-ENDIF           : [Ee][Nn][Dd] IF ;
-IF              : [Ii][Ff] ;
-IS              : ([Ii][Ss])|([Ww][Aa][Ss]) ;
-ISNT            : ([Ii][Ss][Nn][Tt])|([Ww][Aa][Ss][Nn][Tt]) ;
-THEN            : [Tt][Hh][Ee][Nn] ;
+BEGINELSE       : BEGIN ELSE;
+BEGINIF         : BEGIN IF;
+ELSE            : [Ee][Ll][Ss][Ee];
+ENDELSE         : [Ee][Nn][Dd]ELSE;
+ENDIF           : [Ee][Nn][Dd] IF;
+IF              : [Ii][Ff];
+IS              : ([Ii][Ss])|([Ww][Aa][Ss]);
+ISNT            : ([Ii][Ss][Nn][Tt])|([Ww][Aa][Ss][Nn][Tt]);
+THEN            : [Tt][Hh][Ee][Nn];
 
-// Operators and punctuation
-OP          : AND | OR | EQ | GE | GT | LE | LT | NE ;
+// Logical Operators
+OP          : AND | OR | EQ | GE | GT | LE | LT | NE;
 
-LIST_OR     : COMMA | OR ;
-LIST_AND    : PLUS | AND ;
-AND         : [Aa][Nn][Dd] ;
-OR          : [Oo][Rr] ;
-
-//INFROM      : IN | FROM -> skip;
-FROM        : [Ff][Rr][Oo][Mm] -> skip;
-IN          : [Ii][Nn] -> skip;
+// List separators
+LIST_OR     : COMMA | OR;
+LIST_AND    : PLUS | AND;
+AND         : [Aa][Nn][Dd];
+OR          : [Oo][Rr];
 
 //  Skips
 //  -----------------------------------------------------------------------------------------------
 // Comments and auditor directives, not requirements.
-CHECKELECTIVES : [Cc][Hh][Ee][Cc][Kk]
+CHECKELECTIVES  : [Cc][Hh][Ee][Cc][Kk]
                  [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
                  [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
-                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip ;
-COMMENT        : '#' .*? '\n' -> skip ;
-CURLY_BRACES   : [}{] -> skip;
-DECIDE         : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip ;
-HIDE           : [Hh][Ii][Dd][Ee]
-                 ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
-HIDE_RULE      : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip ;
-HIGH_PRIORITY  : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
-LOW_PRIORITY   : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip ;
-NOTGPA         : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip ;
-PROXYADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
+                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip;
+COMMENT         : '#' .*? '\n' -> skip;
+CURLY_BRACES    : [}{] -> skip;
+DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
+HIDE            : [Hh][Ii][Dd][Ee]
+                  ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
+HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
+HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
+// Like most semicolons (just not the one separating head from body), In and From are always
+// optional.
+FROM            : [Ff][Rr][Oo][Mm] -> skip;
+IN              : [Ii][Nn] -> skip;
+LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
+NOTGPA          : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip;
+PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
 
 // Before BEGIN and fter ENDOT, the lexer does token recognition.
 // To avoid errors from text that can't be tokenized, skip Log lines and otherwise-illegal chars.
 LOGS           : [Ll][Oo][Gg] .*? '\n' -> skip;
-CRUFT          : [:/'*]+ -> skip ;
+CRUFT          : [:/'*\\[\]]+ -> skip;
 
-WHITESPACE     : [ \t\n\r]+ -> skip ;
+WHITESPACE     : [ \t\n\r]+ -> skip;
 
-NUMBER          : DIGIT+ (DOT DIGIT*)? ;
-RANGE           : NUMBER ':' NUMBER ;
+NUMBER          : DIGIT+ (DOT DIGIT*)?;
+RANGE           : NUMBER ':' NUMBER;
 
-CATALOG_NUMBER  : DIGIT+ LETTER+ ;
+CATALOG_NUMBER  : DIGIT+ LETTER+;
 WILD            : (LETTER|DIGIT)* AT (LETTER|DIGIT)*;
 
-SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND)+ ;
+SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND)+;
 
-STRING      : '"' .*? '"' ;
+STRING      : '"' .*? '"';
 
 //  Punctuation and operator tokens
 //  -----------------------------------------------------------------------------------------------
-AMPERSAND   : '&' ;
-AT          : '@' ;
-COMMA       : ',' ;
-EQ          : '=' ;
-GE          : '>=' ;
-GT          : '>' ;
-HYPHEN      : '-' ;
-LE          : '<=' ;
-LP          : '(' ;
-LT          : '<' ;
-NE          : '<>' ;
-PLUS        : '+' ;
-RP          : ')' ;
-SEMICOLON   : ';' ;
-UNDERSCORE  : '_' ;
+AMPERSAND   : '&';
+AT          : '@';
+COMMA       : ',';
+EQ          : '=';
+GE          : '>=';
+GT          : '>';
+HYPHEN      : '-';
+LE          : '<=';
+LP          : '(';
+LT          : '<';
+NE          : '<>';
+PLUS        : '+';
+RP          : ')';
+SEMICOLON   : ';';
+UNDERSCORE  : '_';
 
 //  Fragments
 //  -----------------------------------------------------------------------------------------------
 /*  By prefixing the rule with fragment, we let ANTLR know that the rule will be used only by other
  *  lexical rules. It is not a token in and of itself.
  */
-fragment DOT         : '.' ;
-fragment DIGIT       : [0-9] ;
-fragment LETTER      : [a-zA-Z] ;
+fragment DOT         : '.';
+fragment DIGIT       : [0-9];
+fragment LETTER      : [a-zA-Z];
 
