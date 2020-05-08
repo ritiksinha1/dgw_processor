@@ -23,3 +23,4 @@ do
   echo -e "\n$block_str completed after $SECONDS seconds"
   SECONDS=0
 done
+./count_results.py

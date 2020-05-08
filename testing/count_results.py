@@ -19,7 +19,7 @@ with open(f'count_results_{time_stamp}.log', 'w') as logfile:
       school = file.name[0:3]
       school_sizes[school][size] += 1
 
-    print(f'ALL: {100 * all_sizes[0] / sum(all_sizes.values()):.1f}% of '
+    print(f'\nALL: {100 * all_sizes[0] / sum(all_sizes.values()):.1f}% of '
           f'{num_files:,} {block_type_str}s', file=logfile)
     # for key in sorted(all_sizes.keys()):
     #   print(f'{key:04}: {all_sizes[key]:,}')
