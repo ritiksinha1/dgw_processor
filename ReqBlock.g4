@@ -137,7 +137,6 @@ group_item      : LP
                   label?
                 ;
 group_qualifier : maxpassfail
-                | maxperdisc
                 | maxtransfer
                 | mingrade
                 | minperdisc
