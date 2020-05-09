@@ -4,8 +4,19 @@
 # Parse all requirement blocks in the test_data directory.
 # Capture error messages in the test_results directory.
 #  Empty result files indicate complete parsing with no errors.
+
+dirs=()
+while [[ $# > 0 ]]
+do
+  dirs+=($1)
+  shift
+done
+if [[ ${#dirs} = 0 ]]
+then
+  dirs=(major minor degree conc)
+fi
 SECONDS=0
-for dir in test_data.*
+for dir in ${dirs[@]}
 do
   block_type=${dir##*.}
   block_str=`echo $block_type|tr a-z A-Z`
