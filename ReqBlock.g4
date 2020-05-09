@@ -44,6 +44,7 @@ head        :
             | maxclass
             | maxcredit
             | maxpassfail
+            | maxtransfer
             | mingrade
             | minclass
             | mincredit
@@ -55,12 +56,13 @@ head        :
             )*
             ;
 body        :
-            ( if_then
-            | block_type
+            ( block_type
             | class_credit
+            | group
+            | if_then
             | label
             | maxperdisc
-            | group
+            | noncourse
             | remark
             | subset
             )*
@@ -149,7 +151,7 @@ group_qualifier : maxpassfail
 //  Rule Subset
 //  -----------------------------------------------------------------------------------------------
 subset            : BEGINSUB (class_credit | group)+ ENDSUB subset_qualifier* label;
-subset_qualifier  : mingpa | mingrade | maxtransfer;
+subset_qualifier  : mingpa | mingrade | maxtransfer | minperdisc | maxperdisc;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
@@ -159,7 +161,9 @@ block_type  : NUMBER BLOCKTYPE expression label;
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
  */
-class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) (OP NUMBER (CLASS | CREDIT))?
+allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
+class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) allow_clause?
+                  (OP NUMBER (CLASS | CREDIT) allow_clause?)?
                   (expression | PSEUDO | course_list | share | TAG)* label?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
@@ -203,6 +207,7 @@ expression      : expression OP expression
                 | NUMBER
                 | SYMBOL
                 | STRING
+                | CATALOG_NUMBER
                 | LP expression RP
                 ;
 
@@ -220,11 +225,13 @@ expression      : expression OP expression
   OTHER           : [Oo][Tt][Hh][Ee][Rr];
   THIS_BLOCK      : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk];
  */
+ALLOW           : [Aa][Ll][Ll][Oo][Ww];
 BEGIN           : [Bb][Ee][Gg][Ii][Nn];
 BEGINSUB        : BEGIN [Ss][Uu][Bb];
 BLOCK           : [Bb][Ll][Oo][Cc][Kk];
 BLOCKTYPE       : BLOCK [Tt][Yy][Pp][Ee][Ss]?;
-CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])?;
+CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])?
+                | [Cc][Oo][Uu][Rr][Ss][Ee][Ss?];
 CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]?;
 DONT_SHARE      : [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
                 | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
