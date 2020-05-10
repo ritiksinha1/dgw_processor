@@ -56,7 +56,7 @@ head        :
             )*
             ;
 body        :
-            ( block_type
+            ( blocktype
             | class_credit
             | group
             | if_then
@@ -74,21 +74,38 @@ body        :
 
 // Course List
 // ------------------------------------------------------------------------------------------------
-course_list     : ((full_course (and_list | or_list)? | AT) course_qualifier* label?);
-full_course     : discipline catalog_number with_clause?;
-course_item     : discipline? catalog_number with_clause?;
+/* NOT IMPLEMENTED: parts of a course list can be enclosed in square brackets, defining "areas"
+ * to which the minarea qualifier can apply. Currently, square brackets are skipped (ignored).
+ */
+course_list     : course_item (and_list | or_list)? course_qualifier* label?;
+full_course     : discipline catalog_number course_qualifier*;
+course_item     : discipline? catalog_number course_qualifier*;
 and_list        : (LIST_AND course_item )+;
 or_list         : (LIST_OR course_item)+;
 discipline      : SYMBOL | WILD;
 catalog_number  : NUMBER | CATALOG_NUMBER | RANGE | WILD;
-course_qualifier: with_clause | except_clause | including_clause | mingrade | minspread | share;
+course_qualifier: with_clause
+                | except_clause
+                | including_clause
+                | minarea
+                | mingrade
+                | minspread
+                | share
+                ;
 
 //  if-then
 //  -----------------------------------------------------------------------------------------------
 if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause?;
 else_clause  : ELSE (stmt | stmt_group) group_qualifier* label?;
 stmt_group   : (begin_if stmt+ end_if);
-stmt         : block | class_credit | group | if_then | remark | rule_complete | subset;
+stmt         : block
+             | blocktype
+             | class_credit
+             | group
+             | if_then
+             | remark
+             | rule_complete
+             | subset;
 begin_if     : BEGINIF | BEGINELSE;
 end_if       : ENDIF | ENDELSE;
 
@@ -129,7 +146,7 @@ group           : NUMBER GROUP group_list
                 ;
 group_list      : group_item (OP group_item)*; // Not clear why this has to be OP rather than OR.
 group_item      : LP
-                    (class_credit | group | block | block_type | rule_complete | noncourse)
+                    (class_credit | group | block | blocktype | rule_complete | noncourse)
                     group_qualifier*
                     label?
                   RP
@@ -155,7 +172,7 @@ subset_qualifier  : mingpa | mingrade | maxtransfer | minperdisc | maxperdisc;
 // Blocks
 // ------------------------------------------------------------------------------------------------
 block       : NUMBER BLOCK expression label;
-block_type  : NUMBER BLOCKTYPE expression label;
+blocktype   : NUMBER BLOCKTYPE expression label;
 
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
@@ -163,7 +180,7 @@ block_type  : NUMBER BLOCKTYPE expression label;
 allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) allow_clause?
                   (OP NUMBER (CLASS | CREDIT) allow_clause?)?
-                  (expression | PSEUDO | course_list | share | TAG)* label?;
+                  (course_list | expression | PSEUDO | share | TAG)* label?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
 label           : LABEL (SYMBOL|NUMBER)? STRING SEMICOLON? label*;
@@ -175,11 +192,10 @@ maxclass        : MAXCLASS NUMBER course_list? TAG?;
 maxcredit       : MAXCREDIT NUMBER course_list? TAG?;
 
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG?;
-maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS)
-                   LP SYMBOL (LIST_OR SYMBOL)* RP TAG?;
+maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) LP SYMBOL (LIST_OR SYMBOL)* RP TAG?;
 maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS)
                   ( LP SYMBOL (LIST_OR SYMBOL)* RP)? TAG?;
-
+minarea         : MINAREA NUMBER TAG?;
 minclass        : MINCLASS NUMBER course_list TAG?;
 mincredit       : MINCREDIT NUMBER course_list TAG?;
 
@@ -243,6 +259,7 @@ LABEL           : [Ll][Aa][Bb][Ee][Ll];
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss];
 MAXCLASS        : [Mm][Aa][Xx] CLASS;
 MAXCREDIT       : [Mm][Aa][Xx] CREDIT;
+MINAREA         : [Mm][Ii][Nn][Aa][Rr][Ee][Aa][Ss]?;
 MINGPA          : [Mm][Ii][Nn][Gg][Pp][Aa];
 MINGRADE        : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee];
 MAXPASSFAIL     : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll];
@@ -301,8 +318,6 @@ HIDE            : [Hh][Ii][Dd][Ee]
                   ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
 HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
 HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
-// Like most semicolons (just not the one separating head from body), In and From are always
-// optional.
 FROM            : [Ff][Rr][Oo][Mm] -> skip;
 IN              : [Ii][Nn] -> skip;
 LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-' [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
@@ -311,10 +326,11 @@ PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> 
 
 // Before BEGIN and fter ENDOT, the lexer does token recognition.
 // To avoid errors from text that can't be tokenized, skip Log lines and otherwise-illegal chars.
-LOGS           : [Ll][Oo][Gg] .*? '\n' -> skip;
-CRUFT          : [:/'*\\[\]]+ -> skip;
+LOGS            : [Ll][Oo][Gg] .*? '\n' -> skip;
+CRUFT           : [:/'*\\]+ -> skip;
 
-WHITESPACE     : [ \t\n\r]+ -> skip;
+SB              : [[\]] ->skip; // Used for MinAreas; not implemented
+WHITESPACE      : [ \t\n\r]+ -> skip;
 
 NUMBER          : DIGIT+ (DOT DIGIT*)?;
 RANGE           : NUMBER ':' NUMBER;
