@@ -6,16 +6,18 @@ grun := java -Xmx500M -cp .:/usr/local/lib/antlr-4.8-complete.jar org.antlr.v4.g
 args := -diagnostics
 args :=
 
+.PHONY: atn
+
 default: req_block
 
-gui: req_block
+gui: req_block $(TEST_DATA)
 	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(args) -gui
 
-tree: req_block
-	$(grun) ReqBlock req_block $(args) -tree < $(TEST_DATA) > tree
+tree: req_block $(TEST_DATA)
+	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(args) -tree > tree
 
-tokens: req_block
-	$(grun) ReqBlock req_block $(args) -tokens < $(TEST_DATA) > tokens
+tokens: req_block $(TEST_DATA)
+	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(args) -tokens > tokens
 
 atn: ReqBlock.g4
 	$(antlr4) -atn ReqBlock.g4
