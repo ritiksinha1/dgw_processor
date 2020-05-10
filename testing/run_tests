@@ -13,9 +13,10 @@ do
 done
 if [[ ${#dirs} = 0 ]]
 then
-  dirs=(major minor degree conc)
+  dirs=(major minor degree conc other)
 fi
 SECONDS=0
+let $((total = 0))
 for dir in ${dirs[@]}
 do
   block_type=${dir##*.}
@@ -32,6 +33,10 @@ do
     echo -en "               \r$count/$num_files\r"
   done
   echo -e "\n$block_str completed after $SECONDS seconds"
+  let $((total += $SECONDS))
   SECONDS=0
 done
 ./count_results.py
+let $((mins = total/60))
+let $((secs = total - (mins * 60) ))
+printf "%02d:%02d total time" $mins $secs

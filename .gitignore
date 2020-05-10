@@ -33,3 +33,5 @@ Logs/
 /testing/test_results.conc/
 /testing/test_results.major/
 /testing/test_results.minor/
+/testing/test_data.other/
+/testing/test_results.other/

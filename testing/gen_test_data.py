@@ -8,11 +8,11 @@ import sys
 from pathlib import Path
 from pgconnection import PgConnection
 
-parser = argparse.ArgumentParser(description='Test DGW Parser')
+parser = argparse.ArgumentParser(description='Generate test data for ReqBlock.g4')
 parser.add_argument('-d', '--debug', action='store_true', default=False)
 parser.add_argument('-t', '--block_type', default='MAJOR')
 parser.add_argument('-p', '--period', default='99999999')
-# Parse args and handle default list of institutions
+# Parse args
 args = parser.parse_args()
 block_type = args.block_type.upper()
 period_stop = args.period
