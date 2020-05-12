@@ -28,6 +28,7 @@ do
   let count=0
   for file in test_data.$block_type/*
   do
+    [[ $DEBUG ]] && echo  -e "$count/$num_files\t$file"
     let $((count = count + 1))
     grun ReqBlock req_block < "$file" > "${file/data/results}" 2>&1
     echo -en "               \r$count/$num_files\r"
