@@ -3,21 +3,24 @@ antlr4 := java -Xmx500M -cp .:/usr/local/lib/antlr-4.8-complete.jar org.antlr.v4
 antpy := antlr4 -Dlanguage=Python3
 grun := java -Xmx500M -cp .:/usr/local/lib/antlr-4.8-complete.jar org.antlr.v4.gui.TestRig
 
-args := -diagnostics
-args :=
+build_args := -Xlog
+build_args :=
 
-.PHONY: atn
+run_args := -diagnostics
+run_args :=
+
+.PHONY: atn tokens
 
 default: req_block
 
 gui: req_block $(TEST_DATA)
-	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(args) -gui
+	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -gui
 
 tree: req_block $(TEST_DATA)
-	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(args) -tree > tree
+	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -tree > tree
 
 tokens: req_block $(TEST_DATA)
-	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(args) -tokens > tokens
+	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -tokens > tokens
 
 atn: ReqBlock.g4
 	$(antlr4) -atn ReqBlock.g4
@@ -25,7 +28,7 @@ atn: ReqBlock.g4
 	ls -lF *.svg
 
 req_block: ReqBlock.g4 Makefile
-	$(antlr4) ReqBlock.g4
+	$(antlr4) $(build_args) ReqBlock.g4
 	javac *.java
 	touch req_block
 
