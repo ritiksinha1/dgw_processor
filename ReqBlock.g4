@@ -90,11 +90,14 @@ course_qualifier: with_clause
                 | except_clause
                 | including_clause
                 | maxperdisc
+                | maxtransfer
                 | minarea
                 | mingpa
                 | mingrade
                 | minspread
+                | ruletag
                 | share
+                | with_clause
                 ;
 
 //  if-then
@@ -118,34 +121,6 @@ end_if       : ENDIF | ENDELSE;
 
 //  Groups
 //  -----------------------------------------------------------------------------------------------
-/*
-  Notes
-  1. Group must be followed by a list of one or more rules. The list of rules following the Group
-     keyword is referred to as the group list. Each rule in the group list is a group item. Each
-     group item is enclosed in parentheses and does not end with a semicolon.
-
-  2. Each rule in the Group list is one of the following types of rules: Course, Block, BlockType,
-     Group, RuleComplete, RuleIncomplete or NonCourse. A group item cannot be an If rule or a subset
-     rule.
-
-  3. Each rule in the list is connected to the next rule by “or”.
-
-  4. A Group statement can be nested within another Group statement. There is no limit to the number
-     of times you can embed a Group within a Group. However, the worksheet display of a requirement
-     with many depths may be difficult to understand.
-
-  5. Qualifiers that must be applied to all rules in the group list must occur after the last right
-     parenthesis and before the label at the end of the Group statement. Qualifiers that apply only
-     to a specific rule in the group list must appear inside the parentheses for that group item
-     rule.
-
-  6. Allowable rule qualifiers: DontShare, Hide, HideRule, HighPriority, LowPriority,
-     LowestPriority, MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA,
-     ProxyAdvice, SameDisc, ShareWith, MinClass, MinCredit, RuleTag.
-
-  7. Do not mix course rules with Block rules in a group. Although this will parse, the auditor may
-     not handle this as expected. Putting Block rules into Groups is not a best practice.
- */
 group           : NUMBER GROUP group_list
                   group_qualifier*
                   label?
@@ -172,8 +147,13 @@ group_qualifier : maxpassfail
 
 //  Rule Subset
 //  -----------------------------------------------------------------------------------------------
-subset            : BEGINSUB (class_credit | copy_rules | group)+ ENDSUB subset_qualifier* label;
-subset_qualifier  : mingpa | mingrade | maxtransfer | minperdisc | maxperdisc;
+subset            : BEGINSUB
+                  ( if_then
+                  | class_credit
+                  | copy_rules
+                  | group)+
+                  ENDSUB subset_qualifier* label?;
+subset_qualifier  : mingpa | mingrade | maxtransfer | minperdisc | maxperdisc | ruletag;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
@@ -185,14 +165,14 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  */
 allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) allow_clause?
-                  (OP NUMBER (CLASS | CREDIT) allow_clause?)?
+                  (OP NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
                   (course_list | expression | PSEUDO | share | TAG)* label?;
 copy_rules      : COPY_RULES expression SEMICOLON?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
-label           : LABEL (SYMBOL|NUMBER)? STRING SEMICOLON? label*;
-// LastRes 15 of 30 Credits in @ (With DWResident=Y or Attribute=SE)
-// Except PE @ Tag=LASTRES
+label           : LABEL label_tag? STRING SEMICOLON? label*;
+label_tag       : .+?;
+
 lastres         : LASTRES NUMBER (OF NUMBER (CREDIT | CLASS))? course_list? TAG?;
 
 maxclass        : MAXCLASS NUMBER course_list? TAG?;
@@ -211,10 +191,10 @@ minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (',' SYMBOL)* TA
 minres          : MINRES NUMBER (CREDIT | CLASS);
 minspread       : MINSPREAD NUMBER TAG?;
 
-noncourse       : NUMBER NONCOURSE LP SYMBOL (',' SYMBOL)* RP label?;
+noncourse       : NUMBER NONCOURSE expression label?;
 remark          : REMARK STRING SEMICOLON? remark*;
-rule_complete   : RULE_COMPLETE | RULE_INCOMPLETE label?;
-ruletag         : RULE_TAG SYMBOL EQ (SYMBOL | STRING);
+rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
+ruletag         : RULE_TAG expression;
 samedisc        : SAME_DISC LP SYMBOL OP SYMBOL (LIST_OR SYMBOL OP SYMBOL)* RP TAG?;
 under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label;
 
@@ -330,7 +310,7 @@ IN              : [Ii][Nn] -> skip;
 LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-'? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
 NOTGPA          : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip;
 PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
-RULE_TAG        : [Rr][Uu][Ll][Ee]'-'?[Tt][Aa][Gg] -> skip;
+RULE_TAG        : [Rr][Uu][Ll][Ee]'-'?[Tt][Aa][Gg];
 
 // Before BEGIN and fter ENDOT, the lexer does token recognition.
 // To avoid errors from text that can't be tokenized, skip Log lines and otherwise-illegal chars.
