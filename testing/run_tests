@@ -16,6 +16,8 @@ then
   dirs=(major minor degree conc other)
 fi
 SECONDS=0
+
+echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > run_tests.csv
 let $((total = 0))
 for dir in ${dirs[@]}
 do
@@ -30,7 +32,7 @@ do
   do
     [[ $DEBUG ]] && echo  -e "$count/$num_files\t$file"
     let $((count = count + 1))
-    grun ReqBlock req_block < "$file" > "${file/data/results}" 2>&1
+    ./run.py $block_type ${file#*/} >> run_tests.csv
     echo -en "               \r$count/$num_files\r"
   done
   echo -e "\n$block_str completed after $SECONDS seconds"

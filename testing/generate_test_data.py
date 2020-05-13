@@ -41,7 +41,8 @@ for block_type in block_types:
   print(f'{cursor.rowcount} {block_type}s found')
 
   for block in cursor.fetchall():
-    title_str = re.sub(r'\s$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\& ]', '_', block.title)))
+    title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
+                                                             '_', block.title)))
     file = Path(directory,
                 f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
     file.write_text(re.sub(r'[Ee][Nn][Dd]\.(.|\n)*', 'END.\n', block.requirement_text))
