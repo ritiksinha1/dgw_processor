@@ -35,3 +35,4 @@ Logs/
 /testing/test_results.minor/
 /testing/test_data.other/
 /testing/test_results.other/
+/testing/run_tests.csv
