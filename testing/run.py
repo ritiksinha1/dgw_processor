@@ -4,13 +4,16 @@
     for later analysis.
 """
 
+import os
 import subprocess
 import sys
 import time
 
 from pathlib import Path
 
-TIMELIMIT = 180
+TIMELIMIT = os.getenv('TIMELIMIT')
+if TIMELIMIT is None:
+  TIMELIMIT = 180
 
 block_type = sys.argv[1]
 test_dir = Path(f'./test_data.{block_type}')
@@ -22,7 +25,7 @@ lines = file.read_text().count('\n')
 try:
   t0 = time.time()
   completed = subprocess.run(['grun', 'ReqBlock', 'req_block'],
-                             timeout=10,
+                             timeout=TIMELIMIT,
                              stdin=file.open(),
                              capture_output=True)
   elapsed = time.time() - t0

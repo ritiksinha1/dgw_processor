@@ -67,11 +67,11 @@ for block_type in block_types:
       s = 's; ' if num_timeouts != 1 else ';  '
       print(f'{college}: {num_blocks:5,} {block_type} blocks;'
             f' {100 * num_correct / num_blocks:5.1f}% correct,'
-            f' {num_timeouts:>2} timeout{s} {rate:5.1f} lines per second.')
+            f' {num_timeouts:>2} timeout{s} {rate:5.1f} lines per second.', file=logfile)
     except ZeroDivisionError:
       pass
   all_rate = all_lines / all_seconds
   print(f'{highlight_on}ALL{highlight_off}: {all_blocks:5,} {block_type} blocks;'
         f' {100 * all_correct / all_blocks:5.1f}% correct,'
-        f' {all_timeouts:>2} timeout{s} {all_rate:5.1f} lines per second.\n')
+        f' {all_timeouts:>2} timeout{s} {all_rate:5.1f} lines per second.\n', file=logfile)
 

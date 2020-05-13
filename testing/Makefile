@@ -11,15 +11,15 @@ run_args :=
 
 .PHONY: atn tokens
 
-default: req_block
+default: ReqBlockParser.class
 
-gui: req_block $(TEST_DATA)
+gui: ReqBlockParser.class $(TEST_DATA)
 	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -gui
 
-tree: req_block $(TEST_DATA)
+tree: ReqBlockParser.class $(TEST_DATA)
 	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -tree > tree
 
-tokens: req_block $(TEST_DATA)
+tokens: ReqBlockParser.class $(TEST_DATA)
 	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -tokens > tokens
 
 atn: ReqBlock.g4
@@ -27,10 +27,9 @@ atn: ReqBlock.g4
 	dot_to_svg
 	ls -lF *.svg
 
-req_block: ReqBlock.g4 Makefile
+ReqBlockParser.class: ReqBlock.g4 Makefile
 	$(antlr4) $(build_args) ReqBlock.g4
 	javac *.java
-	touch req_block
 
 clean:
-	 rm -f *.java *.class *.interp *.tokens *.dot *.svg req_block tokens tree
+	 rm -f *.java *.class *.interp *.tokens *.dot *.svg parser tokens tree
