@@ -11,9 +11,9 @@ import time
 
 from pathlib import Path
 
-TIMELIMIT = os.getenv('TIMELIMIT')
+TIMELIMIT = float(os.getenv('TIMELIMIT'))
 if TIMELIMIT is None:
-  TIMELIMIT = 180
+  TIMELIMIT = 180.0
 
 block_type = sys.argv[1]
 test_dir = Path(f'./test_data.{block_type}')
