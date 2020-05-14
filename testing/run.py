@@ -11,8 +11,9 @@ import time
 
 from pathlib import Path
 
-TIMELIMIT = float(os.getenv('TIMELIMIT'))
-if TIMELIMIT is None:
+try:
+  TIMELIMIT = float(os.getenv('TIMELIMIT'))
+except TypeError:
   TIMELIMIT = 180.0
 
 block_type = sys.argv[1]
@@ -29,7 +30,7 @@ try:
                              stdin=file.open(),
                              capture_output=True)
   elapsed = time.time() - t0
-  output = len(completed.stdout)
+  output = len(completed.stdout) + len(completed.stderr)
 
 except subprocess.TimeoutExpired:
   output = 'timeout'

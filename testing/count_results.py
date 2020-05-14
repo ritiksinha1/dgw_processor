@@ -53,15 +53,15 @@ for block_type in block_types:
   all_seconds = 0.0
   for college in colleges:
     try:
-      num_blocks = college_data[college][block_type]["blocks"]
+      num_blocks = college_data[college][block_type]['blocks']
       all_blocks += num_blocks
-      num_correct = college_data[college][block_type]["correct"]
+      num_correct = college_data[college][block_type]['correct']
       all_correct += num_correct
-      num_timeouts = college_data[college][block_type]["timeouts"]
+      num_timeouts = college_data[college][block_type]['timeouts']
       all_timeouts += num_timeouts
-      num_lines = college_data[college][block_type]["lines"]
+      num_lines = college_data[college][block_type]['lines']
       all_lines += num_lines
-      num_seconds = college_data[college][block_type]["seconds"]
+      num_seconds = college_data[college][block_type]['seconds']
       all_seconds += num_seconds
       rate = num_lines / num_seconds
       s = 's; ' if num_timeouts != 1 else ';  '
@@ -70,8 +70,10 @@ for block_type in block_types:
             f' {num_timeouts:>2} timeout{s} {rate:5.1f} lines per second.', file=logfile)
     except ZeroDivisionError:
       pass
-  all_rate = all_lines / all_seconds
-  print(f'{highlight_on}ALL{highlight_off}: {all_blocks:5,} {block_type} blocks;'
-        f' {100 * all_correct / all_blocks:5.1f}% correct,'
-        f' {all_timeouts:>2} timeout{s} {all_rate:5.1f} lines per second.\n', file=logfile)
-
+  try:
+    all_rate = all_lines / all_seconds
+    print(f'{highlight_on}ALL{highlight_off}: {all_blocks:5,} {block_type} blocks;'
+          f' {100 * all_correct / all_blocks:5.1f}% correct,'
+          f' {all_timeouts:>2} timeout{s} {all_rate:5.1f} lines per second.\n', file=logfile)
+  except ZeroDivisionError:
+    pass
