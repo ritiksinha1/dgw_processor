@@ -46,8 +46,8 @@ do
     ./run.py $block_type ${file#*/} >> run_tests${suffix}.csv
     echo -en "               \r$count/$num_files\r"
   done
-  numerrors=`ls test_results.$block_type|wc -l`
-  echo -e "\n$block_str completed after $SECONDS seconds"
+  num_errors=`ls test_results.$block_type|wc -l`
+  echo -e "\n$block_str completed after $SECONDS seconds with $num_errors errors."
   let $((total += $SECONDS))
   SECONDS=0
 done
