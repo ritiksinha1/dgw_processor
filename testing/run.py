@@ -31,6 +31,9 @@ try:
                              capture_output=True)
   elapsed = time.time() - t0
   output = len(completed.stdout) + len(completed.stderr)
+  if output != 0:
+    with open(f'test_results.{block_type}/{sys.argv[2]}', 'w') as errorlog:
+      print(f'{completed.stdout} {completed.stderr}', file=errorlog)
 
 except subprocess.TimeoutExpired:
   output = 'timeout'

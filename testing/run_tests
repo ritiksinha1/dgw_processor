@@ -11,30 +11,42 @@ do
   dirs+=($1)
   shift
 done
-if [[ ${#dirs} = 0 ]]
+if [[ ${#dirs[@]} == 0 ]]
 then
   dirs=(major minor degree conc other)
 fi
+
 SECONDS=0
 
-echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > run_tests.csv
+if [[ ${#dirs[@]} == 5 ]]
+then
+      echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > run_tests.csv
+fi
+
 let $((total = 0))
 for dir in ${dirs[@]}
 do
   block_type=${dir##*.}
+  if [[ ${#dirs[@]} == 5 ]]
+  then suffix=''
+  else  suffix=".$dir"
+        echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > run_tests${suffix}.csv
+  fi
+
   block_str=`echo $block_type|tr a-z A-Z`
   rm -fr test_results.$block_type
   mkdir test_results.$block_type
-  num_files=`dir test_data.$block_type|wc -l`
+  num_files=`ls test_data.$block_type|wc -l`
   echo -e "\nThere are $num_files $block_str files"
   let count=0
   for file in test_data.$block_type/*
   do
     [[ $DEBUG ]] && echo  -e "$count/$num_files\t$file"
     let $((count = count + 1))
-    ./run.py $block_type ${file#*/} >> run_tests.csv
+    ./run.py $block_type ${file#*/} >> run_tests${suffix}.csv
     echo -en "               \r$count/$num_files\r"
   done
+  numerrors=`ls test_results.$block_type|wc -l`
   echo -e "\n$block_str completed after $SECONDS seconds"
   let $((total += $SECONDS))
   SECONDS=0
