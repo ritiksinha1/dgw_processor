@@ -11,16 +11,19 @@ run_args :=
 
 .PHONY: atn tokens
 
-default: ReqBlockParser.class
+default: run
+
+run: ReqBlockParser.class $(TEST_DATA)
+	cat $(TEST_DATA) | $(grun) ReqBlock req_block $(run_args)
 
 gui: ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -gui
+	cat $(TEST_DATA) | $(grun) ReqBlock req_block $(run_args) -gui
 
 tree: ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -tree > tree
+	cat $(TEST_DATA) | $(grun) ReqBlock req_block $(run_args) -tree > tree
 
 tokens: ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | filter | $(grun) ReqBlock req_block $(run_args) -tokens > tokens
+	cat $(TEST_DATA) | $(grun) ReqBlock req_block $(run_args) -tokens > tokens
 
 atn: ReqBlock.g4
 	$(antlr4) -atn ReqBlock.g4

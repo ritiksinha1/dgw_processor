@@ -17,7 +17,7 @@ if os.getenv('DEBUG'):
   logfile = sys.stderr
 else:
   time_stamp = str(datetime.now()).replace(' ', '_').rstrip('0123456789').rstrip('.')
-  logfile = open(f'count_results_{time_stamp}.log', 'w')
+  logfile = open(f'count_results_{time_stamp}.txt', 'w')
 
 colleges = 'bar bcc bkl bmc csi cty hos htr jjc lag leh mec ncc nyt qcc qns slu sps yrk'.split()
 block_types = 'major minor conc degree other'.split()

@@ -48,7 +48,7 @@ do
   done
   num_errors=`ls test_results.$block_type|wc -l`
   echo -e "\n$block_str completed after $SECONDS seconds with $num_errors errors."
-  let $((total += $SECONDS))
+  let $(( total += $SECONDS ))
   SECONDS=0
 done
 ./count_results.py

@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from pgconnection import PgConnection
 
+from dgw_filter import filter
+
 parser = argparse.ArgumentParser(description='Generate test data for ReqBlock.g4')
 parser.add_argument('-d', '--debug', action='store_true', default=False)
 parser.add_argument('-p', '--period', default='99999999')
@@ -41,8 +43,9 @@ for block_type in block_types:
   print(f'{cursor.rowcount} {block_type}s found')
 
   for block in cursor.fetchall():
+    text_to_write = filter(block.requirement_text)
     title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
                                                              '_', block.title)))
     file = Path(directory,
                 f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
-    file.write_text(re.sub(r'[Ee][Nn][Dd]\.(.|\n)*', 'END.\n', block.requirement_text))
+    file.write_text(text_to_write)
