@@ -9,21 +9,21 @@ build_args :=
 run_args := -diagnostics
 run_args :=
 
-.PHONY: atn tokens
+.PHONY: atn
 
 default: run
 
 run: ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | $(grun) ReqBlock req_block $(run_args)
+	$(grun) ReqBlock req_block $(run_args) < $(TEST_DATA)
 
 gui: ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | $(grun) ReqBlock req_block $(run_args) -gui
+	$(grun) ReqBlock req_block $(run_args) -gui < $(TEST_DATA)
 
 tree: ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | $(grun) ReqBlock req_block $(run_args) -tree > tree
+	$(grun) ReqBlock req_block $(run_args) -tree < $(TEST_DATA) > tree
 
 tokens: ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | $(grun) ReqBlock req_block $(run_args) -tokens > tokens
+	$(grun) ReqBlock req_block $(run_args) -tokens < $(TEST_DATA) > tokens
 
 atn: ReqBlock.g4
 	$(antlr4) -atn ReqBlock.g4
