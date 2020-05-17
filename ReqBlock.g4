@@ -114,6 +114,7 @@ stmt         : block
              | class_credit
              | group
              | if_then
+             | maxcredit
              | noncourse
              | remark
              | rule_complete
@@ -242,7 +243,7 @@ CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])?
                 | [Cc][Oo][Uu][Rr][Ss][Ee][Ss?];
 COPY_RULES      : [Cc][Oo][Pp][Yy]'-'?[Rr][Uu][Ll][Ee][Ss]?'-'?[Ff][Rr][Oo][Mm];
 CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]?;
-DONT_SHARE      : [Dd][Oo][Nn][Tt][Ss][Ss][Hh][Aa][Rr][Ee]
+DONT_SHARE      : [Dd][Oo][Nn][Tt]'-'?[Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
 ENDOT           : [Ee][Nn][Dd]DOT;
 ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb];
