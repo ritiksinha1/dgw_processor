@@ -37,3 +37,4 @@ Logs/
 /testing/test_results.other/
 /testing/run_tests.csv
 /testing/dgw_filter.py
+/testing/test_data.quarantine/
