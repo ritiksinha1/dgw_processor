@@ -194,7 +194,7 @@ mincredit       : MINCREDIT NUMBER course_list TAG?;
 
 mingpa          : MINGPA NUMBER course_list?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (',' SYMBOL)* RP TAG?;
+minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (LIST_OR SYMBOL)* RP TAG?;
 minres          : MINRES NUMBER (CREDIT | CLASS);
 minspread       : MINSPREAD NUMBER TAG?;
 
@@ -208,7 +208,7 @@ under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label;
 with_clause     : LP WITH expression RP;
 
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP TAG?;
-share_item      : SYMBOL (OP (SYMBOL | NUMBER | STRING))?;
+share_item      : SYMBOL (OP (SYMBOL | NUMBER | STRING | WILD))?;
 share_list      : share_item (LIST_OR share_item)*;
 
 expression      : expression OP expression
