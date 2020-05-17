@@ -27,9 +27,10 @@ if 'all' in block_types:
   block_types = ['major', 'minor', 'conc', 'degree', 'other']
 for block_type in block_types:
   directory = Path(f'test_data.{block_type.lower()}')
-  try:
-    directory.mkdir(mode=0o755, exist_ok=True)
-  except FileExistsError as fee:
+  if directory.is_dir():
+    for file in directory.iterdir():
+      file.unlink()
+  else:
     exit(f'{directory} is not a directory')
 
   conn = PgConnection()
@@ -44,6 +45,12 @@ for block_type in block_types:
 
   for block in cursor.fetchall():
     text_to_write = filter(block.requirement_text)
+    # Don't test empty or all-comment blocks (BAR01 RA000625)
+    test_for_empty = re.sub(r'#.*?\n', '', text_to_write).strip()
+    test_for_empty = re.sub(r'\s*?\n', '', test_for_empty)
+    if test_for_empty == '':
+      print(f'Ignoring empty block: {block.institution} {block.requirement_id} {block.block_type}')
+      continue
     title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
                                                              '_', block.title)))
     file = Path(directory,
