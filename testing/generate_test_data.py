@@ -1,5 +1,8 @@
 #! /usr/local/bin/python3
-""" Look up the requirement blocks for all active majors and save them in the test_data directory.
+""" Look up the requirement text for all active blocks and save them in a set of test_data
+    directories, named test_data.<<block type>>.
+    There is a list of known bad blocks kept in the file "quarantine_list". Blocks in that list are
+    moved to the test_data.quarantine directory instead of to the normal <<block_type>>
 """
 import argparse
 import re
@@ -22,9 +25,24 @@ if period_stop.lower() == 'active':
 if period_stop != '99999999':
   exit(f'"{period_stop}" is an unsupported period. '
        'Only "active" or "99999999" are valid for now.')
+
+# Get quarantine list
+quarantined_blocks = []
+with open('./quarantine_list') as ql:
+  for line in ql.readlines():
+    institution, block_id, *_ = line.split()
+    quarantined_blocks.append((institution, block_id))
+quarantine_dir = Path('./test_data.quarantine')
+if quarantine_dir.is_dir():
+  for file in directory.iterdir():
+    file.unlink()
+else:
+  quarantine_dir.mkdir(exist_ok=True)
+
 block_types = args.block_types
 if 'all' in block_types:
   block_types = ['major', 'minor', 'conc', 'degree', 'other']
+
 for block_type in block_types:
   directory = Path(f'test_data.{block_type.lower()}')
   if directory.is_dir():
@@ -44,15 +62,15 @@ for block_type in block_types:
   print(f'{cursor.rowcount} {block_type}s found')
 
   for block in cursor.fetchall():
+    # Check for quarantined status
     text_to_write = filter(block.requirement_text)
-    # Don't test empty or all-comment blocks (BAR01 RA000625)
-    test_for_empty = re.sub(r'#.*?\n', '', text_to_write).strip()
-    test_for_empty = re.sub(r'\s*?\n', '', test_for_empty)
-    if test_for_empty == '':
-      print(f'Ignoring empty block: {block.institution} {block.requirement_id} {block.block_type}')
-      continue
     title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
                                                              '_', block.title)))
-    file = Path(directory,
-                f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
+    if (block.institution, block.requirement_id) in quarantined_blocks:
+      file = Path(quarantine_dir,
+                  f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
+      print(f'{block.institution} {block.requirement_id} {block.block_type} is quarantined')
+    else:
+      file = Path(directory,
+                  f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
     file.write_text(text_to_write)
