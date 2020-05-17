@@ -38,17 +38,19 @@ grammar ReqBlock;
  */
 req_block   : .*? BEGIN head SEMICOLON body ENDOT .*? EOF;
 head        :
-            ( if_then
-            | class_credit
+            ( class_credit
+            | if_then
             | lastres
             | maxclass
             | maxcredit
             | maxpassfail
+            | maxperdisc
             | maxtransfer
             | mingrade
             | minclass
             | mincredit
             | mingpa
+            | minperdisc
             | minres
             | remark
             | share
@@ -64,6 +66,7 @@ body        :
             | if_then
             | label
             | maxperdisc
+            | minperdisc
             | noncourse
             | remark
             | subset
@@ -89,6 +92,7 @@ catalog_number  : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
 course_qualifier: with_clause
                 | except_clause
                 | including_clause
+                | maxpassfail
                 | maxperdisc
                 | maxtransfer
                 | minarea
@@ -113,6 +117,7 @@ stmt         : block
              | noncourse
              | remark
              | rule_complete
+             | share
              | subset
              ;
 begin_if     : BEGINIF | BEGINELSE;
@@ -137,6 +142,7 @@ group_item      : LP
 group_qualifier : maxpassfail
                 | maxtransfer
                 | mingrade
+                | mingpa
                 | minperdisc
                 | samedisc
                 | share
@@ -153,7 +159,7 @@ subset            : BEGINSUB
                   | copy_rules
                   | group)+
                   ENDSUB subset_qualifier* label?;
-subset_qualifier  : mingpa | mingrade | maxtransfer | minperdisc | maxperdisc | ruletag;
+subset_qualifier  : mingpa | mingrade | maxtransfer | minperdisc | maxperdisc | ruletag | share;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
@@ -187,7 +193,7 @@ mincredit       : MINCREDIT NUMBER course_list TAG?;
 
 mingpa          : MINGPA NUMBER course_list?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (',' SYMBOL)* TAG?;
+minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (',' SYMBOL)* RP TAG?;
 minres          : MINRES NUMBER (CREDIT | CLASS);
 minspread       : MINSPREAD NUMBER TAG?;
 
@@ -200,7 +206,7 @@ under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label;
 
 with_clause     : LP WITH expression RP;
 
-share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP;
+share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP TAG?;
 share_item      : SYMBOL (OP (SYMBOL | NUMBER | STRING))?;
 share_list      : share_item (LIST_OR share_item)*;
 
@@ -304,10 +310,10 @@ DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
 HIDE            : [Hh][Ii][Dd][Ee]
                   ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
 HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
-HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? '-'? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
+HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
 FROM            : [Ff][Rr][Oo][Mm] -> skip;
 IN              : [Ii][Nn] -> skip;
-LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? '-'? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
+LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
 NOTGPA          : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip;
 PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
 RULE_TAG        : [Rr][Uu][Ll][Ee]'-'?[Tt][Aa][Gg];
