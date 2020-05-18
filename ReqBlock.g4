@@ -131,7 +131,7 @@ group           : NUMBER GROUP group_list
                   group_qualifier*
                   label?
                 ;
-group_list      : group_item (OP group_item)*; // Not clear why this has to be OP rather than OR.
+group_list      : group_item (LOGICAL_OP group_item)*; // But only OR should occur
 group_item      : LP
                     (class_credit | group | block | blocktype | rule_complete | noncourse)
                     group_qualifier*
@@ -172,9 +172,9 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  */
 allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) allow_clause?
-                  (OP NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
+                  (LOGICAL_OP NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
                   (course_list | expression | PSEUDO | share | TAG)* label?;
-copy_rules      : COPY_RULES expression SEMICOLON?;
+copy_rules      : CLOGICAL_OPY_RULES expression SEMICOLON?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
 label           : LABEL label_tag? STRING SEMICOLON? label*;
@@ -202,16 +202,16 @@ noncourse       : NUMBER NONCOURSE expression label?;
 remark          : REMARK STRING SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
 ruletag         : RULE_TAG expression;
-samedisc        : SAME_DISC LP SYMBOL OP SYMBOL (LIST_OR SYMBOL OP SYMBOL)* RP TAG?;
+samedisc        : SAME_DISC LP SYMBOL LOGICAL_OP SYMBOL (LIST_OR SYMBOL LOGICAL_OP SYMBOL)* RP TAG?;
 under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label;
 
 with_clause     : LP WITH expression RP;
 
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP TAG?;
-share_item      : SYMBOL (OP (SYMBOL | NUMBER | STRING | WILD))?;
+share_item      : SYMBOL (LOGICAL_OP (SYMBOL | NUMBER | STRING | WILD))?;
 share_list      : share_item (LIST_OR share_item)*;
 
-expression      : expression OP expression
+expression      : expression LOGICAL_OP expression
                 | full_course
                 | NUMBER
                 | SYMBOL
@@ -241,7 +241,7 @@ BLOCK           : [Bb][Ll][Oo][Cc][Kk];
 BLOCKTYPE       : BLOCK [Tt][Yy][Pp][Ee][Ss]?;
 CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])?
                 | [Cc][Oo][Uu][Rr][Ss][Ee][Ss?];
-COPY_RULES      : [Cc][Oo][Pp][Yy]'-'?[Rr][Uu][Ll][Ee][Ss]?'-'?[Ff][Rr][Oo][Mm];
+CLOGICAL_OPY_RULES      : [Cc][Oo][Pp][Yy]'-'?[Rr][Uu][Ll][Ee][Ss]?'-'?[Ff][Rr][Oo][Mm];
 CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]?;
 DONT_SHARE      : [Dd][Oo][Nn][Tt]'-'?[Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
@@ -290,7 +290,7 @@ ISNT            : ([Ii][Ss][Nn][Tt])|([Ww][Aa][Ss][Nn][Tt]);
 THEN            : [Tt][Hh][Ee][Nn];
 
 // Logical Operators
-OP          : (AND | OR | EQ | GE | GT | LE | LT | NE);
+LOGICAL_OP  : (AND | OR | EQ | GE | GT | LE | LT | NE);
 
 // List separators
 LIST_OR     : (COMMA | OR);
