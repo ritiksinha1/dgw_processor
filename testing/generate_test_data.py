@@ -34,7 +34,7 @@ with open('./quarantine_list') as ql:
     quarantined_blocks.append((institution, block_id))
 quarantine_dir = Path('./test_data.quarantine')
 if quarantine_dir.is_dir():
-  for file in directory.iterdir():
+  for file in quarantine_dir.iterdir():
     file.unlink()
 else:
   quarantine_dir.mkdir(exist_ok=True)
