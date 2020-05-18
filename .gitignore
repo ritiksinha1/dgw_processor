@@ -12,7 +12,6 @@ __pycache__/
 
 tokens
 tree
-req_block
 
 .bumpversion.cfg
 MANIFEST.in
@@ -22,19 +21,19 @@ __init.py__
 
 tests/
 test_data/
-test_results/
 Logs/
 /testing/ReqBlock*
+/testing/test_data.major/
+/testing/test_data.minor/
 /testing/test_data.conc/
 /testing/test_data.degree/
-/testing/test_data.minor/
-/testing/test_results.degree/
-/testing/test_data.major/
-/testing/test_results.conc/
+/testing/test_data.other/
+/testing/test_data.quarantine/
 /testing/test_results.major/
 /testing/test_results.minor/
-/testing/test_data.other/
+/testing/test_results.conc/
+/testing/test_results.degree/
 /testing/test_results.other/
 /testing/run_tests.csv
 /testing/dgw_filter.py
-/testing/test_data.quarantine/
+/testing/timeouts.log
