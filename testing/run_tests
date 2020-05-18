@@ -23,6 +23,9 @@ then
       echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > run_tests.csv
 fi
 
+rm -f ./timeouts.log
+touch ./timeouts.log
+export TIMELIMIT=60
 let $((total = 0))
 for dir in ${dirs[@]}
 do

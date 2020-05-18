@@ -85,8 +85,8 @@ body        :
 course_list     : course_item (and_list | or_list)? course_qualifier* label?;
 full_course     : discipline catalog_number course_qualifier*;
 course_item     : discipline? catalog_number course_qualifier*;
-and_list        : (LIST_AND course_item )+;
-or_list         : (LIST_OR course_item)+;
+and_list        : (list_and course_item )+;
+or_list         : (list_or course_item)+;
 discipline      : SYMBOL | WILD;
 catalog_number  : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
 course_qualifier: with_clause
@@ -115,6 +115,7 @@ stmt         : block
              | group
              | if_then
              | maxcredit
+             | minclass
              | noncourse
              | remark
              | rule_complete
@@ -131,7 +132,7 @@ group           : NUMBER GROUP group_list
                   group_qualifier*
                   label?
                 ;
-group_list      : group_item (LOGICAL_OP group_item)*; // But only OR should occur
+group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
                     (class_credit | group | block | blocktype | rule_complete | noncourse)
                     group_qualifier*
@@ -172,9 +173,9 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  */
 allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) allow_clause?
-                  (LOGICAL_OP NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
+                  (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
                   (course_list | expression | PSEUDO | share | TAG)* label?;
-copy_rules      : CLOGICAL_OPY_RULES expression SEMICOLON?;
+copy_rules      : Clogical_opY_RULES expression SEMICOLON?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
 label           : LABEL label_tag? STRING SEMICOLON? label*;
@@ -186,15 +187,15 @@ maxclass        : MAXCLASS NUMBER course_list? TAG?;
 maxcredit       : MAXCREDIT NUMBER course_list? TAG?;
 
 maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG?;
-maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) LP SYMBOL (LIST_OR SYMBOL)* RP TAG?;
-maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) (LP SYMBOL (LIST_OR SYMBOL)* RP)? TAG?;
+maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) LP SYMBOL (list_or SYMBOL)* RP TAG?;
+maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) (LP SYMBOL (list_or SYMBOL)* RP)? TAG?;
 minarea         : MINAREA NUMBER TAG?;
 minclass        : MINCLASS NUMBER course_list TAG?;
 mincredit       : MINCREDIT NUMBER course_list TAG?;
 
 mingpa          : MINGPA NUMBER course_list?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (LIST_OR SYMBOL)* RP TAG?;
+minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (list_or SYMBOL)* RP TAG?;
 minres          : MINRES NUMBER (CREDIT | CLASS);
 minspread       : MINSPREAD NUMBER TAG?;
 
@@ -202,16 +203,16 @@ noncourse       : NUMBER NONCOURSE expression label?;
 remark          : REMARK STRING SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
 ruletag         : RULE_TAG expression;
-samedisc        : SAME_DISC LP SYMBOL LOGICAL_OP SYMBOL (LIST_OR SYMBOL LOGICAL_OP SYMBOL)* RP TAG?;
+samedisc        : SAME_DISC LP SYMBOL logical_op SYMBOL (list_or SYMBOL logical_op SYMBOL)* RP TAG?;
 under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label;
 
 with_clause     : LP WITH expression RP;
 
 share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP TAG?;
-share_item      : SYMBOL (LOGICAL_OP (SYMBOL | NUMBER | STRING | WILD))?;
-share_list      : share_item (LIST_OR share_item)*;
+share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | STRING | WILD))?;
+share_list      : share_item (list_or share_item)*;
 
-expression      : expression LOGICAL_OP expression
+expression      : expression logical_op expression
                 | full_course
                 | NUMBER
                 | SYMBOL
@@ -220,8 +221,41 @@ expression      : expression LOGICAL_OP expression
                 | LP expression RP
                 ;
 
+// Operators and Separators
+logical_op  : (AND | OR | EQ | GE | GT | IS | LE | LT | NE);
+list_or     : (COMMA | OR);
+list_and    : (PLUS | AND);
+
 // Lexer
 // ================================================================================================
+
+//  Skips
+//  -----------------------------------------------------------------------------------------------
+// Comments and auditor directives, not requirements.
+CHECKELECTIVES  : [Cc][Hh][Ee][Cc][Kk]
+                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
+                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
+                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip;
+COMMENT         : '#' .*? '\n' -> skip;
+CURLY_BRACES    : [}{] -> skip;
+DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
+FROM            : [Ff][Rr][Oo][Mm] -> skip;
+HIDE            : [Hh][Ii][Dd][Ee]
+                  ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
+HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
+HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
+IN              : [Ii][Nn] -> skip;
+LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
+NOTGPA          : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip;
+PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
+
+// Before BEGIN and fter ENDOT, the lexer does token recognition.
+// To avoid errors from text that can't be tokenized, skip Log lines and otherwise-illegal chars.
+LOGS            : [Ll][Oo][Gg] .*? '\n' -> skip;
+CRUFT           : [:/'*\\]+ -> skip;
+
+SB              : [[\]] ->skip; // Used for MinAreas; not implemented
+WHITESPACE      : [ \t\n\r]+ -> skip;
 
 //  Keywords
 //  -----------------------------------------------------------------------------------------------
@@ -241,7 +275,7 @@ BLOCK           : [Bb][Ll][Oo][Cc][Kk];
 BLOCKTYPE       : BLOCK [Tt][Yy][Pp][Ee][Ss]?;
 CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])?
                 | [Cc][Oo][Uu][Rr][Ss][Ee][Ss?];
-CLOGICAL_OPY_RULES      : [Cc][Oo][Pp][Yy]'-'?[Rr][Uu][Ll][Ee][Ss]?'-'?[Ff][Rr][Oo][Mm];
+Clogical_opY_RULES      : [Cc][Oo][Pp][Yy]'-'?[Rr][Uu][Ll][Ee][Ss]?'-'?[Ff][Rr][Oo][Mm];
 CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]?;
 DONT_SHARE      : [Dd][Oo][Nn][Tt]'-'?[Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
@@ -271,6 +305,7 @@ PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo];
 REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk];
 RULE_COMPLETE   : [Rr][Uu][Ll][Ee]'-'?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
 RULE_INCOMPLETE : [Rr][Uu][Ll][Ee]'-'?[Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
+RULE_TAG        : [Rr][Uu][Ll][Ee]'-'?[Tt][Aa][Gg];
 SHARE           : [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Nn][Oo][Nn][Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
 TAG             : [Tt][Aa][Gg] (EQ SYMBOL)?;
@@ -289,55 +324,19 @@ IS              : ([Ii][Ss])|([Ww][Aa][Ss]);
 ISNT            : ([Ii][Ss][Nn][Tt])|([Ww][Aa][Ss][Nn][Tt]);
 THEN            : [Tt][Hh][Ee][Nn];
 
-// Logical Operators
-LOGICAL_OP  : (AND | OR | EQ | GE | GT | LE | LT | NE);
-
-// List separators
-LIST_OR     : (COMMA | OR);
-LIST_AND    : (PLUS | AND);
+// List separator aliases
 AND         : [Aa][Nn][Dd];
 OR          : [Oo][Rr];
 
-//  Skips
-//  -----------------------------------------------------------------------------------------------
-// Comments and auditor directives, not requirements.
-CHECKELECTIVES  : [Cc][Hh][Ee][Cc][Kk]
-                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
-                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
-                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip;
-COMMENT         : '#' .*? '\n' -> skip;
-CURLY_BRACES    : [}{] -> skip;
-DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
-HIDE            : [Hh][Ii][Dd][Ee]
-                  ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
-HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
-HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
-FROM            : [Ff][Rr][Oo][Mm] -> skip;
-IN              : [Ii][Nn] -> skip;
-LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
-NOTGPA          : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip;
-PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
-RULE_TAG        : [Rr][Uu][Ll][Ee]'-'?[Tt][Aa][Gg];
-
-// Before BEGIN and fter ENDOT, the lexer does token recognition.
-// To avoid errors from text that can't be tokenized, skip Log lines and otherwise-illegal chars.
-LOGS            : [Ll][Oo][Gg] .*? '\n' -> skip;
-CRUFT           : [:/'*\\]+ -> skip;
-
-SB              : [[\]] ->skip; // Used for MinAreas; not implemented
-WHITESPACE      : [ \t\n\r]+ -> skip;
-
+// Scribe "tokens"
 NUMBER          : DIGIT+ (DOT DIGIT*)?;
 RANGE           : NUMBER ':' NUMBER;
-
 CATALOG_NUMBER  : DIGIT+ LETTER+;
 WILD            : (SYMBOL)* AT (SYMBOL)*;
-
 SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND)+;
-
 STRING      : '"' .*? '"';
 
-//  Punctuation and operator tokens
+//  Character and operator names
 //  -----------------------------------------------------------------------------------------------
 AMPERSAND   : '&';
 AT          : '@';
