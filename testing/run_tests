@@ -43,7 +43,7 @@ do
   do
     [[ $DEBUG ]] && echo  -e "$count/$num_files\t$file"
     let $((count = count + 1))
-    ./run.py $block_type ${file#*/} >> run_tests${suffix}.csv
+    ./run.py $block_type ${file#*/} >> run_tests${suffix}.csv 2>> timeouts.log
     echo -en "               \r$count/$num_files\r"
   done
   num_errors=`ls test_results.$block_type|wc -l`

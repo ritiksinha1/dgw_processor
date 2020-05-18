@@ -14,7 +14,7 @@ from pathlib import Path
 try:
   TIMELIMIT = float(os.getenv('TIMELIMIT'))
 except TypeError:
-  TIMELIMIT = 180.0
+  TIMELIMIT = 60.0
 
 block_type = sys.argv[1]
 test_dir = Path(f'./test_data.{block_type}')
