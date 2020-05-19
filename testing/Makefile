@@ -30,7 +30,9 @@ atn: ReqBlock.g4
 	dot_to_svg
 	ls -lF *.svg
 
-parser: ReqBlock.g4 Makefile
+parser: ReqBlockParser.class
+
+ReqBlockParser.class: ReqBlock.g4 Makefile
 	$(antlr4) $(build_args) ReqBlock.g4
 	javac *.java
 
