@@ -13,7 +13,8 @@ def filter(src):
   """ Remove all text following "END." as well as {hide } from src.
   """
   return_str = re.sub(r'[Ee][Nn][Dd]\.(.|\n)*', 'END.\n', src)
-  return_str = re.sub(r'[Hh][Ii][Dd][Ee]', '', return_str.replace('{', '').replace('}', ''))
+  return_str = re.sub(r'[Hh][Ii][Dd][Ee](-?[Ff][Rr][Oo][Mm]-?[Aa][Dd][Vv][Ii][Cc][Ee])?', '',
+                      return_str.replace('{', '').replace('}', ''))
 
   return return_str
 
