@@ -9,7 +9,7 @@ build_args :=
 run_args := -diagnostics
 run_args :=
 
-.PHONY: atn
+.PHONY: atn parser
 
 default: run
 
@@ -30,7 +30,7 @@ atn: ReqBlock.g4
 	dot_to_svg
 	ls -lF *.svg
 
-ReqBlockParser.class: ReqBlock.g4 Makefile
+parser: ReqBlock.g4 Makefile
 	$(antlr4) $(build_args) ReqBlock.g4
 	javac *.java
 
