@@ -37,3 +37,5 @@ Logs/
 /testing/run_tests.csv
 /testing/dgw_filter.py
 /testing/timeouts.log
+/testing/quarantine_list
+/testing/lastwait
