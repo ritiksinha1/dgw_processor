@@ -66,6 +66,7 @@ body        :
             | if_then
             | label
             | maxperdisc
+            | minclass
             | minperdisc
             | noncourse
             | remark
@@ -87,7 +88,7 @@ full_course     : discipline catalog_number course_qualifier*;
 course_item     : discipline? catalog_number course_qualifier*;
 and_list        : (list_and course_item )+;
 or_list         : (list_or course_item)+;
-discipline      : SYMBOL | WILD;
+discipline      : SYMBOL | WILD | IS; // The IS keyword can be a discipline name. (others?)
 catalog_number  : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
 course_qualifier: with_clause
                 | except_clause
@@ -100,6 +101,7 @@ course_qualifier: with_clause
                 | mingrade
                 | minspread
                 | ruletag
+                | samedisc
                 | share
                 | with_clause
                 ;
@@ -115,7 +117,9 @@ stmt         : block
              | group
              | if_then
              | maxcredit
+             | maxtransfer
              | minclass
+             | minres
              | noncourse
              | remark
              | rule_complete
@@ -125,7 +129,6 @@ stmt         : block
 begin_if     : BEGINIF | BEGINELSE;
 end_if       : ENDIF | ENDELSE;
 
-
 //  Groups
 //  -----------------------------------------------------------------------------------------------
 group           : NUMBER GROUP group_list
@@ -134,7 +137,7 @@ group           : NUMBER GROUP group_list
                 ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
-                    (class_credit | group | block | blocktype | rule_complete | noncourse)
+                    (block | blocktype | class_credit | group | noncourse | rule_complete)
                     group_qualifier*
                     label?
                   RP
@@ -175,28 +178,28 @@ allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) allow_clause?
                   (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
                   (course_list | expression | PSEUDO | share | TAG)* label?;
-copy_rules      : Clogical_opY_RULES expression SEMICOLON?;
+copy_rules      : COPY_RULES expression SEMICOLON?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
 label           : LABEL label_tag? STRING SEMICOLON? label*;
 label_tag       : .+?;
 
-lastres         : LASTRES NUMBER (OF NUMBER (CREDIT | CLASS))? course_list? TAG?;
+lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? TAG?;
 
 maxclass        : MAXCLASS NUMBER course_list? TAG?;
 maxcredit       : MAXCREDIT NUMBER course_list? TAG?;
 
-maxpassfail     : MAXPASSFAIL NUMBER (CREDIT | CLASS) course_list? TAG?;
-maxperdisc      : MAXPERDISC NUMBER (CREDIT | CLASS) LP SYMBOL (list_or SYMBOL)* RP TAG?;
-maxtransfer     : MAXTRANSFER NUMBER (CREDIT | CLASS) (LP SYMBOL (list_or SYMBOL)* RP)? TAG?;
+maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? TAG?;
+maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP TAG?;
+maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? TAG?;
 minarea         : MINAREA NUMBER TAG?;
 minclass        : MINCLASS NUMBER course_list TAG?;
 mincredit       : MINCREDIT NUMBER course_list TAG?;
 
-mingpa          : MINGPA NUMBER course_list?;
+mingpa          : MINGPA NUMBER (course_list | expression)? TAG? label?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER (CREDIT | CLASS)  LP SYMBOL (list_or SYMBOL)* RP TAG?;
-minres          : MINRES NUMBER (CREDIT | CLASS);
+minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP TAG?;
+minres          : MINRES NUMBER (CLASS | CREDIT) label?;
 minspread       : MINSPREAD NUMBER TAG?;
 
 noncourse       : NUMBER NONCOURSE expression label?;
@@ -204,11 +207,11 @@ remark          : REMARK STRING SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
 ruletag         : RULE_TAG expression;
 samedisc        : SAME_DISC LP SYMBOL logical_op SYMBOL (list_or SYMBOL logical_op SYMBOL)* RP TAG?;
-under           : UNDER NUMBER (CREDIT | CLASS)  full_course or_list? label;
+under           : UNDER NUMBER (CLASS | CREDIT)  full_course or_list? label;
 
 with_clause     : LP WITH expression RP;
 
-share           : (SHARE | DONT_SHARE) (NUMBER (CREDIT | CLASS))? LP share_list RP TAG?;
+share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? (LP share_list RP)? TAG?;
 share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | STRING | WILD))?;
 share_list      : share_item (list_or share_item)*;
 
@@ -222,7 +225,7 @@ expression      : expression logical_op expression
                 ;
 
 // Operators and Separators
-logical_op  : (AND | OR | EQ | GE | GT | IS | LE | LT | NE);
+logical_op  : (AND | OR | EQ | GE | GT | IS | ISNT | LE | LT | NE);
 list_or     : (COMMA | OR);
 list_and    : (PLUS | AND);
 
@@ -239,9 +242,11 @@ CHECKELECTIVES  : [Cc][Hh][Ee][Cc][Kk]
 COMMENT         : '#' .*? '\n' -> skip;
 CURLY_BRACES    : [}{] -> skip;
 DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
+DISPLAY         : [Dd][Ii][Ss][Pp][Ll][Aa][Yy] .*? '\n' -> skip;
 FROM            : [Ff][Rr][Oo][Mm] -> skip;
-HIDE            : [Hh][Ii][Dd][Ee]
-                  ([\-]?[Ff][Rr][Oo][Mm][\-]?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
+FROM_ADVICE     : '-'?[Ff][Rr][Oo][Mm]'-'?[Aa][Dd][Vv][Ii][Cc][Ee] -> skip;
+//HIDE            : ([Hh][Ii][Dd][Ee])?
+//                  ('-'?[Ff][Rr][Oo][Mm]'-'?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
 HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
 HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
 IN              : [Ii][Nn] -> skip;
@@ -274,8 +279,8 @@ BEGINSUB        : BEGIN [Ss][Uu][Bb];
 BLOCK           : [Bb][Ll][Oo][Cc][Kk];
 BLOCKTYPE       : BLOCK [Tt][Yy][Pp][Ee][Ss]?;
 CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])?
-                | [Cc][Oo][Uu][Rr][Ss][Ee][Ss?];
-Clogical_opY_RULES      : [Cc][Oo][Pp][Yy]'-'?[Rr][Uu][Ll][Ee][Ss]?'-'?[Ff][Rr][Oo][Mm];
+                | [Cc][Oo][Uu][Rr][Ss][Ee][Ss]?;
+COPY_RULES      : [Cc][Oo][Pp][Yy]'-'?[Rr][Uu][Ll][Ee][Ss]?'-'?[Ff][Rr][Oo][Mm];
 CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]?;
 DONT_SHARE      : [Dd][Oo][Nn][Tt]'-'?[Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
