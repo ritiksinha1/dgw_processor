@@ -121,6 +121,7 @@ stmt         : block
              | maxcredit
              | maxtransfer
              | minclass
+             | mincredit
              | minres
              | noncourse
              | remark
@@ -339,7 +340,7 @@ OR          : [Oo][Rr];
 
 // Scribe "tokens"
 NUMBER          : DIGIT+ (DOT DIGIT*)?;
-RANGE           : NUMBER ':' NUMBER;
+RANGE           : NUMBER ' '* ':' ' '* NUMBER;
 CATALOG_NUMBER  : DIGIT+ LETTER+;
 WILD            : (SYMBOL)* AT (SYMBOL)*;
 SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND)+;
