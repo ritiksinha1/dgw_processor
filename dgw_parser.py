@@ -903,7 +903,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
       return f"""<h1 class="error">“{row.title}” is not a currently offered {block_type}
                  at {institution}.</h1>
               """
-    requirement_text = filter(row.requirement_text, remove_comments=True)
+    requirement_text = filter(row.requirement_text)
     dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
     # Unable to get Antlr to ignore cruft before BEGIN and after END. so, reluctantly, removing the
     # cruft here in order to get on with parsing.
