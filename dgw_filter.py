@@ -9,12 +9,15 @@ import sys
 
 # filter()
 # -------------------------------------------------------------------------------------------------
-def filter(src):
+def filter(src, remove_comments=False):
   """ Remove all text following "END." as well as {hide } from src.
   """
   return_str = re.sub(r'[Ee][Nn][Dd]\.(.|\n)*', 'END.\n', src)
   return_str = re.sub(r'[Hh][Ii][Dd][Ee](-?[Ff][Rr][Oo][Mm]-?[Aa][Dd][Vv][Ii][Cc][Ee])?', '',
                       return_str.replace('{', '').replace('}', ''))
+
+  if remove_comments:
+    return_str = re.sub(f'#.*\n', '', return_str)
 
   return return_str
 

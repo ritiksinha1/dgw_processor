@@ -38,6 +38,8 @@ from pgconnection import PgConnection
 from closeable_objects import dict2html, items2html
 from templates import *
 
+from dgw_filter import filter
+
 # Module initialization
 # -------------------------------------------------------------------------------------------------
 DEBUG = os.getenv('DEBUG_PARSER')
@@ -901,11 +903,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
       return f"""<h1 class="error">“{row.title}” is not a currently offered {block_type}
                  at {institution}.</h1>
               """
-    requirement_text = row.requirement_text\
-                          .translate(trans_table)\
-                          .strip('"')\
-                          .replace('\\r', '\r')\
-                          .replace('\\n', '\n') + '\n'
+    requirement_text = filter(row.requirement_text, remove_comments=True)
     dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
     # Unable to get Antlr to ignore cruft before BEGIN and after END. so, reluctantly, removing the
     # cruft here in order to get on with parsing.

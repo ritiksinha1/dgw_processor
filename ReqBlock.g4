@@ -95,8 +95,10 @@ course_qualifier: with_clause
                 | including_clause
                 | maxpassfail
                 | maxperdisc
+                | maxspread
                 | maxtransfer
                 | minarea
+                | mincredit
                 | mingpa
                 | mingrade
                 | minspread
@@ -175,45 +177,46 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  * ------------------------------------------------------------------------------------------------
  */
 allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
-class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) allow_clause?
+class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
+                  allow_clause?
                   (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                  (course_list | expression | PSEUDO | share | TAG)* label?;
+                  (course_list | expression | PSEUDO | share | tag)* label?;
 copy_rules      : COPY_RULES expression SEMICOLON?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
 label           : LABEL label_tag? STRING SEMICOLON? label*;
 label_tag       : .+?;
 
-lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? TAG?;
+lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag?;
 
-maxclass        : MAXCLASS NUMBER course_list? TAG?;
-maxcredit       : MAXCREDIT NUMBER course_list? TAG?;
+maxclass        : MAXCLASS NUMBER course_list? tag?;
+maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 
-maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? TAG?;
-maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP TAG?;
-maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? TAG?;
-minarea         : MINAREA NUMBER TAG?;
-minclass        : MINCLASS NUMBER course_list TAG?;
-mincredit       : MINCREDIT NUMBER course_list TAG?;
+maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? tag?;
+maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP tag?;
+maxspread       : MAXSPREAD NUMBER tag?;
+maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
+minarea         : MINAREA NUMBER tag?;
+minclass        : MINCLASS NUMBER course_list tag?;
+mincredit       : MINCREDIT NUMBER course_list tag?;
 
-mingpa          : MINGPA NUMBER (course_list | expression)? TAG? label?;
+mingpa          : MINGPA NUMBER (course_list | expression)? tag? label?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP TAG?;
+minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag?;
 minres          : MINRES NUMBER (CLASS | CREDIT) label?;
-minspread       : MINSPREAD NUMBER TAG?;
+minspread       : MINSPREAD NUMBER tag?;
 
 noncourse       : NUMBER NONCOURSE expression label?;
 remark          : REMARK STRING SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
 ruletag         : RULE_TAG expression;
-samedisc        : SAME_DISC LP SYMBOL logical_op SYMBOL (list_or SYMBOL logical_op SYMBOL)* RP TAG?;
-under           : UNDER NUMBER (CLASS | CREDIT)  full_course or_list? label;
-
-with_clause     : LP WITH expression RP;
-
-share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? (LP share_list RP)? TAG?;
+samedisc        : SAME_DISC LP SYMBOL logical_op SYMBOL (list_or SYMBOL logical_op SYMBOL)* RP tag?;
+share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? (LP share_list RP)? tag?;
 share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | STRING | WILD))?;
 share_list      : share_item (list_or share_item)*;
+tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
+under           : UNDER NUMBER (CLASS | CREDIT)  full_course or_list? label;
+with_clause     : LP WITH expression RP;
 
 expression      : expression logical_op expression
                 | full_course
@@ -299,6 +302,7 @@ MINGRADE        : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee];
 MAXPASSFAIL     : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll];
 MAXPERDISC      : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
 MINPERDISC      : [Mm][Ii][Nn][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
+MAXSPREAD       : [Mm][Aa][Xx][Ss][Pp][Rr][Ee][Aa][Dd];
 MAXTRANSFER     : [Mm][Aa][Xx][Tt][Rr][Aa][Nn][Ss][Ff][Ee][Rr];
 MINCLASS        : [Mm][Ii][Nn] CLASS;
 MINCREDIT       : [Mm][Ii][Nn] CREDIT;
@@ -313,7 +317,7 @@ RULE_INCOMPLETE : [Rr][Uu][Ll][Ee]'-'?[Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
 RULE_TAG        : [Rr][Uu][Ll][Ee]'-'?[Tt][Aa][Gg];
 SHARE           : [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Nn][Oo][Nn][Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
-TAG             : [Tt][Aa][Gg] (EQ SYMBOL)?;
+TAG             : [Tt][Aa][Gg];
 SAME_DISC       : [Ss][Aa][Mm][Ee][Dd][Ii][Ss][Cc];
 UNDER           : [Uu][Nn][Dd][Ee][Rr];
 WITH            : [Ww][Ii][Tt][Hh];
