@@ -34,7 +34,7 @@ try:
 
 except subprocess.TimeoutExpired:
   output = 'timeout'
-  elapsed = TIMELIMIT + 1
+  elapsed = timelimit + 1
   print(f'{block_type}\t{requirement_block}\t{lines}\t{output}\tTIMEOUT', file=sys.stderr)
 
 print(f'{block_type}\t{requirement_block}\t{lines}\t{output}\t{elapsed:0.1f}')
