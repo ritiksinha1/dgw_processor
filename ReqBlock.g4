@@ -222,15 +222,15 @@ maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;
 maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS NUMBER course_list tag?;
-mincredit       : MINCREDIT NUMBER course_list tag?;
+minclass        : MINCLASS (NUMBER|RANGE) course_list tag?;
+mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag?;
 mingpa          : MINGPA NUMBER (course_list | expression)? tag? label?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag?;
 minres          : MINRES NUMBER (CLASS | CREDIT) label? tag?;
 minspread       : MINSPREAD NUMBER tag?;
 
-noncourse       : NUMBER NONCOURSE expression course_qualifier label?;
+noncourse       : NUMBER NONCOURSE expression course_qualifier? label?;
 optional        : OPTIONAL;
 remark          : REMARK STRING SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
