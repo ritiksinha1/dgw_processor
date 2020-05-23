@@ -28,16 +28,28 @@ if period_stop != '99999999':
 
 # Get quarantine list
 quarantined_blocks = []
+timeout_blocks = []
 with open('./quarantine_list') as ql:
   for line in ql.readlines():
     institution, block_id, *_ = line.split()
-    quarantined_blocks.append((institution, block_id))
+    if _ == ['timeout']:
+      timeout_blocks.append((institution, block_id))
+    else:
+      quarantined_blocks.append((institution, block_id))
+
 quarantine_dir = Path('./test_data.quarantine')
 if quarantine_dir.is_dir():
   for file in quarantine_dir.iterdir():
     file.unlink()
 else:
   quarantine_dir.mkdir(exist_ok=True)
+
+timeout_dir = Path('./test_data.timeout')
+if timeout_dir.is_dir():
+  for file in timeout_dir.iterdir():
+    file.unlink()
+else:
+  timeout_dir.mkdir(exist_ok=True)
 
 block_types = args.block_types
 if 'all' in block_types:
@@ -70,6 +82,11 @@ for block_type in block_types:
       file = Path(quarantine_dir,
                   f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
       print(f'{block.institution} {block.requirement_id} {block.block_type} is quarantined')
+    # Check for timeout status
+    elif (block.institution, block.requirement_id) in timeout_blocks:
+      file = Path(timeout_dir,
+                  f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
+      print(f'{block.institution} {block.requirement_id} {block.block_type} is timeouted')
     else:
       file = Path(directory,
                   f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
