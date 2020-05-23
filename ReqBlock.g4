@@ -117,23 +117,40 @@ course_qualifier: with_clause
 if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause?;
 else_clause  : ELSE (stmt | stmt_group) group_qualifier* label?;
 stmt_group   : (begin_if stmt+ end_if);
-stmt         : block          {System.out.println("\n*BLOCK*\n"         + $block.text);}
-             | blocktype      {System.out.println("\n*BLOCKTYPE*\n"     + $blocktype.text);}
-             | class_credit   {System.out.println("\n*CLASS_CREDIT*\n"  + $class_credit.text);}
-             | copy_rules     {System.out.println("\n*COPY_RULES*\n"    + $copy_rules.text);}
-             | group          {System.out.println("\n*GROUP*\n"         + $group.text);}
-             | maxcredit      {System.out.println("\n*MAXCREDIT*\n"     + $maxcredit.text);}
-             | maxtransfer    {System.out.println("\n*MAXTRANSFER*\n"   + $maxtransfer.text);}
-             | minclass       {System.out.println("\n*MINCLASS*\n"      + $minclass.text);}
-             | mincredit      {System.out.println("\n*MINCREDIT*\n"     + $mincredit.text);}
-             | minres         {System.out.println("\n*BLOCMINRESK*\n"   + $minres.text);}
-             | noncourse      {System.out.println("\n*NONCOURSE*\n"     + $noncourse.text);}
-             | remark         {System.out.println("\n*REMARK*\n"        + $remark.text);}
-             | rule_complete  {System.out.println("\n*RULE_COMPLETE*\n" + $rule_complete.text);}
-             | share          {System.out.println("\n*SHARE*\n"         + $share.text);}
-             | subset         {System.out.println("\n*SUBSET*\n"        + $subset.text);}
-             | if_then        {System.out.println("\n*IF_THEN*\n"       + $if_then.text);}
+stmt         : block
+             | blocktype
+             | class_credit
+             | copy_rules
+             | group
+             | maxcredit
+             | maxtransfer
+             | minclass
+             | mincredit
+             | minres
+             | noncourse
+             | remark
+             | rule_complete
+             | share
+             | subset
+             | if_then
              ;
+//stmt         : block          {System.out.println("\n*BLOCK*\n"         + $block.text);}
+//             | blocktype      {System.out.println("\n*BLOCKTYPE*\n"     + $blocktype.text);}
+//             | class_credit   {System.out.println("\n*CLASS_CREDIT*\n"  + $class_credit.text);}
+//             | copy_rules     {System.out.println("\n*COPY_RULES*\n"    + $copy_rules.text);}
+//             | group          {System.out.println("\n*GROUP*\n"         + $group.text);}
+//             | maxcredit      {System.out.println("\n*MAXCREDIT*\n"     + $maxcredit.text);}
+//             | maxtransfer    {System.out.println("\n*MAXTRANSFER*\n"   + $maxtransfer.text);}
+//             | minclass       {System.out.println("\n*MINCLASS*\n"      + $minclass.text);}
+//             | mincredit      {System.out.println("\n*MINCREDIT*\n"     + $mincredit.text);}
+//             | minres         {System.out.println("\n*BLOCMINRESK*\n"   + $minres.text);}
+//             | noncourse      {System.out.println("\n*NONCOURSE*\n"     + $noncourse.text);}
+//             | remark         {System.out.println("\n*REMARK*\n"        + $remark.text);}
+//             | rule_complete  {System.out.println("\n*RULE_COMPLETE*\n" + $rule_complete.text);}
+//             | share          {System.out.println("\n*SHARE*\n"         + $share.text);}
+//             | subset         {System.out.println("\n*SUBSET*\n"        + $subset.text);}
+//             | if_then        {System.out.println("\n*IF_THEN*\n"       + $if_then.text);}
+//             ;
 begin_if     : BEGINIF | BEGINELSE;
 end_if       : ENDIF | ENDELSE;
 
