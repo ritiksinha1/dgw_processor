@@ -4,21 +4,6 @@ BKL01 RA002660 Missing comma on line 31
 BKL01 RA002868 Quotes around discipline name on line 54
 HTR01 RA001003 Backtick in place of Label tag on line 56
 BMC01 RA000265 "-RULE" on lines 47 and 50
-BKL01 RA002573 timeout
-BKL01 RA002902 timeout
-BKL01 RA002904 timeout
-BCC01 RA000107 timeout
-BCC01 RA000530 timeout
-BCC01 RA000651 timeout
-BCC01 RA000652 timeout
-HOS01 RA000384 timeout
-HTR01 RA001995 timeout
-HTR01 RA001996 timeout
-HTR01 RA001997 timeout
-HTR01 RA002000 timeout
-NYT01 RA000578 timeout
-NYT01 RA000615 timeout
-QCC01 RA000196 timeout
 CSI01 RA001656 Missing space between "Label" and label tag on lines 10, 12, and 144
 CSI01 RA001657 Missing space between "Label" and label tag in ten places in lines 16-34
 JJC01 RA000513 Missing semicolon separating head from body
@@ -32,3 +17,5 @@ CSI01 RA000820 Stray "rule" on lines 34, 38, 42, and 44
 CSI01 RA001318 Stray "rule" on lines 31, 35, 39, 41
 CSI01 RA001342 Stray "rule" on lines 33, 37, 41, and 43
 LEH01 RA002245 "@@ 3@" not a valid course item on line 36
+SPS01 RA000092 Missing space between Label and its tag on lines 15, 20, and 25
+BKL01 RA002520 Quotes around SPEC . discipline name twice on line 138

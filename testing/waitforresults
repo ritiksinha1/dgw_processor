@@ -11,6 +11,6 @@ touch ./lastwait
 while true
 do
   sleep 1
-  find test_results.$which -cnewer ./lastwait -exec ls -l {} \;
+  find test_results.$which -cnewer ./lastwait -exec ls -l test_results.$which \;
   touch ./lastwait
 done

@@ -36,7 +36,7 @@ grammar ReqBlock;
 /* Parser
  * ================================================================================================
  */
-req_block   : .*? BEGIN head SEMICOLON body ENDOT .*? EOF;
+req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
 head        :
             ( class_credit
             | if_then
@@ -45,6 +45,7 @@ head        :
             | maxcredit
             | maxpassfail
             | maxperdisc
+            | maxterm
             | maxtransfer
             | mingrade
             | minclass
@@ -52,8 +53,10 @@ head        :
             | mingpa
             | minperdisc
             | minres
+            | optional
             | remark
             | share
+            | standalone
             | under
             )*
             ;
@@ -70,6 +73,7 @@ body        :
             | minperdisc
             | noncourse
             | remark
+            | rule_complete
             | subset
             )*
             ;
@@ -88,7 +92,7 @@ full_course     : discipline catalog_number course_qualifier*;
 course_item     : discipline? catalog_number course_qualifier*;
 and_list        : (list_and course_item )+;
 or_list         : (list_or course_item)+;
-discipline      : SYMBOL | WILD | IS; // The IS keyword can be a discipline name. (others?)
+discipline      : SYMBOL | WILD | BLOCK | IS; // Include keywords that appear as discipline names
 catalog_number  : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
 course_qualifier: with_clause
                 | except_clause
@@ -113,21 +117,22 @@ course_qualifier: with_clause
 if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause?;
 else_clause  : ELSE (stmt | stmt_group) group_qualifier* label?;
 stmt_group   : (begin_if stmt+ end_if);
-stmt         : block
-             | blocktype
-             | class_credit
-             | group
-             | if_then
-             | maxcredit
-             | maxtransfer
-             | minclass
-             | mincredit
-             | minres
-             | noncourse
-             | remark
-             | rule_complete
-             | share
-             | subset
+stmt         : block          {System.out.println("\n*BLOCK*\n"         + $block.text);}
+             | blocktype      {System.out.println("\n*BLOCKTYPE*\n"     + $blocktype.text);}
+             | class_credit   {System.out.println("\n*CLASS_CREDIT*\n"  + $class_credit.text);}
+             | copy_rules     {System.out.println("\n*COPY_RULES*\n"    + $copy_rules.text);}
+             | group          {System.out.println("\n*GROUP*\n"         + $group.text);}
+             | maxcredit      {System.out.println("\n*MAXCREDIT*\n"     + $maxcredit.text);}
+             | maxtransfer    {System.out.println("\n*MAXTRANSFER*\n"   + $maxtransfer.text);}
+             | minclass       {System.out.println("\n*MINCLASS*\n"      + $minclass.text);}
+             | mincredit      {System.out.println("\n*MINCREDIT*\n"     + $mincredit.text);}
+             | minres         {System.out.println("\n*BLOCMINRESK*\n"   + $minres.text);}
+             | noncourse      {System.out.println("\n*NONCOURSE*\n"     + $noncourse.text);}
+             | remark         {System.out.println("\n*REMARK*\n"        + $remark.text);}
+             | rule_complete  {System.out.println("\n*RULE_COMPLETE*\n" + $rule_complete.text);}
+             | share          {System.out.println("\n*SHARE*\n"         + $share.text);}
+             | subset         {System.out.println("\n*SUBSET*\n"        + $subset.text);}
+             | if_then        {System.out.println("\n*IF_THEN*\n"       + $if_then.text);}
              ;
 begin_if     : BEGINIF | BEGINELSE;
 end_if       : ENDIF | ENDELSE;
@@ -185,8 +190,8 @@ class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
 copy_rules      : COPY_RULES expression SEMICOLON?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
-label           : LABEL label_tag? STRING SEMICOLON? label*;
-label_tag       : .+?;
+label           : LABEL label_tag STRING SEMICOLON? label*;
+label_tag       : ~'"'*?;
 
 lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag?;
 
@@ -196,31 +201,37 @@ maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? tag?;
 maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP tag?;
 maxspread       : MAXSPREAD NUMBER tag?;
+maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;
 maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
+
 minarea         : MINAREA NUMBER tag?;
 minclass        : MINCLASS NUMBER course_list tag?;
 mincredit       : MINCREDIT NUMBER course_list tag?;
-
 mingpa          : MINGPA NUMBER (course_list | expression)? tag? label?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag?;
-minres          : MINRES NUMBER (CLASS | CREDIT) label?;
+minres          : MINRES NUMBER (CLASS | CREDIT) label? tag?;
 minspread       : MINSPREAD NUMBER tag?;
 
-noncourse       : NUMBER NONCOURSE expression label?;
+noncourse       : NUMBER NONCOURSE expression course_qualifier label?;
+optional        : OPTIONAL;
 remark          : REMARK STRING SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
 ruletag         : RULE_TAG expression;
-samedisc        : SAME_DISC LP SYMBOL logical_op SYMBOL (list_or SYMBOL logical_op SYMBOL)* RP tag?;
-share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? (LP share_list RP)? tag?;
-share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | STRING | WILD))?;
-share_list      : share_item (list_or share_item)*;
+samedisc        : SAME_DISC expression tag?;
+share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
+//share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | STRING | WILD))?;
+//share_list      : expression;
+standalone      : STANDALONE;
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
 under           : UNDER NUMBER (CLASS | CREDIT)  full_course or_list? label;
 with_clause     : LP WITH expression RP;
 
-expression      : expression logical_op expression
+expression      : expression relational_op expression
+                | expression logical_op expression
+                | expression ',' expression
                 | full_course
+                | discipline
                 | NUMBER
                 | SYMBOL
                 | STRING
@@ -229,9 +240,10 @@ expression      : expression logical_op expression
                 ;
 
 // Operators and Separators
-logical_op  : (AND | OR | EQ | GE | GT | IS | ISNT | LE | LT | NE);
-list_or     : (COMMA | OR);
-list_and    : (PLUS | AND);
+logical_op    : (AND | OR);
+relational_op : (EQ | GE | GT | IS | ISNT | LE | LT | NE);
+list_or       : (COMMA | OR);
+list_and      : (PLUS | AND);
 
 // Lexer
 // ================================================================================================
@@ -295,27 +307,33 @@ GROUP           : [Gg][Rr][Oo][Uu][Pp][Ss]?;
 INCLUDING       : [Ii][Nn][Cc][Ll][Uu][Dd][Ii][Nn][Gg];
 LABEL           : [Ll][Aa][Bb][Ee][Ll];
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss];
+
 MAXCLASS        : [Mm][Aa][Xx] CLASS;
-MAXCREDIT       : [Mm][Aa][Xx] CREDIT;
+MAXCREDIT       : ([Ss][Pp])?[Mm][Aa][Xx] CREDIT;
+MAXPASSFAIL     : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll];
+MAXPERDISC      : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
+MAXSPREAD       : [Mm][Aa][Xx][Ss][Pp][Rr][Ee][Aa][Dd];
+MAXTERM         : ([Ss][Pp])?[Mm][Aa][Xx][Tt][Ee][Rr][Mm];
+MAXTRANSFER     : [Mm][Aa][Xx][Tt][Rr][Aa][Nn][Ss][Ff][Ee][Rr];
+
 MINAREA         : [Mm][Ii][Nn][Aa][Rr][Ee][Aa][Ss]?;
 MINGPA          : [Mm][Ii][Nn][Gg][Pp][Aa];
 MINGRADE        : [Mm][Ii][Nn][Gg][Rr][Aa][Dd][Ee];
-MAXPASSFAIL     : [Mm][Aa][Xx][Pp][Aa][Ss][Ss][Ff][Aa][Ii][Ll];
-MAXPERDISC      : [Mm][Aa][Xx][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
-MINPERDISC      : [Mm][Ii][Nn][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
-MAXSPREAD       : [Mm][Aa][Xx][Ss][Pp][Rr][Ee][Aa][Dd];
-MAXTRANSFER     : [Mm][Aa][Xx][Tt][Rr][Aa][Nn][Ss][Ff][Ee][Rr];
 MINCLASS        : [Mm][Ii][Nn] CLASS;
 MINCREDIT       : [Mm][Ii][Nn] CREDIT;
+MINPERDISC      : [Mm][Ii][Nn][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
 MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss];
 MINSPREAD       : [Mm][Ii][Nn][Ss][Pp][Rr][Ee][Aa][Dd];
+
 NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]?;
+OPTIONAL        : [Oo][Pp][Tt][Ii][Oo][Nn][Aa][Ll];
 OF              : [Oo][Ff];
 PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo];
 REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk];
 RULE_COMPLETE   : [Rr][Uu][Ll][Ee]'-'?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
 RULE_INCOMPLETE : [Rr][Uu][Ll][Ee]'-'?[Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
 RULE_TAG        : [Rr][Uu][Ll][Ee]'-'?[Tt][Aa][Gg];
+STANDALONE      : [Ss][Tt][Aa][Nn][Dd][Aa][Ll][Oo][Nn][Ee]([Bb][Ll][Oo][Cc][Kk])?;
 SHARE           : [Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
                 | [Nn][Oo][Nn][Ee][Xx][Cc][Ll][Uu][Ss][Ii][Vv][Ee];
 TAG             : [Tt][Aa][Gg];
@@ -349,7 +367,7 @@ STRING      : '"' .*? '"';
 //  Character and operator names
 //  -----------------------------------------------------------------------------------------------
 AMPERSAND   : '&';
-AT          : '@';
+AT          : '@'+;
 COMMA       : ',';
 EQ          : '=';
 GE          : '>=';

@@ -11,10 +11,7 @@ import time
 
 from pathlib import Path
 
-try:
-  TIMELIMIT = float(os.getenv('TIMELIMIT'))
-except TypeError:
-  TIMELIMIT = 60.0
+timelimit = 180
 
 block_type = sys.argv[1]
 test_dir = Path(f'./test_data.{block_type}')
@@ -26,7 +23,7 @@ lines = file.read_text().count('\n')
 try:
   t0 = time.time()
   completed = subprocess.run(['grun', 'ReqBlock', 'req_block'],
-                             timeout=TIMELIMIT,
+                             timeout=timelimit,
                              stdin=file.open(),
                              capture_output=True)
   elapsed = time.time() - t0
