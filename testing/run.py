@@ -11,7 +11,7 @@ import time
 
 from pathlib import Path
 
-timelimit = 180
+timelimit = 1500
 
 block_type = sys.argv[1]
 test_dir = Path(f'./test_data.{block_type}')
