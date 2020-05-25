@@ -57,6 +57,7 @@ head        :
             | remark
             | share
             | standalone
+            | subset
             | under
             )*
             ;
@@ -200,7 +201,7 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  * ------------------------------------------------------------------------------------------------
  */
 allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
-class_credit    : (NUMBER | RANGE) (CLASS | CREDIT)
+class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                   allow_clause?
                   (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
                   (course_list | expression | PSEUDO | share | tag)* label?;
@@ -378,7 +379,7 @@ NUMBER          : DIGIT+ (DOT DIGIT*)?;
 RANGE           : NUMBER ' '* ':' ' '* NUMBER;
 CATALOG_NUMBER  : DIGIT+ LETTER+;
 WILD            : (SYMBOL)* AT (SYMBOL)*;
-SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND)+;
+SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND | '/')+;
 STRING      : '"' .*? '"';
 
 //  Character and operator names
