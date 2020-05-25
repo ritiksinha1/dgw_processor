@@ -10,10 +10,11 @@ from datetime import datetime
 from pathlib import Path
 from collections import Counter, defaultdict, namedtuple
 
-highlight_on = '\u001b[31m'  # Red Text
+highlight_on = '\u001b[0m'
 highlight_off = '\u001b[0m'
 
 if os.getenv('DEBUG'):
+  highlight_on = '\u001b[31m'  # Red Text
   logfile = sys.stderr
 else:
   time_stamp = str(datetime.now()).replace(' ', '_').rstrip('0123456789').rstrip('.')
