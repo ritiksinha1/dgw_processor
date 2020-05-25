@@ -8,10 +8,10 @@ else
 fi
 printf "\033c"
 ls -l ./test_results.$which
-touch ./lastwait
+touch .lastwait
 while true
 do
   sleep 1
-  find test_results.$which -cnewer ./lastwait -exec printf "\033c"\; ls -l test_results.$which \;
-  touch ./lastwait
+  find test_results.$which -cnewer .lastwait -exec  ls -l test_results.$which \;
+  touch .lastwait
 done
