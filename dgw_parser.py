@@ -903,14 +903,13 @@ def dgw_parser(institution, block_type, block_value, period='current'):
       return f"""<h1 class="error">“{row.title}” is not a currently offered {block_type}
                  at {institution}.</h1>
               """
-    requirement_text = filter(row.requirement_text)
+    # Filter out everything after END.
+    # For parsing, also filter out "hide" things, but leave them in for display purposes.
+    text_to_parse = filter(row.requirement_text)
+    text_to_show = filter(row.requirement_text, remove_hide=False)
+
     dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
-    # Unable to get Antlr to ignore cruft before BEGIN and after END. so, reluctantly, removing the
-    # cruft here in order to get on with parsing.
-    match = re.search(r'.*?(BEGIN.*?END\.).*', requirement_text, re.I | re.S)
-    if match is None:
-      raise ValueError(f'BEGIN...;...END. not found:\n{requirement_text}')
-    input_stream = InputStream(match.group(1))
+    input_stream = InputStream(text_to_parse)
     lexer = ReqBlockLexer(input_stream)
     lexer.removeErrorListeners()
     lexer.addErrorListener(dgw_logger)
@@ -924,7 +923,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                                       row.title,
                                       row.period_start,
                                       row.period_stop,
-                                      requirement_text)
+                                      text_to_show)
     try:
       walker = ParseTreeWalker()
       tree = parser.req_block()
