@@ -118,7 +118,8 @@ course_qualifier: with_clause
 if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause?;
 else_clause  : ELSE (stmt | stmt_group) group_qualifier* label?;
 stmt_group   : (begin_if stmt+ end_if);
-stmt         : block
+stmt         : if_then
+             | block
              | blocktype
              | class_credit
              | copy_rules
@@ -133,7 +134,6 @@ stmt         : block
              | rule_complete
              | share
              | subset
-             | if_then
              ;
 //stmt         : block          {System.out.println("\n*BLOCK*\n"         + $block.text);}
 //             | blocktype      {System.out.println("\n*BLOCKTYPE*\n"     + $blocktype.text);}
