@@ -23,7 +23,7 @@ lines = file.read_text().count('\n')
 try:
   t0 = time.time()
   completed = subprocess.run(['grun', 'ReqBlock', 'req_block'],
-                             timeout=timelimit,
+                             # timeout=timelimit,
                              stdin=file.open(),
                              capture_output=True)
   elapsed = time.time() - t0
