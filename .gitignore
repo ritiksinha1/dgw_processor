@@ -40,3 +40,4 @@ Logs/
 /testing/quarantine_list
 /testing/lastwait
 /testing/.lastwait
+/testing/test_data.timeout/
