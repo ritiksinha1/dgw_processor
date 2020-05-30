@@ -18,9 +18,12 @@ except ValueError:
 
 with open('./quarantine_list') as ql:
   for line in ql.readlines():
-    i, r, *_ = line.split()
-    if i == institution and r == requirement_id:
-      sys.exit(f'{institution} {requirement_id} is already quarantined: "{" ".join(_)}"')
+    try:
+      i, r, *_ = line.split()
+      if i == institution and r == requirement_id:
+        sys.exit(f'{institution} {requirement_id} is already quarantined: "{" ".join(_)}"')
+    except ValueError as ve:
+      pass
 
 reason = input(f'Why quarantine {institution} {requirement_id}? ')
 if len(reason) == 0:

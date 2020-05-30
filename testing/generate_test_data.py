@@ -31,11 +31,14 @@ quarantined_blocks = []
 timeout_blocks = []
 with open('./quarantine_list') as ql:
   for line in ql.readlines():
-    institution, block_id, *_ = line.split()
-    if _ == ['timeout']:
-      timeout_blocks.append((institution, block_id))
-    else:
-      quarantined_blocks.append((institution, block_id))
+    try:
+      institution, block_id, *_ = line.split()
+      if _ == ['Timeout']:
+        timeout_blocks.append((institution, block_id))
+      else:
+        quarantined_blocks.append((institution, block_id))
+    except ValueError as ve:
+      pass
 
 quarantine_dir = Path('./test_data.quarantine')
 if quarantine_dir.is_dir():

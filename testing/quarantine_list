@@ -1,18 +1,24 @@
 BAR01 RA000625 No Content
+BKL01 RA002520 Quotes around SPEC. discipline name twice on line 138
 BKL01 RA002657 Missing comma on line 33
 BKL01 RA002660 Missing comma on line 31
 BKL01 RA002868 Quotes around discipline name on line 54
-HTR01 RA001003 Backtick in place of Label tag on line 56
-CSI01 RA001656 Missing space between "Label" and label tag on lines 10, 12, and 144
-CSI01 RA001657 Missing space between "Label" and label tag in ten places in lines 16-34
-LEH01 RA002245 "@@ 3@" not a valid course item on line 36
-SPS01 RA000092 Missing space between Label and its tag on lines 15, 20, and 25
-BKL01 RA002520 Quotes around SPEC . discipline name twice on line 138
 BKL01 RA003107 Missing comma in "3194 3169" on line 34
 BKL01 RA003113 Quotes around discipline name (SPEC.) on line 57
 BKL01 RA003193 Missing comma in "3194 3169" on line 32
-HOS01 RA000341 Question mark on line 163
 CSI01 RA000650 Missing space after Label on lines 22, 26, 30, and 34
 CSI01 RA000652 Missing space after Label on lines 22, 26, 30, and 34
+CSI01 RA001656 Missing space between "Label" and label tag on lines 10, 12, and 144
+CSI01 RA001657 Missing space between "Label" and label tag in ten places in lines 16-34
+HOS01 RA000341 Question mark on line 163
+SPS01 RA000092 Missing space between Label and its tag on lines 15, 20, and 25
+
 BCC01 RA000107 Timeout
 BCC01 RA000651 Timeout
+HTR01 RA001995 Timeout
+
+JJC01 RA001626 Missing semicolon separating head and body
+JJC01 RA001608 Missing semicolon separating head and body
+JJC01 RA001607 Missing semicolon separating head and body
+JJC01 RA000513 Missing semicolon separating head and body
+JJC01 RA001626 Missing semicolon separating head and body
