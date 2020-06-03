@@ -102,7 +102,6 @@ course_qualifier: with_clause
                 | maxperdisc
                 | maxspread
                 | maxtransfer
-                | minarea
                 | mincredit
                 | mingpa
                 | mingrade
@@ -201,10 +200,12 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  * ------------------------------------------------------------------------------------------------
  */
 allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
+area_list       : area_element+ minarea;
+area_element    : SQLB course_list ','? SQRB;
 class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                   allow_clause?
                   (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                  (course_list | expression | PSEUDO | share | tag)* label?;
+                  (area_list | course_list | expression | PSEUDO | share | tag)* label?;
 copy_rules      : COPY_RULES expression SEMICOLON?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
@@ -293,7 +294,6 @@ PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> 
 LOGS            : [Ll][Oo][Gg] .*? '\n' -> skip;
 CRUFT           : [:/'*\\]+ -> skip;
 
-SB              : [[\]] ->skip; // Used for MinAreas; not implemented
 WHITESPACE      : [ \t\n\r]+ -> skip;
 
 //  Keywords
@@ -397,6 +397,8 @@ LT          : '<';
 NE          : '<>';
 PLUS        : '+';
 RP          : ')';
+SQLB        : '[';
+SQRB        : ']';
 SEMICOLON   : ';';
 UNDERSCORE  : '_';
 
