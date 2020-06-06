@@ -242,6 +242,24 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#area_list.
+    def enterArea_list(self, ctx:ReqBlockParser.Area_listContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#area_list.
+    def exitArea_list(self, ctx:ReqBlockParser.Area_listContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#area_element.
+    def enterArea_element(self, ctx:ReqBlockParser.Area_elementContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#area_element.
+    def exitArea_element(self, ctx:ReqBlockParser.Area_elementContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#class_credit.
     def enterClass_credit(self, ctx:ReqBlockParser.Class_creditContext):
         pass
