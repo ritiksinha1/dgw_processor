@@ -1,6 +1,7 @@
 #! /usr/local/bin/python3
 
 import os
+import sys
 
 from antlr4 import *
 
@@ -8,7 +9,8 @@ from ReqBlockLexer import ReqBlockLexer
 from ReqBlockParser import ReqBlockParser
 from ReqBlockListener import ReqBlockListener
 
-from dgw_utils import catalog_years
+from closeable_objects import dict2html, items2html
+from dgw_utils import catalog_years, colleges, ScribeSection, get_number, class_or_credit
 
 DEBUG = os.getenv('DEBUG_INTERPRETER')
 
@@ -75,21 +77,26 @@ class ReqBlockInterpreter(ReqBlockListener):
 
     return html_body
 
+  # ReqBlockListener Overrides
+  # ===============================================================================================
+
+  # enterHead()
+  # -----------------------------------------------------------------------------------------------
   def enterHead(self, ctx):
     if DEBUG:
-      print('*** ENTERHEAD()', file=sys.stderr)
+      print('*** enterHead()', file=sys.stderr)
     self.scribe_section = ScribeSection.HEAD
 
+  # enterBody()
+  # # ---------------------------------------------------------------------------------------------
   def enterBody(self, ctx):
     if DEBUG:
-      print('*** ENTERBODY()', file=sys.stderr)
-
-# proxy_advice: PROXYADVICE STRING proxy_advice* ;
-# noncourses  : NUMBER NONCOURSES LP SYMBOL (',' SYMBOL)* RP ;
-# symbol      : SYMBOL ;
+      print('*** enterBody()', file=sys.stderr)
 
     self.scribe_section = ScribeSection.BODY
 
+  # enterMinres
+  # -----------------------------------------------------------------------------------------------
   def enterMinres(self, ctx):
     """ MINRES NUMBER (CREDIT | CLASS)
     """
@@ -103,9 +110,6 @@ class ReqBlockInterpreter(ReqBlockListener):
                     f'At least {number} {which.lower()} '
                     f'must be completed in residency.',
                     None))
-
-# mingpa      : MINGPA NUMBER ;
-# mingrade    : MINGRADE NUMBER ;
 
   # enterMinCredit()
   # -----------------------------------------------------------------------------------------------
@@ -332,6 +336,8 @@ class ReqBlockInterpreter(ReqBlockListener):
   #     print('*** enterEndSub', file=sys.stderr)
   #   pass
 
+  # enterRemark()
+  # -----------------------------------------------------------------------------------------------
   def enterRemark(self, ctx):
     """ REMARK STRING remark* ;
     """
@@ -340,6 +346,8 @@ class ReqBlockInterpreter(ReqBlockListener):
       print(ctx.STRING(), file=sys.stderr)
     pass
 
+  # enterLabel()
+  # -----------------------------------------------------------------------------------------------
   def enterLabel(self, ctx):
     """ REMARK STRING ';' remark* ;
     """
@@ -381,4 +389,3 @@ class ReqBlockInterpreter(ReqBlockListener):
       i = len(this_section) - 1
 
     this_section[i].share_list.append(str(ctx.SHARE_LIST()).strip('()'))
-

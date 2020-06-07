@@ -3,9 +3,34 @@
 """
 
 from collections import namedtuple
+from enum import Enum
 from typing import List, Set, Dict, Tuple, Optional, Union
 
+from pgconnection import PgConnection
+
 import argparse
+import os
+
+DEBUG = os.getenv('DEBUG_INTERPRETER')
+
+# Dict of known colleges
+colleges = dict()
+conn = PgConnection()
+cursor = conn.cursor()
+cursor.execute('select code, name from cuny_institutions')
+for row in cursor.fetchall():
+  colleges[row.code] = row.name
+conn.close()
+
+
+# class ScribeSection(Enum)
+# -------------------------------------------------------------------------------------------------
+class ScribeSection(Enum):
+  """ Keep track of which section of a Scribe Block is being processed.
+  """
+  NONE = 0
+  HEAD = 1
+  BODY = 2
 
 
 CatalogYears = namedtuple('CatalogYears', 'bulletin_type first_year last_year text')

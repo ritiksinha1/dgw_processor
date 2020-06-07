@@ -21,7 +21,6 @@ from io import StringIO
 import re
 
 from collections import namedtuple
-from enum import Enum
 from urllib import parse
 
 from antlr4 import *
@@ -33,7 +32,6 @@ from ReqBlockListener import ReqBlockListener
 
 from pgconnection import PgConnection
 
-from closeable_objects import dict2html, items2html
 from templates import *
 
 from dgw_interpreter import ReqBlockInterpreter
@@ -58,15 +56,6 @@ CourseList = namedtuple('CourseList',
                         'scribed_courses list_type customizations exclusions '
                         'active_courses attributes')
 
-# Dict of known colleges
-colleges = dict()
-conn = PgConnection()
-cursor = conn.cursor()
-cursor.execute('select code, name from cuny_institutions')
-for row in cursor.fetchall():
-  colleges[row.code] = row.name
-conn.close()
-
 # Known named fields for WITH clauses
 with_named_fields = ['DWAge', 'DWCredits', 'DWCreditType', 'DWCourseNumber', 'DWDiscipline',
                      'DWGradeNumber', 'DWGradeLetter', 'DWGradeType', 'DWLocation', 'DWPassFail',
@@ -75,16 +64,6 @@ with_named_fields = ['DWAge', 'DWCredits', 'DWCreditType', 'DWCourseNumber', 'DW
                      'DWTermType', 'DWPassed']
 # The ones of interest here:
 known_with_qualifiers = ['DWPassFail', 'DWResident', 'DWTransfer', 'DWTransferCourse']
-
-
-# class ScribeSection(Enum)
-# -------------------------------------------------------------------------------------------------
-class ScribeSection(Enum):
-  """ Keep track of which section of a Scribe Block is being processed.
-  """
-  NONE = 0
-  HEAD = 1
-  BODY = 2
 
 
 # dgw_parser()
@@ -152,8 +131,8 @@ def dgw_parser(institution, block_type, block_value, period='current'):
       msg_body = f"""College: {interpreter.institution}
                      Block Type: {interpreter.block_type}
                      Block Value: {interpreter.block_value}
-                     Period Start: {interpreter.period_start}
-                     Period Stop: {interpreter.period_stop}
+                     Period Start: {interpreter.catalog_years.first_year}
+                     Period Stop: {interpreter.catalog_years.last_year}
                      Error: {e}"""
       msg_body = parse.quote(re.sub(r'\n\s*', r'\n', msg_body))
       email_link = f"""
