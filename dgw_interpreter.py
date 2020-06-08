@@ -95,6 +95,15 @@ class ReqBlockInterpreter(ReqBlockListener):
 
     self.scribe_section = ScribeSection.BODY
 
+  # enterCourse_list()
+  # -----------------------------------------------------------------------------------------------
+  def enterCourse_list(self, ctx: ReqBlockParser.Course_listContext):
+    """
+    """
+    if DEBUG:
+      print('*** enterCourse_list', file=sys.stderr)
+      print(repr(ctx.parentCtx), file=sys.stderr)
+
   # enterMinres
   # -----------------------------------------------------------------------------------------------
   def enterMinres(self, ctx):
@@ -102,14 +111,14 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterMinres()', file=sys.stderr)
-    number = get_number(ctx)
-    which = class_or_credit(ctx, number)
-    self.sections[self.scribe_section.value].append(
-        Requirement('minres',
-                    f'{number} {which}',
-                    f'At least {number} {which.lower()} '
-                    f'must be completed in residency.',
-                    None))
+    # number = get_number(ctx)
+    # which = class_or_credit(ctx, number)
+    # self.sections[self.scribe_section.value].append(
+    #     Requirement('minres',
+    #                 f'{number} {which}',
+    #                 f'At least {number} {which.lower()} '
+    #                 f'must be completed in residency.',
+    #                 None))
 
   # enterMinCredit()
   # -----------------------------------------------------------------------------------------------
@@ -118,9 +127,8 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterMincredit()', file=sys.stderr)
-    num_credits = float(str(ctx.NUMBER()))
-    course_list = build_course_list(self, ctx.course_list())
-    print(course_list)
+    # num_credits = float(str(ctx.NUMBER()))
+    # course_list = build_course_list(self, ctx.course_list())
 
   # enterNumcredit()
   # -----------------------------------------------------------------------------------------------
@@ -129,9 +137,9 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterNumcredit()', file=sys.stderr)
-    self.sections[self.scribe_section.value].append(numcredit(self.institution,
-                                                              self.block_type_str,
-                                                              ctx))
+    # self.sections[self.scribe_section.value].append(numcredit(self.institution,
+    #                                                           self.block_type_str,
+    #                                                           ctx))
 
   # enterMaxcredit()
   # -----------------------------------------------------------------------------------------------
@@ -143,39 +151,39 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print(f'*** enterMaxcredit()', file=sys.stderr)
-    limit = f'a maximum of {ctx.NUMBER()}'
-    if ctx.NUMBER() == 0:
-      limit = 'zero'
-    text = f'This {self.block_type_str} allows {limit} credits'
-    course_list = None
-    # There can be two course lists, the main one, and an EXCEPT one
-    course_lists = ctx.course_list()
-    if len(course_lists) > 0:
-      course_list = build_course_list(self.institution, course_lists[0])
-    if len(course_lists) > 1:
-      except_list = build_course_list(self.institution, course_lists[1])
+    # limit = f'a maximum of {ctx.NUMBER()}'
+    # if ctx.NUMBER() == 0:
+    #   limit = 'zero'
+    # text = f'This {self.block_type_str} allows {limit} credits'
+    # course_list = None
+    # # There can be two course lists, the main one, and an EXCEPT one
+    # course_lists = ctx.course_list()
+    # if len(course_lists) > 0:
+    #   course_list = build_course_list(self.institution, course_lists[0])
+    # if len(course_lists) > 1:
+    #   except_list = build_course_list(self.institution, course_lists[1])
 
-    if course_list is None:  # Weird: no credits allowed, but no course list provided.
-      raise ValueError(f'MaxCredit rule with no courses specified.')
+    # if course_list is None:  # Weird: no credits allowed, but no course list provided.
+    #   raise ValueError(f'MaxCredit rule with no courses specified.')
 
-    else:
-      list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
-      attributes, html_list = course_list2html(course_list['courses'])
-      len_list = len(html_list)
-      if len_list == 1:
-        preamble = f' in '
-        courses = html_list[0]
-      else:
-        preamble = f' in {list_quantifier} of these {len_list} courses:'
-        courses = html_list
-      # Need to report what attributes all the found courses share and need to process any WITH
-      # and EXCEPT clauses. YOU ARE HERE******************************************************
-      text += f' {preamble} '
-    self.sections[self.scribe_section.value].append(
-        Requirement('maxcredits',
-                    f'{ctx.NUMBER()} credits',
-                    f'{text}',
-                    courses))
+    # else:
+    #   list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
+    #   attributes, html_list = course_list2html(course_list['courses'])
+    #   len_list = len(html_list)
+    #   if len_list == 1:
+    #     preamble = f' in '
+    #     courses = html_list[0]
+    #   else:
+    #     preamble = f' in {list_quantifier} of these {len_list} courses:'
+    #     courses = html_list
+    #   # Need to report what attributes all the found courses share and need to process any WITH
+    #   # and EXCEPT clauses. YOU ARE HERE******************************************************
+    #   text += f' {preamble} '
+    # self.sections[self.scribe_section.value].append(
+    #     Requirement('maxcredits',
+    #                 f'{ctx.NUMBER()} credits',
+    #                 f'{text}',
+    #                 courses))
 
   # enterMaxclass()
   # -----------------------------------------------------------------------------------------------
@@ -184,22 +192,22 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterMaxclass()', file=sys.stderr)
-    num_classes = int(str(ctx.NUMBER()))
-    suffix = '' if num_classes == 1 else 'es'
-    limit = f'no more than {num_classes} class{suffix}'
-    if num_classes == 0:
-      limit = 'no classes'
-    text = f'This {self.block_type_str} allows {limit}'
-    course_list = None
-    # There can be two course lists, the main one, and an EXCEPT one
-    course_lists = ctx.course_list()
-    if len(course_lists) > 0:
-      course_list = build_course_list(self.institution, course_lists[0])
-    if len(course_lists) > 1:
-      except_list = build_course_list(self.institution, course_lists[1])
+    # num_classes = int(str(ctx.NUMBER()))
+    # suffix = '' if num_classes == 1 else 'es'
+    # limit = f'no more than {num_classes} class{suffix}'
+    # if num_classes == 0:
+    #   limit = 'no classes'
+    # text = f'This {self.block_type_str} allows {limit}'
+    # course_list = None
+    # # There can be two course lists, the main one, and an EXCEPT one
+    # course_lists = ctx.course_list()
+    # if len(course_lists) > 0:
+    #   course_list = build_course_list(self.institution, course_lists[0])
+    # if len(course_lists) > 1:
+    #   except_list = build_course_list(self.institution, course_lists[1])
 
-    if course_list is None:  # Weird: no classes allowed, but no course list provided.
-      raise ValueError('MaxClass with no list of courses.')
+    # if course_list is None:  # Weird: no classes allowed, but no course list provided.
+    #   raise ValueError('MaxClass with no list of courses.')
     # else:
     #   attributes, html_list = course_list2html(course_list['courses'])
     #   len_list = len(html_list)
@@ -227,30 +235,30 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterMaxpassfail()', file=sys.stderr)
-    num = int(str(ctx.NUMBER()))
-    limit = f'no more than {ctx.NUMBER()}'
-    if num == 0:
-      limit = 'no'
-    which = class_or_credit(ctx)
-    if num == 1:
-      which = which[0:-1].strip('e')
-    text = f'This {self.block_type_str} allows {limit} {which} to be taken Pass/Fail.'
-    self.sections[self.scribe_section.value].append(
-        Requirement('maxpassfail',
-                    f'{num} {which}',
-                    f'{text}',
-                    None))
+    # num = int(str(ctx.NUMBER()))
+    # limit = f'no more than {ctx.NUMBER()}'
+    # if num == 0:
+    #   limit = 'no'
+    # which = class_or_credit(ctx)
+    # if num == 1:
+    #   which = which[0:-1].strip('e')
+    # text = f'This {self.block_type_str} allows {limit} {which} to be taken Pass/Fail.'
+    # self.sections[self.scribe_section.value].append(
+    #     Requirement('maxpassfail',
+    #                 f'{num} {which}',
+    #                 f'{text}',
+    #                 None))
 
   def enterNumclass(self, ctx):
     """ (NUMBER | RANGE) CLASS INFROM? course_list? TAG? label* ;
     """
     if DEBUG:
       print('*** enterNumClass', file=sys.stderr)
-    # Sometimes this is part of a rule subset (but not necessarily?)
-    if hasattr(ctx, 'visited'):
-      return
-    else:
-      return numclass(ctx)
+    # # Sometimes this is part of a rule subset (but not necessarily?)
+    # if hasattr(ctx, 'visited'):
+    #   return
+    # else:
+    #   return numclass(ctx)
 
   # enterGroup()
   # -----------------------------------------------------------------------------------------------
@@ -278,15 +286,15 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterGroup', file=sys.stderr)
-    num_required = str(ctx.NUMBER())
-    group_list = ctx.group_list()
-    print('group_list.children:', group_list.children)
-    label_ctx = ctx.label()
-    label_str = label_ctx.STRING()
-    label_ctx.visited = True
-    if DEBUG:
-      print('    ', label_str)
-      print(f'    Require {num_required} of num_provided groups.')
+    # num_required = str(ctx.NUMBER())
+    # group_list = ctx.group_list()
+    # print('group_list.children:', group_list.children)
+    # label_ctx = ctx.label()
+    # label_str = label_ctx.STRING()
+    # label_ctx.visited = True
+    # if DEBUG:
+    #   print('    ', label_str)
+    #   print(f'    Require {num_required} of num_provided groups.')
 
   # enterRule_subset()
   # -----------------------------------------------------------------------------------------------
@@ -301,15 +309,15 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterRule_subset', file=sys.stderr)
-    for class_credit_ctx in ctx.class_credit():
-      print(str(class_credit_ctx.NUMBER()[0]))
+    # for class_credit_ctx in ctx.class_credit():
+    #   print(str(class_credit_ctx.NUMBER()[0]))
 
-    classes_list = []
+    # classes_list = []
 
-    label_ctx = ctx.label()
-    label_str = label_ctx.STRING()
-    print(label_str)
-    label_ctx.visited = True
+    # label_ctx = ctx.label()
+    # label_str = label_ctx.STRING()
+    # print(label_str)
+    # label_ctx.visited = True
 
     # self.sections[self.scribe_section.value].append(
     #     Requirement('subset',
@@ -322,7 +330,7 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterBlocktype', file=sys.stderr)
-      print(ctx.SHARE_LIST())
+      # print(ctx.SHARE_LIST())
     pass
 
   # These two are in the superclass, but should be covered by enterRule_subset() above
@@ -343,7 +351,6 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterRemark()', file=sys.stderr)
-      print(ctx.STRING(), file=sys.stderr)
     pass
 
   # enterLabel()
@@ -353,12 +360,12 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterLabel()', file=sys.stderr)
-      try:
-        if ctx.visited:
-          return None
-      except AttributeError:
-        # All labels should be processed as part of a rule
-        print(ctx.STRING(), file=sys.stderr)
+    # try:
+    #   if ctx.visited:
+    #     return None
+    # except AttributeError:
+    #   # All labels should be processed as part of a rule
+    #   print(ctx.STRING(), file=sys.stderr)
 
   # enterShare()
   # -----------------------------------------------------------------------------------------------
@@ -369,23 +376,89 @@ class ReqBlockInterpreter(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterShare()', file=sys.stderr)
-    token = str(ctx.SHARE())
-    if token.lower() in ['share', 'sharewith', 'nonexclusive']:
-      share_type = 'share'
-      neg = ''
-    else:
-      share_type = 'exclusive'
-      neg = ' not'
-    text = (f'Courses used to satisfy this requirement may{neg} also be used to satisfy'
-            f' the following requirements:')
+    # token = str(ctx.SHARE())
+    # if token.lower() in ['share', 'sharewith', 'nonexclusive']:
+    #   share_type = 'share'
+    #   neg = ''
+    # else:
+    #   share_type = 'exclusive'
+    #   neg = ' not'
+    # text = (f'Courses used to satisfy this requirement may{neg} also be used to satisfy'
+    #         f' the following requirements:')
 
-    # There are separate share and exclusive SHARE_ITEM lists for the head and body.
-    this_section = self.sections[self.scribe_section.value]
-    for i, item in enumerate(this_section):
-      if item.keyword == share_type:
-        break
-    else:   # This really is for the for loop: add the appropriate type of share list to the section
-      this_section.append(ShareList(share_type, text, []))
-      i = len(this_section) - 1
+    # # There are separate share and exclusive SHARE_ITEM lists for the head and body.
+    # this_section = self.sections[self.scribe_section.value]
+    # for i, item in enumerate(this_section):
+    #   if item.keyword == share_type:
+    #     break
+    # else:   # This really is for the for loop: add the appropriate type of share list to the section
+    #   this_section.append(ShareList(share_type, text, []))
+    #   i = len(this_section) - 1
 
-    this_section[i].share_list.append(str(ctx.SHARE_LIST()).strip('()'))
+    # this_section[i].share_list.append(str(ctx.SHARE_LIST()).strip('()'))
+    # def enterReq_block(self, ctx:ReqBlockParser.Req_blockContext):
+    # def enterHead(self, ctx:ReqBlockParser.HeadContext):
+    # def enterBody(self, ctx:ReqBlockParser.BodyContext):
+    # def enterCourse_list(self, ctx:ReqBlockParser.Course_listContext):
+    # def enterFull_course(self, ctx:ReqBlockParser.Full_courseContext):
+    # def enterCourse_item(self, ctx:ReqBlockParser.Course_itemContext):
+    # def enterAnd_list(self, ctx:ReqBlockParser.And_listContext):
+    # def enterOr_list(self, ctx:ReqBlockParser.Or_listContext):
+    # def enterDiscipline(self, ctx:ReqBlockParser.DisciplineContext):
+    # def enterCatalog_number(self, ctx:ReqBlockParser.Catalog_numberContext):
+    # def enterCourse_qualifier(self, ctx:ReqBlockParser.Course_qualifierContext):
+    # def enterIf_then(self, ctx:ReqBlockParser.If_thenContext):
+    # def enterElse_clause(self, ctx:ReqBlockParser.Else_clauseContext):
+    # def enterStmt_group(self, ctx:ReqBlockParser.Stmt_groupContext):
+    # def enterStmt(self, ctx:ReqBlockParser.StmtContext):
+    # def enterBegin_if(self, ctx:ReqBlockParser.Begin_ifContext):
+    # def enterEnd_if(self, ctx:ReqBlockParser.End_ifContext):
+    # def enterGroup(self, ctx:ReqBlockParser.GroupContext):
+    # def enterGroup_list(self, ctx:ReqBlockParser.Group_listContext):
+    # def enterGroup_item(self, ctx:ReqBlockParser.Group_itemContext):
+    # def enterGroup_qualifier(self, ctx:ReqBlockParser.Group_qualifierContext):
+    # def enterSubset(self, ctx:ReqBlockParser.SubsetContext):
+    # def enterSubset_qualifier(self, ctx:ReqBlockParser.Subset_qualifierContext):
+    # def enterBlock(self, ctx:ReqBlockParser.BlockContext):
+    # def enterBlocktype(self, ctx:ReqBlockParser.BlocktypeContext):
+    # def enterAllow_clause(self, ctx:ReqBlockParser.Allow_clauseContext):
+    # def enterArea_list(self, ctx:ReqBlockParser.Area_listContext):
+    # def enterArea_element(self, ctx:ReqBlockParser.Area_elementContext):
+    # def enterClass_credit(self, ctx:ReqBlockParser.Class_creditContext):
+    # def enterCopy_rules(self, ctx:ReqBlockParser.Copy_rulesContext):
+    # def enterExcept_clause(self, ctx:ReqBlockParser.Except_clauseContext):
+    # def enterIncluding_clause(self, ctx:ReqBlockParser.Including_clauseContext):
+    # def enterLabel(self, ctx:ReqBlockParser.LabelContext):
+    # def enterLabel_tag(self, ctx:ReqBlockParser.Label_tagContext):
+    # def enterLastres(self, ctx:ReqBlockParser.LastresContext):
+    # def enterMaxclass(self, ctx:ReqBlockParser.MaxclassContext):
+    # def enterMaxcredit(self, ctx:ReqBlockParser.MaxcreditContext):
+    # def enterMaxpassfail(self, ctx:ReqBlockParser.MaxpassfailContext):
+    # def enterMaxperdisc(self, ctx:ReqBlockParser.MaxperdiscContext):
+    # def enterMaxspread(self, ctx:ReqBlockParser.MaxspreadContext):
+    # def enterMaxterm(self, ctx:ReqBlockParser.MaxtermContext):
+    # def enterMaxtransfer(self, ctx:ReqBlockParser.MaxtransferContext):
+    # def enterMinarea(self, ctx:ReqBlockParser.MinareaContext):
+    # def enterMinclass(self, ctx:ReqBlockParser.MinclassContext):
+    # def enterMincredit(self, ctx:ReqBlockParser.MincreditContext):
+    # def enterMingpa(self, ctx:ReqBlockParser.MingpaContext):
+    # def enterMingrade(self, ctx:ReqBlockParser.MingradeContext):
+    # def enterMinperdisc(self, ctx:ReqBlockParser.MinperdiscContext):
+    # def enterMinres(self, ctx:ReqBlockParser.MinresContext):
+    # def enterMinspread(self, ctx:ReqBlockParser.MinspreadContext):
+    # def enterNoncourse(self, ctx:ReqBlockParser.NoncourseContext):
+    # def enterOptional(self, ctx:ReqBlockParser.OptionalContext):
+    # def enterRemark(self, ctx:ReqBlockParser.RemarkContext):
+    # def enterRule_complete(self, ctx:ReqBlockParser.Rule_completeContext):
+    # def enterRuletag(self, ctx:ReqBlockParser.RuletagContext):
+    # def enterSamedisc(self, ctx:ReqBlockParser.SamediscContext):
+    # def enterShare(self, ctx:ReqBlockParser.ShareContext):
+    # def enterStandalone(self, ctx:ReqBlockParser.StandaloneContext):
+    # def enterTag(self, ctx:ReqBlockParser.TagContext):
+    # def enterUnder(self, ctx:ReqBlockParser.UnderContext):
+    # def enterWith_clause(self, ctx:ReqBlockParser.With_clauseContext):
+    # def enterExpression(self, ctx:ReqBlockParser.ExpressionContext):
+    # def enterLogical_op(self, ctx:ReqBlockParser.Logical_opContext):
+    # def enterRelational_op(self, ctx:ReqBlockParser.Relational_opContext):
+    # def enterList_or(self, ctx:ReqBlockParser.List_orContext):
+    # def enterList_and(self, ctx:ReqBlockParser.List_andContext):
