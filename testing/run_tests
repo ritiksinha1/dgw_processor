@@ -5,6 +5,10 @@
 # Capture error messages in the test_results directory.
 #  Empty result files indicate complete parsing with no errors.
 
+# Default timelimit is 3 minutes
+[[ ${TIMELIMIT} == '' ]] && export TIMELIMIT=180
+
+csv_file=run_tests-`date -I`.csv
 dirs=()
 while [[ $# > 0 ]]
 do
@@ -20,20 +24,19 @@ SECONDS=0
 
 if [[ ${#dirs[@]} == 5 ]]
 then
-      echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > run_tests.csv
+      echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > ${csv_file}
 fi
 
 rm -f ./timeouts.log
 touch ./timeouts.log
-export TIMELIMIT=60
+
 let $((total = 0))
 for dir in ${dirs[@]}
 do
   block_type=${dir##*.}
-  if [[ ${#dirs[@]} == 5 ]]
-  then suffix=''
-  else  suffix=".$dir"
-        echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > run_tests${suffix}.csv
+  if [[ ${#dirs[@]} != 5 ]]
+  then csv_file=run_tests.${dir}-`date -I`.csv
+       echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > ${csv_file}
   fi
 
   block_str=`echo $block_type|tr a-z A-Z`
@@ -46,7 +49,7 @@ do
   do
     [[ $DEBUG ]] && echo  -e "$count/$num_files\t$file"
     let $((count = count + 1))
-    ./run.py $block_type ${file#*/} >> run_tests${suffix}.csv 2>> timeouts.log
+    ./run.py $block_type ${file#*/} --timelimit ${TIMELIMIT} >> ${csv_file} 2>>./timeouts.log
     echo -en "               \r$count/$num_files\r"
   done
   num_errors=`ls test_results.$block_type|wc -l`
