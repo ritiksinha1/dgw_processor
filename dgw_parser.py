@@ -1,24 +1,22 @@
 #! /usr/bin/env python3
-"""
-    The goal of this project is to generate a data structure that represents academic requirements
-    based on Degreeworks Scribe blocks that are used to audit student progress towards achieving
-    those requirements.
-
-    Although the project should scale to the requirements for a degree or certificate, the focus is
-    initially on the requirements for majors, which may include concentrations as sub-requirements.
+""" Parse a requirement block, create a DGWProcessor to process nodes in the parse tree,
+   and walk the parse tree. The DGWProcessor will pick up the pieces.
 """
 
-import inspect
+
 from datetime import datetime
 from typing import List, Set, Dict, Tuple, Optional, Union
 
-import argparse
-import logging
-import sys
 import os
-import traceback
-from io import StringIO
 import re
+import sys
+
+import argparse
+import inspect
+import logging
+import traceback
+
+from io import StringIO
 
 from collections import namedtuple
 from urllib import parse
@@ -34,7 +32,7 @@ from pgconnection import PgConnection
 
 from templates import *
 
-from dgw_interpreter import ReqBlockInterpreter
+from dgw_processor import DGWProcessor
 from dgw_logger import DGW_Logger
 from dgw_filter import filter
 
@@ -112,13 +110,13 @@ def dgw_parser(institution, block_type, block_value, period='current'):
     parser = ReqBlockParser(token_stream)
     parser.removeErrorListeners()
     parser.addErrorListener(dgw_logger)
-    interpreter = ReqBlockInterpreter(institution,
-                                      block_type,
-                                      block_value,
-                                      row.title,
-                                      row.period_start,
-                                      row.period_stop,
-                                      text_to_show)
+    interpreter = DGWProcessor(institution,
+                               block_type,
+                               block_value,
+                               row.title,
+                               row.period_start,
+                               row.period_stop,
+                               text_to_show)
 
     try:
       walker = ParseTreeWalker()
@@ -154,9 +152,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
 
 # main()
 # =================================================================================================
-# You could use this to test this module, but there are tests and testing subdirectories that serve
-# that purpose better. For development, the transfer app and its log files provide a good way to
-# look at how the processor handles different requirement blocks.
+# Feed requirement_block(s) to dgw_parser() for testing
 if __name__ == '__main__':
 
   # Command line args
