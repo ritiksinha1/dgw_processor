@@ -119,7 +119,11 @@ class DGWProcessor(ReqBlockListener):
     """
     if DEBUG:
       print('*** enterCourse_list', file=sys.stderr)
-      print(repr(ctx.parentCtx), file=sys.stderr)
+    cur_ctx = ctx
+    while cur_ctx:
+      print(type(cur_ctx).__name__.replace('Context', ''), file=sys.stderr, end=' <= ')
+      cur_ctx = cur_ctx.parentCtx
+    print(file=sys.stderr)
 
   # enterFull_course(self, ctx: ReqBlockParser.Full_courseContext)
   # -----------------------------------------------------------------------------------------------

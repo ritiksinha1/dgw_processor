@@ -183,7 +183,6 @@ if __name__ == '__main__':
     institution = institution.upper() + ('01' * (len(institution) == 3))
     for block_type in args.block_types:
       for block_value in args.block_values:
-        if args.debug:
-          print(institution, block_type, block_value)
-        print(dgw_parser(institution, block_type, block_value))
+        print(institution, block_type, block_value)
+        dgw_parser(institution, block_type, block_value)
   conn.close()
