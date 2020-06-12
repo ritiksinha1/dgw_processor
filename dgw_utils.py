@@ -33,7 +33,7 @@ class ScribeSection(Enum):
   BODY = 2
 
 
-CatalogYears = namedtuple('CatalogYears', 'bulletin_type first_year last_year text')
+CatalogYears = namedtuple('CatalogYears', 'catalog_type first_year last_year text')
 
 
 # catalog_years()
@@ -48,11 +48,11 @@ def catalog_years(period_start: str, period_stop: str) -> str:
   is_undergraduate = 'U' in period_start
   is_graduate = 'G' in period_start
   if is_undergraduate and not is_graduate:
-    bulletin_type = 'Undergraduate'
+    catalog_type = 'Undergraduate'
   elif not is_undergraduate and is_graduate:
-    bulletin_type = 'Graduate'
+    catalog_type = 'Graduate'
   else:
-    bulletin_type = 'Unknown'
+    catalog_type = 'Unknown'
 
   try:
     first = period_start.replace('-', '')[0:4]
@@ -70,7 +70,7 @@ def catalog_years(period_start: str, period_stop: str) -> str:
         raise ValueError()
     except ValueError:
       last = 'Unknown-End-Year'
-  return CatalogYears._make((bulletin_type, first, last, f'{first} through {last}'))
+  return CatalogYears._make((catalog_type, first, last, f'{first} through {last}'))
 
 
 # get_number()
@@ -472,4 +472,4 @@ if __name__ == '__main__':
 
   if args.calendar_year:
     result = catalog_years(args.calendar_year[0], args.calendar_year[1])
-    print(f'{result.bulletin_type} bulletin for {result.text}')
+    print(f'{result.catalog_type} bulletin for {result.text}')

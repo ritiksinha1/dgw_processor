@@ -57,7 +57,7 @@ class DGWProcessor(ReqBlockListener):
 
     html_body = f"""
 <h1>{self.institution_name} {self.title}</h1>
-<p>Requirements for Catalog Years
+<p>Requirements for {self.catalog_years.catalog_type} Catalog Years
 {self.catalog_years.text}
 </p>
 <section>

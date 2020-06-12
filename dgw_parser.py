@@ -110,27 +110,27 @@ def dgw_parser(institution, block_type, block_value, period='current'):
     parser = ReqBlockParser(token_stream)
     parser.removeErrorListeners()
     parser.addErrorListener(dgw_logger)
-    interpreter = DGWProcessor(institution,
-                               block_type,
-                               block_value,
-                               row.title,
-                               row.period_start,
-                               row.period_stop,
-                               text_to_show)
+    processor = DGWProcessor(institution,
+                             block_type,
+                             block_value,
+                             row.title,
+                             row.period_start,
+                             row.period_stop,
+                             text_to_show)
 
     try:
       walker = ParseTreeWalker()
       tree = parser.req_block()
-      walker.walk(interpreter, tree)
+      walker.walk(processor, tree)
     except Exception as e:
       if DEBUG:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         traceback.print_tb(exc_traceback, limit=30, file=sys.stdout)
-      msg_body = f"""College: {interpreter.institution}
-                     Block Type: {interpreter.block_type}
-                     Block Value: {interpreter.block_value}
-                     Period Start: {interpreter.catalog_years.first_year}
-                     Period Stop: {interpreter.catalog_years.last_year}
+      msg_body = f"""College: {processor.institution}
+                     Block Type: {processor.block_type}
+                     Block Value: {processor.block_value}
+                     Catalog: {processor.catalog_years.catalog_type}
+                     Catalog Years: {processor.catalog_years.text}
                      Error: {e}"""
       msg_body = parse.quote(re.sub(r'\n\s*', r'\n', msg_body))
       email_link = f"""
@@ -142,7 +142,7 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                         <p class="error">Internal Error Message: “<em>{e}</em>”</p>
                         <p>{email_link}</p></div>"""
                      + return_html)
-    return_html += interpreter.html
+    return_html += processor.html
 
     if period == 'current' or period == 'recent':
       break
