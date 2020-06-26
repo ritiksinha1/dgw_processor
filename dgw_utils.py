@@ -36,6 +36,20 @@ class ScribeSection(Enum):
 CatalogYears = namedtuple('CatalogYears', 'catalog_type first_year last_year text')
 
 
+# context_path()
+# -------------------------------------------------------------------------------------------------
+def context_path(ctx):
+  """ For debugging, given a context (or any object, actually), return a string showing the
+      inheritance path for the object
+  """
+  ctx_list = []
+  cur_ctx = ctx
+  while cur_ctx:
+    ctx_list.insert(0, type(cur_ctx).__name__.replace('Context', ''))
+    cur_ctx = cur_ctx.parentCtx
+  return ' => '.join(ctx_list)
+
+
 # catalog_years()
 # -------------------------------------------------------------------------------------------------
 def catalog_years(period_start: str, period_stop: str) -> str:

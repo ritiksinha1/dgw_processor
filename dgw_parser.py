@@ -66,7 +66,7 @@ known_with_qualifiers = ['DWPassFail', 'DWResident', 'DWTransfer', 'DWTransferCo
 
 # dgw_parser()
 # =================================================================================================
-def dgw_parser(institution, block_type, block_value, period='current'):
+def dgw_parser(institution, block_type, block_value, period='current', do_parse=False):
   """  Creates a ReqBlockInterpreter, which will include a json representation of requirements.
        For now, it returns an html string telling what it was able to extract from the requirement
        text.
@@ -86,9 +86,8 @@ def dgw_parser(institution, block_type, block_value, period='current'):
     order by period_stop desc
   """
   cursor.execute(query, (institution, block_type.upper(), block_value.upper()))
-  if cursor.rowcount == 0:
-    # This is a bug, not an error
-    return f'<h1 class="error">No Requirements Found</h1><p>{cursor.query}</p>'
+  # Sanity Check
+  assert cursor.rowcount > 0, f'<h1 class="error">No Requirements Found</h1><p>{cursor.query}</p>'
   return_html = ''
   for row in cursor.fetchall():
     if period == 'current' and row.period_stop != '99999999':
@@ -99,18 +98,8 @@ def dgw_parser(institution, block_type, block_value, period='current'):
     # For parsing, also filter out "hide" things, but leave them in for display purposes.
     text_to_parse = filter(row.requirement_text)
     text_to_show = filter(row.requirement_text, remove_hide=False)
-
-    dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
-
-    input_stream = InputStream(text_to_parse)
-    lexer = ReqBlockLexer(input_stream)
-    lexer.removeErrorListeners()
-    lexer.addErrorListener(dgw_logger)
-    token_stream = CommonTokenStream(lexer)
-    parser = ReqBlockParser(token_stream)
-    parser.removeErrorListeners()
-    parser.addErrorListener(dgw_logger)
     processor = DGWProcessor(institution,
+                             row.requirement_id,
                              block_type,
                              block_value,
                              row.title,
@@ -118,30 +107,44 @@ def dgw_parser(institution, block_type, block_value, period='current'):
                              row.period_stop,
                              text_to_show)
 
-    try:
-      walker = ParseTreeWalker()
-      tree = parser.req_block()
-      walker.walk(processor, tree)
-    except Exception as e:
-      if DEBUG:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        traceback.print_tb(exc_traceback, limit=30, file=sys.stdout)
-      msg_body = f"""College: {processor.institution}
-                     Block Type: {processor.block_type}
-                     Block Value: {processor.block_value}
-                     Catalog: {processor.catalog_years.catalog_type}
-                     Catalog Years: {processor.catalog_years.text}
-                     Error: {e}"""
-      msg_body = parse.quote(re.sub(r'\n\s*', r'\n', msg_body))
-      email_link = f"""
-      <a href="mailto:cvickery@qc.cuny.edu?subject=DGW%20Parser%20Failure&body={msg_body}"
-         class="button">report this problem (optional)</a>"""
+    # Default behavior is just to show the scribe block(s), and not to try parsing them in real
+    # time. (But during development, that can be useful for catching coding errors.)
+    if do_parse:
+      dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
 
-      return_html = (f"""<div class="error-box">
-                        <p class="error">Currently unable to interpret this block completely.</p>
-                        <p class="error">Internal Error Message: “<em>{e}</em>”</p>
-                        <p>{email_link}</p></div>"""
-                     + return_html)
+      input_stream = InputStream(text_to_parse)
+      lexer = ReqBlockLexer(input_stream)
+      lexer.removeErrorListeners()
+      lexer.addErrorListener(dgw_logger)
+      token_stream = CommonTokenStream(lexer)
+      parser = ReqBlockParser(token_stream)
+      parser.removeErrorListeners()
+      parser.addErrorListener(dgw_logger)
+
+      try:
+        walker = ParseTreeWalker()
+        tree = parser.req_block()
+        walker.walk(processor, tree)
+      except Exception as e:
+        if DEBUG:
+          exc_type, exc_value, exc_traceback = sys.exc_info()
+          traceback.print_tb(exc_traceback, limit=30, file=sys.stdout)
+        msg_body = f"""College: {processor.institution}
+                       Block Type: {processor.block_type}
+                       Block Value: {processor.block_value}
+                       Catalog: {processor.catalog_years.catalog_type}
+                       Catalog Years: {processor.catalog_years.text}
+                       Error: {e}"""
+        msg_body = parse.quote(re.sub(r'\n\s*', r'\n', msg_body))
+        email_link = f"""
+        <a href="mailto:cvickery@qc.cuny.edu?subject=DGW%20Parser%20Failure&body={msg_body}"
+           class="button">report this problem (optional)</a>"""
+
+        return_html = (f"""<div class="error-box">
+                          <p class="error">Currently unable to interpret this block completely.</p>
+                          <p class="error">Internal Error Message: “<em>{e}</em>”</p>
+                          <p>{email_link}</p></div>"""
+                       + return_html)
     return_html += processor.html
 
     if period == 'current' or period == 'recent':
@@ -167,22 +170,9 @@ if __name__ == '__main__':
   # Parse args and handle default list of institutions
   args = parser.parse_args()
 
-  # Get the top-level requirements to examine: college, block-type, and/or block value
-  conn = PgConnection()
-  cursor = conn.cursor()
-
-  query = """
-      select requirement_id, title, requirement_text
-      from requirement_blocks
-      where institution = %s
-        and block_type = %s
-        and block_value = %s
-        and period_stop = '99999999'
-  """
   for institution in args.institutions:
     institution = institution.upper() + ('01' * (len(institution) == 3))
     for block_type in args.block_types:
       for block_value in args.block_values:
         print(institution, block_type, block_value)
         dgw_parser(institution, block_type, block_value)
-  conn.close()
