@@ -36,6 +36,14 @@ class ScribeSection(Enum):
 CatalogYears = namedtuple('CatalogYears', 'catalog_type first_year last_year text')
 
 
+def display_expr(ctx):
+  if ctx.getChildCount() == 0:
+    print('expr', ctx.getText())
+  else:
+    for child in ctx.getChildren():
+      display_expr(child)
+
+
 # context_path()
 # -------------------------------------------------------------------------------------------------
 def context_path(ctx):

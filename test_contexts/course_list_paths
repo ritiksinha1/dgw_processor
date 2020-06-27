@@ -1,0 +1,29 @@
+Body Class_credit Area_list Area_element Course_list
+Body Class_credit Course_list
+Body Class_credit Course_list Or_list Course_item Course_qualifier Except_clause Course_list
+Body Group Group_list Group_item Class_credit Course_list
+Body Group Group_list Group_item Group Group_list Group_item Class_credit Course_list
+Body Group Group_list Group_item Group Group_list Group_item Group_qualifier Minclass Course_list
+Body Group Group_list Group_item Group_qualifier Minclass Course_list
+Body If_then Else_clause Stmt If_then Else_clause Stmt Group Group_list Group_item Class_credit Course_list
+Body If_then Else_clause Stmt If_then Else_clause Stmt If_then Else_clause Stmt Group Group_list Group_item Class_credit Course_list
+Body If_then Else_clause Stmt If_then Else_clause Stmt If_then Stmt Group Group_list Group_item Class_credit Course_list
+Body If_then Else_clause Stmt If_then Stmt Group Group_list Group_item Class_credit Course_list
+Body If_then Else_clause Stmt Subset Class_credit Course_list
+Body If_then Else_clause Stmt Subset Group Group_list Group_item Class_credit Course_list
+Body If_then Else_clause Stmt Subset Group Group_list Group_item Group_qualifier Minclass Course_list
+Body If_then Stmt Group Group_list Group_item Class_credit Course_list
+Body If_then Stmt Subset Class_credit Course_list
+Body If_then Stmt Subset Group Group_list Group_item Class_credit Course_list
+Body Subset Class_credit Area_list Area_element Course_list
+Body Subset Class_credit Course_list
+Body Subset Class_credit Course_list Course_item Course_qualifier Except_clause Course_list
+Body Subset Class_credit Course_list Or_list Course_item Course_qualifier Except_clause Course_list
+Body Subset Class_credit Course_list Or_list Course_item Course_qualifier Including_clause Course_list
+Body Subset Group Group_list Group_item Class_credit Course_list
+Body Subset Group Group_list Group_item Class_credit Course_list Course_item Course_qualifier Except_clause Course_list
+Head Maxclass Course_list
+Head Maxcredit Course_list
+Head Maxcredit Course_list Or_list Course_item Course_qualifier Mincredit Course_list
+Head Minclass Course_list
+Head Mincredit Course_list

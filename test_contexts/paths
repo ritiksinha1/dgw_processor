@@ -1,0 +1,2143 @@
+QNS01 MAJOR ACCT-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR ACE712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR ACTST-BBA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR AFST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR AFST712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR AMST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR ANGRK-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR ANTH-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR ANTH712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR ARTD-BFA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group_qualifier => Minclass => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR ARTED-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR ARTH-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR ARTS-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR ARTS-BFA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR BASS-BS
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Minclass => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR BIOL-BA
+Req_block => Head => Mincredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR BIOL712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR BIOLED-BA
+Req_block => Head => Mincredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list => Or_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR CHEM-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR CHEM712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR CHIN-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR CLAS-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR CMLIT-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list => Or_list => Course_item => Course_qualifier => Including_clause => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR CMSCI-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR CSCI-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR CSCI-BAMA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR CSCI-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR DANCE-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR DRAM-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR EAST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Minclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR ECON-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list => Or_list => Course_item => Course_qualifier => Except_clause => Course_list
+QNS01 MAJOR ECON-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list => Or_list => Course_item => Course_qualifier => Except_clause => Course_list
+QNS01 MAJOR ECON712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR EECE-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Minclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR ENG712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR ENGL-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR ENSCI-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR ENSCI-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR ENSCIG-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR ENSTD-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group_qualifier => Minclass => Course_list
+QNS01 MAJOR FINAN-BBA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR FLMST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR FNES-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR FNESED-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR FREN-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR FREN712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR GEOL-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR GEOL-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR GEOL712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR GERM-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR GERM712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR GRKST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR HEBRW-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR HIST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR HIST-BAMA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR HIST712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR INDSP-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR INTLB-BBA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR ITAL-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR ITAL712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR JEWST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR LAAST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR LABST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR LAST712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR LATIN-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR LATN712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR LING-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR MATH-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR MATH712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => Subset => Group => Group_list => Group_item => Group_qualifier => Minclass => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => Subset => Group => Group_list => Group_item => Group_qualifier => Minclass => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => Subset => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR MEDST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list => Or_list => Course_item => Course_qualifier => Except_clause => Course_list
+QNS01 MAJOR MHCACCT-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCACT-BBA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCAFS7-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCAFST-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCAMST-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCANT7-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCARD-BFA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCART-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCART-BFA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCARTD-BS
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCARTE-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCARTH-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCBASS-BS
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Minclass => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCBIO7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCBIOL-BA
+Req_block => Head => Mincredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCCHE7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCCHEM-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCCHI7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCCHIN-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCCLAS-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCCLIT-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCCMSC-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCCSCI-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCCSCI-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCDAN-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCDRAM-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCEAST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Minclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCECO7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCECON-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCEECE-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Minclass => Course_list
+QNS01 MAJOR MHCENG7-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCENGL-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCENSG-BS
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCENST-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCFIN-BBA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCFMST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCFNED-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCFNES-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCFREN-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCFREN7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCGEOL-BS
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCGER7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCGERM-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCGKST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCHEBW-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCHIS7
+QNS01 MAJOR MHCHIST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCINB-BBA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCINDS-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCITA7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCITAL-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCJWST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCLAA7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCLAAS-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCLAT7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCLBST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCLING-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCMAT7-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCMATH-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCMDST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCMEST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCMUED-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCMUS-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCNSCB-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCNSCP-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCNUDT-BS
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCNXSC-BS
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCPHED-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCPHIL-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCPHY7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCPHYS-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCPHYS-BS
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCPSC7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCPSCI-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR MHCPSY-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCRLST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCRUSS-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCSOC-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCSOC7-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCSPA7-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCSPAN-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCTESL-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR MHCUBST-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MHCURB7-BA
+Req_block => Head => Maxcredit => Course_list
+QNS01 MAJOR MIDES-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group => Group_list => Group_item => Group_qualifier => Minclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR MUSIC-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR MUSIC-BMUS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR MUSICED-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR NEXSCI-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR NON-DEGRE
+QNS01 MAJOR NRSCIB-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+QNS01 MAJOR NRSCIP-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR NUTDTS-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR PHIL-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR PHIL-BAMA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Subset => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Subset => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Subset => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Subset => Class_credit => Area_list => Area_element => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR PHOTO-BFA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Group_qualifier => Minclass => Course_list
+QNS01 MAJOR PHYS-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR PHYS-BAMA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR PHYS-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR PHYS712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list => Course_item => Course_qualifier => Except_clause => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR PHYSED-BS
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR PSCI-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => If_then => Else_clause => Stmt => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR PSCI712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR PSYCH-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list => Or_list => Course_item => Course_qualifier => Except_clause => Course_list
+QNS01 MAJOR RLGST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR RUSS-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR SOC-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR SOC712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+Req_block => Body => Subset => Group => Group_list => Group_item => Class_credit => Course_list
+QNS01 MAJOR SPAN-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR SPAN712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR TESOL-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR UBST712-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR URBN-MA
+QNS01 MAJOR URBST-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR URBST-BAMA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+QNS01 MAJOR WGS-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Head => Maxclass => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Subset => Class_credit => Course_list
+Req_block => Body => Class_credit => Course_list
+QNS01 MAJOR YIDD-BA
+Req_block => Head => Maxcredit => Course_list
+Req_block => Head => Maxcredit => Course_list => Or_list => Course_item => Course_qualifier => Mincredit => Course_list
+Req_block => Body => Class_credit => Course_list

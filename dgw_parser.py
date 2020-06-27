@@ -175,4 +175,6 @@ if __name__ == '__main__':
     for block_type in args.block_types:
       for block_value in args.block_values:
         print(institution, block_type, block_value)
-        dgw_parser(institution, block_type, block_value)
+        html = dgw_parser(institution, block_type, block_value, do_parse=True)
+        if args.debug:
+          print(html)

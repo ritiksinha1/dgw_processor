@@ -17,6 +17,7 @@ from dgw_utils import catalog_years,\
     class_or_credit,\
     colleges,\
     context_path,\
+    display_expr,\
     get_number,\
     ScribeSection
 
@@ -133,7 +134,6 @@ class DGWProcessor(ReqBlockListener):
     """
     if LOG_PATH:
       print(context_path(ctx), file=sys.stderr)
-    print(context_path(ctx))
 
   # enterFull_course(self, ctx: ReqBlockParser.Full_courseContext)
   # -----------------------------------------------------------------------------------------------
@@ -198,11 +198,9 @@ class DGWProcessor(ReqBlockListener):
     """
     if LOG_PATH:
       print(context_path(ctx), file=sys.stderr)
-    print('*', dir(ctx.expression()))
-    for child in ctx.expression().getChildren():
-      print('**', child.getText())
-      print('***', child.symbol)
-      print('****', repr(child))
+    expr = ctx.expression()
+    print(expr.getText())
+    display_expr(expr)
 
   # enterElse_clause(self, ctx: ReqBlockParser.Else_clauseContext)
   # -----------------------------------------------------------------------------------------------
