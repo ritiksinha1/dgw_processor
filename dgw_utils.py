@@ -10,6 +10,7 @@ from pgconnection import PgConnection
 
 import argparse
 import os
+import sys
 
 DEBUG = os.getenv('DEBUG_INTERPRETER')
 
@@ -36,12 +37,16 @@ class ScribeSection(Enum):
 CatalogYears = namedtuple('CatalogYears', 'catalog_type first_year last_year text')
 
 
-def display_expr(ctx):
+# expression_terminals()
+# -------------------------------------------------------------------------------------------------
+def expression_terminals(ctx, terminal_list):
+  """ print the terminal nodes of an expression
+  """
   if ctx.getChildCount() == 0:
-    print('expr', ctx.getText())
+    terminal_list.append({ctx.getParent().__class__.__name__: ctx.getText()})
   else:
     for child in ctx.getChildren():
-      display_expr(child)
+      expression_terminals(child, terminal_list)
 
 
 # context_path()
@@ -212,56 +217,62 @@ def build_course_list(institution, ctx) -> list:
 
   """
   if DEBUG:
-    print(f'*** build_course_list()', file=sys.stderr)
+    print(f'*** build_course_list({institution}, {ctx.__class__.__name__})', file=sys.stderr)
   if ctx is None:
     return None
 
   # The object to be returned (as a namedtuple), and shortcuts to the fields
   return_object = {'scribed_courses': [],
                    'list_type': '',
-                   'customizations': '',
-                   'exclusions': [],
+                   'qualifiers': [],
+                   'label': '',
                    'active_courses': [],
                    'attributes': []}
   scribed_courses = return_object['scribed_courses']
-  exclusions = return_object['exclusions']
+  list_type = return_object['list_type']
+  qualifiers = return_object['qualifiers']
   active_courses = return_object['active_courses']
   attributes = return_object['attributes']
 
   # Drill into ctx to determine which type of list
   if ctx.and_list():
-    return_object['list_type'] = 'and'
+    list_type = 'and'
     list_fun = ctx.and_list
   elif ctx.or_list():
-    return_object['list_type'] = 'or'
+    list_type = 'or'
     list_fun = ctx.or_list
   else:
     list_fun = None
 
-  # The list has to start with both a discipline and catalog number
-  course_ctx = ctx.course()
-  discipline, catalog_number = (str(c) for c in course_ctx.children)
+  # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
+  # is given.
+  print(ctx.course_item().getText())
+  discipline, catalog_number, course_qualifier = (None, None, None)
+  catalog_number = ctx.course_item().catalog_number().getText()
+  # The next two might be absent
+  try:
+    discipline = ctx.course_item().discipline().getText()
+  except AttributeError as ae:
+    discipline = '@'
+  try:
+    course_qualifier = ctx.course_item().course_qualifier().getText()
+  except AttributeError as ae:
+    pass
   scribed_courses.append((discipline, catalog_number))
 
   # For the remaining scribed courses, distribute disciplines across elided elements
   if list_fun is not None:
     course_items = list_fun().course_item()
     for course_item in course_items:
-      items = [str(c) for c in course_item.children]
+      items = [c.getText() for c in course_item.children]
       if len(items) == 1:
         catalog_number = items[0]
       else:
         discipline, catalog_number = items
       scribed_courses.append((discipline, catalog_number))
 
-  # Customizations (WITH clause)
-  if ctx.with_clause():
-    return_object['customizations'] = with_clause(ctx.with_clause())
-
-  # Exclusions (EXCEPT clauses)
-  if ctx.except_clause():
-    exclusions_ctx = ctx.except_clause()
-    return_object['exceptions'] = build_course_list(institution, exclusions_ctx)
+  if course_qualifier is not None:
+    print('course qualifier not implemented yet', course_qualifier)
 
   # Active Courses
   conn = PgConnection()
@@ -331,7 +342,8 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
       all_blanket = True
       all_writing = True
       for row in cursor.fetchall():
-        active_courses.append(row)
+        active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
+                               row.title))
         if 'BKCR' not in row.attributes:
           all_blanket = False
         if 'WRIC' not in row.attributes:
@@ -344,7 +356,7 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
 
   #
 
-  return CourseList._make(return_object.values())
+  return return_object
 
 
 # course_list2html()

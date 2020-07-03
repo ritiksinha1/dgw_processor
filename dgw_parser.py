@@ -1,6 +1,9 @@
 #! /usr/bin/env python3
-""" Parse a requirement block, create a DGWProcessor to process nodes in the parse tree,
-   and walk the parse tree. The DGWProcessor will pick up the pieces.
+""" This is the entry point for processing a requirement block during development.
+
+    Use command line args to select a block from the db, then parse it, create a DGW_Processor to
+    process nodes in the parse tree, and walk the parse tree. The DGW_Processor object will pick up
+    the pieces.
 """
 
 
@@ -32,7 +35,7 @@ from pgconnection import PgConnection
 
 from templates import *
 
-from dgw_processor import DGWProcessor
+from dgw_processor import DGW_Processor
 from dgw_logger import DGW_Logger
 from dgw_filter import filter
 
@@ -98,18 +101,19 @@ def dgw_parser(institution, block_type, block_value, period='current', do_parse=
     # For parsing, also filter out "hide" things, but leave them in for display purposes.
     text_to_parse = filter(row.requirement_text)
     text_to_show = filter(row.requirement_text, remove_hide=False)
-    processor = DGWProcessor(institution,
-                             row.requirement_id,
-                             block_type,
-                             block_value,
-                             row.title,
-                             row.period_start,
-                             row.period_stop,
-                             text_to_show)
+    processor = DGW_Processor(institution,
+                              row.requirement_id,
+                              block_type,
+                              block_value,
+                              row.title,
+                              row.period_start,
+                              row.period_stop,
+                              text_to_show)
 
     # Default behavior is just to show the scribe block(s), and not to try parsing them in real
     # time. (But during development, that can be useful for catching coding errors.)
     if do_parse:
+      print('Parsing ...')
       dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
 
       input_stream = InputStream(text_to_parse)
@@ -122,12 +126,14 @@ def dgw_parser(institution, block_type, block_value, period='current', do_parse=
       parser.addErrorListener(dgw_logger)
 
       try:
+        print('Walking ...')
         walker = ParseTreeWalker()
         tree = parser.req_block()
         walker.walk(processor, tree)
       except Exception as e:
         if DEBUG:
           exc_type, exc_value, exc_traceback = sys.exc_info()
+          print(f'{exc_type.__name__}: {exc_value}')
           traceback.print_tb(exc_traceback, limit=30, file=sys.stdout)
         msg_body = f"""College: {processor.institution}
                        Block Type: {processor.block_type}
