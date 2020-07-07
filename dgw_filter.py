@@ -7,9 +7,9 @@ import re
 import sys
 
 
-# filter()
+# dgw_filter()
 # -------------------------------------------------------------------------------------------------
-def filter(src, remove_hide=True, remove_comments=False):
+def dgw_filter(src, remove_hide=True, remove_comments=False):
   """ Remove all text following "END." Optionally, remove comments and text related to hiding
       parts of the requirements from the audit report.
   """

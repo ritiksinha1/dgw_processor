@@ -37,7 +37,7 @@ from templates import *
 
 from dgw_processor import DGW_Processor
 from dgw_logger import DGW_Logger
-from dgw_filter import filter
+from dgw_filter import dgw_filter
 
 # Module initialization
 # -------------------------------------------------------------------------------------------------
@@ -99,8 +99,8 @@ def dgw_parser(institution, block_type, block_value, period='current', do_parse=
               """
     # Filter out everything after END.
     # For parsing, also filter out "hide" things, but leave them in for display purposes.
-    text_to_parse = filter(row.requirement_text)
-    text_to_show = filter(row.requirement_text, remove_hide=False)
+    text_to_parse = dgw_filter(row.requirement_text)
+    text_to_show = dgw_filter(row.requirement_text, remove_hide=False)
     processor = DGW_Processor(institution,
                               row.requirement_id,
                               block_type,

@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from pgconnection import PgConnection
 
-from dgw_filter import filter
+from dgw_filter import dgw_filter
 
 parser = argparse.ArgumentParser(description='Generate test data for ReqBlock.g4')
 parser.add_argument('-d', '--debug', action='store_true', default=False)
@@ -78,7 +78,7 @@ for block_type in block_types:
 
   for block in cursor.fetchall():
     # Check for quarantined status
-    text_to_write = filter(block.requirement_text)
+    text_to_write = dgw_filter(block.requirement_text)
     title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
                                                              '_', block.title)))
     if (block.institution, block.requirement_id) in quarantined_blocks:
