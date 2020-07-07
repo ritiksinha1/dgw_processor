@@ -225,7 +225,7 @@ def build_course_list(institution, ctx) -> list:
   return_object = {'scribed_courses': [],
                    'list_type': '',
                    'qualifiers': [],
-                   'label': '',
+                   'label': None,
                    'active_courses': [],
                    'attributes': []}
   scribed_courses = return_object['scribed_courses']
@@ -233,6 +233,12 @@ def build_course_list(institution, ctx) -> list:
   qualifiers = return_object['qualifiers']
   active_courses = return_object['active_courses']
   attributes = return_object['attributes']
+
+  # Pick up the label, if there is one
+  try:
+    return_object['label'] = ctx.label().STRING().getText()
+  except AttributeError as ae:
+    pass
 
   # Drill into ctx to determine which type of list
   if ctx.and_list():
@@ -271,8 +277,9 @@ def build_course_list(institution, ctx) -> list:
         discipline, catalog_number = items
       scribed_courses.append((discipline, catalog_number))
 
-  if course_qualifier is not None:
-    print('course qualifier not implemented yet', course_qualifier)
+  if ctx.course_qualifier() is not None:
+    qualifiers = ctx.course_qualifier()
+    print('course qualifier not implemented yet:', len(ctx.course_qualifier()))
 
   # Active Courses
   conn = PgConnection()
@@ -344,14 +351,14 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
       for row in cursor.fetchall():
         active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                row.title))
-        if 'BKCR' not in row.attributes:
+        if row.max_credits > 0 and 'BKCR' not in row.attributes:
           all_blanket = False
         if 'WRIC' not in row.attributes:
           all_writing = False
-      if all_blanket:
-        attributes.append('blanket')
-      if all_writing:
-        attributes.append('writing')
+  if all_blanket:
+    attributes.append('blanket')
+  if all_writing:
+    attributes.append('writing')
   conn.close()
 
   #

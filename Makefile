@@ -8,7 +8,7 @@ default: parser
 parser: ReqBlockParser.py
 
 ReqBlockParser.py: ReqBlock.g4 Makefile
-	$(antpy) -Dlanguage=Python3 ReqBlock.g4
+	$(antpy) -Dlanguage=Python3 -visitor ReqBlock.g4
 
 clean:
 	 rm -f *.java *.class tokens tree

@@ -22,7 +22,7 @@ from dgw_utils import build_course_list,\
     get_number,\
     ScribeSection
 
-LOG_PATH = os.getenv('LOG_DGW_PATH')
+LOG_DGW_CONTEXT_PATH = os.getenv('LOG_DGW_CONTEXT_PATH')
 
 
 # Class DGW_Processor(ReqBlockListener)
@@ -42,7 +42,7 @@ class DGW_Processor(ReqBlockListener):
     """ Constructor, given metadata and text for a requirement block.
     """
 
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(f'*** DGW_Processor: {institution} {requirement_id} {block_type} “{title}”',
             file=sys.stderr)
     self.institution = institution
@@ -109,7 +109,7 @@ class DGW_Processor(ReqBlockListener):
   def enterReq_block(self, ctx: ReqBlockParser.Req_blockContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterHead(self, ctx: ReqBlockParser.HeadContext)
@@ -117,7 +117,7 @@ class DGW_Processor(ReqBlockListener):
   def enterHead(self, ctx: ReqBlockParser.HeadContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     self.scribe_section = ScribeSection.HEAD
 
@@ -126,7 +126,7 @@ class DGW_Processor(ReqBlockListener):
   def enterBody(self, ctx: ReqBlockParser.BodyContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     self.scribe_section = ScribeSection.BODY
 
@@ -138,18 +138,22 @@ class DGW_Processor(ReqBlockListener):
         and_list        : (list_and course_item )+;
         or_list         : (list_or course_item)+;
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     print(context_path(ctx), file=sys.stderr)
     course_list = build_course_list(self.institution, ctx)
-    print(course_list)
+    print(f'   Num Scribed courses: {len(course_list["scribed_courses"]):>4}')
+    print(f'    Num Active courses: {len(course_list["active_courses"]):>4}')
+    print(f'            Qualifiers: {len(course_list["qualifiers"]):>4}')
+    print(f'                 Label: {course_list["label"]}')
+    print(f'  Attributes in common: {":".join(course_list["attributes"])}')
 
   # enterFull_course(self, ctx: ReqBlockParser.Full_courseContext)
   # -----------------------------------------------------------------------------------------------
   def enterFull_course(self, ctx: ReqBlockParser.Full_courseContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterCourse_item(self, ctx: ReqBlockParser.Course_itemContext)
@@ -157,7 +161,7 @@ class DGW_Processor(ReqBlockListener):
   def enterCourse_item(self, ctx: ReqBlockParser.Course_itemContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterAnd_list(self, ctx: ReqBlockParser.And_listContext)
@@ -165,7 +169,7 @@ class DGW_Processor(ReqBlockListener):
   def enterAnd_list(self, ctx: ReqBlockParser.And_listContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterOr_list(self, ctx: ReqBlockParser.Or_listContext)
@@ -173,7 +177,7 @@ class DGW_Processor(ReqBlockListener):
   def enterOr_list(self, ctx: ReqBlockParser.Or_listContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterDiscipline(self, ctx: ReqBlockParser.DisciplineContext)
@@ -181,7 +185,7 @@ class DGW_Processor(ReqBlockListener):
   def enterDiscipline(self, ctx: ReqBlockParser.DisciplineContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterCatalog_number(self, ctx: ReqBlockParser.Catalog_numberContext)
@@ -189,7 +193,7 @@ class DGW_Processor(ReqBlockListener):
   def enterCatalog_number(self, ctx: ReqBlockParser.Catalog_numberContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterCourse_qualifier(self, ctx: ReqBlockParser.Course_qualifierContext)
@@ -197,7 +201,7 @@ class DGW_Processor(ReqBlockListener):
   def enterCourse_qualifier(self, ctx: ReqBlockParser.Course_qualifierContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterIf_then(self, ctx: ReqBlockParser.If_thenContext)
@@ -205,7 +209,7 @@ class DGW_Processor(ReqBlockListener):
   def enterIf_then(self, ctx: ReqBlockParser.If_thenContext):
     """ IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause?;
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     # Capture the conditional expression's terminals
     expr = ctx.expression()
@@ -219,7 +223,7 @@ class DGW_Processor(ReqBlockListener):
   def enterElse_clause(self, ctx: ReqBlockParser.Else_clauseContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterStmt_group(self, ctx: ReqBlockParser.Stmt_groupContext)
@@ -227,7 +231,7 @@ class DGW_Processor(ReqBlockListener):
   def enterStmt_group(self, ctx: ReqBlockParser.Stmt_groupContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterStmt(self, ctx: ReqBlockParser.StmtContext)
@@ -235,7 +239,7 @@ class DGW_Processor(ReqBlockListener):
   def enterStmt(self, ctx: ReqBlockParser.StmtContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterBegin_if(self, ctx: ReqBlockParser.Begin_ifContext)
@@ -243,7 +247,7 @@ class DGW_Processor(ReqBlockListener):
   def enterBegin_if(self, ctx: ReqBlockParser.Begin_ifContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterEnd_if(self, ctx: ReqBlockParser.End_ifContext)
@@ -251,7 +255,7 @@ class DGW_Processor(ReqBlockListener):
   def enterEnd_if(self, ctx: ReqBlockParser.End_ifContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterGroup(self, ctx: ReqBlockParser.GroupContext)
@@ -259,7 +263,7 @@ class DGW_Processor(ReqBlockListener):
   def enterGroup(self, ctx: ReqBlockParser.GroupContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_list(self, ctx: ReqBlockParser.Group_listContext)
@@ -267,7 +271,7 @@ class DGW_Processor(ReqBlockListener):
   def enterGroup_list(self, ctx: ReqBlockParser.Group_listContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_item(self, ctx: ReqBlockParser.Group_itemContext)
@@ -275,7 +279,7 @@ class DGW_Processor(ReqBlockListener):
   def enterGroup_item(self, ctx: ReqBlockParser.Group_itemContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_qualifier(self, ctx: ReqBlockParser.Group_qualifierContext)
@@ -283,7 +287,7 @@ class DGW_Processor(ReqBlockListener):
   def enterGroup_qualifier(self, ctx: ReqBlockParser.Group_qualifierContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterSubset(self, ctx: ReqBlockParser.SubsetContext)
@@ -291,7 +295,7 @@ class DGW_Processor(ReqBlockListener):
   def enterSubset(self, ctx: ReqBlockParser.SubsetContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterSubset_qualifier(self, ctx: ReqBlockParser.Subset_qualifierContext)
@@ -299,7 +303,7 @@ class DGW_Processor(ReqBlockListener):
   def enterSubset_qualifier(self, ctx: ReqBlockParser.Subset_qualifierContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterBlock(self, ctx: ReqBlockParser.BlockContext)
@@ -307,7 +311,7 @@ class DGW_Processor(ReqBlockListener):
   def enterBlock(self, ctx: ReqBlockParser.BlockContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterBlocktype(self, ctx: ReqBlockParser.BlocktypeContext)
@@ -315,7 +319,7 @@ class DGW_Processor(ReqBlockListener):
   def enterBlocktype(self, ctx: ReqBlockParser.BlocktypeContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterAllow_clause(self, ctx: ReqBlockParser.Allow_clauseContext)
@@ -323,7 +327,7 @@ class DGW_Processor(ReqBlockListener):
   def enterAllow_clause(self, ctx: ReqBlockParser.Allow_clauseContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterArea_list(self, ctx: ReqBlockParser.Area_listContext)
@@ -331,7 +335,7 @@ class DGW_Processor(ReqBlockListener):
   def enterArea_list(self, ctx: ReqBlockParser.Area_listContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterArea_element(self, ctx: ReqBlockParser.Area_elementContext)
@@ -339,7 +343,7 @@ class DGW_Processor(ReqBlockListener):
   def enterArea_element(self, ctx: ReqBlockParser.Area_elementContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterClass_credit(self, ctx: ReqBlockParser.Class_creditContext)
@@ -347,7 +351,7 @@ class DGW_Processor(ReqBlockListener):
   def enterClass_credit(self, ctx: ReqBlockParser.Class_creditContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterCopy_rules(self, ctx: ReqBlockParser.Copy_rulesContext)
@@ -355,7 +359,7 @@ class DGW_Processor(ReqBlockListener):
   def enterCopy_rules(self, ctx: ReqBlockParser.Copy_rulesContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterExcept_clause(self, ctx: ReqBlockParser.Except_clauseContext)
@@ -363,7 +367,7 @@ class DGW_Processor(ReqBlockListener):
   def enterExcept_clause(self, ctx: ReqBlockParser.Except_clauseContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterIncluding_clause(self, ctx: ReqBlockParser.Including_clauseContext)
@@ -371,7 +375,7 @@ class DGW_Processor(ReqBlockListener):
   def enterIncluding_clause(self, ctx: ReqBlockParser.Including_clauseContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterLabel(self, ctx: ReqBlockParser.LabelContext)
@@ -379,7 +383,7 @@ class DGW_Processor(ReqBlockListener):
   def enterLabel(self, ctx: ReqBlockParser.LabelContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterLabel_tag(self, ctx: ReqBlockParser.Label_tagContext)
@@ -387,7 +391,7 @@ class DGW_Processor(ReqBlockListener):
   def enterLabel_tag(self, ctx: ReqBlockParser.Label_tagContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterLastres(self, ctx: ReqBlockParser.LastresContext)
@@ -395,7 +399,7 @@ class DGW_Processor(ReqBlockListener):
   def enterLastres(self, ctx: ReqBlockParser.LastresContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMaxclass(self, ctx: ReqBlockParser.MaxclassContext)
@@ -403,7 +407,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMaxclass(self, ctx: ReqBlockParser.MaxclassContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMaxcredit(self, ctx: ReqBlockParser.MaxcreditContext)
@@ -411,7 +415,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMaxcredit(self, ctx: ReqBlockParser.MaxcreditContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMaxpassfail(self, ctx: ReqBlockParser.MaxpassfailContext)
@@ -419,7 +423,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMaxpassfail(self, ctx: ReqBlockParser.MaxpassfailContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMaxperdisc(self, ctx: ReqBlockParser.MaxperdiscContext)
@@ -427,7 +431,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMaxperdisc(self, ctx: ReqBlockParser.MaxperdiscContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMaxspread(self, ctx: ReqBlockParser.MaxspreadContext)
@@ -435,7 +439,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMaxspread(self, ctx: ReqBlockParser.MaxspreadContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMaxterm(self, ctx: ReqBlockParser.MaxtermContext)
@@ -443,7 +447,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMaxterm(self, ctx: ReqBlockParser.MaxtermContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMaxtransfer(self, ctx: ReqBlockParser.MaxtransferContext)
@@ -451,7 +455,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMaxtransfer(self, ctx: ReqBlockParser.MaxtransferContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMinarea(self, ctx: ReqBlockParser.MinareaContext)
@@ -459,7 +463,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMinarea(self, ctx: ReqBlockParser.MinareaContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMinclass(self, ctx: ReqBlockParser.MinclassContext)
@@ -467,7 +471,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMinclass(self, ctx: ReqBlockParser.MinclassContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMincredit(self, ctx: ReqBlockParser.MincreditContext)
@@ -475,7 +479,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMincredit(self, ctx: ReqBlockParser.MincreditContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMingpa(self, ctx: ReqBlockParser.MingpaContext)
@@ -483,7 +487,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMingpa(self, ctx: ReqBlockParser.MingpaContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMingrade(self, ctx: ReqBlockParser.MingradeContext)
@@ -491,7 +495,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMingrade(self, ctx: ReqBlockParser.MingradeContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMinperdisc(self, ctx: ReqBlockParser.MinperdiscContext)
@@ -499,7 +503,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMinperdisc(self, ctx: ReqBlockParser.MinperdiscContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMinres(self, ctx: ReqBlockParser.MinresContext)
@@ -507,7 +511,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMinres(self, ctx: ReqBlockParser.MinresContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterMinspread(self, ctx: ReqBlockParser.MinspreadContext)
@@ -515,7 +519,7 @@ class DGW_Processor(ReqBlockListener):
   def enterMinspread(self, ctx: ReqBlockParser.MinspreadContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterNoncourse(self, ctx: ReqBlockParser.NoncourseContext)
@@ -523,7 +527,7 @@ class DGW_Processor(ReqBlockListener):
   def enterNoncourse(self, ctx: ReqBlockParser.NoncourseContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterOptional(self, ctx: ReqBlockParser.OptionalContext)
@@ -531,7 +535,7 @@ class DGW_Processor(ReqBlockListener):
   def enterOptional(self, ctx: ReqBlockParser.OptionalContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterRemark(self, ctx: ReqBlockParser.RemarkContext)
@@ -539,7 +543,7 @@ class DGW_Processor(ReqBlockListener):
   def enterRemark(self, ctx: ReqBlockParser.RemarkContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterRule_complete(self, ctx: ReqBlockParser.Rule_completeContext)
@@ -547,7 +551,7 @@ class DGW_Processor(ReqBlockListener):
   def enterRule_complete(self, ctx: ReqBlockParser.Rule_completeContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterRuletag(self, ctx: ReqBlockParser.RuletagContext)
@@ -555,7 +559,7 @@ class DGW_Processor(ReqBlockListener):
   def enterRuletag(self, ctx: ReqBlockParser.RuletagContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterSamedisc(self, ctx: ReqBlockParser.SamediscContext)
@@ -563,7 +567,7 @@ class DGW_Processor(ReqBlockListener):
   def enterSamedisc(self, ctx: ReqBlockParser.SamediscContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterShare(self, ctx: ReqBlockParser.ShareContext)
@@ -571,7 +575,7 @@ class DGW_Processor(ReqBlockListener):
   def enterShare(self, ctx: ReqBlockParser.ShareContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterStandalone(self, ctx: ReqBlockParser.StandaloneContext)
@@ -579,7 +583,7 @@ class DGW_Processor(ReqBlockListener):
   def enterStandalone(self, ctx: ReqBlockParser.StandaloneContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterTag(self, ctx: ReqBlockParser.TagContext)
@@ -587,7 +591,7 @@ class DGW_Processor(ReqBlockListener):
   def enterTag(self, ctx: ReqBlockParser.TagContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterUnder(self, ctx: ReqBlockParser.UnderContext)
@@ -595,7 +599,7 @@ class DGW_Processor(ReqBlockListener):
   def enterUnder(self, ctx: ReqBlockParser.UnderContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterWith_clause(self, ctx: ReqBlockParser.With_clauseContext)
@@ -603,7 +607,7 @@ class DGW_Processor(ReqBlockListener):
   def enterWith_clause(self, ctx: ReqBlockParser.With_clauseContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterExpression(self, ctx: ReqBlockParser.ExpressionContext)
@@ -611,7 +615,7 @@ class DGW_Processor(ReqBlockListener):
   def enterExpression(self, ctx: ReqBlockParser.ExpressionContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterLogical_op(self, ctx: ReqBlockParser.Logical_opContext)
@@ -619,7 +623,7 @@ class DGW_Processor(ReqBlockListener):
   def enterLogical_op(self, ctx: ReqBlockParser.Logical_opContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterRelational_op(self, ctx: ReqBlockParser.Relational_opContext)
@@ -627,7 +631,7 @@ class DGW_Processor(ReqBlockListener):
   def enterRelational_op(self, ctx: ReqBlockParser.Relational_opContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterList_or(self, ctx: ReqBlockParser.List_orContext)
@@ -635,7 +639,7 @@ class DGW_Processor(ReqBlockListener):
   def enterList_or(self, ctx: ReqBlockParser.List_orContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterList_and(self, ctx: ReqBlockParser.List_andContext)
@@ -643,5 +647,5 @@ class DGW_Processor(ReqBlockListener):
   def enterList_and(self, ctx: ReqBlockParser.List_andContext):
     """
     """
-    if LOG_PATH:
+    if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)

@@ -98,12 +98,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#course_qualifier.
-    def enterCourse_qualifier(self, ctx:ReqBlockParser.Course_qualifierContext):
+    # Enter a parse tree produced by ReqBlockParser#course_list_qualifier.
+    def enterCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#course_qualifier.
-    def exitCourse_qualifier(self, ctx:ReqBlockParser.Course_qualifierContext):
+    # Exit a parse tree produced by ReqBlockParser#course_list_qualifier.
+    def exitCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
         pass
 
 

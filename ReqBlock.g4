@@ -88,29 +88,28 @@ body        :
 /* NOT IMPLEMENTED: parts of a course list can be enclosed in square brackets, defining "areas"
  * to which the minarea qualifier can apply. Currently, square brackets are skipped (ignored).
  */
-course_list     : course_item (and_list | or_list)? course_qualifier* label?;
-full_course     : discipline catalog_number course_qualifier*;
-course_item     : discipline? catalog_number course_qualifier*;
-and_list        : (list_and course_item )+;
-or_list         : (list_or course_item)+;
-discipline      : SYMBOL | WILD | BLOCK | IS; // Include keywords that appear as discipline names
-catalog_number  : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
-course_qualifier: with_clause
-                | except_clause
-                | including_clause
-                | maxpassfail
-                | maxperdisc
-                | maxspread
-                | maxtransfer
-                | mincredit
-                | mingpa
-                | mingrade
-                | minspread
-                | ruletag
-                | samedisc
-                | share
-                | with_clause
-                ;
+course_list          : course_item (and_list | or_list)? course_list_qualifier* label?;
+course_list_qualifier: except_clause
+                     | including_clause
+                     | maxpassfail
+                     | maxperdisc
+                     | maxspread
+                     | maxtransfer
+                     | mincredit
+                     | mingpa
+                     | mingrade
+                     | minspread
+                     | ruletag
+                     | samedisc
+                     | share
+                     | with_clause
+                     ;
+full_course          : discipline catalog_number course_list_qualifier*;
+course_item          : discipline? catalog_number;
+and_list             : (list_and course_item )+;
+or_list              : (list_or course_item)+;
+catalog_number       : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
+discipline           : symbol | WILD | BLOCK | IS; // Include keywords that appear as discipline names
 
 //  if-then
 //  -----------------------------------------------------------------------------------------------
@@ -232,7 +231,7 @@ minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)
 minres          : MINRES NUMBER (CLASS | CREDIT) label? tag?;
 minspread       : MINSPREAD NUMBER tag?;
 
-noncourse       : NUMBER NONCOURSE expression course_qualifier? label?;
+noncourse       : NUMBER NONCOURSE LP expression RP label?;
 optional        : OPTIONAL;
 remark          : REMARK STRING SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
@@ -242,6 +241,7 @@ share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? ta
 //share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | STRING | WILD))?;
 //share_list      : expression;
 standalone      : STANDALONE;
+symbol          : SYMBOL;
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
 under           : UNDER NUMBER (CLASS | CREDIT)  full_course or_list? label;
 with_clause     : LP WITH expression RP;
