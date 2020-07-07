@@ -196,9 +196,9 @@ class DGW_Processor(ReqBlockListener):
     if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
-  # enterCourse_qualifier(self, ctx: ReqBlockParser.Course_qualifierContext)
+  # enterCourse_qualifier(self, ctx: ReqBlockParser.Course_list_qualifierContext)
   # -----------------------------------------------------------------------------------------------
-  def enterCourse_qualifier(self, ctx: ReqBlockParser.Course_qualifierContext):
+  def enterCourse_qualifier(self, ctx: ReqBlockParser.Course_list_qualifierContext):
     """
     """
     if LOG_DGW_CONTEXT_PATH:
