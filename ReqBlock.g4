@@ -85,9 +85,6 @@ body        :
 
 // Course List
 // ------------------------------------------------------------------------------------------------
-/* NOT IMPLEMENTED: parts of a course list can be enclosed in square brackets, defining "areas"
- * to which the minarea qualifier can apply. Currently, square brackets are skipped (ignored).
- */
 course_list          : course_item (and_list | or_list)? course_list_qualifier* label?;
 course_list_qualifier: except_clause
                      | including_clause
@@ -106,7 +103,7 @@ course_list_qualifier: except_clause
                      ;
 full_course          : discipline catalog_number course_list_qualifier*;
 course_item          : discipline? catalog_number;
-and_list             : (list_and course_item )+;
+and_list             : (list_and course_item)+;
 or_list              : (list_or course_item)+;
 catalog_number       : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
 discipline           : symbol | WILD | BLOCK | IS; // Include keywords that appear as discipline names
@@ -208,9 +205,8 @@ class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (
 copy_rules      : COPY_RULES expression SEMICOLON?;
 except_clause   : EXCEPT course_list;
 including_clause: INCLUDING course_list;
-label           : LABEL label_tag STRING SEMICOLON? label*;
-label_tag       : ~'"'*?;
-
+label           : LABEL label_tag? string SEMICOLON?;
+label_tag       : ~'"'+;
 lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag?;
 
 maxclass        : MAXCLASS NUMBER course_list? tag?;
@@ -233,14 +229,15 @@ minspread       : MINSPREAD NUMBER tag?;
 
 noncourse       : NUMBER NONCOURSE LP expression RP label?;
 optional        : OPTIONAL;
-remark          : REMARK STRING SEMICOLON? remark*;
+remark          : REMARK string SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
 ruletag         : RULE_TAG expression;
 samedisc        : SAME_DISC expression tag?;
 share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
-//share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | STRING | WILD))?;
+//share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | string | WILD))?;
 //share_list      : expression;
 standalone      : STANDALONE;
+string          : DBL_QUOTE ~DBL_QUOTE* DBL_QUOTE;
 symbol          : SYMBOL;
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
 under           : UNDER NUMBER (CLASS | CREDIT)  full_course or_list? label;
@@ -253,7 +250,7 @@ expression      : expression relational_op expression
                 | discipline
                 | NUMBER
                 | SYMBOL
-                | STRING
+                | string
                 | CATALOG_NUMBER
                 | LP expression RP
                 ;
@@ -280,7 +277,8 @@ DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
 DISPLAY         : [Dd][Ii][Ss][Pp][Ll][Aa][Yy] .*? '\n' -> skip;
 FROM            : [Ff][Rr][Oo][Mm] -> skip;
 FROM_ADVICE     : '-'?[Ff][Rr][Oo][Mm]'-'?[Aa][Dd][Vv][Ii][Cc][Ee] -> skip;
-//HIDE            : ([Hh][Ii][Dd][Ee])?
+// Preprocessor (dgw_filter.py) Now strips these
+// HIDE            : ([Hh][Ii][Dd][Ee])?
 //                  ('-'?[Ff][Rr][Oo][Mm]'-'?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
 HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
 HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
@@ -289,10 +287,11 @@ LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt
 NOTGPA          : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip;
 PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
 
-// Before BEGIN and fter ENDOT, the lexer does token recognition.
+// Before BEGIN and after ENDOT, the lexer does token recognition.
 // To avoid errors from text that can't be tokenized, skip Log lines and otherwise-illegal chars.
-LOGS            : [Ll][Oo][Gg] .*? '\n' -> skip;
-CRUFT           : [:/'*\\]+ -> skip;
+// Preprocessor (dgw_filter.py) Now strips these
+// LOGS            : [Ll][Oo][Gg] .*? '\n' -> skip;
+// CRUFT           : [:/'*\\]+ -> skip;
 
 WHITESPACE      : [ \t\n\r]+ -> skip;
 
@@ -380,13 +379,13 @@ RANGE           : NUMBER ' '* ':' ' '* NUMBER;
 CATALOG_NUMBER  : DIGIT+ LETTER+;
 WILD            : (SYMBOL)* AT (SYMBOL)*;
 SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND | '/')+;
-STRING      : '"' .*? '"';
 
 //  Character and operator names
 //  -----------------------------------------------------------------------------------------------
 AMPERSAND   : '&';
 AT          : '@'+;
 COMMA       : ',';
+DBL_QUOTE   : '"';
 EQ          : '=';
 GE          : '>=';
 GT          : '>';
