@@ -144,7 +144,7 @@ class DGW_Processor(ReqBlockListener):
     course_list = build_course_list(self.institution, ctx)
     print(f'   Num Scribed courses: {len(course_list["scribed_courses"]):>4}')
     print(f'    Num Active courses: {len(course_list["active_courses"]):>4}')
-    print(f'            Qualifiers: {len(course_list["qualifiers"]):>4}')
+    print(f'       List Qualifiers: {len(course_list["list_qualifiers"]):>4}')
     print(f'                 Label: {course_list["label"]}')
     print(f'  Attributes in common: {":".join(course_list["attributes"])}')
 

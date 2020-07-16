@@ -224,13 +224,13 @@ def build_course_list(institution, ctx) -> list:
   # The object to be returned (as a namedtuple), and shortcuts to the fields
   return_object = {'scribed_courses': [],
                    'list_type': '',
-                   'qualifiers': [],
+                   'list_qualifiers': [],
                    'label': None,
                    'active_courses': [],
                    'attributes': []}
   scribed_courses = return_object['scribed_courses']
   list_type = return_object['list_type']
-  qualifiers = return_object['qualifiers']
+  list_qualifiers = return_object['list_qualifiers']
   active_courses = return_object['active_courses']
   attributes = return_object['attributes']
 
@@ -238,6 +238,8 @@ def build_course_list(institution, ctx) -> list:
   try:
     return_object['label'] = ctx.label().STRING().getText()
   except AttributeError as ae:
+    if DEBUG:
+      print('No Label', file=sys.stderr)
     pass
 
   # Drill into ctx to determine which type of list
@@ -252,7 +254,6 @@ def build_course_list(institution, ctx) -> list:
 
   # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
   # is given.
-  print(ctx.course_item().getText())
   discipline, catalog_number, course_qualifier = (None, None, None)
   catalog_number = ctx.course_item().catalog_number().getText()
   # The next two might be absent
@@ -262,6 +263,7 @@ def build_course_list(institution, ctx) -> list:
     discipline = '@'
   try:
     course_qualifier = ctx.course_item().course_qualifier().getText()
+    print('course_qualifier', course_qualifier)  # Save this somewhere ...
   except AttributeError as ae:
     pass
   scribed_courses.append((discipline, catalog_number))
@@ -277,9 +279,11 @@ def build_course_list(institution, ctx) -> list:
         discipline, catalog_number = items
       scribed_courses.append((discipline, catalog_number))
 
-  if ctx.course_qualifier() is not None:
-    qualifiers = ctx.course_qualifier()
-    print('course qualifier not implemented yet:', len(ctx.course_qualifier()))
+  if ctx.course_list_qualifier is not None:
+    for list_qualifier in ctx.course_list_qualifier():
+      print('list_qualifier', list_qualifier.__class__.__name__)
+      list_qualifiers.append(list_qualifier.getText())
+
 
   # Active Courses
   conn = PgConnection()
