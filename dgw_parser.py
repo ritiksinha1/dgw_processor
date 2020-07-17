@@ -52,11 +52,6 @@ if not os.getenv('HEROKU'):
 Requirement = namedtuple('Requirement', 'keyword, value, text, course')
 ShareList = namedtuple('ShareList', 'keyword text share_list')
 
-# Used for lists of active courses found for particular scribed discipline-catalog_number pairs.
-CourseList = namedtuple('CourseList',
-                        'scribed_courses list_type customizations exclusions '
-                        'active_courses attributes')
-
 # Known named fields for WITH clauses
 with_named_fields = ['DWAge', 'DWCredits', 'DWCreditType', 'DWCourseNumber', 'DWDiscipline',
                      'DWGradeNumber', 'DWGradeLetter', 'DWGradeType', 'DWLocation', 'DWPassFail',

@@ -29,6 +29,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#course_list_qualifier.
+    def visitCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#full_course.
     def visitFull_course(self, ctx:ReqBlockParser.Full_courseContext):
         return self.visitChildren(ctx)
@@ -49,18 +54,13 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#discipline.
-    def visitDiscipline(self, ctx:ReqBlockParser.DisciplineContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by ReqBlockParser#catalog_number.
     def visitCatalog_number(self, ctx:ReqBlockParser.Catalog_numberContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#course_list_qualifier.
-    def visitCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
+    # Visit a parse tree produced by ReqBlockParser#discipline.
+    def visitDiscipline(self, ctx:ReqBlockParser.DisciplineContext):
         return self.visitChildren(ctx)
 
 
@@ -296,6 +296,16 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#standalone.
     def visitStandalone(self, ctx:ReqBlockParser.StandaloneContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#string.
+    def visitString(self, ctx:ReqBlockParser.StringContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#symbol.
+    def visitSymbol(self, ctx:ReqBlockParser.SymbolContext):
         return self.visitChildren(ctx)
 
 

@@ -140,13 +140,17 @@ class DGW_Processor(ReqBlockListener):
     """
     if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
-    print(context_path(ctx), file=sys.stderr)
     course_list = build_course_list(self.institution, ctx)
-    print(f'   Num Scribed courses: {len(course_list["scribed_courses"]):>4}')
-    print(f'    Num Active courses: {len(course_list["active_courses"]):>4}')
-    print(f'       List Qualifiers: {len(course_list["list_qualifiers"]):>4}')
+    print(f'\n               Context: {course_list["context_path"]}')
+    print(f'   Num Scribed Courses: {len(course_list["scribed_courses"]):>4}')
+    if len(course_list["scribed_courses"]) > 1:
+      print(f'             List Type: {course_list["list_type"]:>4}')
+    print(f'    Num Active Courses: {len(course_list["active_courses"]):>4}')
+    if len(course_list["list_qualifiers"]) > 0:
+      print(f'       List Qualifiers: {", ".join(course_list["list_qualifiers"])}')
     print(f'                 Label: {course_list["label"]}')
-    print(f'  Attributes in common: {":".join(course_list["attributes"])}')
+    if len(course_list["attributes"]) > 0:
+      print(f'  Attributes in Common: {", ".join(course_list["attributes"])}')
 
   # enterFull_course(self, ctx: ReqBlockParser.Full_courseContext)
   # -----------------------------------------------------------------------------------------------

@@ -60,7 +60,7 @@ def context_path(ctx):
   while cur_ctx:
     ctx_list.insert(0, type(cur_ctx).__name__.replace('Context', ''))
     cur_ctx = cur_ctx.parentCtx
-  return ' => '.join(ctx_list)
+  return ' => '.join(ctx_list[1:])
 
 
 # catalog_years()
@@ -175,32 +175,89 @@ def with_clause(ctx):
   return 'There was a WITH clause'
 
 
+# get_course_list_qualifier()
+# -------------------------------------------------------------------------------------------------
+def get_course_list_qualifier(ctx):
+  """ course_list_qualifier: except_clause      EXCEPT course_list;
+                           | including_clause   INCLUDING course_list;
+                           | maxpassfail        MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? tag?;
+                           | maxperdisc         MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP tag?;
+                           | maxspread          MAXSPREAD NUMBER tag?;
+                           | maxtransfer        MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
+                           | mincredit          MINCREDIT (NUMBER|RANGE) course_list tag?;
+                           | mingpa             MINGPA NUMBER (course_list | expression)? tag? label?;
+                           | mingrade           MINGRADE NUMBER;
+                           | minspread          MINSPREAD NUMBER tag?;
+                           | ruletag            RULE_TAG expression;
+                           | samedisc           SAME_DISC expression tag?;
+                           | share              (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
+                           ;
+  """
+  assert ctx.__class__.__name__ == 'Course_list_qualifierContext', (f'{ctx.__class__.__name__} '
+                                                                    'is not Course_list_qualifier'
+                                                                    'Context')
+  if ctx.except_clause() is not None:
+    return 'except'
+  if ctx.including_clause() is not None:
+    return 'including'
+  if ctx.maxpassfail() is not None:
+    return 'maxpassfail'
+  if ctx.maxperdisc() is not None:
+    return 'maxperdisc'
+  if ctx.maxspread() is not None:
+    return 'maxspread'
+  if ctx.maxtransfer() is not None:
+    return 'maxtransfer'
+  if ctx.mincredit() is not None:
+    return 'mincredit'
+  if ctx.mingpa() is not None:
+    return 'mingpa'
+  if ctx.mingrade() is not None:
+    return 'mingrade'
+  if ctx.minspread() is not None:
+    return 'minspread'
+  if ctx.ruletag() is not None:
+    return 'ruletag'
+  if ctx.samedisc() is not None:
+    return 'samedisc'
+  if ctx.share() is not None:
+    return 'share'
+  return 'UNKNOWN'
+
+
+# build_string()
+# -------------------------------------------------------------------------------------------------
+def build_string(ctx) -> str:
+  """ string          : DBL_QUOTE ~DBL_QUOTE* DBL_QUOTE;
+      What’s between the double quotes has been tokenized, so the tokens have to be joined with a
+      space betwen them.
+  """
+  assert ctx.__class__.__name__ == 'StringContext', (f'{ctx.__class__.__name} '
+                                                     f'is not StringContext')
+  tokens = [child.getText() for child in ctx.children]
+  return ' '.join(tokens[1:-1])
+
+
 # build_course_list()
 # -------------------------------------------------------------------------------------------------
 def build_course_list(institution, ctx) -> list:
-  """ course_list     : course_item (and_list | or_list)? course_qualifier* label?;
-      full_course     : discipline catalog_number course_qualifier*;
-      course_item     : discipline? catalog_number course_qualifier*;
-      and_list        : (list_and course_item )+;
-      or_list         : (list_or course_item)+;
-      discipline      : SYMBOL | WILD | BLOCK | IS; // Keywords can be discipline names
-      catalog_number  : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
-      course_qualifier: with_clause
-                      | except_clause
-                      | including_clause
-                      | maxpassfail
-                      | maxperdisc
-                      | maxspread
-                      | maxtransfer
-                      | mincredit
-                      | mingpa
-                      | mingrade
-                      | minspread
-                      | ruletag
-                      | samedisc
-                      | share
-                      | with_clause
-                      ;
+  """ course_list          : course_item (and_list | or_list)? course_list_qualifier* label?;
+      course_list_qualifier: except_clause
+                           | including_clause
+                           | maxpassfail
+                           | maxperdisc
+                           | maxspread
+                           | maxtransfer
+                           | mincredit
+                           | mingpa
+                           | mingrade
+                           | minspread
+                           | ruletag
+                           | samedisc
+                           | share
+                           ;
+      full_course          : discipline catalog_number with_clause*;
+      course_item          : discipline? catalog_number with_clause;
 
       The returned object has the following structure:
         scribed_courses     List of all discipline:catalog_number pairs specified after distributing
@@ -214,14 +271,15 @@ def build_course_list(institution, ctx) -> list:
                             expanding wildcards and catalog_number ranges.
         attributes          List of all attribute values the active courses list have in common,
                             currently limited to WRIC and BKCR
-
   """
+  assert ctx.__class__.__name__ == 'Course_listContext', (f'{ctx.__class__.__name__} '
+                                                          f'is not Course_listContext')
   if DEBUG:
     print(f'*** build_course_list({institution}, {ctx.__class__.__name__})', file=sys.stderr)
   if ctx is None:
     return None
 
-  # The object to be returned (as a namedtuple), and shortcuts to the fields
+  # The object to be returned (as a namedtuple), and shortcuts to the list fields
   return_object = {'scribed_courses': [],
                    'list_type': '',
                    'list_qualifiers': [],
@@ -229,14 +287,15 @@ def build_course_list(institution, ctx) -> list:
                    'active_courses': [],
                    'attributes': []}
   scribed_courses = return_object['scribed_courses']
-  list_type = return_object['list_type']
   list_qualifiers = return_object['list_qualifiers']
   active_courses = return_object['active_courses']
   attributes = return_object['attributes']
 
+  # For development, include the context path
+  return_object['context_path'] = context_path(ctx)
   # Pick up the label, if there is one
   try:
-    return_object['label'] = ctx.label().STRING().getText()
+    return_object['label'] = build_string(ctx.label().string())
   except AttributeError as ae:
     if DEBUG:
       print('No Label', file=sys.stderr)
@@ -244,17 +303,18 @@ def build_course_list(institution, ctx) -> list:
 
   # Drill into ctx to determine which type of list
   if ctx.and_list():
-    list_type = 'and'
+    return_object['list_type'] = 'AND'
     list_fun = ctx.and_list
   elif ctx.or_list():
-    list_type = 'or'
+    return_object['list_type'] = 'OR'
     list_fun = ctx.or_list
   else:
+    return_object['list_type'] = 'None'
     list_fun = None
 
   # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
   # is given.
-  discipline, catalog_number, course_qualifier = (None, None, None)
+  discipline, catalog_number, with_clause = (None, None, None)
   catalog_number = ctx.course_item().catalog_number().getText()
   # The next two might be absent
   try:
@@ -262,8 +322,8 @@ def build_course_list(institution, ctx) -> list:
   except AttributeError as ae:
     discipline = '@'
   try:
-    course_qualifier = ctx.course_item().course_qualifier().getText()
-    print('course_qualifier', course_qualifier)  # Save this somewhere ...
+    with_clause = ctx.course_item().with_clause().getText()
+    print('with_clause', with_clause.__class__.__name__, file=sys.stderr)
   except AttributeError as ae:
     pass
   scribed_courses.append((discipline, catalog_number))
@@ -280,10 +340,8 @@ def build_course_list(institution, ctx) -> list:
       scribed_courses.append((discipline, catalog_number))
 
   if ctx.course_list_qualifier is not None:
-    for list_qualifier in ctx.course_list_qualifier():
-      print('list_qualifier', list_qualifier.__class__.__name__)
-      list_qualifiers.append(list_qualifier.getText())
-
+    for context in ctx.course_list_qualifier():
+      list_qualifiers.append(get_course_list_qualifier(context))
 
   # Active Courses
   conn = PgConnection()
@@ -295,11 +353,10 @@ def build_course_list(institution, ctx) -> list:
     discipline, catalog_number = scribed_course
     # discipline part
     discp_op = '='
+
     if '@' in discipline:
       discp_op = '~*'
       discipline = '^' + discipline.replace('@', '.*') + '$'
-
-    # catalog number part
 
     #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
     #   numbers that start with zero. But other patterns might be used: 1@, for example.
@@ -360,9 +417,9 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
         if 'WRIC' not in row.attributes:
           all_writing = False
   if all_blanket:
-    attributes.append('blanket')
+    attributes.append('Blanket Credit')
   if all_writing:
-    attributes.append('writing')
+    attributes.append('Writing Intensive')
   conn.close()
 
   #

@@ -44,6 +44,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#course_list_qualifier.
+    def enterCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#course_list_qualifier.
+    def exitCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#full_course.
     def enterFull_course(self, ctx:ReqBlockParser.Full_courseContext):
         pass
@@ -80,15 +89,6 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#discipline.
-    def enterDiscipline(self, ctx:ReqBlockParser.DisciplineContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#discipline.
-    def exitDiscipline(self, ctx:ReqBlockParser.DisciplineContext):
-        pass
-
-
     # Enter a parse tree produced by ReqBlockParser#catalog_number.
     def enterCatalog_number(self, ctx:ReqBlockParser.Catalog_numberContext):
         pass
@@ -98,12 +98,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#course_list_qualifier.
-    def enterCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
+    # Enter a parse tree produced by ReqBlockParser#discipline.
+    def enterDiscipline(self, ctx:ReqBlockParser.DisciplineContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#course_list_qualifier.
-    def exitCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
+    # Exit a parse tree produced by ReqBlockParser#discipline.
+    def exitDiscipline(self, ctx:ReqBlockParser.DisciplineContext):
         pass
 
 
@@ -527,6 +527,24 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#standalone.
     def exitStandalone(self, ctx:ReqBlockParser.StandaloneContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#string.
+    def enterString(self, ctx:ReqBlockParser.StringContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#string.
+    def exitString(self, ctx:ReqBlockParser.StringContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#symbol.
+    def enterSymbol(self, ctx:ReqBlockParser.SymbolContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#symbol.
+    def exitSymbol(self, ctx:ReqBlockParser.SymbolContext):
         pass
 
 

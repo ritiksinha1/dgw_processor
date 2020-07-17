@@ -99,10 +99,9 @@ course_list_qualifier: except_clause
                      | ruletag
                      | samedisc
                      | share
-                     | with_clause
                      ;
-full_course          : discipline catalog_number course_list_qualifier*;
-course_item          : discipline? catalog_number;
+full_course          : discipline catalog_number with_clause*;
+course_item          : discipline? catalog_number with_clause*;
 and_list             : (list_and course_item)+;
 or_list              : (list_or course_item)+;
 catalog_number       : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
@@ -240,7 +239,7 @@ standalone      : STANDALONE;
 string          : DBL_QUOTE ~DBL_QUOTE* DBL_QUOTE;
 symbol          : SYMBOL;
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
-under           : UNDER NUMBER (CLASS | CREDIT)  full_course or_list? label;
+under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? label;
 with_clause     : LP WITH expression RP;
 
 expression      : expression relational_op expression
