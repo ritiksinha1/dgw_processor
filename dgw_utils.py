@@ -3,7 +3,6 @@
 """
 
 from collections import namedtuple
-from enum import Enum
 from typing import List, Set, Dict, Tuple, Optional, Union
 
 from pgconnection import PgConnection
@@ -22,16 +21,6 @@ cursor.execute('select code, name from cuny_institutions')
 for row in cursor.fetchall():
   colleges[row.code] = row.name
 conn.close()
-
-
-# class ScribeSection(Enum)
-# -------------------------------------------------------------------------------------------------
-class ScribeSection(Enum):
-  """ Keep track of which section of a Scribe Block is being processed.
-  """
-  NONE = 0
-  HEAD = 1
-  BODY = 2
 
 
 CatalogYears = namedtuple('CatalogYears', 'catalog_type first_year last_year text')
@@ -280,7 +269,8 @@ def build_course_list(institution, ctx) -> list:
     return None
 
   # The object to be returned (as a namedtuple), and shortcuts to the list fields
-  return_object = {'scribed_courses': [],
+  return_object = {'object_type': 'course_list',
+                   'scribed_courses': [],
                    'list_type': '',
                    'list_qualifiers': [],
                    'label': None,
@@ -416,10 +406,10 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
           all_blanket = False
         if 'WRIC' not in row.attributes:
           all_writing = False
-  if all_blanket:
-    attributes.append('Blanket Credit')
-  if all_writing:
-    attributes.append('Writing Intensive')
+      if all_blanket:
+        attributes.append('Blanket Credit')
+      if all_writing:
+        attributes.append('Writing Intensive')
   conn.close()
 
   #

@@ -3,15 +3,14 @@
 """
 import os
 import sys
-import argparse
 
-from antlr4 import *
+from enum import IntEnum
 
 from ReqBlockLexer import ReqBlockLexer
 from ReqBlockParser import ReqBlockParser
 from ReqBlockListener import ReqBlockListener
 
-from closeable_objects import dict2html, items2html
+# from closeable_objects import dict2html, items2html
 
 from dgw_utils import build_course_list,\
     catalog_years,\
@@ -19,10 +18,19 @@ from dgw_utils import build_course_list,\
     colleges,\
     context_path,\
     expression_terminals,\
-    get_number,\
-    ScribeSection
+    get_number
 
 LOG_DGW_CONTEXT_PATH = os.getenv('LOG_DGW_CONTEXT_PATH')
+
+
+# class ScribeSection(IntEnum)
+# -------------------------------------------------------------------------------------------------
+class ScribeSection(IntEnum):
+  """ Keep track of which section of a Scribe Block is being processed.
+  """
+  NONE = 0
+  HEAD = 1
+  BODY = 2
 
 
 # Class DGW_Processor(ReqBlockListener)
@@ -60,10 +68,10 @@ class DGW_Processor(ReqBlockListener):
     self.scribe_section = ScribeSection.NONE
     self.sections = [None, [], []]  # NONE, HEAD, BODY
 
-  @property
-  def html(self):
+  # @property
+  def html(self, with_line_nums=False):
     lines_pre = ''
-    if os.getenv('DEVELOPMENT'):
+    if with_line_nums:
       # Add line numbers to requirements text for development purposes.
       num_lines = self.requirement_text.count('\n')
       lines_pre = '<pre class="line-numbers">'
@@ -71,7 +79,7 @@ class DGW_Processor(ReqBlockListener):
         lines_pre += f'{line + 1:03d}  \n'
       lines_pre += '</pre>'
 
-    html_body = f"""
+    html_scribe_block = f"""
 <h1>{self.institution_name} {self.requirement_id}: <em>{self.title}</em></h1>
 <p>Requirements for {self.catalog_years.catalog_type} Catalog Years
 {self.catalog_years.text}
@@ -86,19 +94,9 @@ class DGW_Processor(ReqBlockListener):
     </section
   </div>
 </section>
-<!--
-  <section>
-    <h1 class="closer">Extracted Requirements</h1>
-    <div>
-      <hr>
-      {items2html(self.sections[ScribeSection.HEAD.value], 'Head Item')}
-      {items2html(self.sections[ScribeSection.BODY.value], 'Body Item')}
-    </div>
-</section
--->
 """
 
-    return html_body
+    return html_scribe_block
 
   # ==============================================================================================#
   # ReqBlockListener Overrides                                                                    #
@@ -141,16 +139,18 @@ class DGW_Processor(ReqBlockListener):
     if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     course_list = build_course_list(self.institution, ctx)
-    print(f'\n               Context: {course_list["context_path"]}')
-    print(f'   Num Scribed Courses: {len(course_list["scribed_courses"]):>4}')
-    if len(course_list["scribed_courses"]) > 1:
-      print(f'             List Type: {course_list["list_type"]:>4}')
-    print(f'    Num Active Courses: {len(course_list["active_courses"]):>4}')
-    if len(course_list["list_qualifiers"]) > 0:
-      print(f'       List Qualifiers: {", ".join(course_list["list_qualifiers"])}')
-    print(f'                 Label: {course_list["label"]}')
-    if len(course_list["attributes"]) > 0:
-      print(f'  Attributes in Common: {", ".join(course_list["attributes"])}')
+    self.sections[self.scribe_section].append(course_list)
+    if os.getenv('DEVELOPMENT'):
+      print(f'\n               Context: {course_list["context_path"]}')
+      print(f'   Num Scribed Courses: {len(course_list["scribed_courses"]):>4}')
+      if len(course_list["scribed_courses"]) > 1:
+        print(f'             List Type: {course_list["list_type"]:>4}')
+      print(f'    Num Active Courses: {len(course_list["active_courses"]):>4}')
+      if len(course_list["list_qualifiers"]) > 0:
+        print(f'       List Qualifiers: {", ".join(course_list["list_qualifiers"])}')
+      print(f'                 Label: {course_list["label"]}')
+      if len(course_list["attributes"]) > 0:
+        print(f'  Attributes in Common: {", ".join(course_list["attributes"])}')
 
   # enterFull_course(self, ctx: ReqBlockParser.Full_courseContext)
   # -----------------------------------------------------------------------------------------------

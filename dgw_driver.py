@@ -1,9 +1,10 @@
 #! /usr/bin/env python3
-""" This is the entry point for processing a requirement block during development.
+""" This is the entry point for processing a requirement block.
 
-    Use command line args to select a block from the db, then parse it, create a DGW_Processor to
-    process nodes in the parse tree, and walk the parse tree. The DGW_Processor object will pick up
-    the pieces.
+    Use command line args to select a block from the db, create a DGW_Processor to
+    hold information extracted from the block., then walk the parse tree. The DGW_Processor object’s
+    listener methods extract information during this process. Then this driver displays the results
+    and/or saves them in the requirement_blocks table.
 """
 
 
@@ -16,6 +17,7 @@ import sys
 
 import argparse
 import inspect
+import json
 import logging
 import traceback
 
@@ -64,30 +66,36 @@ known_with_qualifiers = ['DWPassFail', 'DWResident', 'DWTransfer', 'DWTransferCo
 
 # dgw_parser()
 # =================================================================================================
-def dgw_parser(institution, block_type, block_value, period='current', do_parse=False):
-  """  Creates a ReqBlockInterpreter, which will include a json representation of requirements.
-       For now, it returns an html string telling what it was able to extract from the requirement
-       text.
+def dgw_parser(institution, block_type, block_value, period='all', do_parse=False):
+  """ For each matching Scribe Block, create a DGW_Processor to hold the info about it; the
+      constructor parses the block and extracts information objects from it, creating a HTML
+      representation of the Scribe Block and lists of dicts of the extracted objects, one for the
+      head and one for the body of the block.
+
+      Update/replace the HTML Scribe Block and the lists of object in the requirement_blocks table.
+
        The period argument can be 'current', 'latest', or 'all', which will be picked out of the
        result set for 'all'
   """
   if DEBUG:
-    print(f'*** dgw_parser({institution}, {block_type}, {block_value}. {period})')
+    print(f'*** dgw_parser({institution}, {block_type}, {block_value}. {period})', file=sys.stderr)
   conn = PgConnection()
-  cursor = conn.cursor()
+  fetch_cursor = conn.cursor()
+  update_cursor = conn.cursor()
   query = """
     select requirement_id, title, period_start, period_stop, requirement_text
     from requirement_blocks
     where institution ~* %s
       and block_type = %s
       and block_value = %s
-    order by period_stop desc
+    order by period_stop
   """
-  cursor.execute(query, (institution, block_type.upper(), block_value.upper()))
+  fetch_cursor.execute(query, (institution, block_type, block_value))
   # Sanity Check
-  assert cursor.rowcount > 0, f'<h1 class="error">No Requirements Found</h1><p>{cursor.query}</p>'
-  return_html = ''
-  for row in cursor.fetchall():
+  assert fetch_cursor.rowcount > 0, f'No Requirements Found\n{cursor.query}'
+  num_rows = fetch_cursor.rowcount
+  num_updates = 0
+  for row in fetch_cursor.fetchall():
     if period == 'current' and row.period_stop != '99999999':
       return f"""<h1 class="error">“{row.title}” is not a currently offered {block_type}
                  at {institution}.</h1>
@@ -108,7 +116,8 @@ def dgw_parser(institution, block_type, block_value, period='current', do_parse=
     # Default behavior is just to show the scribe block(s), and not to try parsing them in real
     # time. (But during development, that can be useful for catching coding errors.)
     if do_parse:
-      print('Parsing ...')
+      if DEBUG:
+        print('Parsing ...', file=sys.stderr)
       dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
 
       input_stream = InputStream(text_to_parse)
@@ -119,39 +128,44 @@ def dgw_parser(institution, block_type, block_value, period='current', do_parse=
       parser = ReqBlockParser(token_stream)
       parser.removeErrorListeners()
       parser.addErrorListener(dgw_logger)
+      tree = parser.req_block()
 
       try:
-        print('Walking ...')
+        if DEBUG:
+          print('Walking ...', file=sys.stderr)
         walker = ParseTreeWalker()
-        tree = parser.req_block()
         walker.walk(processor, tree)
       except Exception as e:
-        if DEBUG:
-          exc_type, exc_value, exc_traceback = sys.exc_info()
-          print(f'{exc_type.__name__}: {exc_value}')
-          traceback.print_tb(exc_traceback, limit=30, file=sys.stdout)
-        msg_body = f"""College: {processor.institution}
-                       Block Type: {processor.block_type}
-                       Block Value: {processor.block_value}
-                       Catalog: {processor.catalog_years.catalog_type}
-                       Catalog Years: {processor.catalog_years.text}
-                       Error: {e}"""
-        msg_body = parse.quote(re.sub(r'\n\s*', r'\n', msg_body))
-        email_link = f"""
-        <a href="mailto:cvickery@qc.cuny.edu?subject=DGW%20Parser%20Failure&body={msg_body}"
-           class="button">report this problem (optional)</a>"""
-
-        return_html = (f"""<div class="error-box">
-                          <p class="error">Currently unable to interpret this block completely.</p>
-                          <p class="error">Internal Error Message: “<em>{e}</em>”</p>
-                          <p>{email_link}</p></div>"""
-                       + return_html)
-    return_html += processor.html
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print(f'{exc_type.__name__}: {exc_value}', file=sys.stderr)
+        traceback.print_tb(exc_traceback, limit=30, file=sys.stderr)
+        # msg_body = f"""College: {processor.institution}
+        #                Block Type: {processor.block_type}
+        #                Block Value: {processor.block_value}
+        #                Catalog: {processor.catalog_years.catalog_type}
+        #                Catalog Years: {processor.catalog_years.text}
+        #                Error: {e}"""
+    requirement_html = re.sub(r'\n\s*', r'\n', processor.html().replace("'", '’'))
+    head_objects = json.dumps(processor.sections[1])
+    body_objects = json.dumps(processor.sections[2])
+    # Add the info to the db
+    update_query = f""" update requirement_blocks
+                          set requirement_html = '{requirement_html}',
+                              head_objects = '{head_objects}',
+                              body_objects = '{body_objects}'
+                        where institution = '{institution}'
+                          and requirement_id = '{row.requirement_id}'
+                    """
+    print(requirement_html)
+    update_cursor.execute(update_query)
+    num_updates += update_cursor.rowcount
+    print(f'Updated {institution} {row.requirement_id}')
 
     if period == 'current' or period == 'recent':
       break
+  conn.commit()
   conn.close()
-  return return_html
+  return f'{num_updates} / {num_rows}'
 
 
 # main()
@@ -166,7 +180,6 @@ if __name__ == '__main__':
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
-  parser.add_argument('-a', '--development', action='store_true', default=False)
 
   # Parse args and handle default list of institutions
   args = parser.parse_args()
@@ -176,6 +189,5 @@ if __name__ == '__main__':
     for block_type in args.block_types:
       for block_value in args.block_values:
         print(institution, block_type, block_value)
-        html = dgw_parser(institution, block_type, block_value, do_parse=True)
-        if args.debug:
-          print(html)
+        num_blocks = dgw_parser(institution, block_type, block_value, do_parse=True)
+        print(f'Updated {num_blocks} blocks for {institution} {block_type} {block_value}')
