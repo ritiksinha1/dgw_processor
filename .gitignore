@@ -31,11 +31,6 @@ Logs/
 /testing/dgw_filter.py
 /testing/run_tests.csv
 /testing/t
-/testing/test_data.conc/
-/testing/test_data.degree/
-/testing/test_data.major/
-/testing/test_data.minor/
-/testing/test_data.other/
-/testing/test_data.quarantine/
-/testing/test_results.other/
+/testing/test_data.*/
+/testing/test_results.*/
 /testing/test_timeouts
