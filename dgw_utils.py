@@ -219,12 +219,17 @@ def get_course_list_qualifier(ctx):
 def build_string(ctx) -> str:
   """ string          : DBL_QUOTE ~DBL_QUOTE* DBL_QUOTE;
       What’s between the double quotes has been tokenized, so the tokens have to be joined with a
-      space betwen them.
+      space between them.
+      Ad hoc fixups: "C + +" is "C++"
   """
   assert ctx.__class__.__name__ == 'StringContext', (f'{ctx.__class__.__name} '
                                                      f'is not StringContext')
+  fixups = {'C + +': 'C++'}
   tokens = [child.getText() for child in ctx.children]
-  return ' '.join(tokens[1:-1])
+  return_str = ' '.join(tokens[1:-1])
+  for fixup in fixups:
+    return_str = return_str.replace(fixup, fixups[fixup])
+  return return_str
 
 
 # build_course_list()
@@ -334,6 +339,8 @@ def build_course_list(institution, ctx) -> list:
       list_qualifiers.append(get_course_list_qualifier(context))
 
   # Active Courses
+  all_blanket = True
+  all_writing = True
   conn = PgConnection()
   cursor = conn.cursor()
   for scribed_course in scribed_courses:
@@ -397,8 +404,6 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
               """
     cursor.execute(course_query)
     if cursor.rowcount > 0:
-      all_blanket = True
-      all_writing = True
       for row in cursor.fetchall():
         active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                row.title))
@@ -406,13 +411,11 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
           all_blanket = False
         if 'WRIC' not in row.attributes:
           all_writing = False
-      if all_blanket:
-        attributes.append('Blanket Credit')
-      if all_writing:
-        attributes.append('Writing Intensive')
   conn.close()
-
-  #
+  if all_blanket:
+    attributes.append('Blanket Credit')
+  if all_writing:
+    attributes.append('Writing Intensive')
 
   return return_object
 
