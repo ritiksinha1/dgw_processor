@@ -21,7 +21,7 @@ from dgw_utils import build_course_list,\
     get_number
 
 LOG_DGW_CONTEXT_PATH = os.getenv('LOG_DGW_CONTEXT_PATH')
-
+DEBUG = os.getenv('DEBUG_PROCESSOR')
 
 # class ScribeSection(IntEnum)
 # -------------------------------------------------------------------------------------------------
@@ -140,7 +140,7 @@ class DGW_Processor(ReqBlockListener):
       print(context_path(ctx), file=sys.stderr)
     course_list = build_course_list(self.institution, ctx)
     self.sections[self.scribe_section].append(course_list)
-    if os.getenv('DEVELOPMENT'):
+    if DEBUG:
       print(f'\n               Context: {course_list["context_path"]}')
       print(f'   Num Scribed Courses: {len(course_list["scribed_courses"]):>4}')
       if len(course_list["scribed_courses"]) > 1:

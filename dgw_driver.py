@@ -5,6 +5,8 @@
     hold information extracted from the block., then walk the parse tree. The DGW_Processor object’s
     listener methods extract information during this process. Then this driver displays the results
     and/or saves them in the requirement_blocks table.
+
+    See __main__ for other use cases.
 """
 
 
@@ -79,20 +81,24 @@ def dgw_parser(institution, block_type, block_value, period='all', do_parse=Fals
   """
   if DEBUG:
     print(f'*** dgw_parser({institution}, {block_type}, {block_value}. {period})', file=sys.stderr)
+  if do_parse:
+    operation = 'Parsed'
+  else:
+    operation = 'Updated'
   conn = PgConnection()
   fetch_cursor = conn.cursor()
   update_cursor = conn.cursor()
   query = """
     select requirement_id, title, period_start, period_stop, requirement_text
     from requirement_blocks
-    where institution ~* %s
+    where institution = %s
       and block_type = %s
       and block_value = %s
     order by period_stop
   """
   fetch_cursor.execute(query, (institution, block_type, block_value))
   # Sanity Check
-  assert fetch_cursor.rowcount > 0, f'No Requirements Found\n{cursor.query}'
+  assert fetch_cursor.rowcount > 0, f'No Requirements Found\n{fetch_cursor.query}'
   num_rows = fetch_cursor.rowcount
   num_updates = 0
   for row in fetch_cursor.fetchall():
@@ -156,10 +162,10 @@ def dgw_parser(institution, block_type, block_value, period='all', do_parse=Fals
                         where institution = '{institution}'
                           and requirement_id = '{row.requirement_id}'
                     """
-    print(requirement_html)
     update_cursor.execute(update_query)
     num_updates += update_cursor.rowcount
-    print(f'Updated {institution} {row.requirement_id}')
+    if DEBUG:
+      print(f'{operation} {institution} {row.requirement_id}')
 
     if period == 'current' or period == 'recent':
       break
@@ -172,22 +178,49 @@ def dgw_parser(institution, block_type, block_value, period='all', do_parse=Fals
 # =================================================================================================
 # Feed requirement_block(s) to dgw_parser() for testing
 if __name__ == '__main__':
-
+  """ You can parse a block or a list of blocks from here.
+      But if you just want to update the html for the blocks you select, omit the --parse option
+  """
   # Command line args
   parser = argparse.ArgumentParser(description='Test DGW Parser')
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-f', '--format')
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
+  parser.add_argument('-p', '--parse', action='store_true', default=False)
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
 
-  # Parse args and handle default list of institutions
+  # Parse args
   args = parser.parse_args()
 
-  for institution in args.institutions:
+  # Parse blocks, or just update requirement_html (and reset object lists)?
+  if args.parse:
+    operation = 'Parsed'
+  else:
+    operation = 'Updated'
+
+  if args.institutions[0] == 'all':
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute('select code from cuny_institutions')
+    institutions = [row.code for row in cursor.fetchall()]
+    conn.close()
+  else:
+    institutions = args.institutions
+
+  for institution in institutions:
     institution = institution.upper() + ('01' * (len(institution) == 3))
     for block_type in args.block_types:
-      for block_value in args.block_values:
-        print(institution, block_type, block_value)
-        num_blocks = dgw_parser(institution, block_type, block_value, do_parse=True)
-        print(f'Updated {num_blocks} blocks for {institution} {block_type} {block_value}')
+      if args.block_values[0] == 'all':
+        conn = PgConnection()
+        cursor = conn.cursor()
+        cursor.execute('select block_value from requirement_blocks '
+                       'where institution = %s and block_type = %s', (institution, block_type))
+        block_values = [row.block_value for row in cursor.fetchall()]
+        conn.close()
+      else:
+        block_values = args.block_values
+
+      for block_value in block_values:
+        num_blocks = dgw_parser(institution, block_type, block_value, do_parse=args.parse)
+        print(f'{operation} {num_blocks} blocks for {institution} {block_type} {block_value}')
