@@ -211,12 +211,17 @@ if __name__ == '__main__':
     institutions = args.institutions
 
   num_institutions = len(institutions)
+  print(f'{num_institutions} institutions')
   institution_count = 0
   for institution in institutions:
     institution_count += 1
     institution = institution.upper() + ('01' * (len(institution) == 3))
-    num_types = len(args.block_types)
+
+    if args.block_types[0] == 'all':
+      args.block_types = ['DEGREE', 'MAJOR', 'MINOR', 'CONC', 'OTHER']
     types_count = 0
+    num_types = len(args.block_types)
+    print(f'{num_types} types')
     for block_type in args.block_types:
       types_count += 1
       if args.block_values[0] == 'all':
@@ -231,6 +236,7 @@ if __name__ == '__main__':
         block_values = args.block_values
 
       num_values = len(block_values)
+      print(f'{num_values} values')
       values_count = 0
       for block_value in block_values:
         values_count += 1
