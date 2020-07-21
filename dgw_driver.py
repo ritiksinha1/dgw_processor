@@ -45,9 +45,9 @@ from dgw_filter import dgw_filter
 
 # Module initialization
 # -------------------------------------------------------------------------------------------------
-DEBUG = os.getenv('DEBUG_PARSER')
+DEBUG = os.getenv('DEBUG_DRIVER')
 
-if not os.getenv('HEROKU'):
+if os.getenv('LOG_ANTLR'):
   logging.basicConfig(filename='Logs/antlr.log',
                       format='%(asctime)s %(message)s',
                       level=logging.DEBUG)
@@ -165,13 +165,15 @@ def dgw_parser(institution, block_type, block_value, period='all', do_parse=Fals
     update_cursor.execute(update_query)
     num_updates += update_cursor.rowcount
     if DEBUG:
-      print(f'{operation} {institution} {row.requirement_id}')
+      print(f'\r{operation} {institution} {row.requirement_id}', end='')
 
     if period == 'current' or period == 'recent':
       break
   conn.commit()
   conn.close()
-  return f'{num_updates} / {num_rows}'
+  if DEBUG:
+    print()
+  return (num_updates, num_rows)
 
 
 # main()
@@ -208,19 +210,37 @@ if __name__ == '__main__':
   else:
     institutions = args.institutions
 
+  num_institutions = len(institutions)
+  institution_count = 0
   for institution in institutions:
+    institution_count += 1
     institution = institution.upper() + ('01' * (len(institution) == 3))
+    num_types = len(args.block_types)
+    types_count = 0
     for block_type in args.block_types:
+      types_count += 1
       if args.block_values[0] == 'all':
         conn = PgConnection()
         cursor = conn.cursor()
-        cursor.execute('select block_value from requirement_blocks '
-                       'where institution = %s and block_type = %s', (institution, block_type))
+        cursor.execute('select distinct block_value from requirement_blocks '
+                       'where institution = %s and block_type = %s'
+                       'order by block_value', (institution, block_type))
         block_values = [row.block_value for row in cursor.fetchall()]
         conn.close()
       else:
         block_values = args.block_values
 
+      num_values = len(block_values)
+      values_count = 0
       for block_value in block_values:
-        num_blocks = dgw_parser(institution, block_type, block_value, do_parse=args.parse)
-        print(f'{operation} {num_blocks} blocks for {institution} {block_type} {block_value}')
+        values_count += 1
+        if block_value.isnumeric() or block_value.startswith('MHC'):
+          print(f'Skipping {institution} {block_type} {block_value}')
+          continue
+        num_updates, num_blocks = dgw_parser(institution,
+                                             block_type,
+                                             block_value,
+                                             do_parse=args.parse)
+        print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
+              f'{values_count} / {num_values}: ', end='')
+        print(f'{operation} {num_updates} blocks for {institution} {block_type} {block_value}')

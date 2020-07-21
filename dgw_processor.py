@@ -23,6 +23,7 @@ from dgw_utils import build_course_list,\
 LOG_DGW_CONTEXT_PATH = os.getenv('LOG_DGW_CONTEXT_PATH')
 DEBUG = os.getenv('DEBUG_PROCESSOR')
 
+
 # class ScribeSection(IntEnum)
 # -------------------------------------------------------------------------------------------------
 class ScribeSection(IntEnum):
@@ -217,10 +218,9 @@ class DGW_Processor(ReqBlockListener):
       print(context_path(ctx), file=sys.stderr)
     # Capture the conditional expression's terminals
     expr = ctx.expression()
-    print(expr.getText())
     terminals = []
     expression_terminals(expr, terminals)
-    print(terminals)
+    print(f'If-then expression: {terminals}', file=sys.stderr)
 
   # enterElse_clause(self, ctx: ReqBlockParser.Else_clauseContext)
   # -----------------------------------------------------------------------------------------------

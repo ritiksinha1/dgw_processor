@@ -330,8 +330,11 @@ def build_course_list(institution, ctx) -> list:
       items = [c.getText() for c in course_item.children]
       if len(items) == 1:
         catalog_number = items[0]
-      else:
+      elif len(items) == 2:
         discipline, catalog_number = items
+      else:
+        print(f'Weird value for course_item.children: {items}', file=sys.stderr)
+        discipline, catalog_number = ('Unknown', 'Unknown')
       scribed_courses.append((discipline, catalog_number))
 
   if ctx.course_list_qualifier is not None:
