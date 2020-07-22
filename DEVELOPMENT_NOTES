@@ -1,0 +1,26 @@
+2020-07-22
+
+Consider changing name of Body section to Rules, but not sure it's really a good change because the
+object in the Head section are "rules" too.
+
+MaxPassFail in Head applies to all courses in the scribe block
+MaxPassFail in the Body (i.e. in a rule) applies to courses in a course list
+The implication is that there are two different types of course lists: head and body. But a single
+build_course_list function can handle both; it's just the .g4 that has to be fixed so MaxPassFail
+is not attached to a course_list in the head.
+It's a mess; course lists are attached to various objects, so the distinction between head and body
+has to be made at the higher-level context.
+
+I had the following objects in both the head and body sections
+  class_credit
+  maxperdisc
+  minclass
+  minperdisc
+
+Other items that can have different meanings in head and body according to the docs:
+  maxtransfer - in head it can follow either a course list or just a list of symbols; in body it can be attached to a course list
+  minclasses
+  mincredits
+
+Course list qualifiers that appear only in Body:
+  minareas

@@ -38,20 +38,20 @@ grammar ReqBlock;
  */
 req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
 head        :
-            ( class_credit
+            ( head_class_credit
             | if_then
             | lastres
             | maxclass
             | maxcredit
             | maxpassfail
-            | maxperdisc
+            | head_maxperdisc
             | maxterm
             | maxtransfer
             | mingrade
-            | minclass
+            | head_minclass
             | mincredit
             | mingpa
-            | minperdisc
+            | head_minperdisc
             | minres
             | optional
             | remark
@@ -64,14 +64,14 @@ head        :
 body        :
             ( block
             | blocktype
-            | class_credit
+            | body_class_credit
             | copy_rules
             | group
             | if_then
             | label
-            | maxperdisc
-            | minclass
-            | minperdisc
+            | body_maxperdisc
+            | body_minclass
+            | body_minperdisc
             | noncourse
             | remark
             | rule_complete

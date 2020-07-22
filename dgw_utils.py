@@ -11,7 +11,7 @@ import argparse
 import os
 import sys
 
-DEBUG = os.getenv('DEBUG_INTERPRETER')
+DEBUG = os.getenv('DEBUG_UTILS')
 
 # Dict of known colleges
 colleges = dict()
@@ -310,6 +310,11 @@ def build_course_list(institution, ctx) -> list:
   # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
   # is given.
   discipline, catalog_number, with_clause = (None, None, None)
+  for child in ctx.children:
+    print(child.__class__.__name__, child.getText())
+    for cchild in child.children:
+      print('  ', cchild.__class__.__name__, cchild.getText())
+  exit()
   catalog_number = ctx.course_item().catalog_number().getText()
   # The next two might be absent
   try:
