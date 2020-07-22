@@ -321,25 +321,35 @@ def build_course_list(institution, ctx) -> list:
     print('with_clause', with_clause.__class__.__name__, file=sys.stderr)
   except AttributeError as ae:
     pass
-  scribed_courses.append((discipline, catalog_number))
+  scribed_courses.append((discipline, catalog_number, with_clause))
 
   # For the remaining scribed courses, distribute disciplines across elided elements
   if list_fun is not None:
     course_items = list_fun().course_item()
+    catalog_number = None  # Must be present
+    with_clause = None  # Does not distribute (as discipline does)
     for course_item in course_items:
-      items = [c.getText() for c in course_item.children]
-      if len(items) == 1:
-        catalog_number = items[0]
-      elif len(items) == 2:
-        discipline, catalog_number = items
-      else:
-        print(f'Weird value for course_item.children: {items}', file=sys.stderr)
-        discipline, catalog_number = ('Unknown', 'Unknown')
-      scribed_courses.append((discipline, catalog_number))
+      for child in course_item.children:
+        if child.__class__.__name__ == 'DisciplineContext':
+          discipline = child.getText()
+        elif child.__class__.__name__ == 'Catalog_numberContext':
+          catalog_number = child.getText()
+        elif child.__class__.__name__ == 'With_clauseContext':
+          with_clause = child.getText()   # Need to interpret this
+          print(discipline, catalog_number, with_clause)
+          exit()
+        else:
+          print(f'Unexpected token type: {child.__class__.__name__}', file=sys.stderr)
+      assert catalog_number is not None, (f'Course Item with no catalog number: '
+                                          f'{course_item.getText()}')
+      scribed_courses.append((discipline, catalog_number, with_clause))
+      print((discipline, catalog_number, with_clause))
 
   if ctx.course_list_qualifier is not None:
     for context in ctx.course_list_qualifier():
       list_qualifiers.append(get_course_list_qualifier(context))
+
+  print('scribed_courses', scribed_courses)
 
   # Active Courses
   all_blanket = True
@@ -348,9 +358,10 @@ def build_course_list(institution, ctx) -> list:
   cursor = conn.cursor()
   for scribed_course in scribed_courses:
     # For display to users
-    display_discipline, display_catalog_number = scribed_course
+    display_discipline, display_catalog_number, display_with_clause = scribed_course
     # For course db query
-    discipline, catalog_number = scribed_course
+    discipline, catalog_number, with_clause = scribed_course
+
     # discipline part
     discp_op = '='
 
@@ -409,7 +420,7 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
     if cursor.rowcount > 0:
       for row in cursor.fetchall():
         active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
-                               row.title))
+                               row.title, with_clause))
         if row.max_credits > 0 and 'BKCR' not in row.attributes:
           all_blanket = False
         if 'WRIC' not in row.attributes:

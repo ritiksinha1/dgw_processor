@@ -246,6 +246,7 @@ if __name__ == '__main__':
         num_updates, num_blocks = dgw_parser(institution,
                                              block_type,
                                              block_value,
+                                             period='latest',
                                              do_parse=args.parse)
         print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
               f'{values_count} / {num_values}: ', end='')
