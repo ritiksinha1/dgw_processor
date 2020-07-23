@@ -3,8 +3,16 @@
 Consider changing name of Body section to Rules, but not sure it's really a good change because the
 object in the Head section are "rules" too.
 
+    There are two types of qualifiers: Header qualifiers appear in the Header section of the block
+    and pertain to all rules in the block body. Rule qualifiers appear in the Body section of the
+    block and pertain only to the rule with which they are associated.
+
+  So “rule” covers a multitude of sins. But Header and Body are Proper Terms in the docs.
+
+
 MaxPassFail in Head applies to all courses in the scribe block
 MaxPassFail in the Body (i.e. in a rule) applies to courses in a course list
+
 The implication is that there are two different types of course lists: head and body. But a single
 build_course_list function can handle both; it's just the .g4 that has to be fixed so MaxPassFail
 is not attached to a course_list in the head.
@@ -17,10 +25,42 @@ I had the following objects in both the head and body sections
   minclass
   minperdisc
 
-Other items that can have different meanings in head and body according to the docs:
-  maxtransfer - in head it can follow either a course list or just a list of symbols; in body it can be attached to a course list
-  minclasses
-  mincredits
+Items that can have different meanings in head and body according to the docs:
+  AllBlocks     Scope of ShareWith qualifier
+  And           Logical op in IF; connect classes AND credits; list_op in course list
+  At            Followed by a location (campus)
+  Classes       Course list not allowed in header. Docs say same for body, but that’s wrong.
+  College       Not used at CUNY(?)
+  Conc          “When Conc is used in ShareWith, Blocktype, or Block it refers to the Conc block.
+                When used in an If-statement it refers to the concentration on the student’s
+                curriculum.”
+  Credits       Like classes, including the documentation error.
+  Decide        “you have up to nine ways to tell the auditor how to distinguish one class as being
+                more valuable than another”
+  Degree        ShareWith or if expression symbol
+  DontShare     In Body, it’s a list qualifier
+  Libl          “When Libl is used in ShareWith it refers to the Libl block in the audit. When used
+                in an If-statement it refers to the liberal learning on the student’s curriculum.”
+  Major
+  MaxPassFail   Standalone in Header; list qualifier in body
+  MaxPerDisc    Standalone in Header; list qualifier in body
+  MaxTerm       Standalone in Header; list qualifier in body
+  MaxTransfer   In head it can follow either a course list or just a list of symbols
+  MinClasses    Standalone in Header; list qualifier followed by course list in body
+  MinCredits    Standalone in Header; list qualifier followed by course list in Body
+  MinGpa        Can be followed by a course list in Header; not specified if so in Body
+  Minor
+  MinTerm
+  NonExclusive
+  Or            Logical op or qualifer connector
+  Other         Like Conc, sort of
+  Program       Like Conc and Other, sort of
+  ProxyAdvice   Ignored
+  SameDisc      SameDisc is used to equate two disciplines.
+  School        Like Conc, Other, and Program, sort of
+  ShareWith     Standalone in Header; list qualifier in body
+  Spec          Like Conc, Other, Program, and School, sort of (specialization)
+  ThisBlock     Always scope of ShareWith
 
 Course list qualifiers that appear only in Body:
   minareas
