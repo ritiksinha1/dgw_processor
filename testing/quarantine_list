@@ -1,7 +1,8 @@
 BAR01 RA000625 Empty block (all comments)
-BKL01 RA002520 Quotes around subject (SPEC.) otwice on line 138
+BKL01 RA002520 Quotes around subject (SPEC.) twice on line 138
+BKL01 RA002949 Stray ']' on line 137
 BKL01 RA003107 Missing comma in "3194 3169" on line 34
-BKL01 RA003113 Quotes around discipline name (SPEC.) on line 57
+BKL01 RA003113 Quotes around discipline name (SPEC.) on line 59
 BKL01 RA003193 Missing comma in "3194 3169" on line 32
 BMC01 RA000291 Missing BeginIf/EndIf in multiple places
 BMC01 RA000321 Missing BeginIf/EndIf in multiple places
@@ -10,6 +11,6 @@ CSI01 RA000650 Missing space before label tag on lines 22, 26, 30, 34
 CSI01 RA000652 Missing space before label tag on lines 22, 26, 30, 34
 CSI01 RA001656 Missing space between "Label" and label tag on lines 10, 12, and 144
 CSI01 RA001657 Missing space between "Label" and label tag in ten places in lines 16-34
-HOS01 RA000341 Question mark on line 163
-HTR01 RA001003 Backtick instead of label tag on line 56
+HOS01 RA000341 Question mark as DEGREE value on line 163
 SPS01 RA000092 Missing space between Label and its tag on lines 15, 20, and 25
+CSI01 RA000599 No space between Label and label tag on line 115

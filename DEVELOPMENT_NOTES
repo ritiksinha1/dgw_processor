@@ -9,15 +9,10 @@ object in the Head section are "rules" too.
 
   So “rule” covers a multitude of sins. But Header and Body are Proper Terms in the docs.
 
-
-MaxPassFail in Head applies to all courses in the scribe block
-MaxPassFail in the Body (i.e. in a rule) applies to courses in a course list
-
-The implication is that there are two different types of course lists: head and body. But a single
-build_course_list function can handle both; it's just the .g4 that has to be fixed so MaxPassFail
-is not attached to a course_list in the head.
-It's a mess; course lists are attached to various objects, so the distinction between head and body
-has to be made at the higher-level context.
+There must be two different types of course lists: _head and _body. What would
+be a course_list qualifier in the Body would be a standalone rule in the Head. But a single
+build_course_list function can handle both; it's just the .g4 that has to be fixed so MaxPassFail is
+not used as a list qualifier in the head, for example.
 
 I had the following objects in both the head and body sections
   class_credit
@@ -27,40 +22,57 @@ I had the following objects in both the head and body sections
 
 Items that can have different meanings in head and body according to the docs:
   AllBlocks     Scope of ShareWith qualifier
-  And           Logical op in IF; connect classes AND credits; list_op in course list
+  ThisBlock     Scope of ShareWith qualifier
+
+  And           Logical op in if_expression; connect classes AND credits; list_op in course list
+  Or            Logical op or qualifer connector
+
   At            Followed by a location (campus)
-  Classes       Course list not allowed in header. Docs say same for body, but that’s wrong.
+
+  Classes       Course list not allowed in header. Docs say same for body, but that must be wrong.
+  Credits       Like classes, including the documentation error.
+
   College       Not used at CUNY(?)
+  Decide        “you have up to nine ways to tell the auditor how to distinguish one class as being
+                more valuable than another”
+  Degree        ShareWith or symbol in if_expression
+
   Conc          “When Conc is used in ShareWith, Blocktype, or Block it refers to the Conc block.
                 When used in an If-statement it refers to the concentration on the student’s
                 curriculum.”
-  Credits       Like classes, including the documentation error.
-  Decide        “you have up to nine ways to tell the auditor how to distinguish one class as being
-                more valuable than another”
-  Degree        ShareWith or if expression symbol
-  DontShare     In Body, it’s a list qualifier
-  Libl          “When Libl is used in ShareWith it refers to the Libl block in the audit. When used
-                in an If-statement it refers to the liberal learning on the student’s curriculum.”
-  Major
+  Libl          Like Conc
+  Major         Like Conc and Libl
+  Minor         Like Conc, Libl, and Major
+  Other         Like Conc, Libl, Major, and Minor
+  Program       Like Conc, Libl, Major, Minor, and Other
+  School        Like Conc, Libl, Major, Minor, Other, and Program
+  Spec          Like Conc, Libl, Major, Minor, Other, Program, and School (“specialization”)
+
+  DontShare     Standalone in Header; list qualifier in body
   MaxPassFail   Standalone in Header; list qualifier in body
   MaxPerDisc    Standalone in Header; list qualifier in body
   MaxTerm       Standalone in Header; list qualifier in body
-  MaxTransfer   In head it can follow either a course list or just a list of symbols
+  MinTerm       Standalone in Header; list qualifier in body
+  NonExclusive  Standalone in Header; list qualifier in body
+  SameDisc      Standalone in Header; list qualifier in body (equate two disciplines)
+  ShareWith     Standalone in Header; list qualifier in body
+
+#  MaxTransfer   In head it can follow either a course list or just a list of symbols
+
   MinClasses    Standalone in Header; list qualifier followed by course list in body
   MinCredits    Standalone in Header; list qualifier followed by course list in Body
-  MinGpa        Can be followed by a course list in Header; not specified if so in Body
-  Minor
-  MinTerm
-  NonExclusive
-  Or            Logical op or qualifer connector
-  Other         Like Conc, sort of
-  Program       Like Conc and Other, sort of
-  ProxyAdvice   Ignored
-  SameDisc      SameDisc is used to equate two disciplines.
-  School        Like Conc, Other, and Program, sort of
-  ShareWith     Standalone in Header; list qualifier in body
-  Spec          Like Conc, Other, Program, and School, sort of (specialization)
-  ThisBlock     Always scope of ShareWith
 
-Course list qualifiers that appear only in Body:
-  minareas
+  MinGpa        Can be followed by a course list in Header; not specified if allowed in Body
+
+  ProxyAdvice   Ignored by dgw_processor
+
+Course list qualifiers that may appear only in Body:
+  MaxSpread
+  MinAreas
+
+
+2020-07-23
+  When there is a wildcard in a course_item, any WITH clause has to be distributed across its
+  expansion when looking up active courses.
+  Would it make more sense to differentiate between if_expression and other types of expression?
+    More to the point, is it necessary?

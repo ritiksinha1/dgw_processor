@@ -24,13 +24,28 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#course_list.
-    def visitCourse_list(self, ctx:ReqBlockParser.Course_listContext):
+    # Visit a parse tree produced by ReqBlockParser#course_list_no_qualifiers.
+    def visitCourse_list_no_qualifiers(self, ctx:ReqBlockParser.Course_list_no_qualifiersContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#course_list_qualifier.
-    def visitCourse_list_qualifier(self, ctx:ReqBlockParser.Course_list_qualifierContext):
+    # Visit a parse tree produced by ReqBlockParser#course_list_head.
+    def visitCourse_list_head(self, ctx:ReqBlockParser.Course_list_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#course_list_qualifier_head.
+    def visitCourse_list_qualifier_head(self, ctx:ReqBlockParser.Course_list_qualifier_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#course_list_body.
+    def visitCourse_list_body(self, ctx:ReqBlockParser.Course_list_bodyContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#course_list_qualifier_body.
+    def visitCourse_list_qualifier_body(self, ctx:ReqBlockParser.Course_list_qualifier_bodyContext):
         return self.visitChildren(ctx)
 
 
@@ -149,8 +164,13 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#class_credit.
-    def visitClass_credit(self, ctx:ReqBlockParser.Class_creditContext):
+    # Visit a parse tree produced by ReqBlockParser#class_credit_head.
+    def visitClass_credit_head(self, ctx:ReqBlockParser.Class_credit_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#class_credit_body.
+    def visitClass_credit_body(self, ctx:ReqBlockParser.Class_credit_bodyContext):
         return self.visitChildren(ctx)
 
 

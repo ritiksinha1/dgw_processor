@@ -38,20 +38,20 @@ grammar ReqBlock;
  */
 req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
 head        :
-            ( head_class_credit
+            ( class_credit_head
             | if_then
             | lastres
             | maxclass
             | maxcredit
             | maxpassfail
-            | head_maxperdisc
+            | maxperdisc
             | maxterm
             | maxtransfer
             | mingrade
-            | head_minclass
+            | minclass
             | mincredit
             | mingpa
-            | head_minperdisc
+            | minperdisc
             | minres
             | optional
             | remark
@@ -64,14 +64,11 @@ head        :
 body        :
             ( block
             | blocktype
-            | body_class_credit
+            | class_credit_body
             | copy_rules
             | group
             | if_then
             | label
-            | body_maxperdisc
-            | body_minclass
-            | body_minperdisc
             | noncourse
             | remark
             | rule_complete
@@ -83,28 +80,45 @@ body        :
  *  statement it refers to the major on the student’s curriculum.
  */
 
-// Course List
+// Course Lists
 // ------------------------------------------------------------------------------------------------
-course_list          : course_item (and_list | or_list)? course_list_qualifier* label?;
-course_list_qualifier: except_clause
-                     | including_clause
-                     | maxpassfail
-                     | maxperdisc
-                     | maxspread
-                     | maxtransfer
-                     | mincredit
-                     | mingpa
-                     | mingrade
-                     | minspread
-                     | ruletag
-                     | samedisc
-                     | share
-                     ;
+/* Some course list qualifiers can be standalone rules in the Head.
+ */
+course_list_no_qualifiers  : course_item or_list? tag?;
+course_list_head           : course_item (and_list | or_list)? course_list_qualifier_head* label?;
+course_list_qualifier_head : except_clause
+                           | including_clause
+                           | maxspread
+                           | mingpa
+                           | mingrade
+                           | minspread
+                           | ruletag
+                           | samedisc
+                           | share
+                           ;
+course_list_body           : course_item (and_list | or_list)? course_list_qualifier_body* label?;
+course_list_qualifier_body : except_clause
+                           | including_clause
+                           | maxpassfail
+                           | maxperdisc
+                           | maxspread
+                           | maxtransfer
+                           | minclass
+                           | mincredit
+                           | mingpa
+                           | mingrade
+                           | minperdisc
+                           | minspread
+                           | ruletag
+                           | samedisc
+                           | share
+                           ;
+
 full_course          : discipline catalog_number with_clause*;
 course_item          : discipline? catalog_number with_clause*;
 and_list             : (list_and course_item)+;
 or_list              : (list_or course_item)+;
-catalog_number       : SYMBOL | NUMBER | CATALOG_NUMBER | RANGE | WILD;
+catalog_number       : symbol | NUMBER | CATALOG_NUMBER | RANGE | WILD;
 discipline           : symbol | WILD | BLOCK | IS; // Include keywords that appear as discipline names
 
 //  if-then
@@ -115,7 +129,7 @@ stmt_group   : (begin_if stmt+ end_if);
 stmt         : if_then
              | block
              | blocktype
-             | class_credit
+             | class_credit_body
              | copy_rules
              | group
              | maxcredit
@@ -151,13 +165,15 @@ end_if       : ENDIF | ENDELSE;
 
 //  Groups
 //  -----------------------------------------------------------------------------------------------
+/*  Body Only
+ */
 group           : NUMBER GROUP group_list
                   group_qualifier*
                   label?
                 ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
-                    (block | blocktype | class_credit | group | noncourse | rule_complete)
+                    (block | blocktype | class_credit_body | group | noncourse | rule_complete)
                     group_qualifier*
                     label?
                   RP
@@ -165,6 +181,7 @@ group_item      : LP
                   label?
                 ;
 group_qualifier : maxpassfail
+                | maxperdisc
                 | maxtransfer
                 | mingrade
                 | mingpa
@@ -180,11 +197,20 @@ group_qualifier : maxpassfail
 //  -----------------------------------------------------------------------------------------------
 subset            : BEGINSUB
                   ( if_then
-                  | class_credit
+                  | block
+                  | class_credit_body
                   | copy_rules
-                  | group)+
+                  | group
+                  | noncourse)+
                   ENDSUB subset_qualifier* label?;
-subset_qualifier  : mingpa | mingrade | maxtransfer | minperdisc | maxperdisc | ruletag | share;
+subset_qualifier  : mingpa
+                  | mingrade
+                  | maxtransfer
+                  | minperdisc
+                  | minspread
+                  | maxperdisc
+                  | ruletag
+                  | share;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
@@ -194,33 +220,41 @@ blocktype       : NUMBER BLOCKTYPE expression label;
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
  */
-allow_clause    : LP ALLOW (NUMBER|RANGE) RP;
-area_list       : area_element+ minarea;
-area_element    : SQLB course_list ','? SQRB;
-class_credit    : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
-                  allow_clause?
-                  (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                  (area_list | course_list | expression | PSEUDO | share | tag)* label?;
+allow_clause        : LP ALLOW (NUMBER|RANGE) RP;
+area_list           : area_element+ minarea;
+area_element        : SQLB course_list_body ','? SQRB;
+
+class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
+                      allow_clause?
+                      (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
+                      (area_list | course_list_head | expression | PSEUDO | share | tag)* label?;
+
+class_credit_body   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
+                      allow_clause?
+                      (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
+                      (area_list | course_list_body | expression | PSEUDO | share | tag)* label?;
+
 copy_rules      : COPY_RULES expression SEMICOLON?;
-except_clause   : EXCEPT course_list;
-including_clause: INCLUDING course_list;
+except_clause   : EXCEPT course_list_no_qualifiers;
+including_clause: INCLUDING course_list_no_qualifiers;
 label           : LABEL label_tag? string SEMICOLON?;
 label_tag       : ~'"'+;
-lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag?;
+lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list_no_qualifiers? tag?;
 
-maxclass        : MAXCLASS NUMBER course_list? tag?;
-maxcredit       : MAXCREDIT NUMBER course_list? tag?;
+maxclass        : MAXCLASS NUMBER course_list_no_qualifiers? tag?;
+maxcredit       : MAXCREDIT NUMBER course_list_head? tag?;
 
-maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? tag?;
+maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list_no_qualifiers? tag?;
 maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP tag?;
 maxspread       : MAXSPREAD NUMBER tag?;
-maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;
+maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list_no_qualifiers tag?;
+
 maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS (NUMBER|RANGE) course_list tag?;
-mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag?;
-mingpa          : MINGPA NUMBER (course_list | expression)? tag? label?;
+minclass        : MINCLASS (NUMBER|RANGE) course_list_no_qualifiers tag?;
+mincredit       : MINCREDIT (NUMBER|RANGE) course_list_no_qualifiers tag?;
+mingpa          : MINGPA NUMBER (course_list_no_qualifiers | expression)? tag? label?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag?;
 minres          : MINRES NUMBER (CLASS | CREDIT) label? tag?;
@@ -382,7 +416,11 @@ SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND | '/')
 //  Character and operator names
 //  -----------------------------------------------------------------------------------------------
 AMPERSAND   : '&';
+ASTERISK    : '*';
 AT          : '@'+;
+BANG        : '!';
+BACKSLASH   : '\\';
+COLON       : ':';
 COMMA       : ',';
 DBL_QUOTE   : '"';
 EQ          : '=';
@@ -393,8 +431,11 @@ LE          : '<=';
 LP          : '(';
 LT          : '<';
 NE          : '<>';
+PERCENT     : '%';
 PLUS        : '+';
+QUOTE       : '\'';
 RP          : ')';
+SLASH       : '/';
 SQLB        : '[';
 SQRB        : ']';
 SEMICOLON   : ';';
