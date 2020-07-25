@@ -14,3 +14,4 @@ CSI01 RA001657 Missing space between "Label" and label tag in ten places in line
 HOS01 RA000341 Question mark as DEGREE value on line 163
 SPS01 RA000092 Missing space between Label and its tag on lines 15, 20, and 25
 CSI01 RA000599 No space between Label and label tag on line 115
+BCC01 RA000597 Invalid credit range on line 85
