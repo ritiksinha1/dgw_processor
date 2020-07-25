@@ -84,11 +84,10 @@ body        :
 // ------------------------------------------------------------------------------------------------
 /* Some course list qualifiers can be standalone rules in the Head.
  */
-course_list_no_qualifiers  : course_item or_list? tag?;
-course_list_head           : course_item (and_list | or_list)? course_list_qualifier_head* label?;
-course_list_qualifier_head : except_clause
-                           | including_clause
-                           | maxspread
+course_list                : course_item (and_list | or_list)? (except_list | including_list)? ;
+
+course_list_head           : course_list (course_list_qualifier_head tag?)* label? ;
+course_list_qualifier_head : maxspread
                            | mingpa
                            | mingrade
                            | minspread
@@ -96,9 +95,9 @@ course_list_qualifier_head : except_clause
                            | samedisc
                            | share
                            ;
-course_list_body           : course_item (and_list | or_list)? course_list_qualifier_body* label?;
-course_list_qualifier_body : except_clause
-                           | including_clause
+course_list_body           : course_list (course_list_qualifier_body tag?)* label? ;
+course_list_qualifier_body : except_list
+                           | including_list
                            | maxpassfail
                            | maxperdisc
                            | maxspread
@@ -198,12 +197,14 @@ group_qualifier : maxpassfail
 subset            : BEGINSUB
                   ( if_then
                   | block
+                  | blocktype
                   | class_credit_body
                   | copy_rules
                   | group
                   | noncourse)+
                   ENDSUB subset_qualifier* label?;
-subset_qualifier  : mingpa
+subset_qualifier  : maxpassfail
+                  | mingpa
                   | mingrade
                   | maxtransfer
                   | minperdisc
@@ -227,7 +228,8 @@ area_element        : SQLB course_list_body ','? SQRB;
 class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                       allow_clause?
                       (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                      (area_list | course_list_head | expression | PSEUDO | share | tag)* label?;
+                      (area_list | course_list_head | expression | PSEUDO | share | tag)*
+                       display? label?;
 
 class_credit_body   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                       allow_clause?
@@ -235,30 +237,34 @@ class_credit_body   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANG
                       (area_list | course_list_body | expression | PSEUDO | share | tag)* label?;
 
 copy_rules      : COPY_RULES expression SEMICOLON?;
-except_clause   : EXCEPT course_list_no_qualifiers;
-including_clause: INCLUDING course_list_no_qualifiers;
+// Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
+// MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
+display         : DISPLAY string SEMICOLON? display*;
+except_list     : EXCEPT course_list;
+including_list  : INCLUDING course_list;
 label           : LABEL label_tag? string SEMICOLON?;
 label_tag       : ~'"'+;
-lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list_no_qualifiers? tag?;
+lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag? display?;
 
-maxclass        : MAXCLASS NUMBER course_list_no_qualifiers? tag?;
-maxcredit       : MAXCREDIT NUMBER course_list_head? tag?;
+maxclass        : MAXCLASS NUMBER course_list? tag?;
+maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 
-maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list_no_qualifiers? tag?;
+maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? tag?;
 maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP tag?;
 maxspread       : MAXSPREAD NUMBER tag?;
-maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list_no_qualifiers tag?;
+maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;
 
 maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS (NUMBER|RANGE) course_list_no_qualifiers tag?;
-mincredit       : MINCREDIT (NUMBER|RANGE) course_list_no_qualifiers tag?;
-mingpa          : MINGPA NUMBER (course_list_no_qualifiers | expression)? tag? label?;
+minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display?;
+mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display?;
+mingpa          : MINGPA NUMBER (course_list | expression)? tag? display? label?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag?;
-minres          : MINRES NUMBER (CLASS | CREDIT) label? tag?;
+minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag? display?;
+minres          : MINRES NUMBER (CLASS | CREDIT) label? tag? display?;
 minspread       : MINSPREAD NUMBER tag?;
+minterm         : MINTERM NUMBER (CLASS | CREDIT) course_list? tag? display?;
 
 noncourse       : NUMBER NONCOURSE LP expression RP label?;
 optional        : OPTIONAL;
@@ -273,7 +279,7 @@ standalone      : STANDALONE;
 string          : DBL_QUOTE ~DBL_QUOTE* DBL_QUOTE;
 symbol          : SYMBOL;
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
-under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? label;
+under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? display? label;
 with_clause     : LP WITH expression RP;
 
 expression      : expression relational_op expression
@@ -307,7 +313,7 @@ CHECKELECTIVES  : [Cc][Hh][Ee][Cc][Kk]
 COMMENT         : '#' .*? '\n' -> skip;
 CURLY_BRACES    : [}{] -> skip;
 DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
-DISPLAY         : [Dd][Ii][Ss][Pp][Ll][Aa][Yy] .*? '\n' -> skip;
+DISPLAY         : [Dd][Ii][Ss][Pp][Ll][Aa][Yy];
 FROM            : [Ff][Rr][Oo][Mm] -> skip;
 FROM_ADVICE     : '-'?[Ff][Rr][Oo][Mm]'-'?[Aa][Dd][Vv][Ii][Cc][Ee] -> skip;
 // Preprocessor (dgw_filter.py) Now strips these
@@ -374,6 +380,7 @@ MINCREDIT       : [Mm][Ii][Nn] CREDIT;
 MINPERDISC      : [Mm][Ii][Nn][Pp][Ee][Rr][Dd][Ii][Ss][Cc];
 MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss];
 MINSPREAD       : [Mm][Ii][Nn][Ss][Pp][Rr][Ee][Aa][Dd];
+MINTERM         : [Mm][Ii][Nn][Tt][Ee][Rr][Mm];
 
 NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]?;
 OPTIONAL        : [Oo][Pp][Tt][Ii][Oo][Nn][Aa][Ll];
@@ -415,31 +422,32 @@ SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND | '/')
 
 //  Character and operator names
 //  -----------------------------------------------------------------------------------------------
-AMPERSAND   : '&';
-ASTERISK    : '*';
-AT          : '@'+;
-BANG        : '!';
-BACKSLASH   : '\\';
-COLON       : ':';
-COMMA       : ',';
-DBL_QUOTE   : '"';
-EQ          : '=';
-GE          : '>=';
-GT          : '>';
-HYPHEN      : '-';
-LE          : '<=';
-LP          : '(';
-LT          : '<';
-NE          : '<>';
-PERCENT     : '%';
-PLUS        : '+';
-QUOTE       : '\'';
-RP          : ')';
-SLASH       : '/';
-SQLB        : '[';
-SQRB        : ']';
-SEMICOLON   : ';';
-UNDERSCORE  : '_';
+AMPERSAND     : '&';
+ASTERISK      : '*';
+AT            : '@'+;
+BANG          : '!';
+BACKSLASH     : '\\';
+COLON         : ':';
+COMMA         : ',';
+DBL_QUOTE     : '"';
+EQ            : '=';
+GE            : '>=';
+GT            : '>';
+HYPHEN        : '-';
+LE            : '<=';
+LP            : '(';
+LT            : '<';
+NE            : '<>';
+PERCENT       : '%';
+PLUS          : '+';
+QUOTE         : '\'';
+QUESTION_MARK : '?';
+RP            : ')';
+SLASH         : '/';
+SQLB          : '[';
+SQRB          : ']';
+SEMICOLON     : ';';
+UNDERSCORE    : '_';
 
 //  Fragments
 //  -----------------------------------------------------------------------------------------------
