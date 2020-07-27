@@ -24,8 +24,8 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#course_list_no_qualifiers.
-    def visitCourse_list_no_qualifiers(self, ctx:ReqBlockParser.Course_list_no_qualifiersContext):
+    # Visit a parse tree produced by ReqBlockParser#course_list.
+    def visitCourse_list(self, ctx:ReqBlockParser.Course_listContext):
         return self.visitChildren(ctx)
 
 
@@ -179,13 +179,18 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#except_clause.
-    def visitExcept_clause(self, ctx:ReqBlockParser.Except_clauseContext):
+    # Visit a parse tree produced by ReqBlockParser#display.
+    def visitDisplay(self, ctx:ReqBlockParser.DisplayContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#including_clause.
-    def visitIncluding_clause(self, ctx:ReqBlockParser.Including_clauseContext):
+    # Visit a parse tree produced by ReqBlockParser#except_list.
+    def visitExcept_list(self, ctx:ReqBlockParser.Except_listContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#including_list.
+    def visitIncluding_list(self, ctx:ReqBlockParser.Including_listContext):
         return self.visitChildren(ctx)
 
 
@@ -276,6 +281,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#minspread.
     def visitMinspread(self, ctx:ReqBlockParser.MinspreadContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#minterm.
+    def visitMinterm(self, ctx:ReqBlockParser.MintermContext):
         return self.visitChildren(ctx)
 
 

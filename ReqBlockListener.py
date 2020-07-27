@@ -35,12 +35,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#course_list_no_qualifiers.
-    def enterCourse_list_no_qualifiers(self, ctx:ReqBlockParser.Course_list_no_qualifiersContext):
+    # Enter a parse tree produced by ReqBlockParser#course_list.
+    def enterCourse_list(self, ctx:ReqBlockParser.Course_listContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#course_list_no_qualifiers.
-    def exitCourse_list_no_qualifiers(self, ctx:ReqBlockParser.Course_list_no_qualifiersContext):
+    # Exit a parse tree produced by ReqBlockParser#course_list.
+    def exitCourse_list(self, ctx:ReqBlockParser.Course_listContext):
         pass
 
 
@@ -314,21 +314,30 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#except_clause.
-    def enterExcept_clause(self, ctx:ReqBlockParser.Except_clauseContext):
+    # Enter a parse tree produced by ReqBlockParser#display.
+    def enterDisplay(self, ctx:ReqBlockParser.DisplayContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#except_clause.
-    def exitExcept_clause(self, ctx:ReqBlockParser.Except_clauseContext):
+    # Exit a parse tree produced by ReqBlockParser#display.
+    def exitDisplay(self, ctx:ReqBlockParser.DisplayContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#including_clause.
-    def enterIncluding_clause(self, ctx:ReqBlockParser.Including_clauseContext):
+    # Enter a parse tree produced by ReqBlockParser#except_list.
+    def enterExcept_list(self, ctx:ReqBlockParser.Except_listContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#including_clause.
-    def exitIncluding_clause(self, ctx:ReqBlockParser.Including_clauseContext):
+    # Exit a parse tree produced by ReqBlockParser#except_list.
+    def exitExcept_list(self, ctx:ReqBlockParser.Except_listContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#including_list.
+    def enterIncluding_list(self, ctx:ReqBlockParser.Including_listContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#including_list.
+    def exitIncluding_list(self, ctx:ReqBlockParser.Including_listContext):
         pass
 
 
@@ -491,6 +500,15 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#minspread.
     def exitMinspread(self, ctx:ReqBlockParser.MinspreadContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#minterm.
+    def enterMinterm(self, ctx:ReqBlockParser.MintermContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#minterm.
+    def exitMinterm(self, ctx:ReqBlockParser.MintermContext):
         pass
 
 

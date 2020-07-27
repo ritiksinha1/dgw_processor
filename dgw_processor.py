@@ -201,14 +201,6 @@ class DGW_Processor(ReqBlockListener):
     if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
-  # enterCourse_qualifier(self, ctx: ReqBlockParser.Course_list_qualifierContext)
-  # -----------------------------------------------------------------------------------------------
-  def enterCourse_qualifier(self, ctx: ReqBlockParser.Course_list_qualifierContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
-
   # enterIf_then(self, ctx: ReqBlockParser.If_thenContext)
   # -----------------------------------------------------------------------------------------------
   def enterIf_then(self, ctx: ReqBlockParser.If_thenContext):
@@ -350,33 +342,9 @@ class DGW_Processor(ReqBlockListener):
     if LOG_DGW_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
-  # enterClass_credit(self, ctx: ReqBlockParser.Class_creditContext)
-  # -----------------------------------------------------------------------------------------------
-  def enterClass_credit(self, ctx: ReqBlockParser.Class_creditContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
-
   # enterCopy_rules(self, ctx: ReqBlockParser.Copy_rulesContext)
   # -----------------------------------------------------------------------------------------------
   def enterCopy_rules(self, ctx: ReqBlockParser.Copy_rulesContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
-
-  # enterExcept_clause(self, ctx: ReqBlockParser.Except_clauseContext)
-  # -----------------------------------------------------------------------------------------------
-  def enterExcept_clause(self, ctx: ReqBlockParser.Except_clauseContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
-
-  # enterIncluding_clause(self, ctx: ReqBlockParser.Including_clauseContext)
-  # -----------------------------------------------------------------------------------------------
-  def enterIncluding_clause(self, ctx: ReqBlockParser.Including_clauseContext):
     """
     """
     if LOG_DGW_CONTEXT_PATH:
