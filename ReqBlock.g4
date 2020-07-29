@@ -426,6 +426,7 @@ AMPERSAND     : '&';
 ASTERISK      : '*';
 AT            : '@'+;
 BANG          : '!';
+BACKQUOTE     : '`';
 BACKSLASH     : '\\';
 COLON         : ':';
 COMMA         : ',';
