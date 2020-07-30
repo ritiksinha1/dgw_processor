@@ -11,6 +11,8 @@ import time
 from argparse import ArgumentParser
 from pathlib import Path
 
+from dgw_filter import dgw_filter
+
 parser = ArgumentParser('run grun')
 parser.add_argument('block_type')
 parser.add_argument('requirement_block')
@@ -22,12 +24,14 @@ test_dir = Path(f'./test_data.{args.block_type}')
 
 file = Path(test_dir, args.requirement_block)
 size = file.stat().st_size
-lines = file.read_text().count('\n')
+lines = dgw_filter(file.read_text())
+num_lines = lines.count('\n')
 try:
   t0 = time.time()
   completed = subprocess.run(['grun', 'ReqBlock', 'req_block'],
                              timeout=timelimit,
-                             stdin=file.open(),
+                             # stdin=file.open(),
+                             input=lines,
                              capture_output=True)
   elapsed = time.time() - t0
   output = len(completed.stdout) + len(completed.stderr)
@@ -38,7 +42,7 @@ try:
 except subprocess.TimeoutExpired:
   output = 'timeout'
   elapsed = timelimit + 1
-  print(f'{args.block_type}\t{args.requirement_block}\t{lines}\t{output}\t{elapsed:0.1f}',
+  print(f'{args.block_type}\t{args.requirement_block}\t{num_lines}\t{output}\t{elapsed:0.1f}',
         file=sys.stderr)
 
-print(f'{args.block_type}\t{args.requirement_block}\t{lines}\t{output}\t{elapsed:0.1f}')
+print(f'{args.block_type}\t{args.requirement_block}\t{num_lines}\t{output}\t{elapsed:0.1f}')
