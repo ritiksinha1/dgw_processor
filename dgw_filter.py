@@ -16,6 +16,9 @@ def dgw_filter(src, remove_hide=True, remove_comments=False):
   # Remove all text following END.
   return_str = re.sub(r'[Ee][Nn][Dd]\.(.|\n)*', 'END.\n', src)
 
+  # Fix area lists: ,] has to be followed by [ with possibly intervening whitespace
+  return_str = re.sub(r'(,\s*])(\s*)([^\s\[])', '\\1\\2[\\3', return_str)
+
   # Remove {HIDE }, HIDE-FROM-ADVICE, and HIDE-RULE
   if remove_hide:
     return_str = re.sub(r'[Hh][Ii][Dd][Ee]-?(([Ff][Rr][Oo][Mm]-?[Aa][Dd][Vv][Ii][Cc][Ee])|'
@@ -30,4 +33,4 @@ def dgw_filter(src, remove_hide=True, remove_comments=False):
 
 
 if __name__ == "__main__":
-  print(filter(sys.stdin.read()))
+  print(dgw_filter(sys.stdin.read()))

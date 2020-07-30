@@ -113,12 +113,17 @@ course_list_qualifier_body : except_list
                            | share
                            ;
 
-full_course          : discipline catalog_number with_clause*;
-course_item          : discipline? catalog_number with_clause*;
-and_list             : (list_and course_item)+;
-or_list              : (list_or course_item)+;
-catalog_number       : symbol | NUMBER | CATALOG_NUMBER | RANGE | WILD;
-discipline           : symbol | WILD | BLOCK | IS; // Include keywords that appear as discipline names
+full_course           : discipline catalog_number with_clause*;
+course_item           : discipline? catalog_number with_clause*;
+and_list              : (list_and course_item)+;
+or_list               : (list_or course_item)+;
+catalog_number        : symbol | NUMBER | CATALOG_NUMBER | RANGE | WILD;
+discipline            : symbol
+                      | string // For "SPEC." at BKL
+                      | WILD
+                      // Include keywords that appear as discipline names
+                      | BLOCK
+                      | IS;
 
 //  if-then
 //  -----------------------------------------------------------------------------------------------
@@ -172,7 +177,13 @@ group           : NUMBER GROUP group_list
                 ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
-                    (block | blocktype | class_credit_body | group | noncourse | rule_complete)
+                    (block
+                     | blocktype
+                     | course_list
+                     | class_credit_body
+                     | group
+                     | noncourse
+                     | rule_complete)
                     group_qualifier*
                     label?
                   RP
@@ -222,7 +233,7 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  * ------------------------------------------------------------------------------------------------
  */
 allow_clause        : LP ALLOW (NUMBER|RANGE) RP;
-area_list           : area_element+ minarea;
+area_list           : area_element+ (minarea | minspread); // minspread is probably a scribing error
 area_element        : SQLB course_list_body ','? SQRB;
 
 class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
@@ -242,8 +253,7 @@ copy_rules      : COPY_RULES expression SEMICOLON?;
 display         : DISPLAY string SEMICOLON? display*;
 except_list     : EXCEPT course_list;
 including_list  : INCLUDING course_list;
-label           : LABEL label_tag? string SEMICOLON?;
-label_tag       : ~'"'+;
+label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag? display?;
 
 maxclass        : MAXCLASS NUMBER course_list? tag?;
@@ -288,6 +298,7 @@ expression      : expression relational_op expression
                 | full_course
                 | discipline
                 | NUMBER
+                | QUESTION_MARK
                 | SYMBOL
                 | string
                 | CATALOG_NUMBER
@@ -361,7 +372,7 @@ ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb];
 EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt];
 GROUP           : [Gg][Rr][Oo][Uu][Pp][Ss]?;
 INCLUDING       : [Ii][Nn][Cc][Ll][Uu][Dd][Ii][Nn][Gg];
-LABEL           : [Ll][Aa][Bb][Ee][Ll];
+LABEL           : [Ll][Aa][Bb][Ee][Ll]~'"'*;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss];
 
 MAXCLASS        : [Mm][Aa][Xx] CLASS;
@@ -415,7 +426,7 @@ OR          : [Oo][Rr];
 
 // Scribe "tokens"
 NUMBER          : DIGIT+ (DOT DIGIT*)?;
-RANGE           : NUMBER ' '* ':' ' '* NUMBER;
+RANGE           : NUMBER ' '* [:\-] ' '* NUMBER;
 CATALOG_NUMBER  : DIGIT+ LETTER+;
 WILD            : (SYMBOL)* AT (SYMBOL)*;
 SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND | '/')+;
