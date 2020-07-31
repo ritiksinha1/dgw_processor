@@ -206,13 +206,14 @@ group_qualifier : maxpassfail
 //  Rule Subset
 //  -----------------------------------------------------------------------------------------------
 subset            : BEGINSUB
-                  ( if_then
-                  | block
-                  | blocktype
-                  | class_credit_body
-                  | copy_rules
-                  | group
-                  | noncourse)+
+                  (( if_then
+                    | block
+                    | blocktype
+                    | class_credit_body
+                    | copy_rules
+                    | course_list
+                    | group
+                    | noncourse) label?)+
                   ENDSUB subset_qualifier* label?;
 subset_qualifier  : maxpassfail
                   | mingpa
@@ -267,8 +268,8 @@ maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;
 maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display?;
-mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display?;
+minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display? label?;
+mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display? label?;
 mingpa          : MINGPA NUMBER (course_list | expression)? tag? display? label?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag? display?;

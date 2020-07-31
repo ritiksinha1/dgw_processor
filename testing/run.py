@@ -24,8 +24,10 @@ test_dir = Path(f'./test_data.{args.block_type}')
 
 file = Path(test_dir, args.requirement_block)
 size = file.stat().st_size
-lines = dgw_filter(file.read_text())
+lines = file.read_text()
 num_lines = lines.count('\n')
+lines = lines.encode('utf-8')   # Need bytes-like object for input art to subprocess.run()
+
 try:
   t0 = time.time()
   completed = subprocess.run(['grun', 'ReqBlock', 'req_block'],
