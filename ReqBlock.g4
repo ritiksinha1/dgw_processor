@@ -213,7 +213,7 @@ subset            : BEGINSUB
                     | copy_rules
                     | course_list
                     | group
-                    | noncourse) label?)+
+                    | noncourse) label? )+
                   ENDSUB subset_qualifier* label?;
 subset_qualifier  : maxpassfail
                   | mingpa

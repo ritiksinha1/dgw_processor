@@ -25,6 +25,7 @@ test_dir = Path(f'./test_data.{args.block_type}')
 file = Path(test_dir, args.requirement_block)
 size = file.stat().st_size
 lines = file.read_text()
+lines = dgw_filter(lines)
 num_lines = lines.count('\n')
 lines = lines.encode('utf-8')   # Need bytes-like object for input art to subprocess.run()
 
