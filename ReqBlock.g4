@@ -241,7 +241,7 @@ class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANG
                       allow_clause?
                       (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
                       (area_list | course_list_head | expression | PSEUDO | share | tag)*
-                       display? label?;
+                       display* label?;
 
 class_credit_body   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                       allow_clause?
@@ -251,11 +251,11 @@ class_credit_body   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANG
 copy_rules      : COPY_RULES expression SEMICOLON?;
 // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
-display         : DISPLAY string SEMICOLON? display*;
+display         : DISPLAY string SEMICOLON?;
 except_list     : EXCEPT course_list;
 including_list  : INCLUDING course_list;
 label           : LABEL string SEMICOLON?;
-lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag? display?;
+lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag? display*;
 
 maxclass        : MAXCLASS NUMBER course_list? tag?;
 maxcredit       : MAXCREDIT NUMBER course_list? tag?;
@@ -268,14 +268,14 @@ maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;
 maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display? label?;
-mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display? label?;
-mingpa          : MINGPA NUMBER (course_list | expression)? tag? display? label?;
+minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display* label?;
+mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display* label?;
+mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag? display?;
-minres          : MINRES NUMBER (CLASS | CREDIT) label? tag? display?;
+minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
+minres          : MINRES NUMBER (CLASS | CREDIT) display* label? tag?;
 minspread       : MINSPREAD NUMBER tag?;
-minterm         : MINTERM NUMBER (CLASS | CREDIT) course_list? tag? display?;
+minterm         : MINTERM NUMBER (CLASS | CREDIT) course_list? tag? display*;
 
 noncourse       : NUMBER NONCOURSE LP expression RP label?;
 optional        : OPTIONAL;
@@ -290,7 +290,7 @@ standalone      : STANDALONE;
 string          : DBL_QUOTE ~DBL_QUOTE* DBL_QUOTE;
 symbol          : SYMBOL;
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
-under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? display? label;
+under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? display* label;
 with_clause     : LP WITH expression RP;
 
 expression      : expression relational_op expression

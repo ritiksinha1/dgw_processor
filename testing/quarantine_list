@@ -5,3 +5,7 @@ BKL01 RA003193 Missing comma in "3194 3169" on line 32 :: Yes
 BMC01 RA000291 Missing BeginIf/EndIf in multiple places :: Yes
 BMC01 RA000321 Missing BeginIf/EndIf in multiple places :: Yes
 BMC01 RA000327 Missing BeginIf/EndIf in multiple places :: Yes
+NYT01 RA000679 Misplaced semicolon on line 96. :: No
+NYT01 RA000680 Misplaced semicolon on line 100 :: No
+NYT01 RA000681 Misplaced semicolon on line 92. :: No
+NYT01 RA000682 Misplaced semicolon on line 107. :: No
