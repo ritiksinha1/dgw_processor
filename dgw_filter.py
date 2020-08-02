@@ -9,25 +9,26 @@ import sys
 
 # dgw_filter()
 # -------------------------------------------------------------------------------------------------
-def dgw_filter(src, remove_hide=True, fix_area=True, remove_comments=False):
+def dgw_filter(src, remove_hide=True, remove_comments=False):
   """ Remove all text following "END." Optionally, remove comments and text related to hiding
       parts of the requirements from the audit report.
+
+      2020-08-01: You want me to parse your Scribe blocks? Then fix your own square brackets!
+                  Removed the fix_area option rather than junk this filter up with all the ways
+                  the fix up can go wrong. The latest unintended consequence of trying to be helpful
+                  was the appearance of square brackets inside strings, which would require yet more
+                  elaborate preprocessing.
   """
   # Remove all text following END.
   return_str = re.sub(r'[Ee][Nn][Dd]\.(.|\n)*', 'END.\n', src)
 
-  # For fix_area to work, comments have to go
-  if fix_area:
-    remove_comments = True
-
   # Remove comments
-  # Problem: Must ignore # inside strings
   if remove_comments:
     return_str = re.sub(f'#.*\n', '', return_str)
 
-  # Fix area lists: ,] has to be followed by [ with possibly intervening whitespace
-  if fix_area:
-    return_str = re.sub(r'(,\s*])([\s#]*)([^\s#\[])', '\\1\\2[\\3', return_str)
+  # # Fix area lists: ,] has to be followed by [ with possibly intervening whitespace
+  # if fix_area:
+  #   return_str = re.sub(r'(,\s*])([\s#]*)([^\s#\[])', '\\1\\2[\\3', return_str)
 
   # Remove {HIDE }, HIDE-FROM-ADVICE, and HIDE-RULE
   if remove_hide:

@@ -1,11 +1,20 @@
 BAR01 RA000625 Empty block (all comments) :: No
+BKL01 RA002317 Stray right square bracket on line 115 :: Yes
+BKL01 RA002604 Stray right square bracket on line 47 :: Yes
+BKL01 RA002605 Stray right square bracket on line 40 :: Yes
 BKL01 RA002949 Stray ']' on line 137 :: Yes
 BKL01 RA003107 Missing comma in "3194 3169" on line 34 :: Yes
 BKL01 RA003193 Missing comma in "3194 3169" on line 32 :: Yes
 BMC01 RA000291 Missing BeginIf/EndIf in multiple places :: Yes
 BMC01 RA000321 Missing BeginIf/EndIf in multiple places :: Yes
 BMC01 RA000327 Missing BeginIf/EndIf in multiple places :: Yes
+CSI01 RA000585 Missing left square bracket on line 59 :: Yes
+CSI01 RA000870 Missing left square bracket on line 64 :: Yes
+CSI01 RA001202 Missing left square bracket on line 69 :: Yes
+HTR01 RA002068 Misplaced semicolon on line 651. :: No
+HTR01 RA002075 Misplaced semicolon on line 647. :: No
 NYT01 RA000679 Misplaced semicolon on line 96. :: No
 NYT01 RA000680 Misplaced semicolon on line 100 :: No
 NYT01 RA000681 Misplaced semicolon on line 92. :: No
 NYT01 RA000682 Misplaced semicolon on line 107. :: No
+BAR01 RA001241 Unmatched square brackets starting on lines 366 and 381. :: Yes

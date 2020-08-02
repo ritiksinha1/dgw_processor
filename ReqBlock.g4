@@ -234,8 +234,8 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  * ------------------------------------------------------------------------------------------------
  */
 allow_clause        : LP ALLOW (NUMBER|RANGE) RP;
-area_list           : area_element+ (minarea | minspread); // minspread is probably a scribing error
-area_element        : SQLB course_list_body ','? SQRB;
+area_list           : area_element+ (minarea | minspread)?; // minspread probably a scribing error
+area_element        : L_SQB course_list_body ','? R_SQB;
 
 class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                       allow_clause?
@@ -287,7 +287,7 @@ share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? ta
 //share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | string | WILD))?;
 //share_list      : expression;
 standalone      : STANDALONE;
-string          : DBL_QUOTE ~DBL_QUOTE* DBL_QUOTE;
+string          : STRING;
 symbol          : SYMBOL;
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
 under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? display* label;
@@ -315,14 +315,16 @@ list_and      : (PLUS | AND);
 // Lexer
 // ================================================================================================
 
+STRING          : '"' ~'"'* '"';
+
 //  Skips
 //  -----------------------------------------------------------------------------------------------
 // Comments and auditor directives, not requirements.
 CHECKELECTIVES  : [Cc][Hh][Ee][Cc][Kk]
-                 [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
-                 [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
-                 [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip;
-COMMENT         : '#' .*? '\n' -> skip;
+                  [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
+                  [Cc][Rr][Ee][Dd][Ii][Tt][Ss]
+                  [Aa][Ll][Ll][Oo][Ww][Ee][Dd] -> skip;
+COMMENT         : HASH .*? '\n' -> skip;
 CURLY_BRACES    : [}{] -> skip;
 DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
 DISPLAY         : [Dd][Ii][Ss][Pp][Ll][Aa][Yy];
@@ -446,20 +448,21 @@ DBL_QUOTE     : '"';
 EQ            : '=';
 GE            : '>=';
 GT            : '>';
+HASH          : '#';
 HYPHEN        : '-';
 LE            : '<=';
-LP            : '(';
 LT            : '<';
+LP            : '(';
+L_SQB         : '[';
 NE            : '<>';
 PERCENT       : '%';
 PLUS          : '+';
 QUOTE         : '\'';
 QUESTION_MARK : '?';
 RP            : ')';
-SLASH         : '/';
-SQLB          : '[';
-SQRB          : ']';
+R_SQB         : ']';
 SEMICOLON     : ';';
+SLASH         : '/';
 UNDERSCORE    : '_';
 
 //  Fragments
