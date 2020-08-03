@@ -95,6 +95,9 @@ course_list_qualifier_head : maxspread
                            | samedisc
                            | share
                            ;
+
+//area_list           : area_element+ (minarea | minspread)?; // minspread probably a scribing error
+area_list                  : L_SQB course_list ','? R_SQB;
 course_list_body           : course_list (course_list_qualifier_body tag?)* label? ;
 course_list_qualifier_body : except_list
                            | including_list
@@ -102,6 +105,7 @@ course_list_qualifier_body : except_list
                            | maxperdisc
                            | maxspread
                            | maxtransfer
+                           | minarea
                            | minclass
                            | mincredit
                            | mingpa
@@ -234,8 +238,6 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  * ------------------------------------------------------------------------------------------------
  */
 allow_clause        : LP ALLOW (NUMBER|RANGE) RP;
-area_list           : area_element+ (minarea | minspread)?; // minspread probably a scribing error
-area_element        : L_SQB course_list_body ','? R_SQB;
 
 class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                       allow_clause?
