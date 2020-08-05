@@ -304,7 +304,7 @@ share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? ta
 //share_list      : expression;
 standalone      : STANDALONE;
 string          : STRING;
-symbol          : SYMBOL;
+symbol          : SYMBOL | (QUOTE SYMBOL QUOTE);
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
 under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? display* label;
 with_clause     : LP WITH expression RP;
@@ -319,7 +319,7 @@ expression      : expression relational_op expression
                 | SYMBOL
                 | string
                 | CATALOG_NUMBER
-                | LP noncourse? expression RP // provisional noncourse for HOS01_RA000063
+                | LP NONCOURSE? expression RP
                 ;
 
 // Operators and Separators
