@@ -7,10 +7,10 @@ BMC01 RA000327 Missing BeginIf/EndIf in multiple places :: Yes
 CSI01 RA000585 Missing left square bracket on line 59 :: Yes
 CSI01 RA000870 Missing left square bracket on line 64 :: Yes
 CSI01 RA001202 Missing left square bracket on line 69 :: Yes
+CSI01 RA001499 Extra comma between course list an except on lines 192 and 628 :: No
 HTR01 RA002068 Misplaced semicolon on line 651. :: No
 HTR01 RA002075 Misplaced semicolon on line 647. :: No
 NYT01 RA000679 Misplaced semicolon on line 96. :: No
 NYT01 RA000680 Misplaced semicolon on line 100 :: No
 NYT01 RA000681 Misplaced semicolon on line 92. :: No
 NYT01 RA000682 Misplaced semicolon on line 107. :: No
-CSI01 RA001499 Extra comma between course list an except on lines 192 and 628 :: No
