@@ -1,8 +1,4 @@
 BAR01 RA000625 Empty block (all comments) :: No
-BKL01 RA002317 Stray right square bracket on line 115 :: Yes
-BKL01 RA002604 Stray right square bracket on line 47 :: Yes
-BKL01 RA002605 Stray right square bracket on line 40 :: Yes
-BKL01 RA002949 Stray ']' on line 137 :: Yes
 BKL01 RA003107 Missing comma in "3194 3169" on line 34 :: Yes
 BKL01 RA003193 Missing comma in "3194 3169" on line 32 :: Yes
 BMC01 RA000291 Missing BeginIf/EndIf in multiple places :: Yes
@@ -17,4 +13,4 @@ NYT01 RA000679 Misplaced semicolon on line 96. :: No
 NYT01 RA000680 Misplaced semicolon on line 100 :: No
 NYT01 RA000681 Misplaced semicolon on line 92. :: No
 NYT01 RA000682 Misplaced semicolon on line 107. :: No
-BAR01 RA001241 Unmatched square brackets starting on lines 366 and 381. :: Yes
+CSI01 RA001499 Extra comma between course list an except on lines 192 and 628 :: No

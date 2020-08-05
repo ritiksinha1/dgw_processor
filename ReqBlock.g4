@@ -82,9 +82,20 @@ body        :
 
 // Course Lists
 // ------------------------------------------------------------------------------------------------
-/* Some course list qualifiers can be standalone rules in the Head.
+/* Differentiate between lists in the head versus lists in the body because some course list
+ * qualifiers can be standalone rules in the Head.
+ *
+ * Course lists can be divided into “areas” using square brackets for use with the MinArea
+ * qualifier by enclosing parts in square brackets. But (a) just because a list is divided into
+ * areas doesn’t mean there has to be a MinArea qualifier present, and (b) the Ellucian parser
+ * doesn't check whether the square brackets are balanced; it’s okay to have stray brackets floating
+ * around, which are ignored, presumably unless there is a MinArea check done during audit time.
+ * The trick is to determine where each type of bracket might appear or not.
  */
-course_list                : course_item (and_list | or_list)? (except_list | including_list)? ;
+course_list               : L_SQB?
+                              course_item R_SQB? (and_list | or_list)?
+                            R_SQB?
+                            (except_list | including_list)? ;
 
 course_list_head           : course_list (course_list_qualifier_head tag?)* label? ;
 course_list_qualifier_head : maxspread
@@ -96,8 +107,6 @@ course_list_qualifier_head : maxspread
                            | share
                            ;
 
-//area_list           : area_element+ (minarea | minspread)?; // minspread probably a scribing error
-area_list                  : L_SQB course_list ','? R_SQB;
 course_list_body           : course_list (course_list_qualifier_body tag?)* label? ;
 course_list_qualifier_body : except_list
                            | including_list
@@ -118,9 +127,9 @@ course_list_qualifier_body : except_list
                            ;
 
 full_course           : discipline catalog_number with_clause*;
-course_item           : discipline? catalog_number with_clause*;
-and_list              : (list_and course_item)+;
-or_list               : (list_or course_item)+;
+course_item           : L_SQB? discipline? catalog_number with_clause* R_SQB?;
+and_list              : (list_and R_SQB? course_item)+;
+or_list               : (list_or R_SQB? course_item)+;
 catalog_number        : symbol | NUMBER | CATALOG_NUMBER | RANGE | WILD;
 discipline            : symbol
                       | string // For "SPEC." at BKL
@@ -140,10 +149,12 @@ stmt         : if_then
              | class_credit_body
              | copy_rules
              | group
+             | lastres
              | maxcredit
              | maxtransfer
              | minclass
              | mincredit
+             | mingrade
              | minres
              | noncourse
              | remark
@@ -217,9 +228,11 @@ subset            : BEGINSUB
                     | copy_rules
                     | course_list
                     | group
-                    | noncourse) label? )+
+                    | noncourse
+                    | rule_complete) label? )+
                   ENDSUB subset_qualifier* label?;
 subset_qualifier  : maxpassfail
+                  | maxspread
                   | mingpa
                   | mingrade
                   | maxtransfer
@@ -231,7 +244,7 @@ subset_qualifier  : maxpassfail
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
-block           : NUMBER BLOCK expression label;
+block           : NUMBER BLOCK expression ruletag? label;
 blocktype       : NUMBER BLOCKTYPE expression label;
 
 /* Other Rules and Rule Components
@@ -242,13 +255,14 @@ allow_clause        : LP ALLOW (NUMBER|RANGE) RP;
 class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                       allow_clause?
                       (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                      (area_list | course_list_head | expression | PSEUDO | share | tag)*
-                       display* label?;
+                      (course_list_head | expression | PSEUDO | share | tag)*
+                      display* label?;
 
 class_credit_body   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
                       allow_clause?
                       (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                      (area_list | course_list_body | expression | PSEUDO | share | tag)* label?;
+                      (course_list_body | expression | PSEUDO | share | tag)*
+                      display* label?;
 
 copy_rules      : COPY_RULES expression SEMICOLON?;
 // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
@@ -257,7 +271,7 @@ display         : DISPLAY string SEMICOLON?;
 except_list     : EXCEPT course_list;
 including_list  : INCLUDING course_list;
 label           : LABEL string SEMICOLON?;
-lastres         : LASTRES NUMBER (OF NUMBER )? (CLASS | CREDIT) course_list? tag? display*;
+lastres         : LASTRES NUMBER (OF NUMBER)? (CLASS | CREDIT) course_list? tag? display* label?;
 
 maxclass        : MAXCLASS NUMBER course_list? tag?;
 maxcredit       : MAXCREDIT NUMBER course_list? tag?;
@@ -305,7 +319,7 @@ expression      : expression relational_op expression
                 | SYMBOL
                 | string
                 | CATALOG_NUMBER
-                | LP expression RP
+                | LP noncourse? expression RP // provisional noncourse for HOS01_RA000063
                 ;
 
 // Operators and Separators
@@ -422,7 +436,7 @@ ENDELSE         : [Ee][Nn][Dd]ELSE;
 ENDIF           : [Ee][Nn][Dd] IF;
 IF              : [Ii][Ff];
 IS              : ([Ii][Ss])|([Ww][Aa][Ss]);
-ISNT            : ([Ii][Ss][Nn][Tt])|([Ww][Aa][Ss][Nn][Tt]);
+ISNT            : ([Ii][Ss][Nn][Oo]?[Tt])|([Ww][Aa][Ss][Nn][Oo]?[Tt]);
 THEN            : [Tt][Hh][Ee][Nn];
 
 // List separator aliases
