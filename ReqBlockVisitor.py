@@ -154,16 +154,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#area_list.
-    def visitArea_list(self, ctx:ReqBlockParser.Area_listContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#area_element.
-    def visitArea_element(self, ctx:ReqBlockParser.Area_elementContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by ReqBlockParser#class_credit_head.
     def visitClass_credit_head(self, ctx:ReqBlockParser.Class_credit_headContext):
         return self.visitChildren(ctx)
@@ -196,11 +186,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#label.
     def visitLabel(self, ctx:ReqBlockParser.LabelContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#label_tag.
-    def visitLabel_tag(self, ctx:ReqBlockParser.Label_tagContext):
         return self.visitChildren(ctx)
 
 

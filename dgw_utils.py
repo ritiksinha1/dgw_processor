@@ -288,9 +288,14 @@ def build_course_list(institution, ctx) -> list:
 
   # For development, include the context path
   return_object['context_path'] = context_path(ctx)
+
   # Pick up the label, if there is one
+  # It belongs to the parent (course_list_body, etc.)
+  parent_ctx = ctx.parentCtx
   try:
-    return_object['label'] = build_string(ctx.label().string())
+    for child in parent_ctx.children:
+      if child.__class__.__name__ == 'LabelContext':
+        return_object['label'] = child.string().getText().strip('"').replace('\'', '’')
   except AttributeError as ae:
     if DEBUG:
       print('No Label', file=sys.stderr)
@@ -310,11 +315,11 @@ def build_course_list(institution, ctx) -> list:
   # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
   # is given.
   discipline, catalog_number, with_clause = (None, None, None)
-  for child in ctx.children:
-    print(child.__class__.__name__, child.getText())
-    for cchild in child.children:
-      print('  ', cchild.__class__.__name__, cchild.getText())
-  exit()
+  # for child in ctx.children:
+  #   print(child.__class__.__name__, child.getText())
+  #   for cchild in child.children:
+  #     print('  ', cchild.__class__.__name__, cchild.getText())
+
   catalog_number = ctx.course_item().catalog_number().getText()
   # The next two might be absent
   try:
@@ -323,7 +328,6 @@ def build_course_list(institution, ctx) -> list:
     discipline = '@'
   try:
     with_clause = ctx.course_item().with_clause().getText()
-    print('with_clause', with_clause.__class__.__name__, file=sys.stderr)
   except AttributeError as ae:
     pass
   scribed_courses.append((discipline, catalog_number, with_clause))
@@ -341,20 +345,24 @@ def build_course_list(institution, ctx) -> list:
           catalog_number = child.getText()
         elif child.__class__.__name__ == 'With_clauseContext':
           with_clause = child.getText()   # Need to interpret this
-          print(discipline, catalog_number, with_clause)
-          exit()
+          # print(discipline, catalog_number, with_clause)
         else:
-          print(f'Unexpected token type: {child.__class__.__name__}', file=sys.stderr)
+          # This is where square brackets show up
+          print(f'Unexpected token type: {child.__class__.__name__}, text: {child.getText()}', file=sys.stderr)
       assert catalog_number is not None, (f'Course Item with no catalog number: '
                                           f'{course_item.getText()}')
       scribed_courses.append((discipline, catalog_number, with_clause))
-      print((discipline, catalog_number, with_clause))
 
-  if ctx.course_list_qualifier is not None:
-    for context in ctx.course_list_qualifier():
-      list_qualifiers.append(get_course_list_qualifier(context))
+  ## qualifiers are now attached to course_list_head and course_list_body, not here.
+  # if ctx.course_list_qualifier_head is not None:
+  #   for context in ctx.course_list_qualifier_head():
+  #     list_qualifiers.append(get_course_list_qualifier_head(context))
 
-  print('scribed_courses', scribed_courses)
+  # if ctx.course_list_qualifier_body is not None:
+  #   for context in ctx.course_list_qualifier_body():
+  #     list_qualifiers.append(get_course_list_qualifier_body(context))
+
+  # print('scribed_courses', scribed_courses)
 
   # Active Courses
   all_blanket = True
@@ -431,10 +439,11 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
         if 'WRIC' not in row.attributes:
           all_writing = False
   conn.close()
-  if all_blanket:
-    attributes.append('Blanket Credit')
-  if all_writing:
-    attributes.append('Writing Intensive')
+  if len(active_courses) > 0:
+    if all_blanket:
+      attributes.append('Blanket Credit')
+    if all_writing:
+      attributes.append('Writing Intensive')
 
   return return_object
 

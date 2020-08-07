@@ -26,7 +26,7 @@ import traceback
 from io import StringIO
 
 from collections import namedtuple
-from urllib import parse
+import urllib.parse
 
 from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
@@ -94,7 +94,7 @@ def dgw_parser(institution, block_type, block_value, period='all', do_parse=Fals
     where institution = %s
       and block_type = %s
       and block_value = %s
-    order by period_stop
+    order by period_stop desc
   """
   fetch_cursor.execute(query, (institution, block_type, block_value))
   # Sanity Check
@@ -167,7 +167,7 @@ def dgw_parser(institution, block_type, block_value, period='all', do_parse=Fals
     if DEBUG:
       print(f'\r{operation} {institution} {row.requirement_id}', end='')
 
-    if period == 'current' or period == 'recent':
+    if period == 'current' or period == 'latest':
       break
   conn.commit()
   conn.close()
@@ -176,7 +176,7 @@ def dgw_parser(institution, block_type, block_value, period='all', do_parse=Fals
   return (num_updates, num_rows)
 
 
-# main()
+# __main__
 # =================================================================================================
 # Feed requirement_block(s) to dgw_parser() for testing
 if __name__ == '__main__':
@@ -211,7 +211,6 @@ if __name__ == '__main__':
     institutions = args.institutions
 
   num_institutions = len(institutions)
-  print(f'{num_institutions} institutions')
   institution_count = 0
   for institution in institutions:
     institution_count += 1
@@ -221,7 +220,6 @@ if __name__ == '__main__':
       args.block_types = ['DEGREE', 'MAJOR', 'MINOR', 'CONC', 'OTHER']
     types_count = 0
     num_types = len(args.block_types)
-    print(f'{num_types} types')
     for block_type in args.block_types:
       types_count += 1
       if args.block_values[0] == 'all':
@@ -236,7 +234,6 @@ if __name__ == '__main__':
         block_values = args.block_values
 
       num_values = len(block_values)
-      print(f'{num_values} values')
       values_count = 0
       for block_value in block_values:
         values_count += 1
@@ -248,6 +245,7 @@ if __name__ == '__main__':
                                              block_value,
                                              period='latest',
                                              do_parse=args.parse)
+        suffix = '' if num_updates == 1 else 's'
         print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
               f'{values_count} / {num_values}: ', end='')
-        print(f'{operation} {num_updates} blocks for {institution} {block_type} {block_value}')
+        print(f'{operation} {num_updates} block{suffix} for {institution} {block_type} {block_value}')

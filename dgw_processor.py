@@ -20,8 +20,8 @@ from dgw_utils import build_course_list,\
     expression_terminals,\
     get_number
 
-LOG_DGW_CONTEXT_PATH = os.getenv('LOG_DGW_CONTEXT_PATH')
 DEBUG = os.getenv('DEBUG_PROCESSOR')
+LOG_CONTEXT_PATH = os.getenv('LOG_CONTEXT_PATH')
 
 
 # class ScribeSection(IntEnum)
@@ -51,7 +51,7 @@ class DGW_Processor(ReqBlockListener):
     """ Constructor, given metadata and text for a requirement block.
     """
 
-    if LOG_DGW_CONTEXT_PATH:
+    if LOG_CONTEXT_PATH:
       print(f'*** DGW_Processor: {institution} {requirement_id} {block_type} “{title}”',
             file=sys.stderr)
     self.institution = institution
@@ -105,18 +105,18 @@ class DGW_Processor(ReqBlockListener):
 
   # enterReq_block(self, ctx: ReqBlockParser.Req_blockContext)
   # -----------------------------------------------------------------------------------------------
-  def enterReq_block(self, ctx: ReqBlockParser.Req_blockContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterReq_block(self, ctx: ReqBlockParser.Req_blockContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterHead(self, ctx: ReqBlockParser.HeadContext)
   # -----------------------------------------------------------------------------------------------
   def enterHead(self, ctx: ReqBlockParser.HeadContext):
     """
     """
-    if LOG_DGW_CONTEXT_PATH:
+    if LOG_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     self.scribe_section = ScribeSection.HEAD
 
@@ -125,7 +125,7 @@ class DGW_Processor(ReqBlockListener):
   def enterBody(self, ctx: ReqBlockParser.BodyContext):
     """
     """
-    if LOG_DGW_CONTEXT_PATH:
+    if LOG_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     self.scribe_section = ScribeSection.BODY
 
@@ -137,7 +137,7 @@ class DGW_Processor(ReqBlockListener):
         and_list        : (list_and course_item )+;
         or_list         : (list_or course_item)+;
     """
-    if LOG_DGW_CONTEXT_PATH:
+    if LOG_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     course_list = build_course_list(self.institution, ctx)
     self.sections[self.scribe_section].append(course_list)
@@ -155,95 +155,95 @@ class DGW_Processor(ReqBlockListener):
 
   # enterFull_course(self, ctx: ReqBlockParser.Full_courseContext)
   # -----------------------------------------------------------------------------------------------
-  def enterFull_course(self, ctx: ReqBlockParser.Full_courseContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterFull_course(self, ctx: ReqBlockParser.Full_courseContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterCourse_item(self, ctx: ReqBlockParser.Course_itemContext)
   # -----------------------------------------------------------------------------------------------
-  def enterCourse_item(self, ctx: ReqBlockParser.Course_itemContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterCourse_item(self, ctx: ReqBlockParser.Course_itemContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterAnd_list(self, ctx: ReqBlockParser.And_listContext)
   # -----------------------------------------------------------------------------------------------
-  def enterAnd_list(self, ctx: ReqBlockParser.And_listContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterAnd_list(self, ctx: ReqBlockParser.And_listContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterOr_list(self, ctx: ReqBlockParser.Or_listContext)
   # -----------------------------------------------------------------------------------------------
-  def enterOr_list(self, ctx: ReqBlockParser.Or_listContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterOr_list(self, ctx: ReqBlockParser.Or_listContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterDiscipline(self, ctx: ReqBlockParser.DisciplineContext)
   # -----------------------------------------------------------------------------------------------
-  def enterDiscipline(self, ctx: ReqBlockParser.DisciplineContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterDiscipline(self, ctx: ReqBlockParser.DisciplineContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterCatalog_number(self, ctx: ReqBlockParser.Catalog_numberContext)
   # -----------------------------------------------------------------------------------------------
-  def enterCatalog_number(self, ctx: ReqBlockParser.Catalog_numberContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterCatalog_number(self, ctx: ReqBlockParser.Catalog_numberContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterIf_then(self, ctx: ReqBlockParser.If_thenContext)
   # -----------------------------------------------------------------------------------------------
   def enterIf_then(self, ctx: ReqBlockParser.If_thenContext):
     """ IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause?;
     """
-    if LOG_DGW_CONTEXT_PATH:
+    if LOG_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
     # Capture the conditional expression's terminals
     expr = ctx.expression()
     terminals = []
     expression_terminals(expr, terminals)
-    print(f'If-then expression: {terminals}', file=sys.stderr)
+#    print(f'If-then expression: {terminals}', file=sys.stderr)
 
   # enterElse_clause(self, ctx: ReqBlockParser.Else_clauseContext)
   # -----------------------------------------------------------------------------------------------
-  def enterElse_clause(self, ctx: ReqBlockParser.Else_clauseContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterElse_clause(self, ctx: ReqBlockParser.Else_clauseContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterStmt_group(self, ctx: ReqBlockParser.Stmt_groupContext)
   # -----------------------------------------------------------------------------------------------
-  def enterStmt_group(self, ctx: ReqBlockParser.Stmt_groupContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterStmt_group(self, ctx: ReqBlockParser.Stmt_groupContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterStmt(self, ctx: ReqBlockParser.StmtContext)
   # -----------------------------------------------------------------------------------------------
-  def enterStmt(self, ctx: ReqBlockParser.StmtContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterStmt(self, ctx: ReqBlockParser.StmtContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterBegin_if(self, ctx: ReqBlockParser.Begin_ifContext)
   # -----------------------------------------------------------------------------------------------
   def enterBegin_if(self, ctx: ReqBlockParser.Begin_ifContext):
     """
     """
-    if LOG_DGW_CONTEXT_PATH:
+    if LOG_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterEnd_if(self, ctx: ReqBlockParser.End_ifContext)
@@ -251,373 +251,349 @@ class DGW_Processor(ReqBlockListener):
   def enterEnd_if(self, ctx: ReqBlockParser.End_ifContext):
     """
     """
-    if LOG_DGW_CONTEXT_PATH:
+    if LOG_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
   # enterGroup(self, ctx: ReqBlockParser.GroupContext)
   # -----------------------------------------------------------------------------------------------
-  def enterGroup(self, ctx: ReqBlockParser.GroupContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterGroup(self, ctx: ReqBlockParser.GroupContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_list(self, ctx: ReqBlockParser.Group_listContext)
   # -----------------------------------------------------------------------------------------------
-  def enterGroup_list(self, ctx: ReqBlockParser.Group_listContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterGroup_list(self, ctx: ReqBlockParser.Group_listContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_item(self, ctx: ReqBlockParser.Group_itemContext)
   # -----------------------------------------------------------------------------------------------
-  def enterGroup_item(self, ctx: ReqBlockParser.Group_itemContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterGroup_item(self, ctx: ReqBlockParser.Group_itemContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_qualifier(self, ctx: ReqBlockParser.Group_qualifierContext)
   # -----------------------------------------------------------------------------------------------
-  def enterGroup_qualifier(self, ctx: ReqBlockParser.Group_qualifierContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterGroup_qualifier(self, ctx: ReqBlockParser.Group_qualifierContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterSubset(self, ctx: ReqBlockParser.SubsetContext)
   # -----------------------------------------------------------------------------------------------
-  def enterSubset(self, ctx: ReqBlockParser.SubsetContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterSubset(self, ctx: ReqBlockParser.SubsetContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterSubset_qualifier(self, ctx: ReqBlockParser.Subset_qualifierContext)
   # -----------------------------------------------------------------------------------------------
-  def enterSubset_qualifier(self, ctx: ReqBlockParser.Subset_qualifierContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterSubset_qualifier(self, ctx: ReqBlockParser.Subset_qualifierContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterBlock(self, ctx: ReqBlockParser.BlockContext)
   # -----------------------------------------------------------------------------------------------
-  def enterBlock(self, ctx: ReqBlockParser.BlockContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterBlock(self, ctx: ReqBlockParser.BlockContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterBlocktype(self, ctx: ReqBlockParser.BlocktypeContext)
   # -----------------------------------------------------------------------------------------------
-  def enterBlocktype(self, ctx: ReqBlockParser.BlocktypeContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterBlocktype(self, ctx: ReqBlockParser.BlocktypeContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterAllow_clause(self, ctx: ReqBlockParser.Allow_clauseContext)
   # -----------------------------------------------------------------------------------------------
-  def enterAllow_clause(self, ctx: ReqBlockParser.Allow_clauseContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
-
-  # enterArea_list(self, ctx: ReqBlockParser.Area_listContext)
-  # -----------------------------------------------------------------------------------------------
-  def enterArea_list(self, ctx: ReqBlockParser.Area_listContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
-
-  # enterArea_element(self, ctx: ReqBlockParser.Area_elementContext)
-  # -----------------------------------------------------------------------------------------------
-  def enterArea_element(self, ctx: ReqBlockParser.Area_elementContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterAllow_clause(self, ctx: ReqBlockParser.Allow_clauseContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterCopy_rules(self, ctx: ReqBlockParser.Copy_rulesContext)
   # -----------------------------------------------------------------------------------------------
-  def enterCopy_rules(self, ctx: ReqBlockParser.Copy_rulesContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterCopy_rules(self, ctx: ReqBlockParser.Copy_rulesContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterLabel(self, ctx: ReqBlockParser.LabelContext)
   # -----------------------------------------------------------------------------------------------
-  def enterLabel(self, ctx: ReqBlockParser.LabelContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
-
-  # enterLabel_tag(self, ctx: ReqBlockParser.Label_tagContext)
-  # -----------------------------------------------------------------------------------------------
-  def enterLabel_tag(self, ctx: ReqBlockParser.Label_tagContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterLabel(self, ctx: ReqBlockParser.LabelContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterLastres(self, ctx: ReqBlockParser.LastresContext)
   # -----------------------------------------------------------------------------------------------
-  def enterLastres(self, ctx: ReqBlockParser.LastresContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterLastres(self, ctx: ReqBlockParser.LastresContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMaxclass(self, ctx: ReqBlockParser.MaxclassContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMaxclass(self, ctx: ReqBlockParser.MaxclassContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMaxclass(self, ctx: ReqBlockParser.MaxclassContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMaxcredit(self, ctx: ReqBlockParser.MaxcreditContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMaxcredit(self, ctx: ReqBlockParser.MaxcreditContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMaxcredit(self, ctx: ReqBlockParser.MaxcreditContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMaxpassfail(self, ctx: ReqBlockParser.MaxpassfailContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMaxpassfail(self, ctx: ReqBlockParser.MaxpassfailContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMaxpassfail(self, ctx: ReqBlockParser.MaxpassfailContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMaxperdisc(self, ctx: ReqBlockParser.MaxperdiscContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMaxperdisc(self, ctx: ReqBlockParser.MaxperdiscContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMaxperdisc(self, ctx: ReqBlockParser.MaxperdiscContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMaxspread(self, ctx: ReqBlockParser.MaxspreadContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMaxspread(self, ctx: ReqBlockParser.MaxspreadContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMaxspread(self, ctx: ReqBlockParser.MaxspreadContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMaxterm(self, ctx: ReqBlockParser.MaxtermContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMaxterm(self, ctx: ReqBlockParser.MaxtermContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMaxterm(self, ctx: ReqBlockParser.MaxtermContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMaxtransfer(self, ctx: ReqBlockParser.MaxtransferContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMaxtransfer(self, ctx: ReqBlockParser.MaxtransferContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMaxtransfer(self, ctx: ReqBlockParser.MaxtransferContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMinarea(self, ctx: ReqBlockParser.MinareaContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMinarea(self, ctx: ReqBlockParser.MinareaContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMinarea(self, ctx: ReqBlockParser.MinareaContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMinclass(self, ctx: ReqBlockParser.MinclassContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMinclass(self, ctx: ReqBlockParser.MinclassContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMinclass(self, ctx: ReqBlockParser.MinclassContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMincredit(self, ctx: ReqBlockParser.MincreditContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMincredit(self, ctx: ReqBlockParser.MincreditContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMincredit(self, ctx: ReqBlockParser.MincreditContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMingpa(self, ctx: ReqBlockParser.MingpaContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMingpa(self, ctx: ReqBlockParser.MingpaContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMingpa(self, ctx: ReqBlockParser.MingpaContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMingrade(self, ctx: ReqBlockParser.MingradeContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMingrade(self, ctx: ReqBlockParser.MingradeContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMingrade(self, ctx: ReqBlockParser.MingradeContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMinperdisc(self, ctx: ReqBlockParser.MinperdiscContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMinperdisc(self, ctx: ReqBlockParser.MinperdiscContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMinperdisc(self, ctx: ReqBlockParser.MinperdiscContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMinres(self, ctx: ReqBlockParser.MinresContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMinres(self, ctx: ReqBlockParser.MinresContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMinres(self, ctx: ReqBlockParser.MinresContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterMinspread(self, ctx: ReqBlockParser.MinspreadContext)
   # -----------------------------------------------------------------------------------------------
-  def enterMinspread(self, ctx: ReqBlockParser.MinspreadContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterMinspread(self, ctx: ReqBlockParser.MinspreadContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterNoncourse(self, ctx: ReqBlockParser.NoncourseContext)
   # -----------------------------------------------------------------------------------------------
-  def enterNoncourse(self, ctx: ReqBlockParser.NoncourseContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterNoncourse(self, ctx: ReqBlockParser.NoncourseContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterOptional(self, ctx: ReqBlockParser.OptionalContext)
   # -----------------------------------------------------------------------------------------------
-  def enterOptional(self, ctx: ReqBlockParser.OptionalContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterOptional(self, ctx: ReqBlockParser.OptionalContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterRemark(self, ctx: ReqBlockParser.RemarkContext)
   # -----------------------------------------------------------------------------------------------
-  def enterRemark(self, ctx: ReqBlockParser.RemarkContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterRemark(self, ctx: ReqBlockParser.RemarkContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterRule_complete(self, ctx: ReqBlockParser.Rule_completeContext)
   # -----------------------------------------------------------------------------------------------
-  def enterRule_complete(self, ctx: ReqBlockParser.Rule_completeContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterRule_complete(self, ctx: ReqBlockParser.Rule_completeContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterRuletag(self, ctx: ReqBlockParser.RuletagContext)
   # -----------------------------------------------------------------------------------------------
-  def enterRuletag(self, ctx: ReqBlockParser.RuletagContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterRuletag(self, ctx: ReqBlockParser.RuletagContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterSamedisc(self, ctx: ReqBlockParser.SamediscContext)
   # -----------------------------------------------------------------------------------------------
-  def enterSamedisc(self, ctx: ReqBlockParser.SamediscContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterSamedisc(self, ctx: ReqBlockParser.SamediscContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterShare(self, ctx: ReqBlockParser.ShareContext)
   # -----------------------------------------------------------------------------------------------
-  def enterShare(self, ctx: ReqBlockParser.ShareContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterShare(self, ctx: ReqBlockParser.ShareContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterStandalone(self, ctx: ReqBlockParser.StandaloneContext)
   # -----------------------------------------------------------------------------------------------
-  def enterStandalone(self, ctx: ReqBlockParser.StandaloneContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterStandalone(self, ctx: ReqBlockParser.StandaloneContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterTag(self, ctx: ReqBlockParser.TagContext)
   # -----------------------------------------------------------------------------------------------
-  def enterTag(self, ctx: ReqBlockParser.TagContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterTag(self, ctx: ReqBlockParser.TagContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterUnder(self, ctx: ReqBlockParser.UnderContext)
   # -----------------------------------------------------------------------------------------------
-  def enterUnder(self, ctx: ReqBlockParser.UnderContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterUnder(self, ctx: ReqBlockParser.UnderContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterWith_clause(self, ctx: ReqBlockParser.With_clauseContext)
   # -----------------------------------------------------------------------------------------------
-  def enterWith_clause(self, ctx: ReqBlockParser.With_clauseContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterWith_clause(self, ctx: ReqBlockParser.With_clauseContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterExpression(self, ctx: ReqBlockParser.ExpressionContext)
   # -----------------------------------------------------------------------------------------------
-  def enterExpression(self, ctx: ReqBlockParser.ExpressionContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterExpression(self, ctx: ReqBlockParser.ExpressionContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterLogical_op(self, ctx: ReqBlockParser.Logical_opContext)
   # -----------------------------------------------------------------------------------------------
-  def enterLogical_op(self, ctx: ReqBlockParser.Logical_opContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterLogical_op(self, ctx: ReqBlockParser.Logical_opContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterRelational_op(self, ctx: ReqBlockParser.Relational_opContext)
   # -----------------------------------------------------------------------------------------------
-  def enterRelational_op(self, ctx: ReqBlockParser.Relational_opContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterRelational_op(self, ctx: ReqBlockParser.Relational_opContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterList_or(self, ctx: ReqBlockParser.List_orContext)
   # -----------------------------------------------------------------------------------------------
-  def enterList_or(self, ctx: ReqBlockParser.List_orContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterList_or(self, ctx: ReqBlockParser.List_orContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
 
   # enterList_and(self, ctx: ReqBlockParser.List_andContext)
   # -----------------------------------------------------------------------------------------------
-  def enterList_and(self, ctx: ReqBlockParser.List_andContext):
-    """
-    """
-    if LOG_DGW_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+  # def enterList_and(self, ctx: ReqBlockParser.List_andContext):
+  #   """
+  #   """
+  #   if LOG_CONTEXT_PATH:
+  #     print(context_path(ctx), file=sys.stderr)
