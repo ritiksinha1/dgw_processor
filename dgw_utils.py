@@ -353,7 +353,7 @@ def build_course_list(institution, ctx) -> list:
                                           f'{course_item.getText()}')
       scribed_courses.append((discipline, catalog_number, with_clause))
 
-  ## qualifiers are now attached to course_list_head and course_list_body, not here.
+  # ## Qualifiers are now attached to course_list_head and course_list_body, not here. ##
   # if ctx.course_list_qualifier_head is not None:
   #   for context in ctx.course_list_qualifier_head():
   #     list_qualifiers.append(get_course_list_qualifier_head(context))
