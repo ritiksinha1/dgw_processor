@@ -13,11 +13,11 @@ from pgconnection import PgConnection
 
 from dgw_filter import dgw_filter
 
+# Parse args
 parser = argparse.ArgumentParser(description='Generate test data for ReqBlock.g4')
 parser.add_argument('-d', '--debug', action='store_true', default=False)
 parser.add_argument('-p', '--period', default='99999999')
 parser.add_argument('block_types', metavar='block_type', nargs='*', default=['all'])
-# Parse args
 args = parser.parse_args()
 period_stop = args.period
 if period_stop.lower() == 'active':
@@ -31,6 +31,10 @@ quarantined_blocks = []
 timeout_blocks = []
 with open('./quarantine_list') as ql:
   for line in ql.readlines():
+    # Ignore comments and blank lines
+    line = re.sub(r'#.*$', '', line).strip()
+    if len(line) < 1:
+      continue
     try:
       institution, block_id, *_ = line.split()
       if _ == ['Timeout']:
