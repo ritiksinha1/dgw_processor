@@ -19,17 +19,12 @@ setup.py
 dist/
 __init.py__
 
-tests/
 test_data/
 Logs/
-/temp_1/
-/test_contexts/
-/testing/quarantine_list
-/temp_3/
 /testing/.lastwait
 /testing/ReqBlock.g4
 /testing/dgw_filter.py
-/testing/run_tests.csv
+/testing/run_tests*.csv
 /testing/t
 /testing/test_data.*/
 /testing/test_results.*/

@@ -1,0 +1,10 @@
+BEGIN
+;
+# 12 credits needed across 2 areas; at least 1 class in each area
+
+12 Credits in [PSY 130, 135, BIO 156, ]
+              [BIO 145, 177, CHE 205 ]
+            MinAreas 2 tag=MINAREASSCI
+            Label SCI1 "Science I";
+
+END.
