@@ -1,0 +1,153 @@
+Label 2017.11 "Writer's Workshop for ESL Students";
+Label 2017.11 "Writer's Workshop for ESL Students";
+# comment
+     Label 2017.13 "English as a Second Language - Advanced";
+     Label 2017.14 "Writer's Workshop for ESL Students";
+     Label 2017.15 "Developmental Writing II";
+   Label 2017.16 "ESL 3 Placement"
+     Label 2017.17 "English as a Second Language - Intermediate";
+     Label 2017.18 "English as a Second Language - Advanced";
+     Label 2017.19 "Writer's Workshop for ESL Students";
+     Label 2017.20 "Developmental Writing II";
+    Label 203AC.1 "ESL 2 Placement Completed";
+   Label 2017.21 "ESL 2 Placement"
+###  Label 1A "CUNY Math Test Exempted"
+### Label "CUNY Math Test Exempted"
+###  Label "CUNY Math Proficient";
+## Label B1 "CUNY Math Test Passed";
+      Label 2017.11 "Writer's Workshop for ESL Students";
+     ## Label "Developmental Writing II";
+    Label 2017.12 "ENG 9 Placement"
+  #  Label "ESL Requirement Complete"
+      Label 2017.13 "English as a Second Language - Advanced";
+      Label 2017.14 "Writer's Workshop for ESL Students";
+      Label 2017.15 "Developmental Writing II";
+    Label 2017.16 "ESL 3 Placement"
+      Label 2017.17 "English as a Second Language - Intermediate";
+      Label 2017.18 "English as a Second Language - Advanced";
+      Label 2017.19 "Writer's Workshop for ESL Students";
+      Label 2017.20 "Developmental Writing II";
+     Label 203AC.1 "ESL 2 Placement Completed";
+    Label 2017.21 "ESL 2 Placement"
+      Label 2017.22 "English as a Second Language - Basic";
+      Label 2017.23 "English as a Second Language - Intermediate ";
+      Label 2017.24 "English as a Second Language - Advanced  ";
+      Label 2017.25 "Writer's Workshop for ESL Students  ";
+      Label 2017.26 "Developmental Writing II";
+    Label 2017.27 "ESL 1 Placement";
+     Label TW1 "CUNY Reading Proficient from Prior CUNY"
+  Label MILEREAD "CUNY Reading Test Proficient"
+      LABEL 2017.1 "CUNY Reading Test Exempted"
+     Label 2B "CUNY Reading Test Passed"
+      Label 2017.2 "CUNY Reading Test Exempted"
+      Label 4B "Cuny Reading Test Passed"
+      Label 103 "Basic Reading Skills ";
+      Label 104 "Reading & Study Skills";
+    Label 102 "RDL 1 Placement";
+      Label 101 "Basic Reading Skills";
+    Label 100 "RDL 2 Placement";
+      Label 203AB "Completed a College-Level ENGLISH Course"
+ Label 1HF3 "Reading Skills unmet";
+     Label TW2 "CUNY Writing Proficient from Prior CUNY"
+  Label MILEWRIT "CUNY Writing Test Proficient"
+      Label 2017.3 "CUNY Writing Test Exempted";
+       Label 2017.4 "CUNY WRITING Test Passed";
+     Label 2017.5 "CUNY Writing Test Exempted";
+     Label  2017.6 "CUNY Writing Test Passed";
+      Label 2017.7 "Completed a College-Level ENGLISH Course";
+       Label 240 "ENG 11 Placement - English Remedial Seq Completed"
+     Label 202 "Fundamentals of Composition & Rhetoric";
+   Label 201 "ENG 110 Placement"
+  Label 204 "Developmental Writing II";
+     Label 203AC "ENG Remedial Sequence Completed";
+   Label  203.1 "ENG 2 Placement"
+    # Label  203.1 "ENG 2 Placement Completed"
+      Label 206 "Developmental Writing I";
+      Label 207 "Developmental Writing II ";
+      Label 208 "ENG 1 Placement"
+      Label 203A "ENG Remedial Sequence Completed"
+ Label 1HF4 "Writing Skills unmet";
+      ##Label "CUNY Writing Requirement";
+     Label TW3 "CUNY Math Proficient from Prior CUNY"
+      Label MILEMATH "CUNY Math Test Proficient"
+      Label 1A "CUNY Math Test Exempted"
+     Label 2017.9 "CUNY Math Test Exempted"
+      Label 2017.10 "CUNY Math Proficient"
+  Label 10 "MTH 12/21 Placement-Math Remed Seq Compl NonSci1"
+  Label 11a "MTH remedial sequence complete"
+        Label 12 "Fund Arithmetic & Algebra";
+        Label 13 "Elementary Algebra";
+     Label 11 "MTH 1 Placement for Non-Science Group 1"
+    Label 15 "Basic Concepts of Mathematics I";
+    Label 14 "MTH 5 Placement for Non-Science Group 1" ##;
+  Label 16 "Addl Math Not Required - Math Remedl Seq Compl NM1"
+  Label 21 "Elementary Algebra";
+  Label 20 "MTH 5 Placement for Majors Not Requiring Math"
+  Label 18 "Fund Arithmetic & Algebra";
+  Label 19 "Elementary Algebra";
+       Label 17 "MTH 1 Placement for Majors Not Requiring Math" ##;
+ Label 22 "MTH 21/23 Placement - Math Remedial Seq Compl LA"
+  Label 22A "MTH remedial sequence complete"
+ Label 24 "Fund Arithmetic & Algebra";
+   Label 25 "Elementary Algebra";
+   Label 23 "MTH 1 Placement for Liberal Arts Group"
+ Label 27 "Elementary Algebra";
+     Label 26 "MTH 5 Placement for Liberal Arts Group"
+  LABEL "MTH 5 Placement Complete"
+  Label 28 "MTH 30 Placement - Math Remedial Seq Compl BusSTEM"
+    Label 29 "MTH 31 Placement - Math Remedial Seq Compl BusSTEM"
+ Label 31 "Fund Arithmetic & Algebra ";
+ Label 32 "Elementary Algebra";
+      Label 33 "Intermediate Algebra and Trigonometry";
+     Label 30 "MTH 1 Placement for Science & Technical Group"
+ Label 35 "Elementary Algebra";
+ Label 36 "Intermediate Algebra and Trigonometry";
+      Label 34 "MTH 5 Placement for Science & Technical Group"
+ Label 37 "Intermediate Algebra and Trigonometry";
+       Label 38 "MTH 6 Placement for Science & Technical Group"
+      LABEL 38A "Inter Algebra and Trigonometry"
+  Label 39.1 "Math Remedial Sequence Pending";
+       Label 39 "MTH MD Placement - Please see Math Dept BusSTEM" ##;
+ Label 40 "Math Remedial Seq Compl NS2"
+ Label 41 "MTH 13 Placement "
+ Label 42 "MTH 14 Placement - Math Remedial Seq Compl NonSci2"
+  Label 44 "Fund Arithmetic & Algebra";
+  Label 45 "Elementary Algebra";
+  Label 46 "Intermediate Algebra and Trigonometry";
+       Label 43 "MTH 1 Placement for Non-Science Group 2"
+  Label 48 "Elementary Algebra";
+  Label 49 "Intermediate Algebra and Trigonometry";
+       Label 47 "MTH 5 Placement for Non-Science Group 2"
+  Label 51 "Intermediate Algebra and Trigonometry";
+       Label 50 "MTH 6 Placement for Non-Science Group 2"
+  Label 53 "Math Remedial Sequence Pending";
+       Label 52 "MTH MD Placement - Please see the Math Dept NS2" ##;
+ Label 54 "Addl Math Not Req - Math Remedial Seq Compl Nur"
+  Label 56 "Fund Arithmetic & Algebra";
+  Label 57 "Elementary Algebra";
+       Label 55 "MTH 1 Placement for Nursing"
+  Label 59 "Elementary Algebra";
+      Label 58 "MTH 5 Placement for Nursing"
+  Label 61 "Math Remedial Sequence Pending";
+      Label 60 "MTH MD Placement for Nursing"
+ Label 1HF5 "Math Skills unmet";
+# Label 2017.11 "Writer's Workshop for ESL Students";
+#      ## Label "Developmental Writing II";
+#     Label 2017.12 "ENG 9 Placement"
+#   #  Label "ESL Requirement Complete"
+# Label 2017.13 "English as a Second Language - Advanced";
+# Label 2017.14 "Writer's Workshop for ESL Students";
+# Label 2017.15 "Developmental Writing II";
+#     Label 2017.16 "ESL 3 Placement"
+# Label 2017.17 "English as a Second Language - Intermediate";
+# Label 2017.18 "English as a Second Language - Advanced";
+# Label 2017.19 "Writer's Workshop for ESL Students";
+# Label 2017.20 "Developmental Writing II";
+#      Label 203AC.1 "ESL 2 Placement Completed";
+#     Label 2017.21 "ESL 2 Placement"
+# Label 2017.22 "English as a Second Language - Basic";
+# Label 2017.23 "English as a Second Language - Intermediate ";
+# Label 2017.24 "English as a Second Language - Advanced ";
+# Label 2017.25 "Writer's Workshop for ESL Students  ";
+# Label 2017.26 "Developmental Writing II";
+#     Label 2017.27 "ESL 1 Placement";

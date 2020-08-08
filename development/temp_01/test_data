@@ -1,0 +1,18 @@
+1 class in PSYCH 101W, 102, CSCI 111
+Label "A psych or cs class"
+
+2 classes in GYM 1, {hide Gym 2}
+Label "Hide no comma at end"
+
+3 classes in MES 101, {hide 102, 103,} 104
+Label "Hide with comma in middle";
+
+4 classes in EES 101, {hide 102, 103, } 104
+Label "Hide with comma space in middle"
+
+# Omit labels from above
+
+4 classes in EES 101, {hide 102, 103, } 104
+3 classes in MES 101, {hide 102, 103}, 104
+2 classes in GYM 1, {hide Gym 2}
+1 class in PSYCH 101W, 102, CSCI 111
