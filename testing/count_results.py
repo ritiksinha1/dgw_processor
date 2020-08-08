@@ -20,6 +20,18 @@ else:
   time_stamp = str(datetime.now()).replace(' ', '_').rstrip('0123456789').rstrip('.')
   logfile = open(f'count_results_{time_stamp}.txt', 'w')
 
+# Find the latest csv file to process
+potentials = Path('.').glob('run_tests-*')
+actual = None
+for potential in potentials:
+  if actual is None:
+    actual = potential
+  elif potential.stat().st_mtime > actual.stat().st_mtime:
+    actual = potential
+
+if actual is None:
+  sys.exit('No run_tests CSV files found')
+
 colleges = 'bar bcc bkl bmc csi cty hos htr jjc lag leh mec ncc nyt qcc qns slu sps yrk'.split()
 block_types = 'major minor conc degree other'.split()
 college_data = {}
@@ -32,7 +44,7 @@ for college in colleges:
                                          'lines': 0,
                                          'seconds': 0.0}
 
-with open('./run_tests.csv') as csv_file:
+with open(actual) as csv_file:
   reader = csv.DictReader(csv_file, delimiter='\t')
   for line in reader:
     college = line['Block'].split('_')[0].lower().strip('01')
