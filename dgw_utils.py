@@ -40,9 +40,9 @@ def expression_terminals(ctx, terminal_list):
 
 # context_path()
 # -------------------------------------------------------------------------------------------------
-def context_path(ctx):
-  """ For debugging, given a context (or any object, actually), return a string showing the
-      inheritance path for the object
+def context_path(ctx, interpret=[]):
+  """ Given a context (or any object, actually), return a string showing the
+      inheritance path for the object.
   """
   ctx_list = []
   cur_ctx = ctx
@@ -167,21 +167,53 @@ def with_clause(ctx):
 # get_course_list_qualifier()
 # -------------------------------------------------------------------------------------------------
 def get_course_list_qualifier(ctx):
-  """ course_list_qualifier: except_clause      EXCEPT course_list;
-                           | including_clause   INCLUDING course_list;
-                           | maxpassfail        MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? tag?;
-                           | maxperdisc         MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP tag?;
-                           | maxspread          MAXSPREAD NUMBER tag?;
-                           | maxtransfer        MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
-                           | mincredit          MINCREDIT (NUMBER|RANGE) course_list tag?;
-                           | mingpa             MINGPA NUMBER (course_list | expression)? tag? label?;
-                           | mingrade           MINGRADE NUMBER;
-                           | minspread          MINSPREAD NUMBER tag?;
-                           | ruletag            RULE_TAG expression;
-                           | samedisc           SAME_DISC expression tag?;
-                           | share              (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
-                           ;
   """
+  course_list               : L_SQB?
+                                course_item R_SQB? (and_list | or_list)?
+                              R_SQB?
+                              (except_list | including_list)? ;
+
+  course_list_head           : course_list (course_list_qualifier_head tag?)* label? ;
+  course_list_qualifier_head : maxspread
+                             | mingpa
+                             | mingrade
+                             | minspread
+                             | ruletag
+                             | samedisc
+                             | share
+                             ;
+
+  course_list_body           : course_list (course_list_qualifier_body tag?)* label? ;
+  course_list_qualifier_body : except_list
+                             | including_list
+                             | maxpassfail
+                             | maxperdisc
+                             | maxspread
+                             | maxtransfer
+                             | minarea
+                             | minclass
+                             | mincredit
+                             | mingpa
+                             | mingrade
+                             | minperdisc
+                             | minspread
+                             | ruletag
+                             | samedisc
+                             | share
+                             ;
+
+  full_course           : discipline catalog_number with_clause*;
+  course_item           : L_SQB? discipline? catalog_number with_clause* R_SQB?;
+  and_list              : (list_and R_SQB? course_item)+;
+  or_list               : (list_or R_SQB? course_item)+;
+  catalog_number        : symbol | NUMBER | CATALOG_NUMBER | RANGE | WILD;
+  discipline            : symbol
+                        | string // For "SPEC." at BKL
+                        | WILD
+                        // Include keywords that appear as discipline names
+                        | BLOCK
+                        | IS;
+"""
   assert ctx.__class__.__name__ == 'Course_list_qualifierContext', (f'{ctx.__class__.__name__} '
                                                                     'is not Course_list_qualifier'
                                                                     'Context')
@@ -235,34 +267,65 @@ def build_string(ctx) -> str:
 # build_course_list()
 # -------------------------------------------------------------------------------------------------
 def build_course_list(institution, ctx) -> list:
-  """ course_list          : course_item (and_list | or_list)? course_list_qualifier* label?;
-      course_list_qualifier: except_clause
-                           | including_clause
-                           | maxpassfail
-                           | maxperdisc
-                           | maxspread
-                           | maxtransfer
-                           | mincredit
-                           | mingpa
-                           | mingrade
-                           | minspread
-                           | ruletag
-                           | samedisc
-                           | share
-                           ;
-      full_course          : discipline catalog_number with_clause*;
-      course_item          : discipline? catalog_number with_clause;
+  """
+   course_list               : L_SQB?
+                                 course_item R_SQB? (and_list | or_list)?
+                               R_SQB?
+                               (except_list | including_list)? ;
 
+   course_list_head           : course_list (course_list_qualifier_head tag?)* label? ;
+   course_list_qualifier_head : maxspread
+                              | mingpa
+                              | mingrade
+                              | minspread
+                              | ruletag
+                              | samedisc
+                              | share
+                              ;
+
+   course_list_body           : course_list (course_list_qualifier_body tag?)* label? ;
+   course_list_qualifier_body : except_list
+                              | including_list
+                              | maxpassfail
+                              | maxperdisc
+                              | maxspread
+                              | maxtransfer
+                              | minarea
+                              | minclass
+                              | mincredit
+                              | mingpa
+                              | mingrade
+                              | minperdisc
+                              | minspread
+                              | ruletag
+                              | samedisc
+                              | share
+                              ;
+
+   full_course           : discipline catalog_number with_clause*;
+   course_item           : L_SQB? discipline? catalog_number with_clause* R_SQB?;
+   and_list              : (list_and R_SQB? course_item)+;
+   or_list               : (list_or R_SQB? course_item)+;
+   catalog_number        : symbol | NUMBER | CATALOG_NUMBER | RANGE | WILD;
+   discipline            : symbol
+                         | string // For "SPEC." at BKL
+                         | WILD
+                         // Include keywords that appear as discipline names
+                         | BLOCK
+                         | IS;
+
+# -------------------------------------------------------------------------------------------------
       The returned object has the following structure:
-        scribed_courses     List of all discipline:catalog_number pairs specified after distributing
-                            disciplines across catalog_numbers. (Show "BIOL 1, 2" as "BIOL 1, BIOL
-                            2")
-        list_type           'and' or 'or'
-        customizations      Information about WITH pharases, and which scribed_courses they apply
-                            to
+        Scribed and Active course lists.
+        scribed_courses     List of all (discipline, catalog_number, with_clause) tuples in the list
+                            after distributing disciplines across catalog_numbers. (Show "BIOL 1, 2"
+                            as "BIOL 1, BIOL 2")
+        active_courses      Catalog information and WITH clause (if any) for all active courses that
+                            match the scribed_courses list after expanding wildcards and
+                            catalog_number ranges.
+
+        list_type           'AND' or 'OR'
         exclusions          List of course_lists for excluded courses
-        active_courses      List of all active courses that match the scribed_courses list after
-                            expanding wildcards and catalog_number ranges.
         attributes          List of all attribute values the active courses list have in common,
                             currently limited to WRIC and BKCR
   """
@@ -273,7 +336,7 @@ def build_course_list(institution, ctx) -> list:
   if ctx is None:
     return None
 
-  # The object to be returned (as a namedtuple), and shortcuts to the list fields
+  # The object to be returned:
   return_object = {'object_type': 'course_list',
                    'scribed_courses': [],
                    'list_type': '',
@@ -281,12 +344,13 @@ def build_course_list(institution, ctx) -> list:
                    'label': None,
                    'active_courses': [],
                    'attributes': []}
+  # Shortcuts to the lists in return_object
   scribed_courses = return_object['scribed_courses']
   list_qualifiers = return_object['list_qualifiers']
   active_courses = return_object['active_courses']
   attributes = return_object['attributes']
 
-  # For development, include the context path
+  # The Scribe context in which the list appeared
   return_object['context_path'] = context_path(ctx)
 
   # Pick up the label, if there is one
@@ -415,7 +479,7 @@ def build_course_list(institution, ctx) -> list:
                                  numeric_part(catalog_number) <= {float(high)})
                              """
         else:
-          # Either low or high is not in the form \d+@
+          # Either low or high is not in the form: \d+@
           catnum_clause = "catalog_number = ''"  # Will match no courses
     course_query = f"""
 select institution, course_id, offer_nbr, discipline, catalog_number, title,
