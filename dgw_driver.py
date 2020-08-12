@@ -247,4 +247,5 @@ if __name__ == '__main__':
         suffix = '' if num_updates == 1 else 's'
         print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
               f'{values_count} / {num_values}: ', end='')
-        print(f'{operation} {num_updates} block{suffix} for {institution} {block_type} {block_value}')
+        print(f'{operation} {num_updates} block{suffix} for {institution} {block_type} '
+              f'{block_value}')
