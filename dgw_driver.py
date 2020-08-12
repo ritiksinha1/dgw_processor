@@ -241,7 +241,7 @@ if __name__ == '__main__':
           print(f'Skipping {institution} {block_type} {block_value}')
           continue
         num_updates, num_blocks = dgw_parser(institution,
-                                             block_type,
+                                             block_type.upper(),
                                              block_value,
                                              period='latest',
                                              do_parse=args.parse)
