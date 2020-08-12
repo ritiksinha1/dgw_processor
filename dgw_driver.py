@@ -215,7 +215,6 @@ if __name__ == '__main__':
   for institution in institutions:
     institution_count += 1
     institution = institution.upper() + ('01' * (len(institution) == 3))
-
     if args.block_types[0] == 'all':
       args.block_types = ['DEGREE', 'MAJOR', 'MINOR', 'CONC', 'OTHER']
     types_count = 0
