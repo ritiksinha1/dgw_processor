@@ -129,9 +129,9 @@ def class_or_credit(ctx, number=0) -> str:
   return which
 
 
-# with_clause()
+# _with_clause()
 # -------------------------------------------------------------------------------------------------
-def with_clause(ctx):
+def _with_clause(ctx):
   """ with_clause     : LP WITH expression RP;
 
       expression      : expression relational_op expression
@@ -145,23 +145,13 @@ def with_clause(ctx):
                       | CATALOG_NUMBER
                       | LP expression RP
                       ;
-      Return a string describing the customization. Four cases are interpreted; others are reported
-      as-scribed.
+      This is a place where some interpretation could take place ... but does not do so yet.
   """
   if DEBUG:
     print('*** with_clause()', file=sys.stderr)
-  with_list = ctx.with_list()
-  for with_expr in with_list.children:
-    print(with_expr)
-    print(with_expr.children)
-    print('symbol:', with_expr.symbol().children, '\nrel_op:', str(with_expr.REL_OP()))
-    if with_expr.STRING():
-      print(' str:', str(with_expr.STRING()))
-    elif with_expr.ALPHA_NUM():
-      print(' alpha_num:', str(with_expr.ALPHA_NUM()))
-    else:
-      print('neither string nor alpha_num')
-  return 'There was a WITH clause'
+  assert ctx.__class__.__name__ == 'With_clauseContext', (f'{ctx.__class__.__name__} '
+                                                          'is not With_clauseContext')
+  return ctx.expression().getText()
 
 
 # get_course_list_qualifier()
@@ -391,7 +381,7 @@ def build_course_list(institution, ctx) -> list:
   except AttributeError as ae:
     discipline = '@'
   try:
-    with_clause = ctx.course_item().with_clause().getText()
+    with_clause = _with_clause(ctx.course_item().with_clause())
   except AttributeError as ae:
     pass
   scribed_courses.append((discipline, catalog_number, with_clause))
@@ -409,10 +399,12 @@ def build_course_list(institution, ctx) -> list:
           catalog_number = child.getText()
         elif child.__class__.__name__ == 'With_clauseContext':
           with_clause = child.getText()   # Need to interpret this
+          with_clause = _with_clause(child)
           # print(discipline, catalog_number, with_clause)
         else:
           # This is where square brackets show up
-          print(f'Unexpected token type: {child.__class__.__name__}, text: {child.getText()}', file=sys.stderr)
+          print(f'Unexpected token type: {child.__class__.__name__}, text: {child.getText()}',
+                file=sys.stderr)
       assert catalog_number is not None, (f'Course Item with no catalog number: '
                                           f'{course_item.getText()}')
       scribed_courses.append((discipline, catalog_number, with_clause))
