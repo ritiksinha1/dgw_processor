@@ -381,7 +381,13 @@ def build_course_list(institution, ctx) -> list:
   except AttributeError as ae:
     discipline = '@'
   try:
-    with_clause = _with_clause(ctx.course_item().with_clause())
+    with_list = ctx.course_item().with_clause()
+    for with_ctx in with_list:
+      if with_ctx.__class__.__name__ == 'With_clauseContext':
+        if with_clause is None:
+          with_clause = _with_clause(with_ctx)
+        else:
+          with_clause += ' ' + _with_clause(with_ctx)
   except AttributeError as ae:
     pass
   scribed_courses.append((discipline, catalog_number, with_clause))
