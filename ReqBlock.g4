@@ -85,12 +85,14 @@ body        :
 /* Differentiate between lists in the head versus lists in the body because some course list
  * qualifiers can be standalone rules in the Head.
  *
- * Course lists can be divided into “areas” using square brackets for use with the MinArea
- * qualifier by enclosing parts in square brackets. But (a) just because a list is divided into
- * areas doesn’t mean there has to be a MinArea qualifier present, and (b) the Ellucian parser
- * doesn't check whether the square brackets are balanced; it’s okay to have stray brackets floating
- * around, which are ignored, presumably unless there is a MinArea check done during audit time.
- * The trick is to determine where each type of bracket might appear or not.
+ * Course lists can be divided into “areas” using square brackets, for use with the MinArea
+ * qualifier. But (a) just because a list is divided into areas doesn’t mean there has to be a
+ * MinArea qualifier present, and (b) the Ellucian parser doesn't check whether the square brackets
+ * are balanced; it’s okay to have stray brackets floating around, which are ignored, presumably
+ * unless there is a MinArea check done during audit time.
+ *
+ * The trick is to determine where each type of bracket might appear or not, and that will have to
+ * be done in dgw_processor.
  */
 course_list               : L_SQB?
                               course_item R_SQB? (and_list | or_list)?
@@ -108,9 +110,7 @@ course_list_qualifier_head : maxspread
                            ;
 
 course_list_body           : course_list (course_list_qualifier_body tag?)* label? ;
-course_list_qualifier_body : except_list
-                           | including_list
-                           | maxpassfail
+course_list_qualifier_body : maxpassfail
                            | maxperdisc
                            | maxspread
                            | maxtransfer
@@ -276,7 +276,7 @@ lastres         : LASTRES NUMBER (OF NUMBER)? (CLASS | CREDIT) course_list? tag?
 maxclass        : MAXCLASS NUMBER course_list? tag?;
 maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 
-maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) course_list? tag?;
+maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) tag?;
 maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP tag?;
 maxspread       : MAXSPREAD NUMBER tag?;
 maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;

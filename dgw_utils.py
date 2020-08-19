@@ -89,6 +89,17 @@ def catalog_years(period_start: str, period_stop: str) -> str:
   return CatalogYears._make((catalog_type, first, last, f'{first} through {last}'))
 
 
+def get_terminal_nodes(ctx, terminal_nodes=[]):
+  """
+  """
+  for child in ctx.getChildren():
+    class_name = child.__class__.__name__
+    while class_name != 'TerminalNodeImpl':
+      print(class_name)
+      get_terminal_nodes(child)
+  return terminal_nodes
+
+
 # get_number()
 # -------------------------------------------------------------------------------------------------
 def get_number(ctx):
@@ -154,9 +165,9 @@ def _with_clause(ctx):
   return ctx.expression().getText()
 
 
-# get_course_list_qualifier()
+# get_course_list_qualifiers()
 # -------------------------------------------------------------------------------------------------
-def get_course_list_qualifier(ctx):
+def get_course_list_qualifiers(ctx):
   """
   course_list               : L_SQB?
                                 course_item R_SQB? (and_list | or_list)?
@@ -204,36 +215,17 @@ def get_course_list_qualifier(ctx):
                         | BLOCK
                         | IS;
 """
-  assert ctx.__class__.__name__ == 'Course_list_qualifierContext', (f'{ctx.__class__.__name__} '
-                                                                    'is not Course_list_qualifier'
-                                                                    'Context')
-  if ctx.except_clause() is not None:
-    return 'except'
-  if ctx.including_clause() is not None:
-    return 'including'
-  if ctx.maxpassfail() is not None:
-    return 'maxpassfail'
-  if ctx.maxperdisc() is not None:
-    return 'maxperdisc'
-  if ctx.maxspread() is not None:
-    return 'maxspread'
-  if ctx.maxtransfer() is not None:
-    return 'maxtransfer'
-  if ctx.mincredit() is not None:
-    return 'mincredit'
-  if ctx.mingpa() is not None:
-    return 'mingpa'
-  if ctx.mingrade() is not None:
-    return 'mingrade'
-  if ctx.minspread() is not None:
-    return 'minspread'
-  if ctx.ruletag() is not None:
-    return 'ruletag'
-  if ctx.samedisc() is not None:
-    return 'samedisc'
-  if ctx.share() is not None:
-    return 'share'
-  return 'UNKNOWN'
+  valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
+                      'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+                      'ruletag', 'samedisc', 'share']
+  siblings = ctx.parentCtx.getChildren()
+  for sibling in siblings:
+    if sibling.__class__.__name__.startswith('Course_list_qualifier'):
+      print(get_terminal_nodes(sibling))
+
+  # sys.exit(f'{ctx.__class__.__name__} is not Course_list_qualifier_(head|body)')
+
+  return []
 
 
 # build_string()
@@ -415,16 +407,7 @@ def build_course_list(institution, ctx) -> list:
                                           f'{course_item.getText()}')
       scribed_courses.append((discipline, catalog_number, with_clause))
 
-  # ## Qualifiers are now attached to course_list_head and course_list_body, not here. ##
-  # if ctx.course_list_qualifier_head is not None:
-  #   for context in ctx.course_list_qualifier_head():
-  #     list_qualifiers.append(get_course_list_qualifier_head(context))
-
-  # if ctx.course_list_qualifier_body is not None:
-  #   for context in ctx.course_list_qualifier_body():
-  #     list_qualifiers.append(get_course_list_qualifier_body(context))
-
-  # print('scribed_courses', scribed_courses)
+  list_qualifiers = get_course_list_qualifiers(ctx)
 
   # Active Courses
   all_blanket = True
