@@ -89,17 +89,6 @@ def catalog_years(period_start: str, period_stop: str) -> str:
   return CatalogYears._make((catalog_type, first, last, f'{first} through {last}'))
 
 
-def get_terminal_nodes(ctx, terminal_nodes=[]):
-  """
-  """
-  for child in ctx.getChildren():
-    class_name = child.__class__.__name__
-    while class_name != 'TerminalNodeImpl':
-      print(class_name)
-      get_terminal_nodes(child)
-  return terminal_nodes
-
-
 # get_number()
 # -------------------------------------------------------------------------------------------------
 def get_number(ctx):
@@ -218,6 +207,7 @@ def get_course_list_qualifiers(ctx):
   valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                       'ruletag', 'samedisc', 'share']
+  qualifiers_list = []
   siblings = ctx.parentCtx.getChildren()
   for sibling in siblings:
     if sibling.__class__.__name__.startswith('Course_list_qualifier'):
@@ -361,10 +351,6 @@ def build_course_list(institution, ctx) -> list:
   # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
   # is given.
   discipline, catalog_number, with_clause = (None, None, None)
-  # for child in ctx.children:
-  #   print(child.__class__.__name__, child.getText())
-  #   for cchild in child.children:
-  #     print('  ', cchild.__class__.__name__, cchild.getText())
 
   catalog_number = ctx.course_item().catalog_number().getText()
   # The next two might be absent
