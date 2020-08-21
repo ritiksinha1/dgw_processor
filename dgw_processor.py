@@ -137,8 +137,14 @@ class DGW_Processor(ReqBlockListener):
         and_list        : (list_and course_item )+;
         or_list         : (list_or course_item)+;
     """
+    context_path_str = context_path(ctx)
     if LOG_CONTEXT_PATH:
-      print(context_path(ctx), file=sys.stderr)
+      print(context_path_str, file=sys.stderr)
+    if 'except' in context_path_str.lower() or 'includ' in context_path_str.lower():
+      if DEBUG:
+        print(f'*** Ignoring except or including clause: {context_path_str}', file=sys.stderr)
+      return
+
     course_list = build_course_list(self.institution, ctx)
     self.sections[self.scribe_section].append(course_list)
     if DEBUG:
@@ -146,6 +152,10 @@ class DGW_Processor(ReqBlockListener):
       print(f'   Num Scribed Courses: {len(course_list["scribed_courses"]):>4}')
       if len(course_list["scribed_courses"]) > 1:
         print(f'             List Type: {course_list["list_type"]:>4}')
+      if len(course_list["including_courses"]) > 1:
+        print(f'          Must Include: {course_list["including_courses"]}')
+      if len(course_list["except_courses"]) > 1:
+        print(f'      Must Not Include: {course_list["except_courses"]}')
       print(f'    Num Active Courses: {len(course_list["active_courses"]):>4}')
       if len(course_list["list_qualifiers"]) > 0:
         print(f'       List Qualifiers: {", ".join(course_list["list_qualifiers"])}')

@@ -154,6 +154,75 @@ def _with_clause(ctx):
   return ctx.expression().getText()
 
 
+# get_scribed_courses()
+# -------------------------------------------------------------------------------------------------
+def get_scribed_courses(ctx):
+  """
+  """
+  context_name = ctx.__class__.__name__
+  assert ctx.__class__.__name__ == 'Course_listContext', (f'{ctx.__class__.__name__} '
+                                                          f'is not Course_listContext')
+  if DEBUG:
+    print(f'*** get_scribed_courses({ctx.__class__.__name__})', file=sys.stderr)
+  if ctx is None:
+    return []
+
+  scribed_courses = []
+
+  # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
+  # is given.
+  discipline, catalog_number, with_clause = (None, None, None)
+
+  catalog_number = ctx.course_item().catalog_number().getText()
+  # The next two might be absent
+  try:
+    discipline = ctx.course_item().discipline().getText()
+  except AttributeError as ae:
+    discipline = '@'
+  try:
+    with_list = ctx.course_item().with_clause()
+    for with_ctx in with_list:
+      if with_ctx.__class__.__name__ == 'With_clauseContext':
+        if with_clause is None:
+          with_clause = _with_clause(with_ctx)
+        else:
+          with_clause += ' ' + _with_clause(with_ctx)
+  except AttributeError as ae:
+    pass
+  scribed_courses.append((discipline, catalog_number, with_clause))
+
+  # For the remaining scribed courses, distribute disciplines across elided elements
+  list_fun = None
+  if ctx.and_list():
+    list_fun = ctx.and_list
+  if ctx.or_list():
+    list_fun = ctx.or_list
+
+  if list_fun is not None:
+    course_items = list_fun().course_item()
+    catalog_number = None  # Must be present
+    with_clause = None  # Does not distribute (as discipline does)
+    for course_item in course_items:
+      for child in course_item.children:
+        if child.__class__.__name__ == 'DisciplineContext':
+          discipline = child.getText()
+        elif child.__class__.__name__ == 'Catalog_numberContext':
+          catalog_number = child.getText()
+        elif child.__class__.__name__ == 'With_clauseContext':
+          with_clause = child.getText()   # Need to interpret this
+          with_clause = _with_clause(child)
+          # print(discipline, catalog_number, with_clause)
+        else:
+          # This is where square brackets show up
+          print(f'Unexpected token type: {child.__class__.__name__}, text: {child.getText()}',
+                file=sys.stderr)
+      assert catalog_number is not None, (f'Course Item with no catalog number: '
+                                          f'{course_item.getText()}')
+      scribed_courses.append((discipline, catalog_number, with_clause))
+
+  return scribed_courses
+
+
 # get_course_list_qualifiers()
 # -------------------------------------------------------------------------------------------------
 def get_course_list_qualifiers(ctx):
@@ -211,7 +280,8 @@ def get_course_list_qualifiers(ctx):
   siblings = ctx.parentCtx.getChildren()
   for sibling in siblings:
     if sibling.__class__.__name__.startswith('Course_list_qualifier'):
-      print(get_terminal_nodes(sibling))
+      pass
+      # print(get_terminal_nodes(sibling))
 
   # sys.exit(f'{ctx.__class__.__name__} is not Course_list_qualifier_(head|body)')
 
@@ -300,6 +370,9 @@ def build_course_list(institution, ctx) -> list:
         exclusions          List of course_lists for excluded courses
         attributes          List of all attribute values the active courses list have in common,
                             currently limited to WRIC and BKCR
+
+      Except clause: add active courses to except_courses list and remove from the active_courses
+      Including clause: add to including_courses or missing_courses as the case may be
   """
   assert ctx.__class__.__name__ == 'Course_listContext', (f'{ctx.__class__.__name__} '
                                                           f'is not Course_listContext')
@@ -315,11 +388,17 @@ def build_course_list(institution, ctx) -> list:
                    'list_qualifiers': [],
                    'label': None,
                    'active_courses': [],
+                   'except_courses': [],
+                   'including_courses': [],
+                   'missing_courses': [],
                    'attributes': []}
   # Shortcuts to the lists in return_object
   scribed_courses = return_object['scribed_courses']
   list_qualifiers = return_object['list_qualifiers']
   active_courses = return_object['active_courses']
+  except_courses = return_object['except_courses']
+  including_courses = return_object['including_courses']
+  missing_courses = return_object['missing_courses']
   attributes = return_object['attributes']
 
   # The Scribe context in which the list appeared
@@ -348,50 +427,12 @@ def build_course_list(institution, ctx) -> list:
     return_object['list_type'] = 'None'
     list_fun = None
 
-  # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
-  # is given.
-  discipline, catalog_number, with_clause = (None, None, None)
-
-  catalog_number = ctx.course_item().catalog_number().getText()
-  # The next two might be absent
-  try:
-    discipline = ctx.course_item().discipline().getText()
-  except AttributeError as ae:
-    discipline = '@'
-  try:
-    with_list = ctx.course_item().with_clause()
-    for with_ctx in with_list:
-      if with_ctx.__class__.__name__ == 'With_clauseContext':
-        if with_clause is None:
-          with_clause = _with_clause(with_ctx)
-        else:
-          with_clause += ' ' + _with_clause(with_ctx)
-  except AttributeError as ae:
-    pass
-  scribed_courses.append((discipline, catalog_number, with_clause))
-
-  # For the remaining scribed courses, distribute disciplines across elided elements
-  if list_fun is not None:
-    course_items = list_fun().course_item()
-    catalog_number = None  # Must be present
-    with_clause = None  # Does not distribute (as discipline does)
-    for course_item in course_items:
-      for child in course_item.children:
-        if child.__class__.__name__ == 'DisciplineContext':
-          discipline = child.getText()
-        elif child.__class__.__name__ == 'Catalog_numberContext':
-          catalog_number = child.getText()
-        elif child.__class__.__name__ == 'With_clauseContext':
-          with_clause = child.getText()   # Need to interpret this
-          with_clause = _with_clause(child)
-          # print(discipline, catalog_number, with_clause)
-        else:
-          # This is where square brackets show up
-          print(f'Unexpected token type: {child.__class__.__name__}, text: {child.getText()}',
-                file=sys.stderr)
-      assert catalog_number is not None, (f'Course Item with no catalog number: '
-                                          f'{course_item.getText()}')
-      scribed_courses.append((discipline, catalog_number, with_clause))
+  scribed_courses += get_scribed_courses(ctx)
+  if ctx.except_list():
+    # Strip with_clause from courses to be excluded (it's always None anyway)
+    except_courses += [(c[0], c[1]) for c in get_scribed_courses(ctx.except_list().course_list())]
+  if ctx.including_list():
+    including_courses += get_scribed_courses(ctx.including_list().course_list())
 
   list_qualifiers = get_course_list_qualifiers(ctx)
 
@@ -463,6 +504,9 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
     cursor.execute(course_query)
     if cursor.rowcount > 0:
       for row in cursor.fetchall():
+        # skip excluded courses
+        if (row.discipline, row.catalog_number) in except_courses:
+          continue
         active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                row.title, with_clause))
         if row.max_credits > 0 and 'BKCR' not in row.attributes:
