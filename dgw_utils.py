@@ -279,13 +279,14 @@ def get_course_list_qualifiers(ctx):
   qualifiers_list = []
   siblings = ctx.parentCtx.getChildren()
   for sibling in siblings:
-    if sibling.__class__.__name__.startswith('Course_list_qualifier'):
-      pass
-      # print(get_terminal_nodes(sibling))
+    for qualifier in valid_qualifiers:
+      if qualifier_fun := getattr(sibling, qualifier, None):
+        if qualifier_fun():
+          print(f'{qualifier}: {qualifier_fun().getText()}')
 
   # sys.exit(f'{ctx.__class__.__name__} is not Course_list_qualifier_(head|body)')
 
-  return []
+  return qualifiers_list
 
 
 # build_string()
