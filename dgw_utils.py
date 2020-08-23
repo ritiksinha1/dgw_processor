@@ -431,7 +431,7 @@ def build_course_list(institution, ctx) -> list:
   scribed_courses += get_scribed_courses(ctx)
   if ctx.except_list():
     # Strip with_clause from courses to be excluded (it's always None anyway)
-    except_courses += [(c[0], c[1]) for c in get_scribed_courses(ctx.except_list().course_list())]
+    except_courses += [[c[0], c[1]] for c in get_scribed_courses(ctx.except_list().course_list())]
   if ctx.including_list():
     including_courses += get_scribed_courses(ctx.including_list().course_list())
 
