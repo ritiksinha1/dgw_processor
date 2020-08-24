@@ -5,11 +5,12 @@
 from collections import namedtuple
 from typing import List, Set, Dict, Tuple, Optional, Union
 
-from pgconnection import PgConnection
-
 import argparse
 import os
 import sys
+
+from pgconnection import PgConnection
+from course_list_qualifier import CourseListQualifier
 
 DEBUG = os.getenv('DEBUG_UTILS')
 
@@ -272,6 +273,8 @@ def get_course_list_qualifiers(ctx):
                         // Include keywords that appear as discipline names
                         | BLOCK
                         | IS;
+
+    Return a possibly-empty list of CourseListQualifier objects
 """
   valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
@@ -282,6 +285,39 @@ def get_course_list_qualifiers(ctx):
     for qualifier in valid_qualifiers:
       if qualifier_fun := getattr(sibling, qualifier, None):
         if qualifier_fun():
+          class_credit = None
+          if qualifier_fun().CLASS():
+            class_credit = 'class'
+          if qualifier_fun().CREDIT():
+            class_credit = 'credit'
+          # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
+          if qualifier == 'maxpassfail':
+            qualifiers_list.append(CourseListQualifier(qualifier,
+                                                       number=qualifier_fun().number(),
+                                                       class_credit=class_credit))
+          # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
+          elif qualifier == 'maxperdisc':
+            disciplines = [qualifier_fun().SYMBOL().getText()]
+            # ## Still need to get the optional list of other disciplines
+            qualifiers_list.append(CourseListQualifier(qualifier,
+                                                       number=qualifier_fun().number(),
+                                                       disciplines=disciplines))
+          # maxspread       : MAXSPREAD NUMBER
+          elif qualifier == 'maxspread':
+            qualifiers_list.append(CourseListQualifier(qualifier,
+                                                       number=qualifier_fun().number()))
+          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
+          # minarea         : MINAREA NUMBER tag?;
+          # minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display* label?;
+          # mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display* label?;
+          # mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
+          # mingrade        : MINGRADE NUMBER;
+          # minspread       : MINSPREAD NUMBER tag?;
+          # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
+          # ruletag         : RULE_TAG expression;
+          # samedisc        : SAME_DISC expression tag?;
+          # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
+
           print(f'{qualifier}: {qualifier_fun().getText()}')
 
   # sys.exit(f'{ctx.__class__.__name__} is not Course_list_qualifier_(head|body)')
