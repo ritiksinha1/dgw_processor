@@ -279,7 +279,7 @@ def get_course_list_qualifiers(ctx):
   valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                       'ruletag', 'samedisc', 'share']
-  qualifiers_list = []
+  qualifier_list = []
   siblings = ctx.parentCtx.getChildren()
   for sibling in siblings:
     for qualifier in valid_qualifiers:
@@ -290,22 +290,30 @@ def get_course_list_qualifiers(ctx):
             class_credit = 'class'
           if qualifier_fun().CREDIT():
             class_credit = 'credit'
+
+          print(f'*** {qualifier}', file=sys.stderr)
+
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if qualifier == 'maxpassfail':
-            qualifiers_list.append(CourseListQualifier(qualifier,
-                                                       number=qualifier_fun().number(),
-                                                       class_credit=class_credit))
+            qualifier_list.append(CourseListQualifier(qualifier,
+                                                      number=qualifier_fun().NUMBER(),
+                                                      class_credit=class_credit))
+
           # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
           elif qualifier == 'maxperdisc':
-            disciplines = [qualifier_fun().SYMBOL().getText()]
-            # ## Still need to get the optional list of other disciplines
-            qualifiers_list.append(CourseListQualifier(qualifier,
-                                                       number=qualifier_fun().number(),
-                                                       disciplines=disciplines))
+            disciplines = qualifier_fun().SYMBOL()
+            qualifier_list.append(CourseListQualifier(qualifier,
+                                                      number=qualifier_fun().NUMBER(),
+                                                      class_credit=class_credit,
+                                                      disciplines=disciplines))
+
           # maxspread       : MAXSPREAD NUMBER
           elif qualifier == 'maxspread':
-            qualifiers_list.append(CourseListQualifier(qualifier,
-                                                       number=qualifier_fun().number()))
+            qualifier_list.append(CourseListQualifier(qualifier,
+                                                      number=qualifier_fun().NUMBER()))
+          else:
+            qualifier_list.append(CourseListQualifier(qualifier))
+
           # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
           # minarea         : MINAREA NUMBER tag?;
           # minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display* label?;
@@ -318,11 +326,10 @@ def get_course_list_qualifiers(ctx):
           # samedisc        : SAME_DISC expression tag?;
           # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
 
-          print(f'{qualifier}: {qualifier_fun().getText()}')
-
   # sys.exit(f'{ctx.__class__.__name__} is not Course_list_qualifier_(head|body)')
-
-  return qualifiers_list
+  for qualifier in qualifier_list:
+    print(f'*** Returning {qualifier}')
+  return qualifier_list
 
 
 # build_string()
