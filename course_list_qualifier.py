@@ -88,6 +88,12 @@ class CourseListQualifier:
       number = int(self.number)
       if number == 1:
         return f'All courses must be taken in the same discipline.'
-      return f'Courses must be taken from no more than {self.number} disciplines'
+      return f'Courses must be taken from no more than {self.number} disciplines.'
+
+    if self.keyword == 'maxtransfer':
+      number = _fix_number(self.number, self.class_credit)
+      if number == 0:
+        return f'No transfer {self.class_credit}{suffix} may be used.'
+      return f'No more than {self.number} transfer {self.class_credit}{suffix} may be used.'
 
     return self.keyword

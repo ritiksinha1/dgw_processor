@@ -301,20 +301,24 @@ def get_course_list_qualifiers(ctx):
 
           # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
           elif qualifier == 'maxperdisc':
-            disciplines = qualifier_fun().SYMBOL()
             qualifier_list.append(CourseListQualifier(qualifier,
                                                       number=qualifier_fun().NUMBER(),
                                                       class_credit=class_credit,
-                                                      disciplines=disciplines))
+                                                      disciplines=qualifier_fun().SYMBOL()))
 
           # maxspread       : MAXSPREAD NUMBER
           elif qualifier == 'maxspread':
             qualifier_list.append(CourseListQualifier(qualifier,
                                                       number=qualifier_fun().NUMBER()))
+          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
+          elif qualifier == 'maxtransfer':
+            qualifier_list.append(CourseListQualifier(qualifier,
+                                                      number=qualifier_fun().NUMBER(),
+                                                      class_credit=class_credit,
+                                                      disciplines=qualifier_fun.SYMBOL()))
           else:
             qualifier_list.append(CourseListQualifier(qualifier))
 
-          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
           # minarea         : MINAREA NUMBER tag?;
           # minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display* label?;
           # mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display* label?;
@@ -480,8 +484,10 @@ def build_course_list(institution, ctx) -> list:
     including_courses += get_scribed_courses(ctx.including_list().course_list())
 
   qualifiers = get_course_list_qualifiers(ctx)
-  # During development, just getting string representation of CourseListQualifier instances
-  list_qualifiers.append('; '.join([f'{q}' for q in qualifiers]))
+  # During development, just getting string representation of CourseListQualifier instances.
+  # Need to be able to serialize the instances for storage in the db, not just their strings.
+  if len(qualifiers) > 0:
+    list_qualifiers.append('; '.join([f'{q}' for q in qualifiers]))
 
   # Active Courses
   all_blanket = True
