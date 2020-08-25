@@ -274,7 +274,7 @@ def get_course_list_qualifiers(ctx):
                         | BLOCK
                         | IS;
 
-    Return a possibly-empty list of CourseListQualifier objects
+    Return a possibly-empty list of CourseListQualifier objects.
 """
   valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
@@ -327,8 +327,9 @@ def get_course_list_qualifiers(ctx):
           # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
 
   # sys.exit(f'{ctx.__class__.__name__} is not Course_list_qualifier_(head|body)')
+
   for qualifier in qualifier_list:
-    print(f'*** Returning {qualifier}')
+    print(f'*** Returning {qualifier.keyword}')
   return qualifier_list
 
 
@@ -478,7 +479,9 @@ def build_course_list(institution, ctx) -> list:
   if ctx.including_list():
     including_courses += get_scribed_courses(ctx.including_list().course_list())
 
-  list_qualifiers = get_course_list_qualifiers(ctx)
+  qualifiers = get_course_list_qualifiers(ctx)
+  # During development, just getting string representation of CourseListQualifier instances
+  list_qualifiers.append('; '.join([f'{q}' for q in qualifiers]))
 
   # Active Courses
   all_blanket = True
@@ -569,140 +572,140 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
 
 # course_list2html()
 # -------------------------------------------------------------------------------------------------
-def course_list2html(course_list: List):
-  """ Turn a list of active courses into a list of HTML sections.
-  """
-  return_list = []
+# def course_list2html(course_list: List):
+#   """ Turn a list of active courses into a list of HTML sections.
+#   """
+#   return_list = []
 
-  # for course in course_list:
-  #   num_courses = len(course.active_courses)
-  #   if num_courses == 0:
-  #     num_courses = 'No'
-  #   summary = (f'<p>There are {num_courses} active courses that match this course '
-  #              f'specification.</p>')
-  #   if num_courses == len(course.scribed_courses):
-  #     summary = ''  # No need to say anything about this normal case.
+#   for course in course_list:
+#     num_courses = len(course.active_courses)
+#     if num_courses == 0:
+#       num_courses = 'No'
+#     summary = (f'<p>There are {num_courses} active courses that match this course '
+#                f'specification.</p>')
+#     if num_courses == len(course.scribed_courses):
+#       summary = ''  # No need to say anything about this normal case.
 
-  #   suffix = '' if len(course.active_courses) == 1 else 's'
+#     suffix = '' if len(course.active_courses) == 1 else 's'
 
-  #   # With
-  #   if len(course_list.customizations) > 0:
-  #     suffix += '<h2>Customizations</h2><p>This list applies only when:</p>'
-  #     if len(course_list.customizations) == 1:
-  #       suffix += f'<p>{course_list.customizations[0]}</p>'
-  #     else:
-  #       suffix += '<ul class="closeable">'
-  #       for customization in course_list.customizations:
-  #         suffix += f'<li>{customization}</li>'
-  #       suffix += '</ul>'
+#     # With
+#     if len(course_list.customizations) > 0:
+#       suffix += '<h2>Customizations</h2><p>This list applies only when:</p>'
+#       if len(course_list.customizations) == 1:
+#         suffix += f'<p>{course_list.customizations[0]}</p>'
+#       else:
+#         suffix += '<ul class="closeable">'
+#         for customization in course_list.customizations:
+#           suffix += f'<li>{customization}</li>'
+#         suffix += '</ul>'
 
-  #   # Except
-  #   if len(course_list.exceptions) > 0:
-  #     suffix += '<h2>Exceptions</h2>'
-  #     if len(course_list.exceptions) == 1:
-  #       suffix += f'<p>{course_list.exceptions[0]}</p>'
-  #     else:
-  #       suffix += '<ul class="closeable">'
-  #       for exception in course_list.exceptions:
-  #         suffix += f'<li>{exception}</li>'
-  #       suffix += '</ul>'
+#     # Except
+#     if len(course_list.exceptions) > 0:
+#       suffix += '<h2>Exceptions</h2>'
+#       if len(course_list.exceptions) == 1:
+#         suffix += f'<p>{course_list.exceptions[0]}</p>'
+#       else:
+#         suffix += '<ul class="closeable">'
+#         for exception in course_list.exceptions:
+#           suffix += f'<li>{exception}</li>'
+#         suffix += '</ul>'
 
-  #   html = """
-  #   <section>
-  #     <h1>Degreeworks specification: “{course.discipline} {course.catalog_number}”</h1>
-  #     {summary}
-  #     <h2 class="closer">{num_courses} Active Course{suffix}</h2>
-  #     <p></p>
-  #     <ul class="closeable">
-  #   """
+#     html = """
+#     <section>
+#       <h1>Degreeworks specification: “{course.discipline} {course.catalog_number}”</h1>
+#       {summary}
+#       <h2 class="closer">{num_courses} Active Course{suffix}</h2>
+#       <p></p>
+#       <ul class="closeable">
+#     """
 
-  return return_list
+#   return return_list
 
 
 # numcredit()
 # -------------------------------------------------------------------------------------------------
-def numcredit(institution, block_type_str, ctx):
-  """ (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
-  """
-  if DEBUG:
-    print('*** numcredit()', file=sys.stderr)
-  try:
-    if ctx.visited:
-      return None
-  except AttributeError:
-    ctx.visited = True
-  if ctx.PSEUDO() is None:
-    text = f'This {block_type_str} requires '
-  else:
-    text = f'This {block_type_str} generally requires '
-  if ctx.NUMBER() is not None:
-    number = get_number(ctx)
-    suffix = '' if number == 1 else 's'
-    text += f'{number} credit{suffix}'
-  elif ctx.RANGE() is not None:
-    low, high = get_range(ctx)
-    text += f'between {low} and {high} credits'
-  else:
-    text += f'an <span class="error">unknown</span> number of credits'
-  course_list = None
-  if ctx.course_list() is not None:
-    course_list = build_course_list(self.institution, ctx.course_list())
+# def numcredit(institution, block_type_str, ctx):
+#   """ (NUMBER | RANGE) CREDIT PSEUDO? INFROM? course_list? TAG? ;
+#   """
+#   if DEBUG:
+#     print('*** numcredit()', file=sys.stderr)
+#   try:
+#     if ctx.visited:
+#       return None
+#   except AttributeError:
+#     ctx.visited = True
+#   if ctx.PSEUDO() is None:
+#     text = f'This {block_type_str} requires '
+#   else:
+#     text = f'This {block_type_str} generally requires '
+#   if ctx.NUMBER() is not None:
+#     number = get_number(ctx)
+#     suffix = '' if number == 1 else 's'
+#     text += f'{number} credit{suffix}'
+#   elif ctx.RANGE() is not None:
+#     low, high = get_range(ctx)
+#     text += f'between {low} and {high} credits'
+#   else:
+#     text += f'an <span class="error">unknown</span> number of credits'
+#   course_list = None
+#   if ctx.course_list() is not None:
+#     course_list = build_course_list(self.institution, ctx.course_list())
 
-  if course_list is None:
-    text += '.'
-    courses = None
-  else:
-    list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
-    attributes, html_list = course_list2html(course_list['courses'])
-    len_list = len(html_list)
-    if len_list == 1:
-      preamble = f' in '
-      courses = html_list[0]
-    else:
-      preamble = f' in {list_quantifier} of these {len_list} {" and ".join(attributes)} courses:'
-      courses = html_list
-    text += f' {preamble} '
-  return Requirement('credits',
-                     f'{ctx.NUMBER()} credits',
-                     f'{text}',
-                     courses)
+#   if course_list is None:
+#     text += '.'
+#     courses = None
+#   else:
+#     list_quantifier = 'any' if course_list['list_type'] == 'or' else 'all'
+#     attributes, html_list = course_list2html(course_list['courses'])
+#     len_list = len(html_list)
+#     if len_list == 1:
+#       preamble = f' in '
+#       courses = html_list[0]
+#     else:
+#       preamble = f' in {list_quantifier} of these {len_list} {" and ".join(attributes)} courses:'
+#       courses = html_list
+#     text += f' {preamble} '
+#   return Requirement('credits',
+#                      f'{ctx.NUMBER()} credits',
+#                      f'{text}',
+#                      courses)
 
 
 # numclass()
 # -------------------------------------------------------------------------------------------------
-def numclass(institution, ctx):
-  """ (NUMBER | RANGE) CLASS INFROM? course_list? TAG? label* ;
-      Could be a standalone rule or as part of a group. This is the implementation for either.
-  """
-  if DEBUG:
-    print('*** numclass()', file=sys.stderr)
-  try:
-    if ctx.visited:
-      return None
-  except AttributeError:
-    ctx.visited = True
-  if ctx.NUMBER():
-    num_classes = int(str(ctx.NUMBER()))
-  else:
-    num_classes = None
-  if ctx.RANGE():
-    low, high = str(ctx.RANGE()).split(':')
-  else:
-    low = high = None
-  if ctx.course_list():
-    course_list = build_course_list(institution, ctx.course_list())
-  else:
-    course_list = None
-  label_str = ''
-  if ctx.label is not None:
-    for label in ctx.label():
-      label_str += str(label.STRING())
-      label.visited = True
-  return {'number': num_classes,
-          'low': low,
-          'high': high,
-          'courses': course_list,
-          'label': label_str}
+# def numclass(institution, ctx):
+#   """ (NUMBER | RANGE) CLASS INFROM? course_list? TAG? label* ;
+#       Could be a standalone rule or as part of a group. This is the implementation for either.
+#   """
+#   if DEBUG:
+#     print('*** numclass()', file=sys.stderr)
+#   try:
+#     if ctx.visited:
+#       return None
+#   except AttributeError:
+#     ctx.visited = True
+#   if ctx.NUMBER():
+#     num_classes = int(str(ctx.NUMBER()))
+#   else:
+#     num_classes = None
+#   if ctx.RANGE():
+#     low, high = str(ctx.RANGE()).split(':')
+#   else:
+#     low = high = None
+#   if ctx.course_list():
+#     course_list = build_course_list(institution, ctx.course_list())
+#   else:
+#     course_list = None
+#   label_str = ''
+#   if ctx.label is not None:
+#     for label in ctx.label():
+#       label_str += str(label.STRING())
+#       label.visited = True
+#   return {'number': num_classes,
+#           'low': low,
+#           'high': high,
+#           'courses': course_list,
+#           'label': label_str}
 
 
 # =================================================================================================
