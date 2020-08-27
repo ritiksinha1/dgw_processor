@@ -1,10 +1,10 @@
 #! /usr/bin/env python3
 """ This is the entry point for processing a requirement block.
 
-    Use command line args to select a block from the db, create a DGW_Processor to
-    hold information extracted from the block., then walk the parse tree. The DGW_Processor object’s
-    listener methods extract information during this process. Then this driver displays the results
-    and/or saves them in the requirement_blocks table.
+    Use command line args to select requirement_block(s) from the db, create a DGW_Processor to
+    hold information extracted from each block. Convert the requirement block text to html, then
+    if the parse argument is set, walk the parse tree, generating additional information to be added
+    back to the database along with the html.
 
     See __main__ for other use cases.
 """

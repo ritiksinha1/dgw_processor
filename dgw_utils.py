@@ -9,6 +9,8 @@ import argparse
 import os
 import sys
 
+import json
+
 from pgconnection import PgConnection
 from course_list_qualifier import CourseListQualifier
 
@@ -227,55 +229,8 @@ def get_scribed_courses(ctx):
 # get_course_list_qualifiers()
 # -------------------------------------------------------------------------------------------------
 def get_course_list_qualifiers(ctx):
+  """ Use parser info to generate and return a possibly-empty list of CourseListQualifier objects.
   """
-  course_list               : L_SQB?
-                                course_item R_SQB? (and_list | or_list)?
-                              R_SQB?
-                              (except_list | including_list)? ;
-
-  course_list_head           : course_list (course_list_qualifier_head tag?)* label? ;
-  course_list_qualifier_head : maxspread
-                             | mingpa
-                             | mingrade
-                             | minspread
-                             | ruletag
-                             | samedisc
-                             | share
-                             ;
-
-  course_list_body           : course_list (course_list_qualifier_body tag?)* label? ;
-  course_list_qualifier_body : except_list
-                             | including_list
-                             | maxpassfail
-                             | maxperdisc
-                             | maxspread
-                             | maxtransfer
-                             | minarea
-                             | minclass
-                             | mincredit
-                             | mingpa
-                             | mingrade
-                             | minperdisc
-                             | minspread
-                             | ruletag
-                             | samedisc
-                             | share
-                             ;
-
-  full_course           : discipline catalog_number with_clause*;
-  course_item           : L_SQB? discipline? catalog_number with_clause* R_SQB?;
-  and_list              : (list_and R_SQB? course_item)+;
-  or_list               : (list_or R_SQB? course_item)+;
-  catalog_number        : symbol | NUMBER | CATALOG_NUMBER | RANGE | WILD;
-  discipline            : symbol
-                        | string // For "SPEC." at BKL
-                        | WILD
-                        // Include keywords that appear as discipline names
-                        | BLOCK
-                        | IS;
-
-    Return a possibly-empty list of CourseListQualifier objects.
-"""
   valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                       'ruletag', 'samedisc', 'share']
@@ -286,9 +241,10 @@ def get_course_list_qualifiers(ctx):
       if qualifier_fun := getattr(sibling, qualifier, None):
         if qualifier_fun():
           class_credit = None
-          if qualifier_fun().CLASS():
+
+          if getattr(qualifier_fun(), 'CLASS', None) is not None:
             class_credit = 'class'
-          if qualifier_fun().CREDIT():
+          if getattr(qualifier_fun(), 'CREDIT', None) is not None:
             class_credit = 'credit'
 
           print(f'*** {qualifier}', file=sys.stderr)
@@ -296,44 +252,55 @@ def get_course_list_qualifiers(ctx):
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if qualifier == 'maxpassfail':
             qualifier_list.append(CourseListQualifier(qualifier,
-                                                      number=qualifier_fun().NUMBER(),
+                                                      number=qualifier_fun().NUMBER().getText(),
                                                       class_credit=class_credit))
 
           # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
-          elif qualifier == 'maxperdisc':
+          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
+          # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
+          elif qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
+            disciplines = qualifier_fun().SYMBOL()
+            if isinstance(disciplines, list):
+              disciplines = [d.getText() for d in disciplines]
+
             qualifier_list.append(CourseListQualifier(qualifier,
-                                                      number=qualifier_fun().NUMBER(),
+                                                      number=qualifier_fun().NUMBER().getText(),
                                                       class_credit=class_credit,
-                                                      disciplines=qualifier_fun().SYMBOL()))
+                                                      disciplines=disciplines))
 
           # maxspread       : MAXSPREAD NUMBER
-          elif qualifier == 'maxspread':
+          # minarea         : MINAREA NUMBER
+          # mingrade        : MINGRADE NUMBER
+          # minspread       : MINSPREAD NUMBER
+          elif qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
             qualifier_list.append(CourseListQualifier(qualifier,
-                                                      number=qualifier_fun().NUMBER()))
-          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
-          elif qualifier == 'maxtransfer':
-            qualifier_list.append(CourseListQualifier(qualifier,
-                                                      number=qualifier_fun().NUMBER(),
-                                                      class_credit=class_credit,
-                                                      disciplines=qualifier_fun.SYMBOL()))
+                                                      number=qualifier_fun().NUMBER().getText()))
+
+          # minclass        : MINCLASS (NUMBER|RANGE) course_list
+          # mincredit       : MINCREDIT (NUMBER|RANGE) course_list
+          elif qualifier in ['minclass', 'mincredit']:
+            qualifier_list.append(CourseListQualifier(qualifier  # ,
+                                                      ))  # <<<<<<<<<<<<<<<<<<<<<<<<<<<<< !!!
+
+          # mingpa          : MINGPA NUMBER (course_list | expression)?
+          elif qualifier == 'mingpa':
+            qualifier_list.append(CourseListQualifier(qualifier  # ,
+                                                      ))  # <<<<<<<<<<<<<<<<<<<<<<<<<<<<< !!!
+
+          # ruletag         : RULE_TAG expression;
+          # samedisc        : SAME_DISC expression
+          elif qualifier in ['ruletag', 'samedisc']:
+            qualifier_list.append(CourseListQualifier(qualifier  # ,
+                                                      ))  # <<<<<<<<<<<<<<<<<<<<<<<<<<<<< !!!
+
+          # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
+          elif qualifier == 'share':
+            qualifier_list.append(CourseListQualifier(qualifier  # ,
+                                                      ))  # <<<<<<<<<<<<<<<<<<<<<<<<<<<<< !!!
+
           else:
             qualifier_list.append(CourseListQualifier(qualifier))
 
-          # minarea         : MINAREA NUMBER tag?;
-          # minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display* label?;
-          # mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display* label?;
-          # mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
-          # mingrade        : MINGRADE NUMBER;
-          # minspread       : MINSPREAD NUMBER tag?;
-          # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
-          # ruletag         : RULE_TAG expression;
-          # samedisc        : SAME_DISC expression tag?;
-          # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
-
-  # sys.exit(f'{ctx.__class__.__name__} is not Course_list_qualifier_(head|body)')
-
-  for qualifier in qualifier_list:
-    print(f'*** Returning {qualifier.keyword}')
   return qualifier_list
 
 
@@ -483,11 +450,8 @@ def build_course_list(institution, ctx) -> list:
   if ctx.including_list():
     including_courses += get_scribed_courses(ctx.including_list().course_list())
 
-  qualifiers = get_course_list_qualifiers(ctx)
-  # During development, just getting string representation of CourseListQualifier instances.
-  # Need to be able to serialize the instances for storage in the db, not just their strings.
-  if len(qualifiers) > 0:
-    list_qualifiers.append('; '.join([f'{q}' for q in qualifiers]))
+  for qualifier in get_course_list_qualifiers(ctx):
+    list_qualifiers.append(qualifier.__dict__)
 
   # Active Courses
   all_blanket = True
