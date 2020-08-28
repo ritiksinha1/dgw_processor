@@ -228,7 +228,7 @@ def get_scribed_courses(ctx):
 
 # get_course_list_qualifiers()
 # -------------------------------------------------------------------------------------------------
-def get_course_list_qualifiers(ctx):
+def get_course_list_qualifiers(institution, ctx):
   """ Use parser info to generate and return a possibly-empty list of CourseListQualifier objects.
   """
   valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
@@ -288,7 +288,7 @@ def get_course_list_qualifiers(ctx):
               range_str = qualifier_fun().RANGE().getText()
             else:
               range_str = None
-            course_list_obj = build_course_list(None, qualifier_fun().course_list())
+            course_list_obj = build_course_list(institution, qualifier_fun().course_list())
             qualifier_list.append(CourseListQualifier(qualifier,
                                                       number=number_str,
                                                       range=range_str,
@@ -296,9 +296,11 @@ def get_course_list_qualifiers(ctx):
 
           # mingpa          : MINGPA NUMBER (course_list | expression)?
           elif qualifier == 'mingpa':
+            course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+
             qualifier_list.append(CourseListQualifier(qualifier,
                                                       number=qualifier_fun().NUMBER().getText(),
-                                                      course_list=qualifier_fun().course_list(),
+                                                      course_list=course_list_obj,
                                                       expression=qualifier_fun().expression()))
 
           # ruletag         : RULE_TAG expression;
@@ -404,16 +406,17 @@ def build_course_list(institution, ctx) -> list:
 
       Except clause: add active courses to except_courses list and remove from the active_courses
       Including clause: add to including_courses or missing_courses as the case may be.
-        *** What is missing_courses supposed to be? Right now it's nothing, but it could be any
+        *** What is missing_courses supposed to be? Right now it's nothing, but it should be any
         *** scribed course that fails course catalog lookup. It would be for reporting purposes
-        *** only.
+        *** only. The issue is that we can only detect explicitly-scribed courses, not when there
+        *** are wildcards involved.
   """
-  assert ctx.__class__.__name__ == 'Course_listContext', (f'{ctx.__class__.__name__} '
-                                                          f'is not Course_listContext')
   if DEBUG:
     print(f'*** build_course_list({institution}, {ctx.__class__.__name__})', file=sys.stderr)
   if ctx is None:
     return None
+  assert ctx.__class__.__name__ == 'Course_listContext', (f'{ctx.__class__.__name__} '
+                                                          f'is not Course_listContext')
 
   # The object to be returned:
   return_object = {'object_type': 'course_list',
@@ -422,6 +425,7 @@ def build_course_list(institution, ctx) -> list:
                    'list_qualifiers': [],
                    'label': None,
                    'active_courses': [],
+                   'inactive_courses': [],
                    'except_courses': [],
                    'including_courses': [],
                    'missing_courses': [],
@@ -430,6 +434,7 @@ def build_course_list(institution, ctx) -> list:
   scribed_courses = return_object['scribed_courses']
   list_qualifiers = return_object['list_qualifiers']
   active_courses = return_object['active_courses']
+  inactive_courses = return_object['inactive_courses']
   except_courses = return_object['except_courses']
   including_courses = return_object['including_courses']
   missing_courses = return_object['missing_courses']
@@ -468,93 +473,110 @@ def build_course_list(institution, ctx) -> list:
   if ctx.including_list():
     including_courses += get_scribed_courses(ctx.including_list().course_list())
 
-  for qualifier in get_course_list_qualifiers(ctx):
+  for qualifier in get_course_list_qualifiers(institution, ctx):
     list_qualifiers.append(qualifier.__dict__)
 
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
-  if institution is not None:
-    all_blanket = True
-    all_writing = True
-    conn = PgConnection()
-    cursor = conn.cursor()
-    for scribed_course in scribed_courses:
-      # For display to users
-      display_discipline, display_catalog_number, display_with_clause = scribed_course
-      # For course db query
-      discipline, catalog_number, with_clause = scribed_course
+  all_blanket = True
+  all_writing = True
+  check_missing = True  # Unless there are wildcards or ranges
+  conn = PgConnection()
+  cursor = conn.cursor()
+  for scribed_course in scribed_courses:
+    # For display to users
+    display_discipline, display_catalog_number, display_with_clause = scribed_course
+    # For course db query
+    discipline, catalog_number, with_clause = scribed_course
 
-      # discipline part
-      discp_op = '='
+    # discipline part
+    discp_op = '='
 
-      if '@' in discipline:
-        discp_op = '~*'
-        discipline = '^' + discipline.replace('@', '.*') + '$'
+    if '@' in discipline:
+      discp_op = '~*'
+      check_missing = False
+      discipline = '^' + discipline.replace('@', '.*') + '$'
 
-      #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
-      #   numbers that start with zero. But other patterns might be used: 1@, for example.
-      catalog_numbers = catalog_number.split(':')
-      if len(catalog_numbers) == 1:
-        if '@' in catalog_numbers[0]:
-          catnum_clause = "catalog_number ~* '^" + catalog_numbers[0].replace('@', '.*') + "$'"
-        else:
-          catnum_clause = f"catalog_number = '{catalog_numbers[0]}'"
+    #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
+    #   numbers that start with zero. But other patterns might be used: 1@, for example.
+    catalog_numbers = catalog_number.split(':')
+    if len(catalog_numbers) == 1:
+      if '@' in catalog_numbers[0]:
+        check_missing = False
+        catnum_clause = "catalog_number ~* '^" + catalog_numbers[0].replace('@', '.*') + "$'"
       else:
-        low, high = catalog_numbers
-        #  Assume no wildcards in range ...
-        try:
-          catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
-                               numeric_part(catalog_number) <=' {float(high)}')
-                           """
-        except ValueError:
-          #  ... but it looks like there were.
-          #  Assume:
-          #    - the range is being used for a range of course levels (1@:3@, for example)
-          #    - catalog numbers are 3 digits (so 1@ means 100 to 199, for example
-          #  Otherwise, 1@ would match 1, 10-19, 100-199, and 1000-1999, which would be strange, or
-          #  at least fragile in the case of Lehman, which uses 2000-level numbers for blanket
-          #  credit courses at the 200 level.
-          matches = re.match('(.*?)@(.*)', low)
+        catnum_clause = f"catalog_number = '{catalog_numbers[0]}'"
+    else:
+      check_missing = False
+      low, high = catalog_numbers
+      #  Assume no wildcards in range ...
+      try:
+        catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
+                             numeric_part(catalog_number) <=' {float(high)}')
+                         """
+      except ValueError:
+        #  ... but it looks like there were.
+        check_missing = False
+
+        #  Assume:
+        #    - the range is being used for a range of course levels (1@:3@, for example)
+        #    - catalog numbers are 3 digits (so 1@ means 100 to 199, for example
+        #  Otherwise, 1@ would match 1, 10-19, 100-199, and 1000-1999, which would be strange, or
+        #  at least fragile in the case of Lehman, which uses 2000-level numbers for blanket
+        #  credit courses at the 200 level.
+        matches = re.match('(.*?)@(.*)', low)
+        if matches.group(1).isdigit():
+          low = matches.group(1) + '00'
+          matches = re.match('(.*?)@(.*)', high)
           if matches.group(1).isdigit():
-            low = matches.group(1) + '00'
-            matches = re.match('(.*?)@(.*)', high)
-            if matches.group(1).isdigit():
-              high = matches.group(1) + '99'
-              catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
-                                   numeric_part(catalog_number) <= {float(high)})
-                               """
-          else:
-            # Either low or high is not in the form: \d+@
-            catnum_clause = "catalog_number = ''"  # Will match no courses
-      course_query = f"""
-  select institution, course_id, offer_nbr, discipline, catalog_number, title,
-         requisites, description, contact_hours, max_credits, designation,
-         replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
-         as attributes
-    from cuny_courses
-   where institution ~* '{institution}'
-     and course_status = 'A'
-     and discipline {discp_op} '{discipline}'
-     and {catnum_clause}
-     order by discipline, numeric_part(catalog_number)
-                """
-      cursor.execute(course_query)
-      if cursor.rowcount > 0:
-        for row in cursor.fetchall():
-          # skip excluded courses
-          if (row.discipline, row.catalog_number) in except_courses:
-            continue
+            high = matches.group(1) + '99'
+            catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
+                                 numeric_part(catalog_number) <= {float(high)})
+                             """
+        else:
+          # Either low or high is not in the form: \d+@
+          catnum_clause = "catalog_number = ''"  # Will match no courses
+    course_query = f"""
+select institution, course_id, offer_nbr, discipline, catalog_number, title,
+       requisites, description, course_status, contact_hours, max_credits, designation,
+       replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
+       as attributes
+  from cuny_courses
+ where institution ~* '{institution}'
+   and discipline {discp_op} '{discipline}'
+   and {catnum_clause}
+   order by discipline, numeric_part(catalog_number)
+              """
+    cursor.execute(course_query)
+    if cursor.rowcount > 0:
+      for row in cursor.fetchall():
+        # skip excluded courses
+        if (row.discipline, row.catalog_number) in except_courses:
+          continue
+        if row.course_status == 'A':
           active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                  row.title, with_clause))
-          if row.max_credits > 0 and 'BKCR' not in row.attributes:
-            all_blanket = False
-          if 'WRIC' not in row.attributes:
-            all_writing = False
-    conn.close()
-    if len(active_courses) > 0:
-      if all_blanket:
-        attributes.append('Blanket Credit')
-      if all_writing:
-        attributes.append('Writing Intensive')
+        else:
+          inactive_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
+                                   row.title, with_clause))
+        if row.max_credits > 0 and 'BKCR' not in row.attributes:
+          all_blanket = False
+        if 'WRIC' not in row.attributes:
+          all_writing = False
+
+  conn.close()
+  if len(active_courses) > 0:
+    if all_blanket:
+      attributes.append('Blanket Credit')
+    if all_writing:
+      attributes.append('Writing Intensive')
+
+  # Make sure each scribed course was found. Check only if there were no wildcards scribed.
+  if check_missing:
+    found_courses = [(course[2], course[3]) for course in active_courses]
+    found_courses += [(course[2], course[3]) for course in inactive_courses]
+    for scribed_course in return_object['scribed_courses']:
+      if (scribed_course[0], scribed_course[1]) not in found_courses:
+        missing_courses.append(scribed_course)
 
   return return_object
 
