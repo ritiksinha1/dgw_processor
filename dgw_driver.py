@@ -239,6 +239,8 @@ if __name__ == '__main__':
         if block_value.isnumeric() or block_value.startswith('MHC'):
           print(f'Skipping {institution} {block_type} {block_value}')
           continue
+        if args.debug:
+          print(institution, block_type.upper(), block_value, file=sys.stderr)
         num_updates, num_blocks = dgw_parser(institution,
                                              block_type.upper(),
                                              block_value,

@@ -141,8 +141,6 @@ class DGW_Processor(ReqBlockListener):
     if LOG_CONTEXT_PATH:
       print(context_path_str, file=sys.stderr)
     if 'except' in context_path_str.lower() or 'includ' in context_path_str.lower():
-      if DEBUG:
-        print(f'*** Ignoring except or including clause: {context_path_str}', file=sys.stderr)
       return
 
     course_list = build_course_list(self.institution, ctx)
