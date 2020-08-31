@@ -231,9 +231,9 @@ def get_scribed_courses(ctx):
 def get_course_list_qualifiers(institution, ctx):
   """ Use parser info to generate and return a possibly-empty list of CourseListQualifier objects.
   """
-  valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-                      'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
-                      'ruletag', 'samedisc', 'share']
+  valid_qualifiers = ['dont_share', 'maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer',
+                      'minarea', 'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc',
+                      'minspread', 'ruletag', 'samedisc', 'share']
   qualifier_list = []
   siblings = ctx.parentCtx.getChildren()
   for sibling in siblings:
@@ -292,16 +292,23 @@ def get_course_list_qualifiers(institution, ctx):
             qualifier_list.append(CourseListQualifier(qualifier,
                                                       number=number_str,
                                                       range=range_str,
-                                                      course_list=course_list_obj))
+                                                      course_list=course_list_obj['scribed_'
+                                                                                  'courses']))
 
           # mingpa          : MINGPA NUMBER (course_list | expression)?
           elif qualifier == 'mingpa':
-            course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+            course_list_obj = qualifier_fun().course_list()
+            if course_list_obj:
+              course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+
+            expression_str = qualifier_fun().expression()
+            if expression_str:
+              expression_str = expression.getText()
 
             qualifier_list.append(CourseListQualifier(qualifier,
                                                       number=qualifier_fun().NUMBER().getText(),
                                                       course_list=course_list_obj,
-                                                      expression=qualifier_fun().expression()))
+                                                      expression=expression_str))
 
           # ruletag         : RULE_TAG expression;
           # samedisc        : SAME_DISC expression
@@ -312,8 +319,23 @@ def get_course_list_qualifiers(institution, ctx):
 
           # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
           elif qualifier == 'share':
-            qualifier_list.append(CourseListQualifier(qualifier  # ,
-                                                      ))  # <<<<<<<<<<<<<<<<<<<<<<<<<<<<< !!!
+            if qualifier_fun().DONT_SHARE():
+              qualifier = 'dont_share'
+            if qualifier_fun().CLASS():
+              class_credit = 'class'
+            elif qualifier_fun().CREDIT():
+              class_credit = 'credit'
+            else:
+              class_credit = None
+
+            expression = qualifier_fun().expression()
+            if expression:
+              expression = expression.getText()
+
+            qualifier_list.append(CourseListQualifier(qualifier,
+                                                      number=qualifier_fun().NUMBER(),
+                                                      class_credit=class_credit,
+                                                      expression=expression))
 
           else:
             qualifier_list.append(CourseListQualifier(qualifier))
