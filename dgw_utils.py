@@ -327,13 +327,17 @@ def get_course_list_qualifiers(institution, ctx):
               class_credit = 'credit'
             else:
               class_credit = None
+            if qualifier_fun().NUMBER():
+              number = qualifier_fun().NUMBER().getText()
+            else:
+              number = None
 
             expression = qualifier_fun().expression()
             if expression:
               expression = expression.getText()
 
             qualifier_list.append(CourseListQualifier(qualifier,
-                                                      number=qualifier_fun().NUMBER(),
+                                                      number=number,
                                                       class_credit=class_credit,
                                                       expression=expression))
 
