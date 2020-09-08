@@ -1,3 +1,31 @@
+2020-09-07
+
+Course lists and their qualifiers all look like they are being processed okay. Running dgw_driver
+with the -p (parse) option gives lists of course_list objects, each of which includes lists of
+scribed, active, inactive, and missing courses, as well as qualifiers with their details.
+  Expressions and With clauses in course lists and qualfiers are not interpreted (yet).
+
+The next step, on the way to generating lists of MUST, MAY, and CANNOT courses, is to handle the
+contexts in which course lists can occur: subsets, blocks, areas, and if-then. Should this be done
+from the top down (parser walks the parse tree and calls implementations as the contexts are
+encountered), or bottom-up (for each course list, search up to the context to the enclosing
+context.) The former would make sense, and in fact, the current implementation walks the entire tree
+to find each course list, which is interpreted as described above. The trade-off is that it would
+be more efficient to do everything top-down (we're walking the whole tree already to find all those
+course_lists), but searching each top-level context to find all the course lists instead seems risky
+(might miss some contexts in which course lists occur), and would require writing code for drilling
+down to find the lists, which seems intuitively like a lot of situation-specific logic. So the
+current plan is to do it bottom up, building on what already works.
+
+For each course list, search up its context tree to find the enclosing context: group, subset,
+if-then (, etc.?) and to capture those contexts. For example, if the enclosing context is "one group
+from the following list", memoize each group and its course list in the list of groups. Not sure I
+like this idea so much. I'll still have to go back and do top-down for requirements that don't have
+course lists, anyway. So the real issue is to make sure that every course list found in the current
+implementation is also covered by the top-down scan.
+
+Conclusion: top-down; check course_list coverage when scan completes.
+
 2020-07-22
 
 Consider changing name of Body section to Rules, but not sure it's really a good change because the
