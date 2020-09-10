@@ -129,6 +129,8 @@ class DGW_Processor(ReqBlockListener):
       print(context_path(ctx), file=sys.stderr)
     self.scribe_section = ScribeSection.BODY
 
+  # COURSE LIST
+  # ===============================================================================================
   # enterCourse_list(self, ctx: ReqBlockParser.Course_listContext)
   # -----------------------------------------------------------------------------------------------
   def enterCourse_list(self, ctx: ReqBlockParser.Course_listContext):
@@ -145,70 +147,9 @@ class DGW_Processor(ReqBlockListener):
 
     course_list = build_course_list(self.institution, ctx)
     self.sections[self.scribe_section].append(course_list)
-    if DEBUG:
-      print(f'\n               Context: {course_list["context_path"]}')
-      print(f'   Num Scribed Courses: {len(course_list["scribed_courses"]):>4}')
-      if len(course_list["scribed_courses"]) > 1:
-        print(f'             List Type: {course_list["list_type"]:>4}')
-      if len(course_list["including_courses"]) > 1:
-        print(f'          Must Include: {course_list["including_courses"]}')
-      if len(course_list["except_courses"]) > 1:
-        print(f'      Must Not Include: {course_list["except_courses"]}')
-      print(f'    Num Active Courses: {len(course_list["active_courses"]):>4}')
-      if len(course_list["list_qualifiers"]) > 0:
-        print(f'       List Qualifiers: {", ".join(course_list["list_qualifiers"])}')
-      print(f'                 Label: {course_list["label"]}')
-      if len(course_list["attributes"]) > 0:
-        print(f'  Attributes in Common: {", ".join(course_list["attributes"])}')
 
-  # enterFull_course(self, ctx: ReqBlockParser.Full_courseContext)
-  # -----------------------------------------------------------------------------------------------
-  # def enterFull_course(self, ctx: ReqBlockParser.Full_courseContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
-
-  # enterCourse_item(self, ctx: ReqBlockParser.Course_itemContext)
-  # -----------------------------------------------------------------------------------------------
-  # def enterCourse_item(self, ctx: ReqBlockParser.Course_itemContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
-
-  # enterAnd_list(self, ctx: ReqBlockParser.And_listContext)
-  # -----------------------------------------------------------------------------------------------
-  # def enterAnd_list(self, ctx: ReqBlockParser.And_listContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
-
-  # enterOr_list(self, ctx: ReqBlockParser.Or_listContext)
-  # -----------------------------------------------------------------------------------------------
-  # def enterOr_list(self, ctx: ReqBlockParser.Or_listContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
-
-  # enterDiscipline(self, ctx: ReqBlockParser.DisciplineContext)
-  # -----------------------------------------------------------------------------------------------
-  # def enterDiscipline(self, ctx: ReqBlockParser.DisciplineContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
-
-  # enterCatalog_number(self, ctx: ReqBlockParser.Catalog_numberContext)
-  # -----------------------------------------------------------------------------------------------
-  # def enterCatalog_number(self, ctx: ReqBlockParser.Catalog_numberContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
-
+  # IF-THEN
+  # ===============================================================================================
   # enterIf_then(self, ctx: ReqBlockParser.If_thenContext)
   # -----------------------------------------------------------------------------------------------
   def enterIf_then(self, ctx: ReqBlockParser.If_thenContext):
@@ -262,38 +203,42 @@ class DGW_Processor(ReqBlockListener):
     if LOG_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
+  # GROUP
+  # ===============================================================================================
   # enterGroup(self, ctx: ReqBlockParser.GroupContext)
   # -----------------------------------------------------------------------------------------------
-  # def enterGroup(self, ctx: ReqBlockParser.GroupContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
+  def enterGroup(self, ctx: ReqBlockParser.GroupContext):
+    """
+    """
+    if LOG_CONTEXT_PATH:
+      print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_list(self, ctx: ReqBlockParser.Group_listContext)
   # -----------------------------------------------------------------------------------------------
-  # def enterGroup_list(self, ctx: ReqBlockParser.Group_listContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
+  def enterGroup_list(self, ctx: ReqBlockParser.Group_listContext):
+    """
+    """
+    if LOG_CONTEXT_PATH:
+      print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_item(self, ctx: ReqBlockParser.Group_itemContext)
   # -----------------------------------------------------------------------------------------------
-  # def enterGroup_item(self, ctx: ReqBlockParser.Group_itemContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
+  def enterGroup_item(self, ctx: ReqBlockParser.Group_itemContext):
+    """
+    """
+    if LOG_CONTEXT_PATH:
+      print(context_path(ctx), file=sys.stderr)
 
   # enterGroup_qualifier(self, ctx: ReqBlockParser.Group_qualifierContext)
   # -----------------------------------------------------------------------------------------------
-  # def enterGroup_qualifier(self, ctx: ReqBlockParser.Group_qualifierContext):
-  #   """
-  #   """
-  #   if LOG_CONTEXT_PATH:
-  #     print(context_path(ctx), file=sys.stderr)
+  def enterGroup_qualifier(self, ctx: ReqBlockParser.Group_qualifierContext):
+    """
+    """
+    if LOG_CONTEXT_PATH:
+      print(context_path(ctx), file=sys.stderr)
 
+  # RULE SUBSET
+  # ===============================================================================================
   # enterSubset(self, ctx: ReqBlockParser.SubsetContext)
   # -----------------------------------------------------------------------------------------------
   # def enterSubset(self, ctx: ReqBlockParser.SubsetContext):
@@ -310,6 +255,8 @@ class DGW_Processor(ReqBlockListener):
   #   if LOG_CONTEXT_PATH:
   #     print(context_path(ctx), file=sys.stderr)
 
+  # BLOCK
+  # ===============================================================================================
   # enterBlock(self, ctx: ReqBlockParser.BlockContext)
   # -----------------------------------------------------------------------------------------------
   # def enterBlock(self, ctx: ReqBlockParser.BlockContext):

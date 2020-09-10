@@ -2,14 +2,14 @@
 """
 maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
 maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
-maxspread       : MAXSPREAD NUMBER
+maxspread       : MAXSPREAD NUMBER                                      # not a group_list_qualifier
 maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
-minarea         : MINAREA NUMBER
+minarea         : MINAREA NUMBER                                        # not a group_list_qualifier
 minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display* label?
 mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display* label?
 mingpa          : MINGPA NUMBER (course_list | expression)? display* label?
 mingrade        : MINGRADE NUMBER   // Real, 1 decimal place.
-minspread       : MINSPREAD NUMBER  // Int
+minspread       : MINSPREAD NUMBER  // Int                              # not a group_list_qualifier
 minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP display*;
 ruletag         : RULE_TAG expression
 samedisc        : SAME_DISC expression
