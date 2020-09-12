@@ -203,7 +203,7 @@ class DGW_Processor(ReqBlockListener):
     if LOG_CONTEXT_PATH:
       print(context_path(ctx), file=sys.stderr)
 
-  # GROUP
+  # RULE GROUP
   # ===============================================================================================
   # enterGroup(self, ctx: ReqBlockParser.GroupContext)
   # -----------------------------------------------------------------------------------------------
