@@ -37,7 +37,7 @@ from ReqBlockListener import ReqBlockListener
 
 from pgconnection import PgConnection
 
-from templates import *
+# from templates import *
 
 from dgw_processor import DGW_Processor
 from dgw_logger import DGW_Logger
