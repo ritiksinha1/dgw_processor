@@ -287,6 +287,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#class_or_credit.
+    def enterClass_or_credit(self, ctx:ReqBlockParser.Class_or_creditContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#class_or_credit.
+    def exitClass_or_credit(self, ctx:ReqBlockParser.Class_or_creditContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#copy_rules.
     def enterCopy_rules(self, ctx:ReqBlockParser.Copy_rulesContext):
         pass
@@ -311,6 +320,15 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#except_list.
     def exitExcept_list(self, ctx:ReqBlockParser.Except_listContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_tag.
+    def enterHeader_tag(self, ctx:ReqBlockParser.Header_tagContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_tag.
+    def exitHeader_tag(self, ctx:ReqBlockParser.Header_tagContext):
         pass
 
 
@@ -494,12 +512,30 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#nv_pair.
+    def enterNv_pair(self, ctx:ReqBlockParser.Nv_pairContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#nv_pair.
+    def exitNv_pair(self, ctx:ReqBlockParser.Nv_pairContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#optional.
     def enterOptional(self, ctx:ReqBlockParser.OptionalContext):
         pass
 
     # Exit a parse tree produced by ReqBlockParser#optional.
     def exitOptional(self, ctx:ReqBlockParser.OptionalContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#pseudo.
+    def enterPseudo(self, ctx:ReqBlockParser.PseudoContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#pseudo.
+    def exitPseudo(self, ctx:ReqBlockParser.PseudoContext):
         pass
 
 
@@ -521,12 +557,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#ruletag.
-    def enterRuletag(self, ctx:ReqBlockParser.RuletagContext):
+    # Enter a parse tree produced by ReqBlockParser#rule_tag.
+    def enterRule_tag(self, ctx:ReqBlockParser.Rule_tagContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#ruletag.
-    def exitRuletag(self, ctx:ReqBlockParser.RuletagContext):
+    # Exit a parse tree produced by ReqBlockParser#rule_tag.
+    def exitRule_tag(self, ctx:ReqBlockParser.Rule_tagContext):
         pass
 
 

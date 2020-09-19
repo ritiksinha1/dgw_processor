@@ -440,12 +440,17 @@ def dgw_parser(institution, block_type, block_value, period='all'):
     head_ctx = tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
-        print(dispatch(child, 'head'))
-        print(f'{institution} {row.requirement_id} Head:  {class_name(child)}')
+        obj = dispatch(child, 'head')
+        if obj != {}:
+          print(f'{institution} {row.requirement_id} Head:  {class_name(child)}', file=sys.stderr)
+          print(obj, file=sys.stderr)
     body_ctx = tree.body()
     if body_ctx:
       for child in body_ctx.getChildren():
-        print(f'{institution} {row.requirement_id} Body: {class_name(child)}')
+        obj = dispatch(child, 'body')
+        if obj != {}:
+          print(f'{institution} {row.requirement_id} Body:  {class_name(child)}', file=sys.stderr)
+          print(obj, file=sys.stderr)
 
     if period == 'current' or period == 'latest':
       break

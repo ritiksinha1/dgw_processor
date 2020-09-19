@@ -123,19 +123,15 @@ def get_range(ctx):
 
 # class_or_credit()
 # -------------------------------------------------------------------------------------------------
-def class_or_credit(ctx, number=0) -> str:
-  """ (CLASS | CREDIT)
-      Number, if present, tells whether to return singular or plural form of the keyword
+def class_or_credit(ctx) -> str:
+  """ class_or_credit   : (CLASS | CREDIT);
+      Tell whether it's 'class' or 'credit' regardless of how it was spelled/capitalized.
   """
   if DEBUG:
     print('*** class_or_credit()', file=sys.stderr)
-  which = ctx.CREDIT()
-  if which is None:
-    which = ctx.CLASS()
-  which = str(which).lower().strip('es')
-  if number != 1:
-    which = classes if which == 'class' else 'credits'
-  return which
+  if ctx.CREDIT():
+    return 'credit'
+  return 'class'
 
 
 # _with_clause()

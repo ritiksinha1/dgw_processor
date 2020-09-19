@@ -76,40 +76,42 @@ from dgw_utils import class_name,\
 # =================================================================================================
 def class_credit_head(ctx):
   """
- class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
-                       allow_clause?
-                       (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                       (course_list_head | expression | PSEUDO | share | tag)*
-                       display* label?;
+class_credit_head   : NUMBER class_or_credit (logical_op NUMBER class_or_credit)?
+                      (allow_clause | pseudo | header_tag | tag)*
+                      display* label?;
   """
 
   all_numbers = ctx.NUMBER()
-  all_ranges = ctx.RANGE()
   if all_numbers:
-    range_min = range_max = all_numbers.pop().getText()
-  elif all_ranges:
-    range_min, range_max = ctx.RANGE().getText().split()
+    num_str = all_numbers.pop().getText().strip()
+    if ':' in num_str:
+      range_min, range_max = num_str.split(':')
+    else:
+      range_min = range_max = num_str
   else:
     range_min = range_max = 'Missing'
-  # Problem will be if there are more values in all_numbers and all_ranges; how to determine which
-  # goes with which
-  number = 1 if range_min != 'Missing' and int(range_min) == 1 and range_min == range_max else 0
 
-  if ctx.CLASS():
-    class_credit = class_or_credit(ctx, number)
+  all_class_or_credit = ctx.class_or_credit()
+
+  class_credit = class_or_credit(all_class_or_credit.pop())
+
+  is_pseudo = True if ctx.pseudo() else False
 
   if ctx.display():
     display_text = ' '.join(ctx.display())
   else:
     display_text = None
+
   if ctx.label():
     label_text = ctx.label()
   else:
     label_text = None
+
   return {'tag': 'class_credit_head',
           'range_min': range_min,
           'range_max': range_max,
           'class_credit': class_credit,
+          'is_pseudo': is_pseudo,
           'display': display_text,
           'label': label_text}
 

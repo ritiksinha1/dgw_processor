@@ -250,20 +250,22 @@ blocktype       : NUMBER BLOCKTYPE expression label;
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
  */
-allow_clause        : LP ALLOW NUMBER RP;
+allow_clause        : LP allow NUMBER RP;
 
-class_credit_head   : NUMBER (CLASS | CREDIT) (logical_op NUMBER (CLASS|CREDIT))?
+class_credit_head   : NUMBER class_or_credit (logical_op NUMBER class_or_credit)?
                       (allow_clause | pseudo | header_tag | tag)*
-//                      (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
+//                      (logical_op NUMBER class_or_credit ruletag? allow_clause?)?
 //                       (course_list_head | expression | pseudo | share | tag)*
                       display* label?;
 
-class_credit_body   : NUMBER (CLASS | CREDIT) (logical_op NUMBER (CLASS|CREDIT))?
+class_credit_body   : NUMBER class_or_credit (logical_op NUMBER class_or_credit)?
                       (course_list_body | allow_clause | IS? pseudo | share | rule_tag | tag)*
-//                      (logical_op NUMBER (CLASS | CREDIT) rule_tag? allow_clause?)?
+//                      (logical_op NUMBER class_or_credit rule_tag? allow_clause?)?
 //                      (course_list_body | expression | pseudo | share | tag)*
                       display* label?;
 
+allow           : (ALLOW | ACCEPT);
+class_or_credit : (CLASS | CREDIT);
 copy_rules      : COPY_RULES expression SEMICOLON?;
 // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
@@ -272,27 +274,27 @@ except_list     : EXCEPT course_list;
 header_tag      : HEADER_TAG nv_pair;
 including_list  : INCLUDING course_list;
 label           : LABEL string SEMICOLON?;
-lastres         : LASTRES NUMBER (OF NUMBER)? (CLASS | CREDIT) course_list? tag? display* label?;
+lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* label?;
 
 maxclass        : MAXCLASS NUMBER course_list? tag?;
 maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 
-maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT) tag?;
-maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP tag?;
+maxpassfail     : MAXPASSFAIL NUMBER class_or_credit tag?;
+maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
 maxspread       : MAXSPREAD NUMBER tag?;
-maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;
+maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
 
-maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
+maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
 minclass        : MINCLASS NUMBER course_list tag? display* label?;
 mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
 mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
-minres          : MINRES NUMBER (CLASS | CREDIT) display* label? tag?;
+minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
+minres          : MINRES NUMBER class_or_credit display* label? tag?;
 minspread       : MINSPREAD NUMBER tag?;
-minterm         : MINTERM NUMBER (CLASS | CREDIT) course_list? tag? display*;
+minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 
 noncourse       : NUMBER NONCOURSE LP expression RP label?;
 nv_pair         : SYMBOL '=' (STRING | SYMBOL);
@@ -302,14 +304,14 @@ remark          : REMARK string SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
 rule_tag        : RULE_TAG nv_pair;
 samedisc        : SAME_DISC expression tag?;
-share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
+share           : (SHARE | DONT_SHARE) (NUMBER class_or_credit)? expression? tag?;
 //share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | string | WILD))?;
 //share_list      : expression;
 standalone      : STANDALONE;
 string          : STRING;
 symbol          : SYMBOL; // | (QUOTE SYMBOL QUOTE);
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
-under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? display* label;
+under           : UNDER NUMBER class_or_credit full_course or_list? display* label;
 with_clause     : LP WITH expression RP;
 
 expression      : expression relational_op expression
@@ -378,6 +380,7 @@ WHITESPACE      : [ \t\n\r']+ -> skip;
   OTHER           : [Oo][Tt][Hh][Ee][Rr];
   THIS_BLOCK      : [Tt][Hh][Ii][Ss][Bb][Ll][Oo][Cc][Kk];
  */
+ACCEPT          : [Aa[Cc][Cc][Ee][Pp][Tt];
 ALLOW           : [Aa][Ll][Ll][Oo][Ww];
 BEGIN           : [Bb][Ee][Gg][Ii][Nn];
 BEGINSUB        : BEGIN [Ss][Uu][Bb];
