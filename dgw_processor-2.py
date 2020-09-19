@@ -6,6 +6,8 @@ import os
 import re
 import sys
 import argparse
+import pickle
+import resource
 import traceback
 
 from enum import IntEnum
@@ -19,8 +21,12 @@ from antlr4.error.ErrorListener import ErrorListener
 
 from dgw_filter import dgw_filter
 from pgconnection import PgConnection
+from psycopg2 import Binary
+
+from dgw_handlers import dispatch
 from dgw_utils import build_course_list,\
     catalog_years,\
+    class_name,\
     class_or_credit,\
     colleges,\
     context_path,\
@@ -30,6 +36,8 @@ from dgw_utils import build_course_list,\
 DEBUG = os.getenv('DEBUG_PROCESSOR')
 LOG_CONTEXT_PATH = os.getenv('LOG_CONTEXT_PATH')
 
+# resource.setrlimit(resource.RLIMIT_STACK, ((resource.RLIM_INFINITY, resource.RLIM_INFINITY)))
+sys.setrecursionlimit(10**6)
 
 # # class ScribeSection(IntEnum)
 # # -------------------------------------------------------------------------------------------------
@@ -363,12 +371,6 @@ LOG_CONTEXT_PATH = os.getenv('LOG_CONTEXT_PATH')
 #         return self.visitChildren(ctx)
 
 
-# class_name()
-# =================================================================================================
-def class_name(obj):
-  return obj.__class__.__name__.replace('Context', '')
-
-
 # dgw_parser()
 # =================================================================================================
 def dgw_parser(institution, block_type, block_value, period='all'):
@@ -438,13 +440,12 @@ def dgw_parser(institution, block_type, block_value, period='all'):
     head_ctx = tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
-        if (cn := class_name(child)) in ['Label']:
-          print(f'{institution} {row.requirement_id} Head:  {cn}')
+        print(dispatch(child, 'head'))
+        print(f'{institution} {row.requirement_id} Head:  {class_name(child)}')
     body_ctx = tree.body()
     if body_ctx:
       for child in body_ctx.getChildren():
-        if cn := class_name(child) in ['Label']:
-          print(f'{institution} {row.requirement_id} Body: {cn}')
+        print(f'{institution} {row.requirement_id} Body: {class_name(child)}')
 
     if period == 'current' or period == 'latest':
       break

@@ -29,6 +29,12 @@ conn.close()
 CatalogYears = namedtuple('CatalogYears', 'catalog_type first_year last_year text')
 
 
+# class_name()
+# =================================================================================================
+def class_name(obj):
+  return obj.__class__.__name__.replace('Context', '')
+
+
 # expression_terminals()
 # -------------------------------------------------------------------------------------------------
 def expression_terminals(ctx, terminal_list):

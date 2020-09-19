@@ -104,7 +104,7 @@ course_list_qualifier_head : maxspread
                            | mingpa
                            | mingrade
                            | minspread
-                           | ruletag
+                           | header_tag
                            | samedisc
                            | share
                            ;
@@ -121,7 +121,7 @@ course_list_qualifier_body : maxpassfail
                            | mingrade
                            | minperdisc
                            | minspread
-                           | ruletag
+                           | rule_tag
                            | samedisc
                            | share
                            ;
@@ -130,7 +130,7 @@ full_course           : discipline catalog_number with_clause*;
 course_item           : L_SQB? discipline? catalog_number with_clause* R_SQB?;
 and_list              : (list_and R_SQB? course_item)+;
 or_list               : (list_or R_SQB? course_item)+;
-catalog_number        : symbol | NUMBER | CATALOG_NUMBER | RANGE | WILD;
+catalog_number        : symbol | NUMBER | CATALOG_NUMBER | WILD;
 discipline            : symbol
                       | string // For "SPEC." at BKL
                       | WILD
@@ -215,7 +215,7 @@ group_qualifier : maxpassfail
                 | share
                 | minclass
                 | mincredit
-                | ruletag
+                | rule_tag
                 ;
 
 //  Rule Subset
@@ -239,29 +239,29 @@ subset_qualifier  : maxpassfail
                   | minperdisc
                   | minspread
                   | maxperdisc
-                  | ruletag
+                  | rule_tag
                   | share;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
-block           : NUMBER BLOCK expression ruletag? label;
+block           : NUMBER BLOCK expression rule_tag? label;
 blocktype       : NUMBER BLOCKTYPE expression label;
 
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
  */
-allow_clause        : LP ALLOW (NUMBER|RANGE) RP;
+allow_clause        : LP ALLOW NUMBER RP;
 
-class_credit_head   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
-                      allow_clause?
-                      (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                      (course_list_head | expression | PSEUDO | share | tag)*
+class_credit_head   : NUMBER (CLASS | CREDIT) (logical_op NUMBER (CLASS|CREDIT))?
+                      (allow_clause | pseudo | header_tag | tag)*
+//                      (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
+//                       (course_list_head | expression | pseudo | share | tag)*
                       display* label?;
 
-class_credit_body   : (NUMBER | RANGE) (CLASS | CREDIT) (logical_op (NUMBER|RANGE) (CLASS|CREDIT))?
-                      allow_clause?
-                      (logical_op NUMBER (CLASS | CREDIT) ruletag? allow_clause?)?
-                      (course_list_body | expression | PSEUDO | share | tag)*
+class_credit_body   : NUMBER (CLASS | CREDIT) (logical_op NUMBER (CLASS|CREDIT))?
+                      (course_list_body | allow_clause | IS? pseudo | share | rule_tag | tag)*
+//                      (logical_op NUMBER (CLASS | CREDIT) rule_tag? allow_clause?)?
+//                      (course_list_body | expression | pseudo | share | tag)*
                       display* label?;
 
 copy_rules      : COPY_RULES expression SEMICOLON?;
@@ -269,6 +269,7 @@ copy_rules      : COPY_RULES expression SEMICOLON?;
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
 display         : DISPLAY string SEMICOLON?;
 except_list     : EXCEPT course_list;
+header_tag      : HEADER_TAG nv_pair;
 including_list  : INCLUDING course_list;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? (CLASS | CREDIT) course_list? tag? display* label?;
@@ -284,8 +285,8 @@ maxterm         : MAXTERM NUMBER (CLASS | CREDIT) course_list tag?;
 maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS (NUMBER|RANGE) course_list tag? display* label?;
-mincredit       : MINCREDIT (NUMBER|RANGE) course_list tag? display* label?;
+minclass        : MINCLASS NUMBER course_list tag? display* label?;
+mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
 mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
@@ -294,17 +295,19 @@ minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER (CLASS | CREDIT) course_list? tag? display*;
 
 noncourse       : NUMBER NONCOURSE LP expression RP label?;
+nv_pair         : SYMBOL '=' (STRING | SYMBOL);
 optional        : OPTIONAL;
+pseudo          : PSEUDO | PSUEDO;
 remark          : REMARK string SEMICOLON? remark*;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
-ruletag         : RULE_TAG expression;
+rule_tag        : RULE_TAG nv_pair;
 samedisc        : SAME_DISC expression tag?;
 share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression? tag?;
 //share_item      : SYMBOL (logical_op (SYMBOL | NUMBER | string | WILD))?;
 //share_list      : expression;
 standalone      : STANDALONE;
 string          : STRING;
-symbol          : SYMBOL | (QUOTE SYMBOL QUOTE);
+symbol          : SYMBOL; // | (QUOTE SYMBOL QUOTE);
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
 under           : UNDER NUMBER (CLASS | CREDIT) full_course or_list? display* label;
 with_clause     : LP WITH expression RP;
@@ -362,7 +365,7 @@ PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> 
 // LOGS            : [Ll][Oo][Gg] .*? '\n' -> skip;
 // CRUFT           : [:/'*\\]+ -> skip;
 
-WHITESPACE      : [ \t\n\r]+ -> skip;
+WHITESPACE      : [ \t\n\r']+ -> skip;
 
 //  Keywords
 //  -----------------------------------------------------------------------------------------------
@@ -390,6 +393,7 @@ ENDOT           : [Ee][Nn][Dd]DOT;
 ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb];
 EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt];
 GROUP           : [Gg][Rr][Oo][Uu][Pp][Ss]?;
+HEADER_TAG      : [Hh][Ee][Aa][Dd][Ee][Rr]'-'?[Tt][Aa][Gg];
 INCLUDING       : [Ii][Nn][Cc][Ll][Uu][Dd][Ii][Nn][Gg];
 LABEL           : [Ll][Aa][Bb][Ee][Ll]~'"'*;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss];
@@ -416,6 +420,7 @@ NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]?;
 OPTIONAL        : [Oo][Pp][Tt][Ii][Oo][Nn][Aa][Ll];
 OF              : [Oo][Ff];
 PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo];
+PSUEDO          : [Pp][Ss][Uu][Ee][Dd][Oo]; // Scribe allows it, so we do too
 REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk];
 RULE_COMPLETE   : [Rr][Uu][Ll][Ee]'-'?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
 RULE_INCOMPLETE : [Rr][Uu][Ll][Ee]'-'?[Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
@@ -444,8 +449,8 @@ AND         : [Aa][Nn][Dd];
 OR          : [Oo][Rr];
 
 // Scribe "tokens"
-NUMBER          : DIGIT+ (DOT DIGIT*)?;
-RANGE           : NUMBER ' '* [:\-] ' '* NUMBER;
+//NUMBER          : DIGIT+ (DOT DIGIT*)?;
+NUMBER          : DIGIT+ (DOT DIGIT*)? ' '* ([:\-] ' '* DIGIT+ (DOT DIGIT*)?)?;
 CATALOG_NUMBER  : DIGIT+ LETTER+;
 WILD            : (SYMBOL)* AT (SYMBOL)*;
 SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND | '/')+;
@@ -473,7 +478,7 @@ L_SQB         : '[';
 NE            : '<>';
 PERCENT       : '%';
 PLUS          : '+';
-QUOTE         : '\'';
+// QUOTE         : '\'' ;
 QUESTION_MARK : '?';
 RP            : ')';
 R_SQB         : ']';

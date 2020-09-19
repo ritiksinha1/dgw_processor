@@ -16,6 +16,9 @@ def dgw_filter(src, remove_hide=True, remove_comments=False):
   # Remove all text following END.
   return_str = re.sub(r'[Ee][Nn][Dd]\.(.|\n)*', 'END.\n', src)
 
+  # Assume any apostrophes were originally primes that were replaced for db storage: undo them
+  return_str = return_str.replace('’', '\'')
+
   # Remove comments
   if remove_comments:
     return_str = re.sub(f'#.*\n', '', return_str)
