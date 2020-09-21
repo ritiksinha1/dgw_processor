@@ -76,24 +76,49 @@ from dgw_utils import class_name,\
 # =================================================================================================
 def class_credit_head(ctx):
   """
-class_credit_head   : NUMBER class_or_credit (logical_op NUMBER class_or_credit)?
-                      (allow_clause | pseudo | header_tag | tag)*
+class_credit_head   : (num_classes | num_credits)
+                      (logical_op (num_classes | num_credits))?
+                      (IS? pseudo | header_tag | tag)*
                       display* label?;
-  """
+num_classes         : NUMBER CLASS allow_clause?;
+num_credits         : NUMBER CREDIT allow_clause?;
 
-  all_numbers = ctx.NUMBER()
-  if all_numbers:
-    num_str = all_numbers.pop().getText().strip()
-    if ':' in num_str:
-      range_min, range_max = num_str.split(':')
+"""
+
+  if ctx.num_classes():
+    assert len(ctx.num_classes()) == 1
+    number = ctx.num_classes()[0].NUMBER().getText().strip()
+    if ':' in number:
+      min_classes, max_classes = number.replace(' ', '').split(':')
     else:
-      range_min = range_max = num_str
+      min_classes = max_classes = number
+    if ctx.num_classes()[0].allow_clause():
+      allow_classes = ctx.num_classes()[0].allow_clause().NUMBER().getText().strip()
+    else:
+      allow_classes = None
   else:
-    range_min = range_max = 'Missing'
+    min_classes = max_classes = allow_classes = None
 
-  all_class_or_credit = ctx.class_or_credit()
+  if ctx.num_credits():
+    assert len(ctx.num_credits()) == 1
+    number = ctx.num_credits()[0].NUMBER().getText().strip()
+    if ':' in number:
+      min_credits, max_credits = number.replace(' ', '').split(':')
+    else:
+      min_credits = max_credits = number
+    if ctx.num_credits()[0].allow_clause():
+      allow_credits = ctx.num_credits()[0].allow_clause().NUMBER().getText().strip()
+    else:
+     allow_credits = None
+  else:
+    min_credits = max_credits = allow_credits = None
 
-  class_credit = class_or_credit(all_class_or_credit.pop())
+  if ctx.logical_op():
+    conjunction = ctx.logical_op().getText()
+  else:
+    conjunction = None
+  assert conjunction is None and (not min_classes or not min_credits) or\
+         conjunction is not None and not(min_classes and min_credits), 'Bad class_credit_head'
 
   is_pseudo = True if ctx.pseudo() else False
 
@@ -108,9 +133,13 @@ class_credit_head   : NUMBER class_or_credit (logical_op NUMBER class_or_credit)
     label_text = None
 
   return {'tag': 'class_credit_head',
-          'range_min': range_min,
-          'range_max': range_max,
-          'class_credit': class_credit,
+          'min_classes': min_classes,
+          'max_classes': max_classes,
+          'allow_classes': allow_classes,
+          'min_credits': min_credits,
+          'max_credits': max_credits,
+          'allow_credits': allow_credits,
+          'conjunction': conjunction,
           'is_pseudo': is_pseudo,
           'display': display_text,
           'label': label_text}

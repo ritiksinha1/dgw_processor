@@ -164,6 +164,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#allow.
+    def visitAllow(self, ctx:ReqBlockParser.AllowContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#class_or_credit.
     def visitClass_or_credit(self, ctx:ReqBlockParser.Class_or_creditContext):
         return self.visitChildren(ctx)
@@ -286,6 +291,16 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#noncourse.
     def visitNoncourse(self, ctx:ReqBlockParser.NoncourseContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#num_classes.
+    def visitNum_classes(self, ctx:ReqBlockParser.Num_classesContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#num_credits.
+    def visitNum_credits(self, ctx:ReqBlockParser.Num_creditsContext):
         return self.visitChildren(ctx)
 
 

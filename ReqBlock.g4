@@ -252,16 +252,14 @@ blocktype       : NUMBER BLOCKTYPE expression label;
  */
 allow_clause        : LP allow NUMBER RP;
 
-class_credit_head   : NUMBER class_or_credit (logical_op NUMBER class_or_credit)?
-                      (allow_clause | pseudo | header_tag | tag)*
-//                      (logical_op NUMBER class_or_credit ruletag? allow_clause?)?
-//                       (course_list_head | expression | pseudo | share | tag)*
+class_credit_head   : (num_classes | num_credits)
+                      (logical_op (num_classes | num_credits) allow_clause?)?
+                      (IS? pseudo | header_tag | tag)*
                       display* label?;
 
-class_credit_body   : NUMBER class_or_credit (logical_op NUMBER class_or_credit)?
-                      (course_list_body | allow_clause | IS? pseudo | share | rule_tag | tag)*
-//                      (logical_op NUMBER class_or_credit rule_tag? allow_clause?)?
-//                      (course_list_body | expression | pseudo | share | tag)*
+class_credit_body   : (num_classes | num_credits)
+                      (logical_op (num_classes | num_credits) allow_clause?)?
+                      (course_list_body | IS? pseudo | share | rule_tag | tag)*
                       display* label?;
 
 allow           : (ALLOW | ACCEPT);
@@ -297,6 +295,8 @@ minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 
 noncourse       : NUMBER NONCOURSE LP expression RP label?;
+num_classes     : NUMBER CLASS allow_clause?;
+num_credits     : NUMBER CREDIT allow_clause?;
 nv_pair         : SYMBOL '=' (STRING | SYMBOL);
 optional        : OPTIONAL;
 pseudo          : PSEUDO | PSUEDO;
