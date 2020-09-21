@@ -123,7 +123,10 @@ num_credits         : NUMBER CREDIT allow_clause?;
   is_pseudo = True if ctx.pseudo() else False
 
   if ctx.display():
-    display_text = ' '.join(ctx.display())
+    display_text = ''
+    for item in ctx.display():
+      display_text += item.string().getText().strip(' "') + ' '
+    display_text = display_text.strip()
   else:
     display_text = None
 
