@@ -181,6 +181,11 @@ def minres(ctx):
   return return_dict
 
 
+def noncourse(ctx):
+  print(class_name(ctx), 'not implemented yet')
+  return {}
+
+
 def optional(ctx):
   print(class_name(ctx), 'not implemented yet')
   return {}
@@ -296,7 +301,7 @@ dispatch_body = {
     'copy_rules': copy_rules,
     'group': group,
     'if_then': if_then_body,
-    'noncourse: ': noncourse,
+    'noncourse': noncourse,
     'remark': remark,
     'rule_complete': rule_complete,
     'subset': subset_body
