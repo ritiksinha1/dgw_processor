@@ -253,17 +253,17 @@ blocktype       : NUMBER BLOCKTYPE expression label;
 allow_clause        : LP allow NUMBER RP;
 
 class_credit_head   : (num_classes | num_credits)
-                      (logical_op (num_classes | num_credits) allow_clause?)?
+                      (logical_op (num_classes | num_credits))?
                       (IS? pseudo | header_tag | tag)*
                       display* label?;
 
 class_credit_body   : (num_classes | num_credits)
-                      (logical_op (num_classes | num_credits) allow_clause?)?
+                      (logical_op (num_classes | num_credits))?
                       (course_list_body | IS? pseudo | share | rule_tag | tag)*
                       display* label?;
 
 allow           : (ALLOW | ACCEPT);
-class_or_credit : (CLASS | CREDIT);
+//class_or_credit : (CLASS | CREDIT);
 copy_rules      : COPY_RULES expression SEMICOLON?;
 // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
@@ -290,7 +290,7 @@ mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
 mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
-minres          : MINRES NUMBER class_or_credit display* label? tag?;
+minres          : MINRES (num_classes | num_credits) display* label? tag?;
 minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 

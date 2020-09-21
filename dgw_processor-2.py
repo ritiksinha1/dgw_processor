@@ -518,7 +518,7 @@ if __name__ == '__main__':
           # print(f'Skipping {institution} {block_type} {block_value}')
           continue
         print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
-              f'{values_count} / {num_values}', end='')
+              f'{values_count} / {num_values}: ', end='')
         num_updates, num_blocks = dgw_parser(institution,
                                              block_type.upper(),
                                              block_value,

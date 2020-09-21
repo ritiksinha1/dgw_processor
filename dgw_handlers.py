@@ -69,83 +69,40 @@ $ ack -v '/' debug | awk '{ print $3, $4 }'|sort|uniq
 """
 
 from dgw_utils import class_name,\
-    class_or_credit
+    num_classes_or_num_credits
 
 
 # Handlers
 # =================================================================================================
+#
+# class_credit_head()
+# -------------------------------------------------------------------------------------------------
 def class_credit_head(ctx):
   """
-class_credit_head   : (num_classes | num_credits)
-                      (logical_op (num_classes | num_credits))?
-                      (IS? pseudo | header_tag | tag)*
-                      display* label?;
-num_classes         : NUMBER CLASS allow_clause?;
-num_credits         : NUMBER CREDIT allow_clause?;
-
+      class_credit_head   : (num_classes | num_credits)
+                            (logical_op (num_classes | num_credits))?
+                            (IS? pseudo | header_tag | tag)*
+                            display* label?;
+      num_classes         : NUMBER CLASS allow_clause?;
+      num_credits         : NUMBER CREDIT allow_clause?;
 """
+  return_dict = num_classes_or_num_credits(ctx)
+  return_dict['tag'] = 'class_credit_head'
 
-  if ctx.num_classes():
-    assert len(ctx.num_classes()) == 1
-    number = ctx.num_classes()[0].NUMBER().getText().strip()
-    if ':' in number:
-      min_classes, max_classes = number.replace(' ', '').split(':')
-    else:
-      min_classes = max_classes = number
-    if ctx.num_classes()[0].allow_clause():
-      allow_classes = ctx.num_classes()[0].allow_clause().NUMBER().getText().strip()
-    else:
-      allow_classes = None
-  else:
-    min_classes = max_classes = allow_classes = None
+  return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
-  if ctx.num_credits():
-    assert len(ctx.num_credits()) == 1
-    number = ctx.num_credits()[0].NUMBER().getText().strip()
-    if ':' in number:
-      min_credits, max_credits = number.replace(' ', '').split(':')
-    else:
-      min_credits = max_credits = number
-    if ctx.num_credits()[0].allow_clause():
-      allow_credits = ctx.num_credits()[0].allow_clause().NUMBER().getText().strip()
-    else:
-     allow_credits = None
-  else:
-    min_credits = max_credits = allow_credits = None
-
-  if ctx.logical_op():
-    conjunction = ctx.logical_op().getText()
-  else:
-    conjunction = None
-  assert conjunction is None and (not min_classes or not min_credits) or\
-         conjunction is not None and not(min_classes and min_credits), 'Bad class_credit_head'
-
-  is_pseudo = True if ctx.pseudo() else False
-
+  return_dict['display_text'] = None
   if ctx.display():
     display_text = ''
     for item in ctx.display():
       display_text += item.string().getText().strip(' "') + ' '
-    display_text = display_text.strip()
-  else:
-    display_text = None
+    return_dict['display_text'] = display_text.strip()
 
+  return_dict['label_text'] = None
   if ctx.label():
-    label_text = ctx.label()
-  else:
-    label_text = None
+    return_dict['label_text'] = ctx.label().string().getText().strip(' "')
 
-  return {'tag': 'class_credit_head',
-          'min_classes': min_classes,
-          'max_classes': max_classes,
-          'allow_classes': allow_classes,
-          'min_credits': min_credits,
-          'max_credits': max_credits,
-          'allow_credits': allow_credits,
-          'conjunction': conjunction,
-          'is_pseudo': is_pseudo,
-          'display': display_text,
-          'label': label_text}
+  return return_dict
 
 
 def if_then_head(ctx):
@@ -213,9 +170,15 @@ def minperdisc(ctx):
   return {}
 
 
+# minres()
+# -------------------------------------------------------------------------------------------------
 def minres(ctx):
+  """ minres          : MINRES (num_classes | num_credits) display* label? tag?;
+  """
   print(class_name(ctx), 'not implemented yet')
-  return {}
+  return_dict = num_classes_or_num_credits(ctx)
+  return_dict['tag'] = 'minres'
+  return return_dict
 
 
 def optional(ctx):

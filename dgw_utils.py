@@ -121,6 +121,66 @@ def get_range(ctx):
   return low, high
 
 
+# num_classes_or_num_credits(ctx)
+# -------------------------------------------------------------------------------------------------
+def num_classes_or_num_credits(ctx) -> dict:
+  """ A context can have one num_classes, one num_credits, or both. When both are allowed, they will
+      be lists of len 1, but if only one is allowed, it will be a scalar. Depends on the context.
+      num_classes     : NUMBER CLASS allow_clause?;
+      num_credits     : NUMBER CREDIT allow_clause?;
+  """
+  if ctx.num_classes():
+    if isinstance(ctx.num_classes(), list):
+      class_ctx = ctx.num_classes()[0]
+    else:
+      class_ctx = ctx.num_classes()
+    number = class_ctx.NUMBER().getText().strip()
+    if ':' in number:
+      min_classes, max_classes = number.replace(' ', '').split(':')
+    else:
+      min_classes = max_classes = number
+    if class_ctx.allow_clause():
+      allow_classes = class_ctx.allow_clause().NUMBER().getText().strip()
+    else:
+      allow_classes = None
+  else:
+    min_classes = max_classes = allow_classes = None
+
+  if ctx.num_credits():
+    if isinstance(ctx.num_credits(), list):
+      credit_ctx = ctx.num_credits()[0]
+    else:
+      credit_ctx = ctx.num_credits()
+    number = credit_ctx.NUMBER().getText().strip()
+    if ':' in number:
+      min_credits, max_credits = number.replace(' ', '').split(':')
+    else:
+      min_credits = max_credits = number
+    if credit_ctx.allow_clause():
+      allow_credits = credit_ctx.allow_clause().NUMBER().getText().strip()
+    else:
+     allow_credits = None
+  else:
+    min_credits = max_credits = allow_credits = None
+
+  if getattr(ctx, 'logical_op', None) and ctx.logical_op():
+    conjunction = ctx.logical_op().getText()
+  else:
+    conjunction = None
+
+  assert conjunction is None and (not min_classes or not min_credits) or\
+         conjunction is not None and not(min_classes and min_credits), 'Bad num_classes|num_credits'
+
+  return {'tag': 'num_classes_or_num_credits',
+          'min_classes': min_classes,
+          'max_classes': max_classes,
+          'allow_classes': allow_classes,
+          'min_credits': min_credits,
+          'max_credits': max_credits,
+          'allow_credits': allow_credits,
+          'conjunction': conjunction}
+
+
 # class_or_credit()
 # -------------------------------------------------------------------------------------------------
 def class_or_credit(ctx) -> str:
