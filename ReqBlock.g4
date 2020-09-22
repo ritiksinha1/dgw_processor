@@ -263,7 +263,7 @@ class_credit_body   : (num_classes | num_credits)
                       display* label?;
 
 allow           : (ALLOW | ACCEPT);
-//class_or_credit : (CLASS | CREDIT);
+class_or_credit : (CLASS | CREDIT);
 copy_rules      : COPY_RULES expression SEMICOLON?;
 // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.

@@ -111,8 +111,41 @@ def if_then_head(ctx):
 
 
 def lastres(ctx):
-  print(class_name(ctx), 'not implemented yet')
-  return {}
+  """
+      lastres         : LASTRES NUMBER (OF NUMBER)?
+                        class_or_credit
+                        course_list? tag? display* label?;
+  """
+  return_dict = {'tag': 'lastres'}
+  if ctx.class_or_credit():
+    if 'class' in ctx.class_or_credit().getText().lower():
+      return_dict['class_or_credit'] = 'class'
+    else:
+      return_dict['class_or_credit'] = 'credit'
+
+  numbers = ctx.NUMBER()
+  return_dict['number'] = numbers.pop().strip()
+  if len(numbers) > 0:
+    return_dict['of'] = numbers.pop().strip()
+  else:
+    return_dict['of'] = None
+
+  assert len(numbers) == 0
+
+  return_dict['course_list'] = 'Not implemented yet'
+
+  return_dict['display_text'] = None
+  if ctx.display():
+    display_text = ''
+    for item in ctx.display():
+      display_text += item.string().getText().strip(' "') + ' '
+    return_dict['display_text'] = display_text.strip()
+
+  return_dict['label_text'] = None
+  if ctx.label():
+    return_dict['label_text'] = ctx.label().string().getText().strip(' "')
+
+  return return_dict
 
 
 def maxclass(ctx):
