@@ -171,7 +171,7 @@ def num_classes_or_num_credits(ctx) -> dict:
   assert conjunction is None and (not min_classes or not min_credits) or\
          conjunction is not None and not(min_classes and min_credits), 'Bad num_classes|num_credits'
 
-  return {'tag': 'num_classes_or_num_credits',
+  return {'tag': 'num_classes_credits',
           'min_classes': min_classes,
           'max_classes': max_classes,
           'allow_classes': allow_classes,
@@ -429,7 +429,7 @@ def build_string(ctx) -> str:
 
 # build_course_list()
 # -------------------------------------------------------------------------------------------------
-def build_course_list(institution, ctx) -> list:
+def build_course_list(ctx, institution) -> dict:
   """
    course_list               : L_SQB?
                                  course_item R_SQB? (and_list | or_list)?
@@ -478,7 +478,7 @@ def build_course_list(institution, ctx) -> list:
                          | IS;
 
 # -------------------------------------------------------------------------------------------------
-      The returned object has the following structure:
+      The returned dict has the following structure:
         Scribed and Active course lists.
         scribed_courses     List of all (discipline, catalog_number, with_clause) tuples in the list
                             after distributing disciplines across catalog_numbers. (Show "BIOL 1, 2"
@@ -506,30 +506,30 @@ def build_course_list(institution, ctx) -> list:
   assert ctx.__class__.__name__ == 'Course_listContext', (f'{ctx.__class__.__name__} '
                                                           f'is not Course_listContext')
 
-  # The object to be returned:
-  return_object = {'object_type': 'course_list',
-                   'scribed_courses': [],
-                   'list_type': '',
-                   'list_qualifiers': [],
-                   'label': None,
-                   'active_courses': [],
-                   'inactive_courses': [],
-                   'except_courses': [],
-                   'including_courses': [],
-                   'missing_courses': [],
-                   'attributes': []}
-  # Shortcuts to the lists in return_object
-  scribed_courses = return_object['scribed_courses']
-  list_qualifiers = return_object['list_qualifiers']
-  active_courses = return_object['active_courses']
-  inactive_courses = return_object['inactive_courses']
-  except_courses = return_object['except_courses']
-  including_courses = return_object['including_courses']
-  missing_courses = return_object['missing_courses']
-  attributes = return_object['attributes']
+  # The dict to be returned:
+  return_dict = {'tag': 'course_list',
+                 'scribed_courses': [],
+                 'list_type': '',
+                 'list_qualifiers': [],
+                 'label': None,
+                 'active_courses': [],
+                 'inactive_courses': [],
+                 'except_courses': [],
+                 'including_courses': [],
+                 'missing_courses': [],
+                 'attributes': []}
+  # Shortcuts to the lists in return_dict
+  scribed_courses = return_dict['scribed_courses']
+  list_qualifiers = return_dict['list_qualifiers']
+  active_courses = return_dict['active_courses']
+  inactive_courses = return_dict['inactive_courses']
+  except_courses = return_dict['except_courses']
+  including_courses = return_dict['including_courses']
+  missing_courses = return_dict['missing_courses']
+  attributes = return_dict['attributes']
 
   # The Scribe context in which the list appeared
-  return_object['context_path'] = context_path(ctx)
+  return_dict['context_path'] = context_path(ctx)
 
   # Pick up the label, if there is one
   # It belongs to the parent (course_list_body, etc.)
@@ -537,7 +537,7 @@ def build_course_list(institution, ctx) -> list:
   try:
     for child in parent_ctx.children:
       if child.__class__.__name__ == 'LabelContext':
-        return_object['label'] = child.string().getText().strip('"').replace('\'', '’')
+        return_dict['label'] = child.string().getText().strip('"').replace('\'', '’')
   except AttributeError as ae:
     if DEBUG:
       print('No Label', file=sys.stderr)
@@ -545,13 +545,13 @@ def build_course_list(institution, ctx) -> list:
 
   # Drill into ctx to determine which type of list
   if ctx.and_list():
-    return_object['list_type'] = 'AND'
+    return_dict['list_type'] = 'AND'
     list_fun = ctx.and_list
   elif ctx.or_list():
-    return_object['list_type'] = 'OR'
+    return_dict['list_type'] = 'OR'
     list_fun = ctx.or_list
   else:
-    return_object['list_type'] = 'None'
+    return_dict['list_type'] = 'None'
     list_fun = None
 
   scribed_courses += get_scribed_courses(ctx)
@@ -662,11 +662,11 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
   if check_missing:
     found_courses = [(course[2], course[3]) for course in active_courses]
     found_courses += [(course[2], course[3]) for course in inactive_courses]
-    for scribed_course in return_object['scribed_courses']:
+    for scribed_course in return_dict['scribed_courses']:
       if (scribed_course[0], scribed_course[1]) not in found_courses:
         missing_courses.append(scribed_course)
 
-  return return_object
+  return return_dict
 
 
 # course_list2html()

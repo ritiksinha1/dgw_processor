@@ -437,28 +437,29 @@ def dgw_parser(institution, block_type, block_value, period='all'):
     # parser.addErrorListener(dgw_logger)
     tree = parser.req_block()
 
+    head_list = []
     head_ctx = tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
-        obj = dispatch(child, 'head')
+        obj = dispatch(child, institution, 'head')
         if obj != {}:
-          print(f'{institution} {row.requirement_id} Head:  {class_name(child)}', file=sys.stderr)
-          print(obj, file=sys.stderr)
+          # print(f'{institution} {row.requirement_id} Head:  {class_name(child)}', file=sys.stderr)
+          head_list.append(obj)
+
+    body_list = []
     body_ctx = tree.body()
     if body_ctx:
       for child in body_ctx.getChildren():
-        obj = dispatch(child, 'body')
+        obj = dispatch(child, institution, 'body')
         if obj != {}:
-          print(f'{institution} {row.requirement_id} Body:  {class_name(child)}', file=sys.stderr)
-          print(obj, file=sys.stderr)
+          # print(f'{institution} {row.requirement_id} Body:  {class_name(child)}', file=sys.stderr)
+          body_list.append(obj)
 
     if period == 'current' or period == 'latest':
       break
   conn.commit()
   conn.close()
-  if DEBUG:
-    print()
-  return (num_updates, num_rows)
+  return (head_list, body_list)
 
 
 # __main__
@@ -518,11 +519,14 @@ if __name__ == '__main__':
           # print(f'Skipping {institution} {block_type} {block_value}')
           continue
         print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
-              f'{values_count} / {num_values}: ', end='')
-        num_updates, num_blocks = dgw_parser(institution,
-                                             block_type.upper(),
-                                             block_value,
-                                             period='latest')
-        suffix = '' if num_updates == 1 else 's'
-        # print(f'{operation} {num_updates} block{suffix} for {institution} {block_type} '
-        #       f'{block_value}')
+              f'{values_count} / {num_values}: ')
+        head_list, body_list = dgw_parser(institution,
+                                          block_type.upper(),
+                                          block_value,
+                                          period='latest')
+        print('HEAD')
+        for obj in head_list:
+          print(obj['tag'])
+        print('BODY')
+        for obj in body_list:
+          print(obj['tag'])
