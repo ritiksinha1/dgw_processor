@@ -5,6 +5,7 @@
 import sys
 from dgw_utils import class_name,\
     build_course_list,\
+    class_or_credit,\
     num_classes_or_num_credits
 
 
@@ -22,16 +23,17 @@ def block(ctx, institution):
       an equal sign.
   """
   return_dict = {'tag': 'block', 'number': ctx.NUMBER().getText()}
-  # FIXME
-  symbols = ctx.expression().expression().SYMBOL()
+
+  for context in ctx.expression().getChildren():
+    if class_name(context) == 'Expression':
+      symbols = context.getText().split('=')
   assert isinstance(symbols, list) and len(symbols) == 2, (f'Invalid block expression: '
                                                            f'{ctx.expression().getText()}')
-  return_dict['block_type'] = symbols[0].getText().upper().strip()
-  return_dict['block_value'] = symbols[1].getText().upper().strip()
+  return_dict['block_type'] = symbols[0].upper().strip()
+  return_dict['block_value'] = symbols[1].upper().strip()
 
   if ctx.label():
     return_dict['label'] = ctx.label().string().getText().strip(' "')
-  sys.exit(return_dict)
   return return_dict
 
 
@@ -44,7 +46,11 @@ def blocktype(ctx, institution):
       The expression is a block type, enclosed in parentheses
   """
   return_dict = {'tag': 'blocktype', 'number': ctx.NUMBER().getText()}
-  return_dict['block_type'] = ctx.expression().SYMBOL().getText().upper()
+  for context in ctx.expression().getChildren():
+    if class_name(context) == 'Expression':
+      return_dict['block_type'] = context.getText().strip().upper()
+
+  assert 'block_type' in return_dict.keys(), f'Invalid blocktype {ctx.expression().getText()}'
 
   if ctx.label():
     return_dict['label'] = ctx.label().string().getText().strip(' "')
@@ -61,7 +67,11 @@ def copy_rules(ctx, institution):
       The expression is a rule_id enclosed in parentheses.
   """
   return_dict = {'tag': 'copyrules', 'institution': institution}
-  return_dict['rule_id'] = ctx.expression().SYMBOL().getText().upper()
+  for context in ctx.expression().getChildren():
+    if class_name(context) == 'Expression':
+      return_dict['rule_id'] = context.getText().strip().upper()
+
+  assert 'rule_id' in return_dict.keys(), f'Invalid copyrules {ctx.expression().getText()}'
 
   return return_dict
 
@@ -121,7 +131,6 @@ def class_credit_head(ctx, institution):
       display_text += item.string().getText().strip(' "') + ' '
     return_dict['display'] = display_text.strip()
 
-  return_dict['label'] = None
   if ctx.label():
     return_dict['label'] = ctx.label().string().getText().strip(' "')
 
@@ -154,37 +163,29 @@ def if_then_head(ctx, institution):
 # lastres()
 # -------------------------------------------------------------------------------------------------
 def lastres(ctx, institution):
-  """ TODO lastres() not tested yet & course_list not implemented yet
+  """
       lastres         : LASTRES NUMBER (OF NUMBER)?
                         class_or_credit
                         course_list? tag? display* label?;
   """
-  return_dict = {'tag': 'lastres'}
-  if ctx.class_or_credit():
-    if 'class' in ctx.class_or_credit().getText().lower():
-      return_dict['class_or_credit'] = 'class'
-    else:
-      return_dict['class_or_credit'] = 'credit'
+  return_dict = {'tag': 'lastres', 'class_or_credit': class_or_credit(ctx.class_or_credit())}
 
   numbers = ctx.NUMBER()
-  return_dict['number'] = numbers.pop().strip()
+  return_dict['number'] = numbers.pop().getText().strip()
   if len(numbers) > 0:
-    return_dict['of'] = numbers.pop().strip()
-  else:
-    return_dict['of'] = None
+    return_dict['of'] = numbers.pop().getText().strip()
 
   assert len(numbers) == 0
 
-  return_dict['course_list'] = 'Not implemented yet'
+  if ctx.course_list():
+    return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
 
-  return_dict['display'] = None
   if ctx.display():
     display_text = ''
     for item in ctx.display():
       display_text += item.string().getText().strip(' "') + ' '
     return_dict['display'] = display_text.strip()
 
-  return_dict['label'] = None
   if ctx.label():
     return_dict['label'] = ctx.label().string().getText().strip(' "')
 
@@ -199,7 +200,7 @@ def maxclass(ctx, institution):
   """
   return_dict = {'tag': 'maxclass',
                  'number': ctx.NUMBER().getText().strip()}
-  return_dict['course_list'] = build_course_list(ctx.course_list(), institution)
+  return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
   return return_dict
 
 
@@ -211,7 +212,7 @@ def maxcredit(ctx, institution):
   """
   return_dict = {'tag': 'maxcredit',
                  'number': ctx.NUMBER().getText().strip()}
-  return_dict['course_list'] = build_course_list(ctx.course_list(), institution)
+  return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
   return return_dict
 
 
@@ -233,22 +234,41 @@ def maxperdisc(ctx, institution):
   """
       maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return_dict = {'tag': 'maxperdisc',
+                 'number': ctx.NUMBER().getText(),
+                 'class_or_credit': 'class_or_credit(ctx.class_or_credit()'}
+  return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
+  return return_dict
 
 
 # maxterm()
 # -------------------------------------------------------------------------------------------------
 def maxterm(ctx, institution):
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  """
+      maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
+  """
+  return_dict = {'tag': 'maxterm',
+                 'number': ctx.NUMBER().getText(),
+                 'class_or_credit': 'class_or_credit(ctx.class_or_credit()'}
+  return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
+
+  return return_dict
 
 
 # maxtransfer()
 # -------------------------------------------------------------------------------------------------
 def maxtransfer(ctx, institution):
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  """
+      maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
+  """
+  return_dict = {'tag': 'maxtransfer',
+                 'number': ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  if ctx.SYMBOL():
+    symbol_contexts = ctx.SYMBOL()
+    return_dict['transfer_types'] = [symbol.getText() for symbol in symbol_contexts]
+
+  return return_dict
 
 
 # minclass()
@@ -257,8 +277,18 @@ def minclass(ctx, institution):
   """
       minclass        : MINCLASS NUMBER course_list tag? display* label?;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return_dict = {'tag': 'minclass',
+                 'number': ctx.NUMBER().getText(),
+                 'course_list': build_course_list(ctx.course_list(), institution)}
+
+  if ctx.display():
+    return_dict['display'] = ' '.join([item.string().getText().strip(' "')
+                                      for item in ctx.display()]).strip()
+
+  if ctx.label():
+    return_dict['label'] = ctx.label().string().getText().strip(' "')
+
+  return return_dict
 
 
 # mincredit()
@@ -267,14 +297,9 @@ def mincredit(ctx, institution):
   """
       mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
   """
-  return_dict = {'tag': 'mincredit', 'number': ctx.NUMBER().getText()}
-  if ctx.display():
-    display_text = ''
-    for item in ctx.display():
-      display_text += item.string().getText().strip(' "') + ' '
-    return_dict['display'] = display_text.strip()
-
-  return_dict['course_list'] = build_course_list(ctx.course_list, institution)
+  return_dict = {'tag': 'mincredit',
+                 'number': ctx.NUMBER().getText(),
+                 'course_list': build_course_list(ctx.course_list(), institution).pop('tag')}
 
   if ctx.display():
     display_text = ''
@@ -297,7 +322,7 @@ def mingpa(ctx, institution):
   return_dict = {'tag': 'mingpa', 'number': ctx.NUMBER().getText()}
 
   if ctx.course_list():
-    return_dict['course_list'] = build_course_list(ctx.course_list, institution)
+    return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
 
   if ctx.expression():
     return_dict['expression'] = ctx.expression().getText()
@@ -327,9 +352,14 @@ def mingrade(ctx, institution):
 # -------------------------------------------------------------------------------------------------
 def minperdisc(ctx, institution):
   """
+      minperdisc  : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return_dict = {'tag': 'minperdisc',
+                 'number': ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  return_dict['discipline'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
+
+  return return_dict
 
 
 # minres()
@@ -339,6 +369,16 @@ def minres(ctx, institution):
   """
   return_dict = num_classes_or_num_credits(ctx)
   return_dict['tag'] = 'minres'
+
+  if ctx.display():
+    display_text = ''
+    for item in ctx.display():
+      display_text += item.string().getText().strip(' "') + ' '
+    return_dict['display'] = display_text.strip()
+
+  if ctx.label():
+    return_dict['label'] = ctx.label().string().getText().strip(' "')
+
   return return_dict
 
 
@@ -346,18 +386,22 @@ def minres(ctx, institution):
 # -------------------------------------------------------------------------------------------------
 def noncourse(ctx, institution):
   """
+      noncourse       : NUMBER NONCOURSE LP expression RP label?;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return_dict = {'tag': 'noncourse',
+                 'number': ctx.NUMBER().getText(),
+                 'expression': ctx.expression().getText()}  # Not interpreted (yet)
+
+  return return_dict
 
 
 # optional()
 # -------------------------------------------------------------------------------------------------
 def optional(ctx, institution):
   """
+      If present, the block’s requirements are optional.
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return {'tag': 'optional'}
 
 
 # remark()
@@ -374,9 +418,15 @@ def remark(ctx, institution):
 # -------------------------------------------------------------------------------------------------
 def rule_complete(ctx, institution):
   """
+      rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return_dict = {'tag': 'rule_complete'}
+  return_dict['is_complete'] = True if ctx.RULE_COMPLETE() else False
+
+  if ctx.label():
+    return_dict['label'] = ctx.label().string().getText().strip(' "')
+
+  return return_dict
 
 
 # share()
@@ -405,9 +455,9 @@ def share(ctx, institution):
 # -------------------------------------------------------------------------------------------------
 def standalone(ctx, institution):
   """
+      standalone      : STANDALONE;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return{'tag': 'standalone'}
 
 
 # subset_body()
@@ -432,9 +482,23 @@ def subset_head(ctx, institution):
 # -------------------------------------------------------------------------------------------------
 def under(ctx, institution):
   """
+      under           : UNDER NUMBER class_or_credit course_list display* label;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return{}
+  return_dict = {'tag': 'under',
+                 'number': ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit()),
+                 'course_list': build_course_list(ctx.course_list(), institution).pop('tag')}
+
+  if ctx.display():
+    display_text = ''
+    for item in ctx.display():
+      display_text += item.string().getText().strip(' "') + ' '
+    return_dict['display'] = display_text.strip()
+
+  if ctx.label():
+    return_dict['label'] = ctx.label().string().getText().strip(' "')
+
+  return return_dict
 
 
 # Dispatch Tables

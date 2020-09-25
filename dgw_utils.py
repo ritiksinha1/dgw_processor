@@ -129,6 +129,7 @@ def num_classes_or_num_credits(ctx) -> dict:
       num_classes     : NUMBER CLASS allow_clause?;
       num_credits     : NUMBER CREDIT allow_clause?;
   """
+  print(f'{class_name(ctx)}')
   if ctx.num_classes():
     if isinstance(ctx.num_classes(), list):
       class_ctx = ctx.num_classes()[0]
@@ -168,8 +169,11 @@ def num_classes_or_num_credits(ctx) -> dict:
   else:
     conjunction = None
 
-  assert conjunction is None and (not min_classes or not min_credits) or\
-         conjunction is not None and not(min_classes and min_credits), 'Bad num_classes|num_credits'
+  if conjunction is None:
+    assert bool(min_classes) is not bool(min_credits), (f'Bad num_classes_or_num_credits: '
+                                                        f'{ctx.getText()}')
+  else:
+    assert min_classes and min_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
 
   return {'tag': 'num_classes_credits',
           'min_classes': min_classes,

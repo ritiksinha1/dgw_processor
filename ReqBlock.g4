@@ -311,7 +311,7 @@ standalone      : STANDALONE;
 string          : STRING;
 symbol          : SYMBOL; // | (QUOTE SYMBOL QUOTE);
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
-under           : UNDER NUMBER class_or_credit full_course or_list? display* label;
+under           : UNDER NUMBER class_or_credit course_list display* label?;
 with_clause     : LP WITH expression RP;
 
 expression      : expression relational_op expression
