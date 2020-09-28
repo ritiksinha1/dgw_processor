@@ -129,7 +129,8 @@ def num_classes_or_num_credits(ctx) -> dict:
       num_classes     : NUMBER CLASS allow_clause?;
       num_credits     : NUMBER CREDIT allow_clause?;
   """
-  print(f'{class_name(ctx)}')
+  if DEBUG:
+    print(f'{class_name(ctx)}')
   if ctx.num_classes():
     if isinstance(ctx.num_classes(), list):
       class_ctx = ctx.num_classes()[0]
