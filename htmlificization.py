@@ -19,39 +19,54 @@
 
 """
 
+import sys
+
 
 # details()
 # -------------------------------------------------------------------------------------------------
-def details(struct: dict) -> str:
+def details(info: dict) -> str:
   """
   """
   try:
-    tag = struct.pop('tag')
+    tag_val = info.pop('tag')
   except KeyError as ke:
-    tag = 'unnamed'
-  return_str = f'<details><summary>{tag}</summary>'
-  return_str += '\n'.join([to_html(struct[element]) for elemeent in struct])
+    for key, value in info.items():
+      print(key, value, file=sys.stderr)
+    tag_val = 'unnamed'
+  return_str = f'<details><summary>{tag_val}</summary>'
+  return_str += '\n'.join([to_html(info[element]) for element in info])
   return return_str + '</details>'
 
 
 # unordered_list()
 # -------------------------------------------------------------------------------------------------
-def unordered_list(struct: list) -> str:
+def unordered_list(info: list) -> str:
   """
   """
-  return_str = '<ul>'
-  return_str = '\n'.join([f'<li>{to_html(struct[element])}</li>' for element in struct])
-  return return_str + '</ul>'
+  num = len(info)
+  suffix = '' if num == 1 else 's'
+  if num <= 12:
+    num_str = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+               'ten', 'eleven', 'twelve'][num]
+  else:
+    num_str = f'{num:,}'
+  return_str = f'<details><summary>{num_str} item{suffix}</summary>'
+  return_str += '\n'.join([f'{to_html(element)}' for element in info])
+  return return_str + '</details>'
 
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(struct) -> str:
-  """  Return a nested HTML data structure as described above.
+def to_html(info) -> str:
+  """  Return a nested HTML data infoure as described above.
   """
-  if isinstance(struct, list):
-    return unordered_list(struct)
-  if isinstance(struct, dict):
-    return details(struct)
+  if info is None:
+    return 'None'
+  if isinstance(info, bool):
+    return 'True' if info else 'False'
+  if isinstance(info, list):
+    return unordered_list(info)
+  if isinstance(info, dict):
+    return details(info)
 
-  return struct
+  return info

@@ -524,7 +524,25 @@ if __name__ == '__main__':
                                           block_type.upper(),
                                           block_value,
                                           period='latest')
-        print('<h2>HEAD</h2>')
-        print(to_html(head_list))
-        print('<h2>BODY</h2>')
-        print(to_html(body_list))
+        html = """
+<html>
+  <head>
+    <style>
+      details {
+        margin: 0;
+        padding: 0.25em;
+        border: 1px solid green;
+      }
+    </style>
+"""
+        html += f"""
+  </head>
+  <body>
+    <h2>HEAD</h2>
+      {to_html(head_list)}
+    <h2>BODY</h2>
+      {to_html(body_list)}
+  </body>
+</html>
+        """
+        print(html)
