@@ -178,7 +178,7 @@ def lastres(ctx, institution):
   assert len(numbers) == 0
 
   if ctx.course_list():
-    return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
+    return_dict.update(build_course_list(ctx.course_list(), institution))
 
   if ctx.display():
     display_text = ''
@@ -200,7 +200,8 @@ def maxclass(ctx, institution):
   """
   return_dict = {'tag': 'maxclass',
                  'number': ctx.NUMBER().getText().strip()}
-  return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
+  return_dict.update(build_course_list(ctx.course_list(), institution))
+
   return return_dict
 
 
@@ -212,7 +213,8 @@ def maxcredit(ctx, institution):
   """
   return_dict = {'tag': 'maxcredit',
                  'number': ctx.NUMBER().getText().strip()}
-  return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
+  return_dict.update(build_course_list(ctx.course_list(), institution))
+
   return return_dict
 
 
@@ -224,7 +226,7 @@ def maxpassfail(ctx, institution):
   """
   return_dict = {'tag': 'maxpass_fail',
                  'number': ctx.NUMBER().getText(),
-                 'class_or_credit': 'class_or_credit(ctx.class_or_credit()'}
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return return_dict
 
 
@@ -236,8 +238,9 @@ def maxperdisc(ctx, institution):
   """
   return_dict = {'tag': 'maxperdisc',
                  'number': ctx.NUMBER().getText(),
-                 'class_or_credit': 'class_or_credit(ctx.class_or_credit()'}
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
+
   return return_dict
 
 
@@ -249,8 +252,8 @@ def maxterm(ctx, institution):
   """
   return_dict = {'tag': 'maxterm',
                  'number': ctx.NUMBER().getText(),
-                 'class_or_credit': 'class_or_credit(ctx.class_or_credit()'}
-  return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  return_dict.update(build_course_list(ctx.course_list(), institution))
 
   return return_dict
 
@@ -298,8 +301,8 @@ def mincredit(ctx, institution):
       mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
   """
   return_dict = {'tag': 'mincredit',
-                 'number': ctx.NUMBER().getText(),
-                 'course_list': build_course_list(ctx.course_list(), institution).pop('tag')}
+                 'number': ctx.NUMBER().getText()}
+  return_dict.update(build_course_list(ctx.course_list(), institution))
 
   if ctx.display():
     display_text = ''
@@ -322,7 +325,7 @@ def mingpa(ctx, institution):
   return_dict = {'tag': 'mingpa', 'number': ctx.NUMBER().getText()}
 
   if ctx.course_list():
-    return_dict['course_list'] = build_course_list(ctx.course_list(), institution).pop('tag')
+    return_dict.update(build_course_list(ctx.course_list(), institution))
 
   if ctx.expression():
     return_dict['expression'] = ctx.expression().getText()
@@ -486,8 +489,8 @@ def under(ctx, institution):
   """
   return_dict = {'tag': 'under',
                  'number': ctx.NUMBER().getText(),
-                 'class_or_credit': class_or_credit(ctx.class_or_credit()),
-                 'course_list': build_course_list(ctx.course_list(), institution).pop('tag')}
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  return_dict.update(build_course_list(ctx.course_list(), institution))
 
   if ctx.display():
     display_text = ''

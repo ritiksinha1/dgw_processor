@@ -529,7 +529,7 @@ if __name__ == '__main__':
   <head>
     <style>
       details {
-        margin: 0;
+        margin: 0.1em;
         padding: 0.25em;
         border: 1px solid green;
       }

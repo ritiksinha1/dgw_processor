@@ -30,11 +30,46 @@ def details(info: dict) -> str:
   try:
     tag_val = info.pop('tag')
   except KeyError as ke:
-    for key, value in info.items():
-      print(key, value, file=sys.stderr)
     tag_val = 'unnamed'
+
   return_str = f'<details><summary>{tag_val}</summary>'
-  return_str += '\n'.join([to_html(info[element]) for element in info])
+
+  for key, value in info.items():
+    key_name = 'value' if key == 'number' else key
+
+    if value is None:
+      continue  # Omit empty fields
+
+    if isinstance(value, bool):
+      return_str += f'<div>{key}: {value}</div>'
+
+    elif isinstance(value, str):
+      try:
+        # Interpret numeric and range strings
+        if ':' in value and 2 == len(value.split(' :')):
+          # range of values: check if floats or ints
+          range_floor, range_ceil = [float(v) for v in value.split(':')]
+          if range_floor != int(range_floor) or range_ceil != int(range_ceil):
+            return_str += f'<div>{key_name}: between {range_floor:0.1f} and {range_ceil:0.1f}</div>'
+          elif int(range_floor) != int(range_ceil):
+            return_str += f'<div>{key_name}: between {int(range_floor)} and {int(range_ceil)}</div>'
+          else:
+            # both are ints and are the same
+            return_str += f'<div>{key_name}: {int(range_floor)}</div>'
+        else:
+          # single value
+          if int(value) == float(value):
+            return_str += f'<div>{key_name}: {int(value)}</div>'
+          else:
+            return_str += f'<div>{key_name}: {float(value):0.1f}</div>'
+
+      except ValueError as ve:
+        # Not a numeric string
+        return_str += f'<div>{key_name}: {value}</div>'
+
+    else:
+      return_str += to_html(value)
+
   return return_str + '</details>'
 
 
@@ -57,8 +92,8 @@ def unordered_list(info: list) -> str:
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(info) -> str:
-  """  Return a nested HTML data infoure as described above.
+def to_html(info: any) -> str:
+  """  Return a nested HTML data structure as described above.
   """
   if info is None:
     return 'None'
