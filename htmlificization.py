@@ -105,3 +105,24 @@ def to_html(info: any) -> str:
     return details(info)
 
   return info
+
+
+# scribe_block()
+# -------------------------------------------------------------------------------------------------
+def scribe_block_to_html(row: tuple):
+  """
+      Given a result row from the requirement_blocks table, generate html for the scribe block and
+      the lists of head and body objects.
+  """
+  if row.requirement_html == 'Not Available':
+    return '<h1>This scribe block is not available.</h1><p><em>Should not occur.</em></p>'
+  if len(row.head_objects) == 0 and len(row.body_objects) == 0:
+    return row.requirement_html + '<p>This block has not been interpreted yet.</p>'
+  return row.requirement_html + f"""
+<section>
+  <h1>Head</h1>
+  {to_html(row.head_objects)}
+  <h1>Body</h1>
+  {to_html(row.body_objects)}
+</section>
+"""
