@@ -411,9 +411,12 @@ def optional(ctx, institution):
 # -------------------------------------------------------------------------------------------------
 def remark(ctx, institution):
   """
+      remark          : REMARK string SEMICOLON? remark*;
   """
+  remark_str = ctx.string().getText()
+  remark_str += ' '.join([r.string().getText() for r in ctx.remark()])
   return_dict = {'tag': 'remark',
-                 'text': ' '.join([ctx.string().getText().strip(' "') for ctx in ctx.remark()])}
+                 'text': remark_str}
   return return_dict
 
 

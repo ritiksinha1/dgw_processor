@@ -20,6 +20,34 @@
 """
 
 import sys
+from course_lookup import lookup_course
+
+
+# list_of_courses()
+# -------------------------------------------------------------------------------------------------
+def list_of_courses(course_tuples, title_str):
+  """ There are two flavors of course_tuples: scribed courses have just the discipline and catalog
+      number, with an optional with clause, so the length of those tuples is 3. Otherwise, the
+      tuple consists of the course_id, offer_nbr, discipline, catalog_number, and optional with
+      clause.
+  """
+  suffix = '' if len(course_tuples) == 1 else 's'
+  return_str = f'<details><summary>{len(course_tuples)} {title_str}{suffix}</summary>'
+  for course_tuple in course_tuples:
+    if len(course_tuple) == 3:
+      return_str += f'<div>{course_tuple[0]} {course_tuple[1]}'
+      if course_tuple[2] is not None:
+        return_str += course_tuple[2]
+      return_str += '</div>\n'
+    else:
+      return_str += (f'<details><summary>{course_tuple[2]} {course_tuple[3]}: '
+                     f'<em>{course_tuple[4]}</em>')
+      if course_tuple[5] is not None:
+        return_str += course_tuple[5]
+      return_str += '</summary>'
+      return_str += f'{lookup_course(course_tuple[0], offer_nbr=course_tuple[1])[1]}</details>'
+  return_str += '</details>\n'
+  return return_str
 
 
 # details()
@@ -28,47 +56,110 @@ def details(info: dict) -> str:
   """
   """
   try:
-    tag_val = info.pop('tag')
+    tag_name = info.pop('tag')
   except KeyError as ke:
-    tag_val = 'unnamed'
+    tag_name = 'unnamed'
 
-  return_str = f'<details><summary>{tag_val}</summary>'
+  return_str = f'<details><summary>{tag_name}</summary>'
 
-  for key, value in info.items():
-    key_name = 'value' if key == 'number' else key
+  if tag_name == 'course_list':
+    # Hoo-boy, this is fun: we are going to do everything nice here: how many courses in each
+    # of the three lists, and links to catalog descriptions for active courses, usw.
+    try:
 
-    if value is None:
-      continue  # Omit empty fields
+      label = info.pop('label')
+      if label is not None:
+        return_str += f'<h2>{label}</h2>'
 
-    if isinstance(value, bool):
-      return_str += f'<div>{key}: {value}</div>'
+      list_type = info.pop('list_type')
+      if list_type != 'None':
+        return_str += f'<p>This is an {list_type} list.</p>'
 
-    elif isinstance(value, str):
-      try:
-        # Interpret numeric and range strings
-        if ':' in value and 2 == len(value.split(' :')):
-          # range of values: check if floats or ints
-          range_floor, range_ceil = [float(v) for v in value.split(':')]
-          if range_floor != int(range_floor) or range_ceil != int(range_ceil):
-            return_str += f'<div>{key_name}: between {range_floor:0.1f} and {range_ceil:0.1f}</div>'
-          elif int(range_floor) != int(range_ceil):
-            return_str += f'<div>{key_name}: between {int(range_floor)} and {int(range_ceil)}</div>'
+      scribed_courses = info.pop('scribed_courses')
+      assert isinstance(scribed_courses, list)
+      return_str += list_of_courses(scribed_courses, 'Scribed Course')
+
+      attributes_str = ''
+      attributes = info.pop('attributes')
+      if attributes is not None:
+        attributes_str = ','.join(attributes)
+
+      active_courses = info.pop('active_courses')
+      assert isinstance(active_courses, list)
+      if len(active_courses) == 0:
+        return_str += '<div class="error">No Active Courses!</div>'
+      else:
+        return_str += list_of_courses(active_courses, f'Active {attributes_str} Course')
+
+      inactive_courses = info.pop('inactive_courses')
+      assert isinstance(inactive_courses, list)
+      if len(inactive_courses) > 0:
+        return_str += list_of_courses(inactive_courses, 'Inactive Course')
+
+      including_courses = info.pop('including_courses')
+      assert isinstance(including_courses, list)
+      if len(including_courses) > 0:
+        return_str += list_of_courses(inactive_courses, 'Include Course')
+
+      except_courses = info.pop('except_courses')
+      assert isinstance(except_courses, list)
+      if len(except_courses) > 0:
+        return_str += list_of_courses(inactive_courses, 'Except Course')
+
+      missing_courses = info.pop('missing_courses')
+      if len(missing_courses) > 0:
+        return_str += list_of_courses(missing_courses,
+                                      '<span class="error">Not Found in CUNYfirst Course</span>')
+
+      list_qualifiers = info.pop('list_qualifiers')
+      if len(list_qualifiers) > 0:
+        return_str += '<details><summary>Qualifiers</summary>'
+        return_str += '\n'.join([to_html(list_qualifier) for list_qualifier in list_qualifiers])
+        return_str += '</details>'
+
+    except KeyError as ke:
+      print(f'Missing course_list element in', info['context_path'])
+
+    return_str += f'{info.keys()}'
+
+  else:
+    for key, value in info.items():
+      key_name = 'value' if key == 'number' else key
+
+      if value is None:
+        continue  # Omit empty fields
+
+      if isinstance(value, bool):
+        return_str += f'<div>{key}: {value}</div>'
+
+      elif isinstance(value, str):
+        try:
+          # Interpret numeric and range strings
+          if ':' in value and 2 == len(value.split(' :')):
+            # range of values: check if floats or ints
+            range_floor, range_ceil = [float(v) for v in value.split(':')]
+            if range_floor != int(range_floor) or range_ceil != int(range_ceil):
+              return_str += (f'<div>{key_name}: between {range_floor:0.1f} and '
+                             f'{range_ceil:0.1f}</div>')
+            elif int(range_floor) != int(range_ceil):
+              return_str += (f'<div>{key_name}: between {int(range_floor)} and '
+                             f'{int(range_ceil)}</div>')
+            else:
+              # both are ints and are the same
+              return_str += f'<div>{key_name}: {int(range_floor)}</div>'
           else:
-            # both are ints and are the same
-            return_str += f'<div>{key_name}: {int(range_floor)}</div>'
-        else:
-          # single value
-          if int(value) == float(value):
-            return_str += f'<div>{key_name}: {int(value)}</div>'
-          else:
-            return_str += f'<div>{key_name}: {float(value):0.1f}</div>'
+            # single value
+            if int(value) == float(value):
+              return_str += f'<div>{key_name}: {int(value)}</div>'
+            else:
+              return_str += f'<div>{key_name}: {float(value):0.1f}</div>'
 
-      except ValueError as ve:
-        # Not a numeric string
-        return_str += f'<div>{key_name}: {value}</div>'
+        except ValueError as ve:
+          # Not a numeric string
+          return_str += f'<div>{key_name}: {value}</div>'
 
-    else:
-      return_str += to_html(value)
+      else:
+        return_str += to_html(value)
 
   return return_str + '</details>'
 
@@ -81,8 +172,8 @@ def unordered_list(info: list) -> str:
   num = len(info)
   suffix = '' if num == 1 else 's'
   if num <= 12:
-    num_str = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-               'ten', 'eleven', 'twelve'][num]
+    num_str = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+               'Ten', 'Eleven', 'Twelve'][num]
   else:
     num_str = f'{num:,}'
   return_str = f'<details><summary>{num_str} item{suffix}</summary>'
