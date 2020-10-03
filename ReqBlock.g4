@@ -99,8 +99,8 @@ course_list               : L_SQB?
                             R_SQB?
                             (except_list | including_list)? ;
 
-course_list_head           : course_list (course_list_qualifier_head tag?)* label? ;
-course_list_qualifier_head : maxspread
+course_list_head           : course_list (course_list_head_qualifier tag?)* label? ;
+course_list_head_qualifier : maxspread
                            | mingpa
                            | mingrade
                            | minspread
@@ -109,8 +109,8 @@ course_list_qualifier_head : maxspread
                            | share
                            ;
 
-course_list_body           : course_list (course_list_qualifier_body tag?)* label? ;
-course_list_qualifier_body : maxpassfail
+course_list_body           : course_list (course_list_body_qualifier tag?)* label? ;
+course_list_body_qualifier : maxpassfail
                            | maxperdisc
                            | maxspread
                            | maxtransfer
@@ -208,20 +208,20 @@ group_item      : LP
 group_qualifier : maxpassfail
                 | maxperdisc
                 | maxtransfer
+                | minclass
+                | mincredit
                 | mingrade
                 | mingpa
                 | minperdisc
                 | samedisc
-                | share
-                | minclass
-                | mincredit
                 | rule_tag
+                | share
                 ;
 
 //  Rule Subset
 //  -----------------------------------------------------------------------------------------------
 subset            : BEGINSUB
-                  (( if_then
+                  ( if_then
                     | block
                     | blocktype
                     | class_credit_body
@@ -229,16 +229,17 @@ subset            : BEGINSUB
                     | course_list
                     | group
                     | noncourse
-                    | rule_complete) label? )+
+                    | rule_complete
+                  )+
                   ENDSUB subset_qualifier* label?;
 subset_qualifier  : maxpassfail
+                  | maxperdisc
                   | maxspread
+                  | maxtransfer
                   | mingpa
                   | mingrade
-                  | maxtransfer
                   | minperdisc
                   | minspread
-                  | maxperdisc
                   | rule_tag
                   | share;
 
@@ -300,7 +301,7 @@ num_credits     : NUMBER CREDIT allow_clause?;
 nv_pair         : SYMBOL '=' (STRING | SYMBOL);
 optional        : OPTIONAL;
 pseudo          : PSEUDO | PSUEDO;
-remark          : REMARK string SEMICOLON? remark*;
+remark          : (REMARK string SEMICOLON?)+;
 rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
 rule_tag        : RULE_TAG nv_pair;
 samedisc        : SAME_DISC expression tag?;

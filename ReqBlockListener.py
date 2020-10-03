@@ -53,12 +53,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#course_list_qualifier_head.
-    def enterCourse_list_qualifier_head(self, ctx:ReqBlockParser.Course_list_qualifier_headContext):
+    # Enter a parse tree produced by ReqBlockParser#course_list_head_qualifier.
+    def enterCourse_list_head_qualifier(self, ctx:ReqBlockParser.Course_list_head_qualifierContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#course_list_qualifier_head.
-    def exitCourse_list_qualifier_head(self, ctx:ReqBlockParser.Course_list_qualifier_headContext):
+    # Exit a parse tree produced by ReqBlockParser#course_list_head_qualifier.
+    def exitCourse_list_head_qualifier(self, ctx:ReqBlockParser.Course_list_head_qualifierContext):
         pass
 
 
@@ -71,12 +71,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#course_list_qualifier_body.
-    def enterCourse_list_qualifier_body(self, ctx:ReqBlockParser.Course_list_qualifier_bodyContext):
+    # Enter a parse tree produced by ReqBlockParser#course_list_body_qualifier.
+    def enterCourse_list_body_qualifier(self, ctx:ReqBlockParser.Course_list_body_qualifierContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#course_list_qualifier_body.
-    def exitCourse_list_qualifier_body(self, ctx:ReqBlockParser.Course_list_qualifier_bodyContext):
+    # Exit a parse tree produced by ReqBlockParser#course_list_body_qualifier.
+    def exitCourse_list_body_qualifier(self, ctx:ReqBlockParser.Course_list_body_qualifierContext):
         pass
 
 

@@ -130,7 +130,9 @@ def details(info: dict) -> str:
         continue  # Omit empty fields
 
       if isinstance(value, bool):
-        return_str += f'<div>{key}: {value}</div>'
+        # Show booleans only if true
+        if value:
+          return_str += f'<div>{key_name}: {value}</div>'
 
       elif isinstance(value, str):
         try:
@@ -155,8 +157,8 @@ def details(info: dict) -> str:
               return_str += f'<div>{key_name}: {float(value):0.1f}</div>'
 
         except ValueError as ve:
-          # Not a numeric string
-          return_str += f'<div>{key_name}: {value}</div>'
+          # Not a numeric string; just show the text.
+          return_str += f'<div>{value}</div>'
 
       else:
         return_str += to_html(value)

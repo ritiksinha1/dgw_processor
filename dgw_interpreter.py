@@ -150,6 +150,7 @@ if __name__ == '__main__':
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-f', '--format')
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
+  parser.add_argument('-s', '--show_html', action='store_true', default=False)
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
   parser.add_argument('-u', '--update_db', action='store_true', default=False)
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
@@ -201,7 +202,8 @@ if __name__ == '__main__':
                                           block_value,
                                           period='latest', update_db=args.update_db)
 
-        html = """
+        if args.show_html:
+          html = """
 <html>
   <head>
     <style>
@@ -212,7 +214,7 @@ if __name__ == '__main__':
       }
     </style>
 """
-        html += f"""
+          html += f"""
   </head>
   <body>
     <h2>HEAD</h2>
@@ -222,4 +224,4 @@ if __name__ == '__main__':
   </body>
 </html>
         """
-        print(html)
+          print(html)

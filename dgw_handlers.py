@@ -66,7 +66,7 @@ def copy_rules(ctx, institution):
 
       The expression is a rule_id enclosed in parentheses.
   """
-  return_dict = {'tag': 'copyrules', 'institution': institution}
+  return_dict = {'tag': 'copy_rules', 'institution': institution}
   for context in ctx.expression().getChildren():
     if class_name(context) == 'Expression':
       return_dict['rule_id'] = context.getText().strip().upper()
@@ -88,8 +88,8 @@ def class_credit_body(ctx, institution):
       Note: rule_tag is used only for audit presentation, and is ignored here.
   """
   return_dict = {'tag': 'class_credit'}
-  return_dict['num_classes_credits'] = num_classes_or_num_credits(ctx)
-
+  return_dict.update(num_classes_or_num_credits(ctx))
+  return_dict.update(build_course_list(ctx.course_list_body()[0], institution))
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.share():
@@ -224,7 +224,7 @@ def maxpassfail(ctx, institution):
   """
       maxpassfail     : MAXPASSFAIL NUMBER class_or_credit tag?;
   """
-  return_dict = {'tag': 'maxpass_fail',
+  return_dict = {'tag': 'max_pass-fail',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return return_dict
@@ -236,7 +236,7 @@ def maxperdisc(ctx, institution):
   """
       maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
   """
-  return_dict = {'tag': 'maxperdisc',
+  return_dict = {'tag': 'max_per-disc',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
@@ -250,7 +250,7 @@ def maxterm(ctx, institution):
   """
       maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
   """
-  return_dict = {'tag': 'maxterm',
+  return_dict = {'tag': 'max_term',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict.update(build_course_list(ctx.course_list(), institution))
@@ -264,7 +264,7 @@ def maxtransfer(ctx, institution):
   """
       maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
   """
-  return_dict = {'tag': 'maxtransfer',
+  return_dict = {'tag': 'max_transfer',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   if ctx.SYMBOL():
@@ -280,7 +280,7 @@ def minclass(ctx, institution):
   """
       minclass        : MINCLASS NUMBER course_list tag? display* label?;
   """
-  return_dict = {'tag': 'minclass',
+  return_dict = {'tag': 'min_class',
                  'number': ctx.NUMBER().getText(),
                  'course_list': build_course_list(ctx.course_list(), institution)}
 
@@ -300,7 +300,7 @@ def mincredit(ctx, institution):
   """
       mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
   """
-  return_dict = {'tag': 'mincredit',
+  return_dict = {'tag': 'min_credit',
                  'number': ctx.NUMBER().getText()}
   return_dict.update(build_course_list(ctx.course_list(), institution))
 
@@ -322,7 +322,7 @@ def mingpa(ctx, institution):
   """
       mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
   """
-  return_dict = {'tag': 'mingpa', 'number': ctx.NUMBER().getText()}
+  return_dict = {'tag': 'min_gpa', 'number': ctx.NUMBER().getText()}
 
   if ctx.course_list():
     return_dict.update(build_course_list(ctx.course_list(), institution))
@@ -348,7 +348,7 @@ def mingrade(ctx, institution):
   """
       mingrade        : MINGRADE NUMBER;
   """
-  return {'tag': 'mingrade', 'number': ctx.NUMBER().getText()}
+  return {'tag': 'min_grade', 'number': ctx.NUMBER().getText()}
 
 
 # minperdisc()
@@ -357,7 +357,7 @@ def minperdisc(ctx, institution):
   """
       minperdisc  : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
   """
-  return_dict = {'tag': 'minperdisc',
+  return_dict = {'tag': 'min_per-disc',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['discipline'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
@@ -371,7 +371,7 @@ def minres(ctx, institution):
   """ minres          : MINRES (num_classes | num_credits) display* label? tag?;
   """
   return_dict = num_classes_or_num_credits(ctx)
-  return_dict['tag'] = 'minres'
+  return_dict['tag'] = 'min_res'
 
   if ctx.display():
     display_text = ''
@@ -411,10 +411,14 @@ def optional(ctx, institution):
 # -------------------------------------------------------------------------------------------------
 def remark(ctx, institution):
   """
-      remark          : REMARK string SEMICOLON? remark*;
+      remark          : (REMARK string SEMICOLON?)+;
   """
-  remark_str = ctx.string().getText()
-  remark_str += ' '.join([r.string().getText() for r in ctx.remark()])
+  # remark_str = ctx.string().getText().strip(' "')
+  # print(remark_str, file=sys.stderr)
+  # print(ctx.remark()[0].string().getText().strip(' "'), file=sys.stderr)
+  # print(ctx.remark()[0].remark()[0].string().getText().strip(' "'), file=sys.stderr)
+  # print(ctx.remark()[0].remark()[0].remark()[0].string().getText().strip(' "'), file=sys.stderr)
+  remark_str = ' '.join([s.getText().strip(' "') for s in ctx.string()])
   return_dict = {'tag': 'remark',
                  'text': remark_str}
   return return_dict
@@ -444,7 +448,7 @@ def share(ctx, institution):
   return_dict = {'tag': 'share'}
 
   if ctx.SHARE():
-    return_dict['share_type'] = 'share'
+    return_dict['share_type'] = 'allow sharing'
   else:
     return_dict['share_type'] = 'exclusive'
 
