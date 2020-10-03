@@ -97,7 +97,7 @@ body        :
 course_list               : L_SQB?
                               course_item R_SQB? (and_list | or_list)?
                             R_SQB?
-                            (except_list | including_list)? ;
+                            (except_list | including_list)? label?;
 
 course_list_head           : course_list (course_list_head_qualifier tag?)* label? ;
 course_list_head_qualifier : maxspread
