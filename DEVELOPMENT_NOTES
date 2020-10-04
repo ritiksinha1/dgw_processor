@@ -1,3 +1,16 @@
+2020-10-03
+There have been some changes to the grammar to make the handlers of the various top-level statements
+cleaner. Whenever something appears with a + or * (or maybe even ? (?))quantifier, it shows up as a
+list, even if there can really be only one.
+
+What's prompting this note is the way lists of courses appear. There are a number of min/max rules
+that (might) have course lists, but it's also the case that a course list can simply appear as a
+rule, essentially equivalent to being a min-courses rule. "MinClass 2 in ABC 123, 456" can be
+written as "ABC, 456". As previously established, the set of qualifiers for course lists in the head
+is different from the set that can be used in the body. So basically, the handlers have to deal with
+standalone lists; lists that are part of min/max rules; lists that are inclusion or exclusion
+qualifiers of other lists; and qualifier sets that are different in the head and body of a block.
+
 2020-09-07
 
 Course lists and their qualifiers all look like they are being processed okay. Running dgw_driver

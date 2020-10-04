@@ -97,9 +97,8 @@ body        :
 course_list               : L_SQB?
                               course_item R_SQB? (and_list | or_list)?
                             R_SQB?
-                            (except_list | including_list)? label?;
+                            (except_list | include_list)? label?;
 
-course_list_head           : course_list (course_list_head_qualifier tag?)* label? ;
 course_list_head_qualifier : maxspread
                            | mingpa
                            | mingrade
@@ -162,23 +161,7 @@ stmt         : if_then
              | share
              | subset
              ;
-//stmt         : block          {System.out.println("\n*BLOCK*\n"         + $block.text);}
-//             | blocktype      {System.out.println("\n*BLOCKTYPE*\n"     + $blocktype.text);}
-//             | class_credit   {System.out.println("\n*CLASS_CREDIT*\n"  + $class_credit.text);}
-//             | copy_rules     {System.out.println("\n*COPY_RULES*\n"    + $copy_rules.text);}
-//             | group          {System.out.println("\n*GROUP*\n"         + $group.text);}
-//             | maxcredit      {System.out.println("\n*MAXCREDIT*\n"     + $maxcredit.text);}
-//             | maxtransfer    {System.out.println("\n*MAXTRANSFER*\n"   + $maxtransfer.text);}
-//             | minclass       {System.out.println("\n*MINCLASS*\n"      + $minclass.text);}
-//             | mincredit      {System.out.println("\n*MINCREDIT*\n"     + $mincredit.text);}
-//             | minres         {System.out.println("\n*BLOCMINRESK*\n"   + $minres.text);}
-//             | noncourse      {System.out.println("\n*NONCOURSE*\n"     + $noncourse.text);}
-//             | remark         {System.out.println("\n*REMARK*\n"        + $remark.text);}
-//             | rule_complete  {System.out.println("\n*RULE_COMPLETE*\n" + $rule_complete.text);}
-//             | share          {System.out.println("\n*SHARE*\n"         + $share.text);}
-//             | subset         {System.out.println("\n*SUBSET*\n"        + $subset.text);}
-//             | if_then        {System.out.println("\n*IF_THEN*\n"       + $if_then.text);}
-//             ;
+
 begin_if     : BEGINIF | BEGINELSE;
 end_if       : ENDIF | ENDELSE;
 
@@ -210,8 +193,8 @@ group_qualifier : maxpassfail
                 | maxtransfer
                 | minclass
                 | mincredit
-                | mingrade
                 | mingpa
+                | mingrade
                 | minperdisc
                 | samedisc
                 | rule_tag
@@ -271,7 +254,7 @@ copy_rules      : COPY_RULES expression SEMICOLON?;
 display         : DISPLAY string SEMICOLON?;
 except_list     : EXCEPT course_list;
 header_tag      : HEADER_TAG nv_pair;
-including_list  : INCLUDING course_list;
+include_list    : INCLUDING course_list;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* label?;
 
