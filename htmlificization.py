@@ -111,10 +111,11 @@ def details(info: dict) -> str:
         return_str += list_of_courses(missing_courses,
                                       '<span class="error">Not Found in CUNYfirst Course</span>')
 
-      list_qualifiers = info.pop('list_qualifiers')
-      if len(list_qualifiers) > 0:
+      qualifiers = info.pop('qualifiers')
+      print(qualifiers, file=sys.stderr)
+      if len(qualifiers) > 0:
         return_str += '<details><summary>Qualifiers</summary>'
-        return_str += '\n'.join([to_html(list_qualifier) for list_qualifier in list_qualifiers])
+        return_str += '\n'.join([to_html(qualifier) for qualifier in qualifiers])
         return_str += '</details>'
 
     except KeyError as ke:

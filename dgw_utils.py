@@ -121,9 +121,9 @@ def get_range(ctx):
   return low, high
 
 
-# num_classes_or_num_credits(ctx)
+# num_class_or_num_credir(ctx)
 # -------------------------------------------------------------------------------------------------
-def num_classes_or_num_credits(ctx) -> dict:
+def num_class_or_num_credit(ctx) -> dict:
   """ A context can have one num_classes, one num_credits, or both. When both are allowed, they will
       be lists of len 1, but if only one is allowed, it will be a scalar. Depends on the context.
       num_classes     : NUMBER CLASS allow_clause?;
@@ -136,34 +136,26 @@ def num_classes_or_num_credits(ctx) -> dict:
       class_ctx = ctx.num_classes()[0]
     else:
       class_ctx = ctx.num_classes()
-    number = class_ctx.NUMBER().getText().strip()
-    if ':' in number:
-      min_classes, max_classes = number.replace(' ', '').split(':')
-    else:
-      min_classes = max_classes = number
+    num_classes = class_ctx.NUMBER().getText().strip()
     if class_ctx.allow_clause():
       allow_classes = class_ctx.allow_clause().NUMBER().getText().strip()
     else:
       allow_classes = None
   else:
-    min_classes = max_classes = allow_classes = None
+    num_classes = allow_classes = None
 
   if ctx.num_credits():
     if isinstance(ctx.num_credits(), list):
       credit_ctx = ctx.num_credits()[0]
     else:
       credit_ctx = ctx.num_credits()
-    number = credit_ctx.NUMBER().getText().strip()
-    if ':' in number:
-      min_credits, max_credits = number.replace(' ', '').split(':')
-    else:
-      min_credits = max_credits = number
+    num_credits = credit_ctx.NUMBER().getText().strip()
     if credit_ctx.allow_clause():
       allow_credits = credit_ctx.allow_clause().NUMBER().getText().strip()
     else:
      allow_credits = None
   else:
-    min_credits = max_credits = allow_credits = None
+    num_credits = allow_credits = None
 
   if getattr(ctx, 'logical_op', None) and ctx.logical_op():
     conjunction = ctx.logical_op().getText()
@@ -171,17 +163,15 @@ def num_classes_or_num_credits(ctx) -> dict:
     conjunction = None
 
   if conjunction is None:
-    assert bool(min_classes) is not bool(min_credits), (f'Bad num_classes_or_num_credits: '
+    assert bool(num_classes) is not bool(num_credits), (f'Bad num_classes_or_num_credits: '
                                                         f'{ctx.getText()}')
   else:
-    assert min_classes and min_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
+    assert num_classes and num_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
 
-  return {'tag': 'num_classes_credits',
-          'min_classes': min_classes,
-          'max_classes': max_classes,
+  return {'tag': 'num_class_credit',
+          'num_classes': num_classes,
           'allow_classes': allow_classes,
-          'min_credits': min_credits,
-          'max_credits': max_credits,
+          'num_credits': num_credits,
           'allow_credits': allow_credits,
           'conjunction': conjunction}
 
@@ -291,6 +281,115 @@ def get_scribed_courses(ctx):
       scribed_courses.append((discipline, catalog_number, with_clause))
 
   return scribed_courses
+
+
+# get_qualifiers()
+# -------------------------------------------------------------------------------------------------
+def get_qualifiers(ctx):
+  """
+  """
+  valid_qualifiers = ['dont_share', 'maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer',
+                      'minarea', 'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc',
+                      'minspread', 'ruletag', 'samedisc', 'share']
+  qualifier_list = []
+  siblings = ctx.parentCtx.getChildren()
+  for sibling in siblings:
+    for qualifier in valid_qualifiers:
+      if qualifier_fun := getattr(sibling, qualifier, None):
+        if qualifier_fun():
+          class_credit = None
+
+          if getattr(qualifier_fun(), 'CLASS', None) is not None:
+            class_credit = 'class'
+          if getattr(qualifier_fun(), 'CREDIT', None) is not None:
+            class_credit = 'credit'
+
+          # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
+          if qualifier == 'maxpassfail':
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText(),
+                                   'class_credit': class_credit})
+
+          # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
+          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
+          # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
+          elif qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
+            disciplines = qualifier_fun().SYMBOL()
+            if isinstance(disciplines, list):
+              disciplines = [d.getText() for d in disciplines]
+
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText(),
+                                   'class_credit': class_credit,
+                                   'disciplines': disciplines})
+
+          # maxspread       : MAXSPREAD NUMBER
+          # minarea         : MINAREA NUMBER
+          # mingrade        : MINGRADE NUMBER
+          # minspread       : MINSPREAD NUMBER
+          elif qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText()})
+
+          # minclass        : MINCLASS NUMBER course_list tag? display* label?;
+          # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
+          elif qualifier in ['minclass', 'mincredit']:
+            course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText(),
+                                   'courses': course_list_obj})
+
+          # mingpa          : MINGPA NUMBER (course_list | expression)?
+          elif qualifier == 'mingpa':
+            course_list_obj = qualifier_fun().course_list()
+            if course_list_obj:
+              course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+
+            expression_str = qualifier_fun().expression()
+            if expression_str:
+              expression_str = expression.getText()
+
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText(),
+                                   'course_list': course_list_obj,
+                                   'expression': expression_str})
+
+          # ruletag         : RULE_TAG expression;
+          # samedisc        : SAME_DISC expression
+          elif qualifier in ['ruletag', 'samedisc']:
+            qualifier_list.append({'tag': qualifier,
+                                   'expression': qualifier_fun().expression().getText()})
+
+          # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
+          elif qualifier == 'share':
+            print(qualifier_fun().getText())
+            print(dir(qualifier_fun()))
+            if qualifier_fun().DONT_SHARE():
+              qualifier = 'dont_share'
+            if qualifier_fun().CLASS:
+              class_credit = 'class'
+            elif qualifier_fun().CREDIT:
+              class_credit = 'credit'
+            else:
+              class_credit = None
+            if qualifier_fun().NUMBER():
+              number = qualifier_fun().NUMBER().getText()
+            else:
+              number = None
+
+            expression = qualifier_fun().expression()
+            if expression:
+              expression = expression.getText()
+
+            qualifier_list.append({'tag': qualifier,
+                                   'number': number,
+                                   'class_credit': class_credit,
+                                   'expression': expression})
+
+          else:
+            qualifier_list.append({'tag': qualifier})
+
+  return qualifier_list
 
 
 # get_course_list_qualifiers()
@@ -468,7 +567,7 @@ def build_course_list(ctx, institution) -> dict:
   return_dict = {'tag': 'course_list',
                  'scribed_courses': [],
                  'list_type': '',
-                 'list_qualifiers': [],
+                 'qualifiers': [],
                  'label': None,
                  'active_courses': [],
                  'inactive_courses': [],
@@ -478,7 +577,7 @@ def build_course_list(ctx, institution) -> dict:
                  'attributes': []}
   # Shortcuts to the lists in return_dict
   scribed_courses = return_dict['scribed_courses']
-  list_qualifiers = return_dict['list_qualifiers']
+  qualifiers = return_dict['qualifiers']
   active_courses = return_dict['active_courses']
   inactive_courses = return_dict['inactive_courses']
   except_courses = return_dict['except_courses']
@@ -516,11 +615,10 @@ def build_course_list(ctx, institution) -> dict:
   if ctx.except_list():
     # Strip with_clause from courses to be excluded (it's always None anyway)
     except_courses += [[c[0], c[1]] for c in get_scribed_courses(ctx.except_list().course_list())]
-  if ctx.including_list():
-    including_courses += get_scribed_courses(ctx.including_list().course_list())
+  if ctx.include_list():
+    including_courses += get_scribed_courses(ctx.include_list().course_list())
 
-  for qualifier in get_course_list_qualifiers(institution, ctx):
-    list_qualifiers.append(qualifier.__dict__)
+  qualifiers = get_qualifiers(ctx)
 
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
   all_blanket = True

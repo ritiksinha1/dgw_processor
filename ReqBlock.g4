@@ -99,6 +99,10 @@ course_list               : L_SQB?
                             R_SQB?
                             (except_list | include_list)? label?;
 
+// The following list was intended to differentiate course list qualifiers from separate statements
+// in the head, where these qualifiers can be used in course lists in the body. But it looks like
+// they are not needed: course lists in the head seem never to be qualified. There remains a bit of
+// confusion here on my part. 2020-10-05
 course_list_head_qualifier : maxspread
                            | mingpa
                            | mingrade

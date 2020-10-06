@@ -6,7 +6,7 @@ import sys
 from dgw_utils import class_name,\
     build_course_list,\
     class_or_credit,\
-    num_classes_or_num_credits
+    num_class_or_num_credit
 
 
 # Handlers
@@ -76,24 +76,25 @@ def copy_rules(ctx, institution):
   return return_dict
 
 
-# class_credit_body()
+# class_credit_head()
 # -------------------------------------------------------------------------------------------------
-def class_credit_body(ctx, institution):
+def class_credit_head(ctx, institution):
   """
-      class_credit_body   : (num_classes | num_credits)
-                      (logical_op (num_classes | num_credits))?
-                      (course_list_body | IS? pseudo | share | rule_tag | tag)*
-                      display* label?;
+      class_credit_head   : (num_classes | num_credits)
+                            (logical_op (num_classes | num_credits))?
+                            (IS? pseudo | header_tag | tag)*
+                            display* label?;
 
-      Note: rule_tag is used only for audit presentation, and is ignored here.
-  """
+      num_classes         : NUMBER CLASS allow_clause?;
+      num_credits         : NUMBER CREDIT allow_clause?;
+      allow_clause        : LP allow NUMBER RP;
+
+      Note: header_tag is used only for audit presentation, and is ignored here.
+"""
   return_dict = {'tag': 'class_credit'}
-  return_dict.update(num_classes_or_num_credits(ctx))
-  return_dict.update(build_course_list(ctx.course_list_body()[0], institution))
-  return_dict['is_pseudo'] = True if ctx.pseudo() else False
+  return_dict.update(num_class_or_num_credit(ctx))
 
-  if ctx.share():
-    return_dict['share'] = share(ctx.share(), institution)
+  return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.display():
     display_text = ''
@@ -107,23 +108,28 @@ def class_credit_body(ctx, institution):
   return return_dict
 
 
-# class_credit_head()
+# class_credit_body()
 # -------------------------------------------------------------------------------------------------
-def class_credit_head(ctx, institution):
+def class_credit_body(ctx, institution):
   """
-      class_credit_head   : (num_classes | num_credits)
+      class_credit_body   : (num_classes | num_credits)
                             (logical_op (num_classes | num_credits))?
-                            (IS? pseudo | header_tag | tag)*
+                            (course_list_body | IS? pseudo | share | rule_tag | tag)*
                             display* label?;
+
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
+      allow_clause        : LP allow NUMBER RP;
 
-      Note: header_tag is used only for audit presentation, and is ignored here.
-"""
+      Note: rule_tag is used only for audit presentation, and is ignored here.
+  """
   return_dict = {'tag': 'class_credit'}
-  return_dict['num_classes_credits'] = num_classes_or_num_credits(ctx)
-
+  return_dict.update(num_class_or_num_credit(ctx))
+  return_dict['courses'] = build_course_list(ctx.course_list_body()[0].course_list(), institution)
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
+
+  if ctx.share():
+    return_dict['share'] = share(ctx.share(), institution)
 
   if ctx.display():
     display_text = ''
@@ -178,7 +184,7 @@ def lastres(ctx, institution):
   assert len(numbers) == 0
 
   if ctx.course_list():
-    return_dict.update(build_course_list(ctx.course_list(), institution))
+    return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 
   if ctx.display():
     display_text = ''
@@ -200,7 +206,7 @@ def maxclass(ctx, institution):
   """
   return_dict = {'tag': 'maxclass',
                  'number': ctx.NUMBER().getText().strip()}
-  return_dict.update(build_course_list(ctx.course_list(), institution))
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 
   return return_dict
 
@@ -213,7 +219,7 @@ def maxcredit(ctx, institution):
   """
   return_dict = {'tag': 'maxcredit',
                  'number': ctx.NUMBER().getText().strip()}
-  return_dict.update(build_course_list(ctx.course_list(), institution))
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 
   return return_dict
 
@@ -253,7 +259,7 @@ def maxterm(ctx, institution):
   return_dict = {'tag': 'max_term',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
-  return_dict.update(build_course_list(ctx.course_list(), institution))
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 
   return return_dict
 
@@ -302,7 +308,7 @@ def mincredit(ctx, institution):
   """
   return_dict = {'tag': 'min_credit',
                  'number': ctx.NUMBER().getText()}
-  return_dict.update(build_course_list(ctx.course_list(), institution))
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 
   if ctx.display():
     display_text = ''
@@ -325,7 +331,7 @@ def mingpa(ctx, institution):
   return_dict = {'tag': 'min_gpa', 'number': ctx.NUMBER().getText()}
 
   if ctx.course_list():
-    return_dict.update(build_course_list(ctx.course_list(), institution))
+    return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 
   if ctx.expression():
     return_dict['expression'] = ctx.expression().getText()
@@ -370,7 +376,7 @@ def minperdisc(ctx, institution):
 def minres(ctx, institution):
   """ minres          : MINRES (num_classes | num_credits) display* label? tag?;
   """
-  return_dict = num_classes_or_num_credits(ctx)
+  return_dict = num_class_or_num_credit(ctx)
   return_dict['tag'] = 'min_res'
 
   if ctx.display():
@@ -497,7 +503,7 @@ def under(ctx, institution):
   return_dict = {'tag': 'under',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
-  return_dict.update(build_course_list(ctx.course_list(), institution))
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 
   if ctx.display():
     display_text = ''
