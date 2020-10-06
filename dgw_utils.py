@@ -121,7 +121,7 @@ def get_range(ctx):
   return low, high
 
 
-# num_class_or_num_credir(ctx)
+# num_class_or_num_credit(ctx)
 # -------------------------------------------------------------------------------------------------
 def num_class_or_num_credit(ctx) -> dict:
   """ A context can have one num_classes, one num_credits, or both. When both are allowed, they will
@@ -362,16 +362,9 @@ def get_qualifiers(ctx):
 
           # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
           elif qualifier == 'share':
-            print(qualifier_fun().getText())
-            print(dir(qualifier_fun()))
             if qualifier_fun().DONT_SHARE():
               qualifier = 'dont_share'
-            if qualifier_fun().CLASS:
-              class_credit = 'class'
-            elif qualifier_fun().CREDIT:
-              class_credit = 'credit'
-            else:
-              class_credit = None
+
             if qualifier_fun().NUMBER():
               number = qualifier_fun().NUMBER().getText()
             else:
@@ -550,7 +543,7 @@ def build_course_list(ctx, institution) -> dict:
                             currently limited to WRIC and BKCR
 
       Except clause: add active courses to except_courses list and remove from the active_courses
-      Including clause: add to including_courses or missing_courses as the case may be.
+      Including clause: add to include_courses or missing_courses as the case may be.
         *** What is missing_courses supposed to be? Right now it's nothing, but it should be any
         *** scribed course that fails course catalog lookup. It would be for reporting purposes
         *** only. The issue is that we can only detect explicitly-scribed courses, not when there
@@ -572,7 +565,7 @@ def build_course_list(ctx, institution) -> dict:
                  'active_courses': [],
                  'inactive_courses': [],
                  'except_courses': [],
-                 'including_courses': [],
+                 'include_courses': [],
                  'missing_courses': [],
                  'attributes': []}
   # Shortcuts to the lists in return_dict
@@ -581,7 +574,7 @@ def build_course_list(ctx, institution) -> dict:
   active_courses = return_dict['active_courses']
   inactive_courses = return_dict['inactive_courses']
   except_courses = return_dict['except_courses']
-  including_courses = return_dict['including_courses']
+  include_courses = return_dict['include_courses']
   missing_courses = return_dict['missing_courses']
   attributes = return_dict['attributes']
 
@@ -616,7 +609,7 @@ def build_course_list(ctx, institution) -> dict:
     # Strip with_clause from courses to be excluded (it's always None anyway)
     except_courses += [[c[0], c[1]] for c in get_scribed_courses(ctx.except_list().course_list())]
   if ctx.include_list():
-    including_courses += get_scribed_courses(ctx.include_list().course_list())
+    include_courses += get_scribed_courses(ctx.include_list().course_list())
 
   qualifiers = get_qualifiers(ctx)
 
@@ -699,13 +692,17 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
         if row.course_status == 'A':
           active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                  row.title, with_clause))
+          # Check BKCR and WRIC only for active courses
+          if row.max_credits > 0 and 'BKCR' not in row.attributes:
+            # if all_blanket:
+            #   print(f'*** wet blanket: {row.course_id} {row.discipline} {row.catalog_number} '
+            #         f'{row.max_credits} {row.attributes}', file=sys.stderr)
+            all_blanket = False
+          if 'WRIC' not in row.attributes:
+            all_writing = False
         else:
           inactive_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                    row.title, with_clause))
-        if row.max_credits > 0 and 'BKCR' not in row.attributes:
-          all_blanket = False
-        if 'WRIC' not in row.attributes:
-          all_writing = False
 
   conn.close()
   if len(active_courses) > 0:

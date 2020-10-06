@@ -58,24 +58,6 @@ def blocktype(ctx, institution):
   return return_dict
 
 
-# copy_rules()
-# -------------------------------------------------------------------------------------------------
-def copy_rules(ctx, institution):
-  """
-      copy_rules      : COPY_RULES expression SEMICOLON?;
-
-      The expression is a rule_id enclosed in parentheses.
-  """
-  return_dict = {'tag': 'copy_rules', 'institution': institution}
-  for context in ctx.expression().getChildren():
-    if class_name(context) == 'Expression':
-      return_dict['rule_id'] = context.getText().strip().upper()
-
-  assert 'rule_id' in return_dict.keys(), f'Invalid copyrules {ctx.expression().getText()}'
-
-  return return_dict
-
-
 # class_credit_head()
 # -------------------------------------------------------------------------------------------------
 def class_credit_head(ctx, institution):
@@ -143,6 +125,24 @@ def class_credit_body(ctx, institution):
   return return_dict
 
 
+# copy_rules()
+# -------------------------------------------------------------------------------------------------
+def copy_rules(ctx, institution):
+  """
+      copy_rules      : COPY_RULES expression SEMICOLON?;
+
+      The expression is a rule_id enclosed in parentheses.
+  """
+  return_dict = {'tag': 'copy_rules', 'institution': institution}
+  for context in ctx.expression().getChildren():
+    if class_name(context) == 'Expression':
+      return_dict['rule_id'] = context.getText().strip().upper()
+
+  assert 'rule_id' in return_dict.keys(), f'Invalid copyrules {ctx.expression().getText()}'
+
+  return return_dict
+
+
 # group()
 # -------------------------------------------------------------------------------------------------
 def group(ctx, institution):
@@ -152,16 +152,16 @@ def group(ctx, institution):
   return {}
 
 
-# if_then_body()
+# if_then_head()
 # -------------------------------------------------------------------------------------------------
-def if_then_body(ctx, institution):
+def if_then_head(ctx, institution):
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
   return {}
 
 
-# if_then_head()
+# if_then_body()
 # -------------------------------------------------------------------------------------------------
-def if_then_head(ctx, institution):
+def if_then_body(ctx, institution):
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
   return {}
 
@@ -476,22 +476,73 @@ def standalone(ctx, institution):
   return{'tag': 'standalone'}
 
 
-# subset_body()
-# -------------------------------------------------------------------------------------------------
-def subset_body(ctx, institution):
-  """
-  """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
-
-
 # subset_head()
 # -------------------------------------------------------------------------------------------------
 def subset_head(ctx, institution):
   """
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
+  print('subset_head() not implemented yet', file=sys.stderr)
   return {}
+
+
+# subset_body()
+# -------------------------------------------------------------------------------------------------
+def subset_body(ctx, institution):
+  """
+      subset            : BEGINSUB
+                        ( if_then
+                          | block
+                          | blocktype
+                          | class_credit_body
+                          | copy_rules
+                          | course_list
+                          | group
+                          | noncourse
+                          | rule_complete
+                        )+
+                        ENDSUB subset_qualifier* label?;
+      subset_qualifier  : maxpassfail
+                        | maxperdisc
+                        | maxspread
+                        | maxtransfer
+                        | mingpa
+                        | mingrade
+                        | minperdisc
+                        | minspread
+                        | rule_tag
+                        | share;
+  """
+  return_dict = {'tag': 'subset'}
+
+  if len(ctx.if_then()) > 0:
+    return_dict['if_then'] = if_then_body(ctx.if_then()[0], institution)
+
+  if len(ctx.block()) > 0:
+    return_dict['block'] = block(ctx.block()[0], institution)
+
+  if len(ctx.blocktype()) > 0:
+    return_dict['blocktype'] = blocktype(ctx.blocktype()[0], institution)
+
+  if len(ctx.class_credit_body()) > 0:
+    return_dict['class_credit'] = class_credit_body(ctx.class_credit_body()[0], institution)
+
+  if len(ctx.copy_rules()) > 0:
+    return_dict['copy_rules'] = copy_rules(ctx.copy_rules()[0], institution)
+
+  if len(ctx.course_list()) > 0:
+    return_dict['course_list'] = course_list(ctx.course_list()[0], institution)
+
+  if len(ctx.group()) > 0:
+    return_dict['group'] = group(ctx.group()[0], institution)
+
+  if len(ctx.noncourse()) > 0:
+    return_dict['noncourse'] = noncourse(ctx.noncourse()[0], institution)
+
+  if len(ctx.rule_complete()) > 0:
+    return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0], institution)
+
+  print('subset_body() not implemented yet', file=sys.stderr)
+  return return_dict
 
 
 # under()
