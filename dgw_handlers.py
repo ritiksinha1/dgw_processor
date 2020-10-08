@@ -6,6 +6,7 @@ import sys
 from dgw_utils import class_name,\
     build_course_list,\
     class_or_credit,\
+    context_path,\
     num_class_or_num_credit
 
 
@@ -103,7 +104,27 @@ def class_credit_body(ctx, institution):
       num_credits         : NUMBER CREDIT allow_clause?;
       allow_clause        : LP allow NUMBER RP;
 
+      course_list_body           : course_list (course_list_body_qualifier tag?)* label? ;
+      course_list_body_qualifier : maxpassfail
+                                 | maxperdisc
+                                 | maxspread
+                                 | maxtransfer
+                                 | minarea
+                                 | minclass
+                                 | mincredit
+                                 | mingpa
+                                 | mingrade
+                                 | minperdisc
+                                 | minspread
+                                 | rule_tag
+                                 | samedisc
+                                 | share
+
       Note: rule_tag is used only for audit presentation, and is ignored here.
+
+      "Allowable rule qualifiers: DontShare, Exclusive, Hide, HideRule, HighPriority, LowPriority,
+      LowestPriority, MaxPassFail, MaxPerDisc, MaxSpread, MaxTerm, MaxTransfer, MinAreas, MinGrade,
+      MinPerDisc, MinSpread, MinTerm, NotGPA, ProxyAdvice, RuleTag, SameDisc, ShareWith, With."
   """
   return_dict = {'tag': 'class_credit'}
   return_dict.update(num_class_or_num_credit(ctx))
@@ -111,6 +132,7 @@ def class_credit_body(ctx, institution):
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.share():
+    print(context_path(ctx), share(ctx.share(), institution))
     return_dict['share'] = share(ctx.share(), institution)
 
   if ctx.display():
@@ -514,34 +536,51 @@ def subset_body(ctx, institution):
   """
   return_dict = {'tag': 'subset'}
 
+  # The grammar says one or more of each of the rules go between BEGINSUB and ENDSUB. But really
+  # each one should appear at most once, except for class_credit_body. So if there is a list and
+  # it's not class_credit_body, it must be length one.
   if len(ctx.if_then()) > 0:
+    assert len(ctx.if_then()) == 1
     return_dict['if_then'] = if_then_body(ctx.if_then()[0], institution)
 
   if len(ctx.block()) > 0:
+    assert len(ctx.block()) == 1
     return_dict['block'] = block(ctx.block()[0], institution)
 
   if len(ctx.blocktype()) > 0:
+    assert len(ctx.blocktype()) == 1
     return_dict['blocktype'] = blocktype(ctx.blocktype()[0], institution)
 
   if len(ctx.class_credit_body()) > 0:
-    return_dict['class_credit'] = class_credit_body(ctx.class_credit_body()[0], institution)
+    # Return a list of class_credit dicts
+    return_dict['class_credit'] = [class_credit_body(context, institution)
+                                   for context
+                                   in ctx.class_credit_body()]
 
   if len(ctx.copy_rules()) > 0:
+    assert len(ctx.copy_rules()) == 1
     return_dict['copy_rules'] = copy_rules(ctx.copy_rules()[0], institution)
 
   if len(ctx.course_list()) > 0:
+    assert len(ctx.course_list()) == 1
     return_dict['course_list'] = course_list(ctx.course_list()[0], institution)
 
   if len(ctx.group()) > 0:
+    assert len(ctx.group()) == 1
     return_dict['group'] = group(ctx.group()[0], institution)
 
   if len(ctx.noncourse()) > 0:
+    assert len(ctx.noncourse()) == 1
     return_dict['noncourse'] = noncourse(ctx.noncourse()[0], institution)
 
   if len(ctx.rule_complete()) > 0:
+    assert len(ctx.rule_complete()) == 1
     return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0], institution)
 
-  print('subset_body() not implemented yet', file=sys.stderr)
+  # Do not remove this until above code is fully developed and tested #
+  print('subset_body not implemented yet', file=sys.stderr)           #
+  # Do not remove this until above code is fully developed and tested #
+
   return return_dict
 
 

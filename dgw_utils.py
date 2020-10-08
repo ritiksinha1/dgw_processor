@@ -553,8 +553,7 @@ def build_course_list(ctx, institution) -> dict:
     print(f'*** build_course_list({institution}, {ctx.__class__.__name__})', file=sys.stderr)
   if ctx is None:
     return None
-  assert ctx.__class__.__name__ == 'Course_listContext', (f'{ctx.__class__.__name__} '
-                                                          f'is not Course_listContext')
+  assert class_name(ctx) == 'Course_list', (f'{class_name(ctx)} is not Course_list')
 
   # The dict to be returned:
   return_dict = {'tag': 'course_list',
@@ -582,16 +581,24 @@ def build_course_list(ctx, institution) -> dict:
   return_dict['context_path'] = context_path(ctx)
 
   # Pick up the label, if there is one
-  # It belongs to the parent (course_list_body, etc.)
-  parent_ctx = ctx.parentCtx
-  try:
-    for child in parent_ctx.children:
-      if child.__class__.__name__ == 'LabelContext':
-        return_dict['label'] = child.string().getText().strip('"').replace('\'', '’')
-  except AttributeError as ae:
-    if DEBUG:
-      print('No Label', file=sys.stderr)
-    pass
+  if ctx.label():
+    return_dict['label'] = ctx.label().string().getText().strip('"').replace('\'', '’')
+
+  # The label and qualifiers may be attached to the parent (course_list_body), so the following
+  # code will be removed once they are handled there properly.
+  # # It might appear in the parent (course_list_body)
+  # parent_ctx = ctx.parentCtx
+  # try:
+  #   # print(f'\n{context_path(ctx)}')
+  #   for child in parent_ctx.children:
+  #     # print(f'  {class_name(child)}')
+  #     if class_name(child) == 'Label':
+  #       if return_dict['label'] is not None:
+  #         print(f'Conflicting labels at {context_path(ctx)}', file=sys.stderr)
+  #       return_dict['label'] = child.string().getText().strip('"').replace('\'', '’')
+  #       # print(return_dict['label'])
+  # except AttributeError as ae:
+  #     print(f'Label Error in build_course_list(): {context_path(ctx)}', file=sys.stderr)
 
   # Drill into ctx to determine which type of list
   if ctx.and_list():

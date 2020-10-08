@@ -19,8 +19,10 @@
 
 """
 
+import os
 import sys
 from course_lookup import lookup_course
+DEBUG = os.getenv('DEBUG_HTML')
 
 
 # list_of_courses()
@@ -122,7 +124,13 @@ def details(info: dict) -> str:
     except KeyError as ke:
       print(f'Missing course_list element in', info['context_path'])
 
-    return_str += f'{info.keys()}'
+    # There should be no keys left except for the context_path
+    context_path = info.pop('context_path')
+    if DEBUG:
+      return_str += f'<strong>Context:</strong> {context_path}'
+
+    for key, value in info.items():
+      return_str += f'<dir>{key}: {info.keys()} <span class="error"> Not Interpreted.</span></dir>'
 
   else:
     for key, value in info.items():

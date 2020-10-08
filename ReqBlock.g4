@@ -39,7 +39,7 @@ grammar ReqBlock;
 req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
 head        :
             ( class_credit_head
-            | if_then
+            | if_then_head
             | lastres
             | maxclass
             | maxcredit
@@ -67,7 +67,7 @@ body        :
             | class_credit_body
             | copy_rules
             | group
-            | if_then
+            | if_then_body
             | label
             | noncourse
             | remark
@@ -143,72 +143,105 @@ discipline            : symbol
 
 //  if-then
 //  -----------------------------------------------------------------------------------------------
-if_then      : IF expression THEN (stmt | stmt_group) group_qualifier* label? else_clause?;
-else_clause  : ELSE (stmt | stmt_group) group_qualifier* label?;
-stmt_group   : (begin_if stmt+ end_if);
-stmt         : if_then
-             | block
-             | blocktype
-             | class_credit_body
-             | copy_rules
-             | group
-             | lastres
-             | maxcredit
-             | maxtransfer
-             | minclass
-             | mincredit
-             | mingrade
-             | minres
-             | noncourse
-             | remark
-             | rule_complete
-             | share
-             | subset
-             ;
+begin_if        : BEGINIF | BEGINELSE;
+end_if          : ENDIF | ENDELSE;
 
-begin_if     : BEGINIF | BEGINELSE;
-end_if       : ENDIF | ENDELSE;
-
-//  Groups
-//  -----------------------------------------------------------------------------------------------
-/*  Body Only
- */
-group           : NUMBER GROUP group_list
-                  group_qualifier*
-                  label?
-                ;
-group_list      : group_item (logical_op group_item)*; // But only OR should occur
-group_item      : LP
-                    (block
-                     | blocktype
-                     | course_list
-                     | class_credit_body
-                     | group
-                     | noncourse
-                     | rule_complete)
-                    group_qualifier*
-                    label?
-                  RP
-                  group_qualifier*
-                  label?
-                ;
-group_qualifier : maxpassfail
-                | maxperdisc
+if_then_head    : IF expression THEN (head_rule | head_rule_group) label? else_head?;
+else_head       : ELSE (head_rule | head_rule_group) label?;
+head_rule_group : (begin_if head_rule+ end_if);
+head_rule       : if_then_body
+                | block
+                | blocktype
+                | class_credit_head
+                | copy_rules
+                | lastres
+                | maxcredit
+                | maxpassfail
+                | maxterm
                 | maxtransfer
                 | minclass
                 | mincredit
                 | mingpa
                 | mingrade
                 | minperdisc
-                | samedisc
-                | rule_tag
+                | minres
+                | minterm
+                | noncourse
+                | remark
+                | rule_complete
                 | share
+                | subset
+                ;
+
+
+if_then_body    : IF expression THEN (body_rule | body_rule_group) requirement* label? else_body?;
+else_body       : ELSE (body_rule | body_rule_group) requirement* label?;
+body_rule_group : (begin_if body_rule+ end_if);
+
+
+body_rule       : if_then_body
+                | block
+                | blocktype
+                | class_credit_body
+                | copy_rules
+                | group
+                | lastres
+                | maxcredit
+                | maxtransfer
+                | minclass
+                | mincredit
+                | mingrade
+                | minres
+                | noncourse
+                | remark
+                | rule_complete
+                | share
+                | subset
+                ;
+
+requirement       : maxpassfail
+                  | maxperdisc
+                  | maxtransfer
+                  | minclass
+                  | mincredit
+                  | mingpa
+                  | mingrade
+                  | minperdisc
+                  | samedisc
+                  | rule_tag
+                  | share
+                  ;
+
+//  Groups
+//  -----------------------------------------------------------------------------------------------
+/*  Body Only
+ */
+group           : NUMBER GROUP group_list
+                  requirement*
+                  label?
+                ;
+group_list      : group_item (logical_op group_item)*; // But only OR should occur
+group_item      : LP
+                  (block
+                   | blocktype
+                   | course_list
+                   | class_credit_body
+                   | group
+                   | noncourse
+                   | rule_complete)
+                  requirement*
+                  label?
+                  RP
+                  requirement*
+                  label?
                 ;
 
 //  Rule Subset
 //  -----------------------------------------------------------------------------------------------
+/*  Body Only
+ */
 subset            : BEGINSUB
-                  ( if_then
+                  ( if_then_body
                     | block
                     | blocktype
                     | class_credit_body
@@ -219,6 +252,11 @@ subset            : BEGINSUB
                     | rule_complete
                   )+
                   ENDSUB subset_qualifier* label?;
+
+/*  Allowable rule (subset) qualifiers:
+ *  DontShare, HighPriority, LowPriority, LowestPriority, MaxPerDisc, MaxPassFail, MaxTransfer,
+ *  MaxSpread, MinGrade, MinPerDisc, MinSpread, ShareWith, NotGPA, ProxyAdvice, SameDisc
+ */
 subset_qualifier  : maxpassfail
                   | maxperdisc
                   | maxspread
@@ -228,7 +266,8 @@ subset_qualifier  : maxpassfail
                   | minperdisc
                   | minspread
                   | rule_tag
-                  | share;
+                  | share
+                  ;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
@@ -246,8 +285,8 @@ class_credit_head   : (num_classes | num_credits)
                       display* label?;
 
 class_credit_body   : (num_classes | num_credits)
-                      (logical_op (num_classes | num_credits))?
-                      (course_list_body | IS? pseudo | share | rule_tag | tag)*
+                      (logical_op (num_classes | num_credits))? course_list_body
+                      (IS? pseudo | share | rule_tag | tag)*
                       display* label?;
 
 allow           : (ALLOW | ACCEPT);
