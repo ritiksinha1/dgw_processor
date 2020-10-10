@@ -149,7 +149,7 @@ end_if          : ENDIF | ENDELSE;
 if_then_head    : IF expression THEN (head_rule | head_rule_group) label? else_head?;
 else_head       : ELSE (head_rule | head_rule_group) label?;
 head_rule_group : (begin_if head_rule+ end_if);
-head_rule       : if_then_body
+head_rule       : if_then_head
                 | block
                 | blocktype
                 | class_credit_head
@@ -285,7 +285,7 @@ class_credit_head   : (num_classes | num_credits)
                       display* label?;
 
 class_credit_body   : (num_classes | num_credits)
-                      (logical_op (num_classes | num_credits))? course_list_body
+                      (logical_op (num_classes | num_credits))? course_list_body?
                       (IS? pseudo | share | rule_tag | tag)*
                       display* label?;
 
@@ -385,6 +385,7 @@ HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
 HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
 IN              : [Ii][Nn] -> skip;
 LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
+NOCOUNT         : [Nn][Oo][Cc][Oo][Uu][Nn][Tt] -> skip;
 NOTGPA          : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip;
 PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
 
