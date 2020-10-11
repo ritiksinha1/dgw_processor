@@ -125,42 +125,6 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#if_then.
-    def enterIf_then(self, ctx:ReqBlockParser.If_thenContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#if_then.
-    def exitIf_then(self, ctx:ReqBlockParser.If_thenContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#else_clause.
-    def enterElse_clause(self, ctx:ReqBlockParser.Else_clauseContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#else_clause.
-    def exitElse_clause(self, ctx:ReqBlockParser.Else_clauseContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#stmt_group.
-    def enterStmt_group(self, ctx:ReqBlockParser.Stmt_groupContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#stmt_group.
-    def exitStmt_group(self, ctx:ReqBlockParser.Stmt_groupContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#stmt.
-    def enterStmt(self, ctx:ReqBlockParser.StmtContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#stmt.
-    def exitStmt(self, ctx:ReqBlockParser.StmtContext):
-        pass
-
-
     # Enter a parse tree produced by ReqBlockParser#begin_if.
     def enterBegin_if(self, ctx:ReqBlockParser.Begin_ifContext):
         pass
@@ -176,6 +140,87 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#end_if.
     def exitEnd_if(self, ctx:ReqBlockParser.End_ifContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#if_then_head.
+    def enterIf_then_head(self, ctx:ReqBlockParser.If_then_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#if_then_head.
+    def exitIf_then_head(self, ctx:ReqBlockParser.If_then_headContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#else_head.
+    def enterElse_head(self, ctx:ReqBlockParser.Else_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#else_head.
+    def exitElse_head(self, ctx:ReqBlockParser.Else_headContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#head_rule_group.
+    def enterHead_rule_group(self, ctx:ReqBlockParser.Head_rule_groupContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#head_rule_group.
+    def exitHead_rule_group(self, ctx:ReqBlockParser.Head_rule_groupContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#head_rule.
+    def enterHead_rule(self, ctx:ReqBlockParser.Head_ruleContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#head_rule.
+    def exitHead_rule(self, ctx:ReqBlockParser.Head_ruleContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#if_then_body.
+    def enterIf_then_body(self, ctx:ReqBlockParser.If_then_bodyContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#if_then_body.
+    def exitIf_then_body(self, ctx:ReqBlockParser.If_then_bodyContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#else_body.
+    def enterElse_body(self, ctx:ReqBlockParser.Else_bodyContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#else_body.
+    def exitElse_body(self, ctx:ReqBlockParser.Else_bodyContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#body_rule_group.
+    def enterBody_rule_group(self, ctx:ReqBlockParser.Body_rule_groupContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#body_rule_group.
+    def exitBody_rule_group(self, ctx:ReqBlockParser.Body_rule_groupContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#body_rule.
+    def enterBody_rule(self, ctx:ReqBlockParser.Body_ruleContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#body_rule.
+    def exitBody_rule(self, ctx:ReqBlockParser.Body_ruleContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#requirement.
+    def enterRequirement(self, ctx:ReqBlockParser.RequirementContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#requirement.
+    def exitRequirement(self, ctx:ReqBlockParser.RequirementContext):
         pass
 
 
@@ -203,15 +248,6 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#group_item.
     def exitGroup_item(self, ctx:ReqBlockParser.Group_itemContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#group_qualifier.
-    def enterGroup_qualifier(self, ctx:ReqBlockParser.Group_qualifierContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#group_qualifier.
-    def exitGroup_qualifier(self, ctx:ReqBlockParser.Group_qualifierContext):
         pass
 
 

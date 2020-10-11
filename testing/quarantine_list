@@ -1,3 +1,4 @@
+# College block_id Reason :: Does Degreeworks parser accept it?
 BAR01 RA000625 Empty block (all comments) :: No
 BKL01 RA003107 Missing comma in "3194 3169" on line 34 :: Yes
 BKL01 RA003193 Missing comma in "3194 3169" on line 32 :: Yes
@@ -11,4 +12,14 @@ NYT01 RA000679 Misplaced semicolon on line 96. :: No
 NYT01 RA000680 Misplaced semicolon on line 100 :: No
 NYT01 RA000681 Misplaced semicolon on line 92. :: No
 NYT01 RA000682 Misplaced semicolon on line 107. :: No
-BKL01 RA003110 Missing comma on line 99
+BKL01 RA003110 Missing comma on line 99 :: Yes
+CSI01 RA000365 "18 Credits in  10 @@" on line 32 :: Yes
+CSI01 RA000465 "26 Credits in  10 @@" on line 30 :: Yes
+CSI01 RA000575 "20 Credits in  10 @@" on line 54 :: Yes
+CSI01 RA000594 "20 Credits in  10 @@" on line 54 :: Yes
+CSI01 RA000606 "18 Credits in  10 @@" on line 32 :: Yes
+CSI01 RA000611 "26 Credits in  10 @@" on line 29 :: Yes
+BKL01 RA002211 Missing commas at ends of lines 14 and 15 :: Yes
+BKL01 RA002661 Missing comma on line 127 :: Yes
+LEH01 RA002403 Missing space between "1" and "class" on line 84 :: Yes
+BKL01 RA002502 Missing comma on line 39. :: Yes

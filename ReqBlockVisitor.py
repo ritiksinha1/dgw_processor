@@ -74,26 +74,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#if_then.
-    def visitIf_then(self, ctx:ReqBlockParser.If_thenContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#else_clause.
-    def visitElse_clause(self, ctx:ReqBlockParser.Else_clauseContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#stmt_group.
-    def visitStmt_group(self, ctx:ReqBlockParser.Stmt_groupContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#stmt.
-    def visitStmt(self, ctx:ReqBlockParser.StmtContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by ReqBlockParser#begin_if.
     def visitBegin_if(self, ctx:ReqBlockParser.Begin_ifContext):
         return self.visitChildren(ctx)
@@ -101,6 +81,51 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#end_if.
     def visitEnd_if(self, ctx:ReqBlockParser.End_ifContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#if_then_head.
+    def visitIf_then_head(self, ctx:ReqBlockParser.If_then_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#else_head.
+    def visitElse_head(self, ctx:ReqBlockParser.Else_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#head_rule_group.
+    def visitHead_rule_group(self, ctx:ReqBlockParser.Head_rule_groupContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#head_rule.
+    def visitHead_rule(self, ctx:ReqBlockParser.Head_ruleContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#if_then_body.
+    def visitIf_then_body(self, ctx:ReqBlockParser.If_then_bodyContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#else_body.
+    def visitElse_body(self, ctx:ReqBlockParser.Else_bodyContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#body_rule_group.
+    def visitBody_rule_group(self, ctx:ReqBlockParser.Body_rule_groupContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#body_rule.
+    def visitBody_rule(self, ctx:ReqBlockParser.Body_ruleContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#requirement.
+    def visitRequirement(self, ctx:ReqBlockParser.RequirementContext):
         return self.visitChildren(ctx)
 
 
@@ -116,11 +141,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#group_item.
     def visitGroup_item(self, ctx:ReqBlockParser.Group_itemContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#group_qualifier.
-    def visitGroup_qualifier(self, ctx:ReqBlockParser.Group_qualifierContext):
         return self.visitChildren(ctx)
 
 
