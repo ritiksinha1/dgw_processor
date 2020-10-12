@@ -584,6 +584,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#proxy_advice.
+    def enterProxy_advice(self, ctx:ReqBlockParser.Proxy_adviceContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#proxy_advice.
+    def exitProxy_advice(self, ctx:ReqBlockParser.Proxy_adviceContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#pseudo.
     def enterPseudo(self, ctx:ReqBlockParser.PseudoContext):
         pass

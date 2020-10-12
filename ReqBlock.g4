@@ -54,10 +54,10 @@ head        :
             | minperdisc
             | minres
             | optional
+            | proxy_advice
             | remark
             | share
             | standalone
-            | subset
             | under
             )*
             ;
@@ -70,6 +70,7 @@ body        :
             | if_then_body
             | label
             | noncourse
+            | proxy_advice
             | remark
             | rule_complete
             | subset
@@ -97,7 +98,7 @@ body        :
 course_list               : L_SQB?
                               course_item R_SQB? (and_list | or_list)?
                             R_SQB?
-                            (except_list | include_list)? label?;
+                            (except_list | include_list)? proxy_advice? label?;
 
 // The following list was intended to differentiate course list qualifiers from separate statements
 // in the head, where these qualifiers can be used in course lists in the body. But it looks like
@@ -112,7 +113,7 @@ course_list_head_qualifier : maxspread
                            | share
                            ;
 
-course_list_body           : course_list (course_list_body_qualifier tag?)* label? ;
+course_list_body           : course_list (course_list_body_qualifier tag?)* proxy_advice? label? ;
 course_list_body_qualifier : maxpassfail
                            | maxperdisc
                            | maxspread
@@ -146,8 +147,8 @@ discipline            : symbol
 begin_if        : BEGINIF | BEGINELSE;
 end_if          : ENDIF | ENDELSE;
 
-if_then_head    : IF expression THEN (head_rule | head_rule_group) label? else_head?;
-else_head       : ELSE (head_rule | head_rule_group) label?;
+if_then_head    : IF expression THEN (head_rule | head_rule_group) proxy_advice? label? else_head?;
+else_head       : ELSE (head_rule | head_rule_group) proxy_advice? label?;
 head_rule_group : (begin_if head_rule+ end_if);
 head_rule       : if_then_head
                 | block
@@ -167,6 +168,7 @@ head_rule       : if_then_head
                 | minres
                 | minterm
                 | noncourse
+                | proxy_advice
                 | remark
                 | rule_complete
                 | share
@@ -174,10 +176,11 @@ head_rule       : if_then_head
                 ;
 
 
-if_then_body    : IF expression THEN (body_rule | body_rule_group) requirement* label? else_body?;
-else_body       : ELSE (body_rule | body_rule_group) requirement* label?;
+if_then_body    : IF expression THEN (body_rule | body_rule_group)
+                  requirement* label? else_body?;
+else_body       : ELSE (body_rule | body_rule_group)
+                  requirement* label?;
 body_rule_group : (begin_if body_rule+ end_if);
-
 
 body_rule       : if_then_body
                 | block
@@ -193,24 +196,26 @@ body_rule       : if_then_body
                 | mingrade
                 | minres
                 | noncourse
+                | proxy_advice
                 | remark
                 | rule_complete
                 | share
                 | subset
                 ;
 
-requirement       : maxpassfail
-                  | maxperdisc
-                  | maxtransfer
-                  | minclass
-                  | mincredit
-                  | mingpa
-                  | mingrade
-                  | minperdisc
-                  | samedisc
-                  | rule_tag
-                  | share
-                  ;
+requirement     : maxpassfail
+                | maxperdisc
+                | maxtransfer
+                | minclass
+                | mincredit
+                | mingpa
+                | mingrade
+                | minperdisc
+                | proxy_advice
+                | samedisc
+                | rule_tag
+                | share
+                ;
 
 //  Groups
 //  -----------------------------------------------------------------------------------------------
@@ -218,7 +223,7 @@ requirement       : maxpassfail
  */
 group           : NUMBER GROUP group_list
                   requirement*
-                  label?
+                  proxy_advice? label?
                 ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
@@ -229,11 +234,9 @@ group_item      : LP
                    | group
                    | noncourse
                    | rule_complete)
-                  requirement*
-                  label?
+                  requirement* label?
                   RP
-                  requirement*
-                  label?
+                  requirement* label?
                 ;
 
 //  Rule Subset
@@ -265,14 +268,15 @@ subset_qualifier  : maxpassfail
                   | mingrade
                   | minperdisc
                   | minspread
+                  | proxy_advice
                   | rule_tag
                   | share
                   ;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
-block           : NUMBER BLOCK expression rule_tag? label;
-blocktype       : NUMBER BLOCKTYPE expression label;
+block           : NUMBER BLOCK expression rule_tag? proxy_advice? label;
+blocktype       : NUMBER BLOCKTYPE expression proxy_advice? label;
 
 /* Other Rules and Rule Components
  * ------------------------------------------------------------------------------------------------
@@ -281,13 +285,13 @@ allow_clause        : LP allow NUMBER RP;
 
 class_credit_head   : (num_classes | num_credits)
                       (logical_op (num_classes | num_credits))?
-                      (IS? pseudo | header_tag | tag)*
-                      display* label?;
+                      (IS? pseudo | proxy_advice | header_tag | tag)*
+                      display* proxy_advice? label?;
 
 class_credit_body   : (num_classes | num_credits)
                       (logical_op (num_classes | num_credits))? course_list_body?
-                      (IS? pseudo | share | rule_tag | tag)*
-                      display* label?;
+                      (IS? pseudo | proxy_advice | share | rule_tag | tag)*
+                      display* proxy_advice? label?;
 
 allow           : (ALLOW | ACCEPT);
 class_or_credit : (CLASS | CREDIT);
@@ -299,7 +303,7 @@ except_list     : EXCEPT course_list;
 header_tag      : HEADER_TAG nv_pair;
 include_list    : INCLUDING course_list;
 label           : LABEL string SEMICOLON?;
-lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* label?;
+lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice? label?;
 
 maxclass        : MAXCLASS NUMBER course_list? tag?;
 maxcredit       : MAXCREDIT NUMBER course_list? tag?;
@@ -312,23 +316,24 @@ maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
 maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS NUMBER course_list tag? display* label?;
-mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
-mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
+minclass        : MINCLASS NUMBER course_list tag? display* proxy_advice? label?;
+mincredit       : MINCREDIT NUMBER course_list tag? display* proxy_advice? label?;
+mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice? label?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
-minres          : MINRES (num_classes | num_credits) display* label? tag?;
+minres          : MINRES (num_classes | num_credits) display* proxy_advice? label? tag?;
 minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 
-noncourse       : NUMBER NONCOURSE LP expression RP label?;
+noncourse       : NUMBER NONCOURSE LP expression RP proxy_advice? label?;
 num_classes     : NUMBER CLASS allow_clause?;
 num_credits     : NUMBER CREDIT allow_clause?;
 nv_pair         : SYMBOL '=' (STRING | SYMBOL);
 optional        : OPTIONAL;
+proxy_advice    : (PROXY_ADVICE STRING)+;
 pseudo          : PSEUDO | PSUEDO;
 remark          : (REMARK string SEMICOLON?)+;
-rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
+rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) proxy_advice? label?;
 rule_tag        : RULE_TAG nv_pair;
 samedisc        : SAME_DISC expression tag?;
 share           : (SHARE | DONT_SHARE) (NUMBER class_or_credit)? expression? tag?;
@@ -338,7 +343,7 @@ standalone      : STANDALONE;
 string          : STRING;
 symbol          : SYMBOL; // | (QUOTE SYMBOL QUOTE);
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
-under           : UNDER NUMBER class_or_credit course_list display* label?;
+under           : UNDER NUMBER class_or_credit course_list display* proxy_advice? label?;
 with_clause     : LP WITH expression RP;
 
 expression      : expression relational_op expression
@@ -387,7 +392,6 @@ IN              : [Ii][Nn] -> skip;
 LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
 NOCOUNT         : [Nn][Oo][Cc][Oo][Uu][Nn][Tt] -> skip;
 NOTGPA          : [Nn][Oo][Tt][Gg][Pp][Aa] -> skip;
-PROXYADVICE     : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee] .*? '\n' -> skip;
 
 // Before BEGIN and after ENDOT, the lexer does token recognition.
 // To avoid errors from text that can't be tokenized, skip Log lines and otherwise-illegal chars.
@@ -450,6 +454,7 @@ MINTERM         : [Mm][Ii][Nn][Tt][Ee][Rr][Mm];
 NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]?;
 OPTIONAL        : [Oo][Pp][Tt][Ii][Oo][Nn][Aa][Ll];
 OF              : [Oo][Ff];
+PROXY_ADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee];
 PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo];
 PSUEDO          : [Pp][Ss][Uu][Ee][Dd][Oo]; // Scribe allows it, so we do too
 REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk];

@@ -329,6 +329,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#proxy_advice.
+    def visitProxy_advice(self, ctx:ReqBlockParser.Proxy_adviceContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#pseudo.
     def visitPseudo(self, ctx:ReqBlockParser.PseudoContext):
         return self.visitChildren(ctx)

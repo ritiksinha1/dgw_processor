@@ -285,7 +285,7 @@ def get_scribed_courses(ctx):
 
 # get_qualifiers()
 # -------------------------------------------------------------------------------------------------
-def get_qualifiers(ctx):
+def get_qualifiers(ctx, institution):
   """
   """
   valid_qualifiers = ['dont_share', 'maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer',
@@ -618,7 +618,7 @@ def build_course_list(ctx, institution) -> dict:
   if ctx.include_list():
     include_courses += get_scribed_courses(ctx.include_list().course_list())
 
-  qualifiers = get_qualifiers(ctx)
+  qualifiers = get_qualifiers(ctx, institution)
 
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
   all_blanket = True

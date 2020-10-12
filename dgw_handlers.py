@@ -128,7 +128,7 @@ def class_credit_body(ctx, institution):
   """
   return_dict = {'tag': 'class_credit'}
   return_dict.update(num_class_or_num_credit(ctx))
-  return_dict['courses'] = build_course_list(ctx.course_list_body()[0].course_list(), institution)
+  return_dict['courses'] = build_course_list(ctx.course_list_body().course_list(), institution)
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.share():
@@ -498,21 +498,14 @@ def standalone(ctx, institution):
   return{'tag': 'standalone'}
 
 
-# subset_head()
-# -------------------------------------------------------------------------------------------------
-def subset_head(ctx, institution):
-  """
-  """
-  print('subset_head() not implemented yet', file=sys.stderr)
-  return {}
-
-
 # subset_body()
 # -------------------------------------------------------------------------------------------------
 def subset_body(ctx, institution):
   """
+      /* Body only
+       */
       subset            : BEGINSUB
-                        ( if_then
+                        ( if_then_body
                           | block
                           | blocktype
                           | class_credit_body
@@ -523,6 +516,7 @@ def subset_body(ctx, institution):
                           | rule_complete
                         )+
                         ENDSUB subset_qualifier* label?;
+
       subset_qualifier  : maxpassfail
                         | maxperdisc
                         | maxspread
@@ -532,24 +526,23 @@ def subset_body(ctx, institution):
                         | minperdisc
                         | minspread
                         | rule_tag
-                        | share;
+                        | share
+                        ;
   """
   return_dict = {'tag': 'subset'}
 
   # The grammar says one or more of each of the rules go between BEGINSUB and ENDSUB. But really
   # each one should appear at most once, except for class_credit_body. So if there is a list and
   # it's not class_credit_body, it must be length one.
-  if len(ctx.if_then()) > 0:
-    assert len(ctx.if_then()) == 1
-    return_dict['if_then'] = if_then_body(ctx.if_then()[0], institution)
+  if len(ctx.if_then_body()) > 0:
+    return_dict['if_then'] = [if_then_body(context, institution)
+                              for context in ctx.if_then_body()]
 
   if len(ctx.block()) > 0:
-    assert len(ctx.block()) == 1
-    return_dict['block'] = block(ctx.block()[0], institution)
+    return_dict['block'] = [block(context, institution) for context in ctx.block()]
 
   if len(ctx.blocktype()) > 0:
-    assert len(ctx.blocktype()) == 1
-    return_dict['blocktype'] = blocktype(ctx.blocktype()[0], institution)
+    return_dict['blocktype'] = [blocktype(context, institution) for context in ctx.blocktype()]
 
   if len(ctx.class_credit_body()) > 0:
     # Return a list of class_credit dicts
@@ -566,8 +559,7 @@ def subset_body(ctx, institution):
     return_dict['course_list'] = course_list(ctx.course_list()[0], institution)
 
   if len(ctx.group()) > 0:
-    assert len(ctx.group()) == 1
-    return_dict['group'] = group(ctx.group()[0], institution)
+    return_dict['group'] = [group(context, institution) for context in ctx.group()]
 
   if len(ctx.noncourse()) > 0:
     assert len(ctx.noncourse()) == 1
@@ -613,7 +605,7 @@ def under(ctx, institution):
 """
 dispatch_head = {
     'class_credit_head': class_credit_head,
-    'if_then': if_then_head,
+    'if_then_head': if_then_head,
     'lastres': lastres,
     'maxclass': maxclass,
     'maxcredit': maxcredit,
@@ -631,7 +623,6 @@ dispatch_head = {
     'remark': remark,
     'share': share,
     'standalone': standalone,
-    'subset': subset_head,
     'under': under
 }
 
@@ -641,7 +632,7 @@ dispatch_body = {
     'class_credit_body': class_credit_body,
     'copy_rules': copy_rules,
     'group': group,
-    'if_then': if_then_body,
+    'if_then_body': if_then_body,
     'noncourse': noncourse,
     'remark': remark,
     'rule_complete': rule_complete,
