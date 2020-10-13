@@ -292,7 +292,10 @@ def get_qualifiers(ctx, institution):
                       'minarea', 'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc',
                       'minspread', 'ruletag', 'samedisc', 'share']
   qualifier_list = []
-  siblings = ctx.parentCtx.getChildren()
+  if isinstance(ctx, list):
+    siblings = ctx
+  else:
+    siblings = ctx.parentCtx.getChildren()
   for sibling in siblings:
     for qualifier in valid_qualifiers:
       if qualifier_fun := getattr(sibling, qualifier, None):
@@ -334,7 +337,7 @@ def get_qualifiers(ctx, institution):
           # minclass        : MINCLASS NUMBER course_list tag? display* label?;
           # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
           elif qualifier in ['minclass', 'mincredit']:
-            course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+            course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
             qualifier_list.append({'tag': qualifier,
                                    'number': qualifier_fun().NUMBER().getText(),
                                    'courses': course_list_obj})
@@ -343,7 +346,7 @@ def get_qualifiers(ctx, institution):
           elif qualifier == 'mingpa':
             course_list_obj = qualifier_fun().course_list()
             if course_list_obj:
-              course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+              course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
 
             expression_str = qualifier_fun().expression()
             if expression_str:
@@ -447,7 +450,7 @@ def get_course_list_qualifiers(institution, ctx):
               range_str = qualifier_fun().RANGE().getText()
             else:
               range_str = None
-            course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+            course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
             qualifier_list.append(CourseListQualifier(qualifier,
                                                       number=number_str,
                                                       range=range_str,
@@ -458,7 +461,7 @@ def get_course_list_qualifiers(institution, ctx):
           elif qualifier == 'mingpa':
             course_list_obj = qualifier_fun().course_list()
             if course_list_obj:
-              course_list_obj = build_course_list(institution, qualifier_fun().course_list())
+              course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
 
             expression_str = qualifier_fun().expression()
             if expression_str:
@@ -550,10 +553,10 @@ def build_course_list(ctx, institution) -> dict:
         *** are wildcards involved.
   """
   if DEBUG:
-    print(f'*** build_course_list({institution}, {ctx.__class__.__name__})', file=sys.stderr)
+    print(f'*** build_course_list({institution}, {class_name(ctx)})', file=sys.stderr)
   if ctx is None:
     return None
-  assert class_name(ctx) == 'Course_list', (f'{class_name(ctx)} is not Course_list')
+  assert class_name(ctx) == 'Course_list', f'{class_name(ctx)} is not Course_list'
 
   # The dict to be returned:
   return_dict = {'tag': 'course_list',

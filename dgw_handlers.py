@@ -7,6 +7,7 @@ from dgw_utils import class_name,\
     build_course_list,\
     class_or_credit,\
     context_path,\
+    get_qualifiers,\
     num_class_or_num_credit
 
 
@@ -96,9 +97,9 @@ def class_credit_head(ctx, institution):
 def class_credit_body(ctx, institution):
   """
       class_credit_body   : (num_classes | num_credits)
-                            (logical_op (num_classes | num_credits))?
-                            (course_list_body | IS? pseudo | share | rule_tag | tag)*
-                            display* label?;
+                            (logical_op (num_classes | num_credits))? course_list_body?
+                            (IS? pseudo | proxy_advice | share | rule_tag | tag)*
+                            display* proxy_advice? label?;
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
@@ -128,7 +129,16 @@ def class_credit_body(ctx, institution):
   """
   return_dict = {'tag': 'class_credit'}
   return_dict.update(num_class_or_num_credit(ctx))
-  return_dict['courses'] = build_course_list(ctx.course_list_body().course_list(), institution)
+  if ctx.course_list_body():
+    return_dict['courses'] = build_course_list(ctx.course_list_body().course_list(), institution)
+    if context := ctx.course_list_body().course_list_body_qualifier():
+      return_dict['courses']['qualifiers'] = get_qualifiers(context, institution)
+    if context := ctx.course_list_body().label():
+      return_dict['courses']['label'] = (context
+                                         .string()
+                                         .getText()
+                                         .strip('"')
+                                         .replace('\'', '’'))
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.share():
@@ -556,22 +566,18 @@ def subset_body(ctx, institution):
 
   if len(ctx.course_list()) > 0:
     assert len(ctx.course_list()) == 1
-    return_dict['course_list'] = course_list(ctx.course_list()[0], institution)
+    return_dict['course_list'] = [course_list(context, institution)
+                                  for context in ctx.course_list()]
 
   if len(ctx.group()) > 0:
     return_dict['group'] = [group(context, institution) for context in ctx.group()]
 
   if len(ctx.noncourse()) > 0:
-    assert len(ctx.noncourse()) == 1
-    return_dict['noncourse'] = noncourse(ctx.noncourse()[0], institution)
+    return_dict['noncourse'] = [noncourse(context, institution) for context in ctx.noncourse()]
 
   if len(ctx.rule_complete()) > 0:
     assert len(ctx.rule_complete()) == 1
     return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0], institution)
-
-  # Do not remove this until above code is fully developed and tested #
-  print('subset_body not implemented yet', file=sys.stderr)           #
-  # Do not remove this until above code is fully developed and tested #
 
   return return_dict
 
