@@ -11,6 +11,7 @@ import sys
 
 import json
 
+from Any import ANY
 from pgconnection import PgConnection
 from course_list_qualifier import CourseListQualifier
 
@@ -615,9 +616,10 @@ def build_course_list(ctx, institution) -> dict:
     list_fun = None
 
   scribed_courses += get_scribed_courses(ctx)
+
   if ctx.except_list():
     # Strip with_clause from courses to be excluded (it's always None anyway)
-    except_courses += [[c[0], c[1]] for c in get_scribed_courses(ctx.except_list().course_list())]
+    except_courses += get_scribed_courses(ctx.except_list().course_list())
   if ctx.include_list():
     include_courses += get_scribed_courses(ctx.include_list().course_list())
 
@@ -697,7 +699,7 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
     if cursor.rowcount > 0:
       for row in cursor.fetchall():
         # skip excluded courses
-        if (row.discipline, row.catalog_number) in except_courses:
+        if (row.discipline, row.catalog_number, ANY) in except_courses:
           continue
         if row.course_status == 'A':
           active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,

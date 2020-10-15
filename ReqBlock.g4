@@ -254,7 +254,7 @@ subset            : BEGINSUB
                     | noncourse
                     | rule_complete
                   )+
-                  ENDSUB subset_qualifier* label?;
+                  ENDSUB subset_qualifier* (remark | label)*;
 
 /*  Allowable rule (subset) qualifiers:
  *  DontShare, HighPriority, LowPriority, LowestPriority, MaxPerDisc, MaxPassFail, MaxTransfer,

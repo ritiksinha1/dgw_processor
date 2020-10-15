@@ -22,6 +22,9 @@
 import os
 import sys
 from course_lookup import lookup_course
+
+from dgw_interpreter import dgw_parser
+
 DEBUG = os.getenv('DEBUG_HTML')
 
 
@@ -212,22 +215,22 @@ def to_html(info: any) -> str:
   return info
 
 
-# scribe_block()
+# scribe_block_to_html()
 # -------------------------------------------------------------------------------------------------
-def scribe_block_to_html(row: tuple):
-  """
-      Given a result row from the requirement_blocks table, generate html for the scribe block and
-      the lists of head and body objects.
+def scribe_block_to_html(row: tuple, period='all') -> str:
+  """ Generate html for the scribe block and interpreted head and body lists objects.
   """
   if row.requirement_html == 'Not Available':
     return '<h1>This scribe block is not available.</h1><p><em>Should not occur.</em></p>'
   if len(row.head_objects) == 0 and len(row.body_objects) == 0:
-    return row.requirement_html + '<p>This block has not been interpreted yet.</p>'
+    head_list, body_list = dgw_parser(row.institution, row.block_type, row.block_value, period=period)
+  else:
+    head_list, body_list = row.head_objects, row.body_objects
   return row.requirement_html + f"""
 <section>
   <h1>Head</h1>
-  {to_html(row.head_objects)}
+  {to_html(head_list)}
   <h1>Body</h1>
-  {to_html(row.body_objects)}
+  {to_html(body_list)}
 </section>
 """

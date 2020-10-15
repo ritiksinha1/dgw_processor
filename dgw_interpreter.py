@@ -12,7 +12,7 @@ import traceback
 
 from enum import IntEnum
 
-from htmlificization import to_html
+# from htmlificization import to_html
 
 from ReqBlockLexer import ReqBlockLexer
 from ReqBlockParser import ReqBlockParser
@@ -202,26 +202,26 @@ if __name__ == '__main__':
                                           block_value,
                                           period='latest', update_db=args.update_db)
 
-        if args.show_html:
-          html = """
-<html>
-  <head>
-    <style>
-      details {
-        margin: 0.1em;
-        padding: 0.25em;
-        border: 1px solid green;
-      }
-    </style>
-"""
-          html += f"""
-  </head>
-  <body>
-    <h2>HEAD</h2>
-      {to_html(head_list)}
-    <h2>BODY</h2>
-      {to_html(body_list)}
-  </body>
-</html>
-        """
-          print(html)
+#         if args.show_html:
+#           html = """
+# <html>
+#   <head>
+#     <style>
+#       details {
+#         margin: 0.1em;
+#         padding: 0.25em;
+#         border: 1px solid green;
+#       }
+#     </style>
+# """
+#           html += f"""
+#   </head>
+#   <body>
+#     <h2>HEAD</h2>
+#       {to_html(head_list)}
+#     <h2>BODY</h2>
+#       {to_html(body_list)}
+#   </body>
+# </html>
+#         """
+#           print(html)
