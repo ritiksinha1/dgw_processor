@@ -222,11 +222,20 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
   """
   if row.requirement_html == 'Not Available':
     return '<h1>This scribe block is not available.</h1><p><em>Should not occur.</em></p>'
+
+  disclaimer = """
+  <p class="error">
+    The following is an <strong>incomplete</strong> interpretation of the above scribe block. The
+    interpreter that produces this view is under development.
+  </p>
+"""
+
   if len(row.head_objects) == 0 and len(row.body_objects) == 0:
     head_list, body_list = dgw_parser(row.institution, row.block_type, row.block_value, period=period)
   else:
     head_list, body_list = row.head_objects, row.body_objects
-  return row.requirement_html + f"""
+
+  return row.requirement_html + disclaimer + f"""
 <section>
   <h1>Head</h1>
   {to_html(head_list)}
