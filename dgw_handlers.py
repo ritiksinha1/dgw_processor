@@ -565,9 +565,8 @@ def subset_body(ctx, institution):
     return_dict['copy_rules'] = copy_rules(ctx.copy_rules()[0], institution)
 
   if len(ctx.course_list()) > 0:
-    assert len(ctx.course_list()) == 1
-    return_dict['course_list'] = [course_list(context, institution)
-                                  for context in ctx.course_list()]
+    return_dict['courses'] = [build_course_list(context, institution)
+                              for context in ctx.course_list()]
 
   if len(ctx.group()) > 0:
     return_dict['group'] = [group(context, institution) for context in ctx.group()]
