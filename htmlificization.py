@@ -227,13 +227,17 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
 
   disclaimer = """
   <p class="error">
-    The following is an <strong>incomplete</strong> interpretation of the above scribe block. The
+    The following is an <strong>incomplete interpretation</strong> of the above scribe block. The
     interpreter that produces this view is under development.
   </p>
 """
 
   if len(row.head_objects) == 0 and len(row.body_objects) == 0:
-    head_list, body_list = dgw_parser(row.institution, row.block_type, row.block_value, period=period)
+    print('*** Reparse', file=sys.stderr)
+    head_list, body_list = dgw_parser(row.institution,
+                                      row.block_type,
+                                      row.block_value,
+                                      period=period)
   else:
     head_list, body_list = row.head_objects, row.body_objects
 
