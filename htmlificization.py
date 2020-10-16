@@ -21,11 +21,25 @@
 
 import os
 import sys
+
 from course_lookup import lookup_course
 
 from dgw_interpreter import dgw_parser
 
 DEBUG = os.getenv('DEBUG_HTML')
+
+quarantine_dict = {}
+with open('/Users/vickery/dgw_processor/testing/quarantine_list') as ql_file:
+  quarantine_list = ql_file.readlines()
+  for line in quarantine_list:
+    if line[0] == '#':
+      continue
+    body, ellucian = line.split('::')
+    ellucian = 'y' in ellucian or 'Y' in ellucian
+    college, requirement_id, *explanation = body.split(' ')
+    explanation = ' '.join(explanation).strip()
+
+    quarantine_dict[(college, requirement_id)] = (explanation.strip('.'), ellucian)
 
 
 # list_of_courses()
@@ -225,15 +239,30 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
   if row.requirement_html == 'Not Available':
     return '<h1>This scribe block is not available.</h1><p><em>Should not occur.</em></p>'
 
-  disclaimer = """
-  <p class="error">
-    The following is an <strong>incomplete interpretation</strong> of the above scribe block. The
-    interpreter that produces this view is under development.
-  </p>
+  if (row.institution, row.requirement_id) in quarantine_dict.keys():
+    explanation, ellucian = quarantine_dict[(row.institution, row.requirement_id)]
+    print(f'{explanation=} {ellucian=}', file=sys.stderr)
+    if ellucian:
+      qualifier = 'Although the Ellucian parser does not report an error, this parser'
+    else:
+      qualifier = 'This parser'
+    disclaimer = f"""
+    <p class="disclaimer">
+      <span class="error">
+        {qualifier} was unable to process this Scribe Block, with the following explanation:
+      </span>
+        “{explanation}.”
+    </p>
+"""
+  else:
+   disclaimer = """
+   <p class="disclaimer error">
+     The following is an <strong>incomplete interpretation</strong> of the above scribe block. The
+     interpreter that produces this view is under development.
+   </p>
 """
 
   if len(row.head_objects) == 0 and len(row.body_objects) == 0:
-    print('*** Reparse', file=sys.stderr)
     head_list, body_list = dgw_parser(row.institution,
                                       row.block_type,
                                       row.block_value,
