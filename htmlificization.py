@@ -119,12 +119,14 @@ def details(info: dict) -> str:
 
       qualifiers = info.pop('qualifiers')
       if len(qualifiers) > 0:
-        print(f'{qualifiers=}', file=sys.stderr)
+        if DEBUG:
+          print(f'{qualifiers=}', file=sys.stderr)
         return_str += '<details><summary>Qualifiers</summary>'
         return_str += '\n'.join([to_html(qualifier) for qualifier in qualifiers])
         return_str += '</details>'
       else:
-        print(f'No qualifiers: {info}', file=sys.stderr)
+        if DEBUG:
+          print(f'No qualifiers: {info}', file=sys.stderr)
 
     except KeyError as ke:
       print(f'Missing course_list element in', info['context_path'])
