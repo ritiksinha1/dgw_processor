@@ -526,7 +526,7 @@ def subset_body(ctx, institution):
                           | noncourse
                           | rule_complete
                         )+
-                        ENDSUB subset_qualifier* label?;
+                        ENDSUB subset_qualifier* (remark | label)*;
 
       subset_qualifier  : maxpassfail
                         | maxperdisc
@@ -542,9 +542,6 @@ def subset_body(ctx, institution):
   """
   return_dict = {'tag': 'subset'}
 
-  # The grammar says one or more of each of the rules go between BEGINSUB and ENDSUB. But really
-  # each one should appear at most once, except for class_credit_body. So if there is a list and
-  # it's not class_credit_body, it must be length one.
   if len(ctx.if_then_body()) > 0:
     return_dict['if_then'] = [if_then_body(context, institution)
                               for context in ctx.if_then_body()]
@@ -578,6 +575,25 @@ def subset_body(ctx, institution):
   if len(ctx.rule_complete()) > 0:
     assert len(ctx.rule_complete()) == 1
     return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0], institution)
+
+  try:
+    label_ctx = ctx.label()
+    if len(label_ctx) > 1:
+      print(f'Multiple ({len(label_ctx)}) labels at {context_path(ctx)}', file=sys.stderr)
+    label_ctx = label_ctx.pop()
+    return_dict['label'] = label_ctx.string().getText().strip(' "')
+  except (KeyError, IndexError):
+    # No label: note it
+    return_dict['label'] = 'No Label for this subset!'
+
+  try:
+    if len(ctx.remark()) > 1:
+      print(f'Multiple ({len(ctx.remark())}) remarks at {context_path(ctx)}', file=sys.stderr)
+    context = ctx.remark().pop()
+    remark_str = ' '.join([s.getText().strip(' "') for s in context.string()])
+    return_dict['remark'] = remark_str
+  except KeyError:
+    pass
 
   return return_dict
 

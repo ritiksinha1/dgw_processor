@@ -266,9 +266,9 @@ def get_scribed_courses(ctx):
     for course_item in course_items:
       for child in course_item.children:
         if child.__class__.__name__ == 'DisciplineContext':
-          discipline = child.getText()
+          discipline = child.getText().strip()
         elif child.__class__.__name__ == 'Catalog_numberContext':
-          catalog_number = child.getText()
+          catalog_number = child.getText().strip()
         elif child.__class__.__name__ == 'With_clauseContext':
           with_clause = child.getText()   # Need to interpret this
           with_clause = _with_clause(child)
@@ -695,6 +695,8 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
    and {catnum_clause}
    order by discipline, numeric_part(catalog_number)
               """
+    if DEBUG:
+      print(f'{discp_op=} {discipline=} {catnum_clause=}', file=sys.stderr)
     cursor.execute(course_query)
     if cursor.rowcount > 0:
       for row in cursor.fetchall():
