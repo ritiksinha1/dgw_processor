@@ -181,21 +181,21 @@ def group(ctx, institution):
   """
   """
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return {'tag': 'group', 'Development status': 'Not implemented yet'}
 
 
 # if_then_head()
 # -------------------------------------------------------------------------------------------------
 def if_then_head(ctx, institution):
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return {'tag': 'if-then', 'Development status': 'Not implemented yet'}
 
 
 # if_then_body()
 # -------------------------------------------------------------------------------------------------
 def if_then_body(ctx, institution):
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {}
+  return {'tag': 'if-then', 'Development status': 'Not implemented yet'}
 
 
 # lastres()
@@ -431,7 +431,8 @@ def noncourse(ctx, institution):
   """
   return_dict = {'tag': 'noncourse',
                  'number': ctx.NUMBER().getText(),
-                 'expression': ctx.expression().getText()}  # Not interpreted (yet)
+                 'expression': ctx.expression().getText(),
+                 'Development status': 'Expression not interpreted yet'}  # Not interpreted (yet)
 
   return return_dict
 
