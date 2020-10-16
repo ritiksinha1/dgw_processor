@@ -234,7 +234,7 @@ def get_scribed_courses(ctx):
   # is given.
   discipline, catalog_number, with_clause = (None, None, None)
 
-  catalog_number = ctx.course_item().catalog_number().getText()
+  catalog_number = ctx.course_item().catalog_number().getText().strip()
   # The next two might be absent
   try:
     discipline = ctx.course_item().discipline().getText()
