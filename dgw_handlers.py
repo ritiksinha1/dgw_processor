@@ -592,7 +592,7 @@ def subset_body(ctx, institution):
     context = ctx.remark().pop()
     remark_str = ' '.join([s.getText().strip(' "') for s in context.string()])
     return_dict['remark'] = remark_str
-  except KeyError:
+  except (KeyError, IndexError):
     pass
 
   return return_dict

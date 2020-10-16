@@ -243,13 +243,14 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
     explanation, ellucian = quarantine_dict[(row.institution, row.requirement_id)]
     print(f'{explanation=} {ellucian=}', file=sys.stderr)
     if ellucian:
-      qualifier = 'Although the Ellucian parser does not report an error, this parser'
+      qualifier = 'Although the Ellucian parser does not report an error,'
     else:
-      qualifier = 'This parser'
+      qualifier = 'Neither the Ellucian parser nor'
     disclaimer = f"""
     <p class="disclaimer">
       <span class="error">
-        {qualifier} was unable to process this Scribe Block, with the following explanation:
+        {qualifier} this parser was unable to process this Scribe Block, with the following
+        explanation:
       </span>
         “{explanation}.”
     </p>
