@@ -446,6 +446,14 @@ def optional(ctx, institution):
   return {'tag': 'optional'}
 
 
+# proxy_advice()
+# -------------------------------------------------------------------------------------------------
+def proxy_advice(ctx, institution):
+  """ Recognizing this, but no plans to do anything with it.
+  """
+  return {}
+
+
 # remark()
 # -------------------------------------------------------------------------------------------------
 def remark(ctx, institution):
@@ -642,6 +650,7 @@ dispatch_head = {
     'minperdisc': minperdisc,
     'minres': minres,
     'optional': optional,
+    'proxy_advice': proxy_advice,
     'remark': remark,
     'share': share,
     'standalone': standalone,
@@ -656,6 +665,7 @@ dispatch_body = {
     'group': group,
     'if_then_body': if_then_body,
     'noncourse': noncourse,
+    'proxy_advice': proxy_advice,
     'remark': remark,
     'rule_complete': rule_complete,
     'subset': subset_body
