@@ -7,6 +7,7 @@ from dgw_utils import class_name,\
     build_course_list,\
     class_or_credit,\
     context_path,\
+    get_group_list,\
     get_qualifiers,\
     num_class_or_num_credit
 
@@ -178,10 +179,56 @@ def copy_rules(ctx, institution):
 # group()
 # -------------------------------------------------------------------------------------------------
 def group(ctx, institution):
-  """
+  """ group           : NUMBER GROUP group_list
+                        requirement* label?
+                      ;
+group_list            : group_item (logical_op group_item)*; // But only OR should occur
+group_item            : LP
+                        (  block
+                         | blocktype
+                         | course_list
+                         | class_credit_body
+                         | group
+                         | noncourse
+                         | rule_complete
+                        )
+                        requirement* label?
+                        RP
+                        requirement* label?
+                      ;
+requirement           : maxpassfail
+                      | maxperdisc
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingpa
+                      | mingrade
+                      | minperdisc
+                      | proxy_advice
+                      | samedisc
+                      | rule_tag
+                      | share
+                      ;
+
+  Qualifiers that must be applied to all rules in the group list must occur after the last right
+  parenthesis and before the label at the end of the Group statement. Qualifiers that apply only to
+  a specific rule in the group list must appear inside the parentheses for that group item rule.
+
+  Allowable rule qualifiers: DontShare, Hide, HideRule, HighPriority, LowPriority, LowestPriority,
+  MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA, ProxyAdvice, SameDisc,
+  ShareWith, MinClass, MinCredit, RuleTag.
   """
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {'tag': 'group', 'Development status': 'Not implemented yet'}
+  return_dict = {'tag': 'group', 'number': ctx.NUMBER().getText()}
+
+  return_dict['group_qualifiers'] = get_qualifiers(ctx.requirement(), institution)
+  return_dict['group_list'] = get_group_list(ctx.group_list())
+
+  return_dict['develoment_status'] = 'Under development: incomplete'
+  if ctx.label():
+    return_dict['label'] = ctx.label().string().getText().strip(' "')
+
+  return return_dict
 
 
 # if_then_head()

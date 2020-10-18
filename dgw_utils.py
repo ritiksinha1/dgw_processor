@@ -384,6 +384,7 @@ def get_qualifiers(ctx, institution):
                                    'expression': expression})
 
           else:
+            print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}')
             qualifier_list.append({'tag': qualifier})
 
   return qualifier_list
@@ -508,6 +509,28 @@ def get_course_list_qualifiers(institution, ctx):
             qualifier_list.append(CourseListQualifier(qualifier))
 
   return qualifier_list
+
+
+# get_group_list()
+# -------------------------------------------------------------------------------------------------
+def get_group_list(ctx: list) -> list:
+  """ group_list      : group_item (logical_op group_item)*; // But only OR should occur
+      group_item      : LP
+                        (  block
+                         | blocktype
+                         | course_list
+                         | class_credit_body
+                         | group
+                         | noncourse
+                         | rule_complete
+                        )
+                        requirement* label?
+                        RP
+  """
+  return_list = []
+  for group_item in ctx.group_item():
+    print(group_item.getText(), file=sys.stderr)
+  return return_list
 
 
 # build_string()

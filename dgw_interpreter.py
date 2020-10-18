@@ -150,9 +150,8 @@ if __name__ == '__main__':
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-f', '--format')
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
-  parser.add_argument('-s', '--show_html', action='store_true', default=False)
+  parser.add_argument('-n', '--no_update_db', action='store_false')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
-  parser.add_argument('-u', '--update_db', action='store_true', default=False)
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
 
   # Parse args
@@ -177,8 +176,9 @@ if __name__ == '__main__':
     types_count = 0
     num_types = len(args.block_types)
     for block_type in args.block_types:
+      block_type = block_type.upper()
       types_count += 1
-      if args.block_values[0] == 'all':
+      if args.block_values[0] == 'ALL':
         conn = PgConnection()
         cursor = conn.cursor()
         cursor.execute('select distinct block_value from requirement_blocks '
@@ -200,7 +200,7 @@ if __name__ == '__main__':
         head_list, body_list = dgw_parser(institution,
                                           block_type.upper(),
                                           block_value,
-                                          period='latest', update_db=args.update_db)
+                                          period='latest', update_db=args.no_update_db)
 
 #         if args.show_html:
 #           html = """
