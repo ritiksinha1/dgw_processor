@@ -79,6 +79,14 @@ def details(info: dict) -> str:
     tag_name = info.pop('tag')
   except KeyError as ke:
     tag_name = 'unnamed'
+  try:
+    label = info.pop('label')
+    if label is None:
+      tag_name = 'Missing Label'
+    else:
+      tag_name = label
+  except KeyError as ke:
+    pass
 
   return_str = f'<details><summary>{tag_name}</summary>'
 
@@ -155,7 +163,7 @@ def details(info: dict) -> str:
 
   else:
     for key, value in info.items():
-      key_name = 'value' if key == 'number' else key
+      key_name = key
 
       if value is None:
         continue  # Omit empty fields

@@ -222,8 +222,7 @@ requirement     : maxpassfail
 /*  Body Only
  */
 group           : NUMBER GROUP group_list
-                  requirement*
-                  proxy_advice? label?
+                  requirement* label?
                 ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
@@ -236,7 +235,6 @@ group_item      : LP
                    | rule_complete)
                   requirement* label?
                   RP
-                  requirement* label?
                 ;
 
 //  Rule Subset
@@ -290,8 +288,15 @@ class_credit_head   : (num_classes | num_credits)
 
 class_credit_body   : (num_classes | num_credits)
                       (logical_op (num_classes | num_credits))? course_list_body?
-                      (IS? pseudo | proxy_advice | share | rule_tag | tag)*
-                      display* proxy_advice? label?;
+                      (IS? pseudo
+                       | display
+                       | proxy_advice
+                       | remark
+                       | rule_tag
+                       | share
+                       | tag
+                      )*
+                      label?;
 
 allow           : (ALLOW | ACCEPT);
 class_or_credit : (CLASS | CREDIT);

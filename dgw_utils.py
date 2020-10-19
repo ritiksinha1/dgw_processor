@@ -514,7 +514,7 @@ def get_course_list_qualifiers(institution, ctx):
 # get_group_list()
 # -------------------------------------------------------------------------------------------------
 def get_group_list(ctx: list) -> list:
-  """ group_list      : group_item (logical_op group_item)*; // But only OR should occur
+  """ group_list      : group_item (logical_op group_item)*; // logical_op is always OR
       group_item      : LP
                         (  block
                          | blocktype
@@ -530,6 +530,32 @@ def get_group_list(ctx: list) -> list:
   return_list = []
   for group_item in ctx.group_item():
     print(group_item.getText(), file=sys.stderr)
+    childs = group_item.getChildren()
+    for child in childs:
+      item_class = class_name(child)
+      if item_class == 'TerminalNodeImpl':
+        pass
+      elif item_class == 'Block':
+        return_list.append({'tag': 'block'})
+      elif item_class == 'Blocktype':
+        return_list.append({'tag': 'blocktype'})
+      elif item_class == 'Course_list':
+        return_list.append({'tag': 'course_list'})
+      elif item_class == 'Class_credit_body':
+        return_list.append({'tag': 'class_credit_body'})
+      elif item_class == 'Group':
+        return_list.append({'tag': 'group'})
+      elif item_class == 'Noncourse':
+        return_list.append({'tag': 'noncourse'})
+      elif item_class == 'Rule_complete':
+        return_list.append({'tag': 'rule_complete'})
+      else:
+        return_list.append({'tag': f'Unknown group_item: “{item_class}”'})
+    if group_item.requirement():
+      return_list[-1].update({'requirement': 'Not yet'})
+    if group_item.label():
+      return_list[-1].update({'label': 'Not yet'})
+
   return return_list
 
 

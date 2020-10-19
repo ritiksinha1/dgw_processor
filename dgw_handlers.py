@@ -99,8 +99,15 @@ def class_credit_body(ctx, institution):
   """
       class_credit_body   : (num_classes | num_credits)
                             (logical_op (num_classes | num_credits))? course_list_body?
-                            (IS? pseudo | proxy_advice | share | rule_tag | tag)*
-                            display* proxy_advice? label?;
+                            (IS? pseudo
+                             | display
+                             | proxy_advice
+                             | remark
+                             | rule_tag
+                             | share
+                             | tag
+                            )*
+                            label?;
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
@@ -123,6 +130,7 @@ def class_credit_body(ctx, institution):
                                  | share
 
       Note: rule_tag is used only for audit presentation, and is ignored here.
+            proxy_advice is student-dependent, and is ignored here.
 
       "Allowable rule qualifiers: DontShare, Exclusive, Hide, HideRule, HighPriority, LowPriority,
       LowestPriority, MaxPassFail, MaxPerDisc, MaxSpread, MaxTerm, MaxTransfer, MinAreas, MinGrade,
