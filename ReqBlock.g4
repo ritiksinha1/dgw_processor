@@ -113,7 +113,7 @@ course_list_head_qualifier : maxspread
                            | share
                            ;
 
-course_list_body           : course_list (course_list_body_qualifier tag?)* proxy_advice? label? ;
+course_list_body           : course_list (course_list_body_qualifier tag?)* proxy_advice?;
 course_list_body_qualifier : maxpassfail
                            | maxperdisc
                            | maxspread
@@ -290,13 +290,13 @@ class_credit_body   : (num_classes | num_credits)
                       (logical_op (num_classes | num_credits))? course_list_body?
                       (IS? pseudo
                        | display
+                       | label
                        | proxy_advice
                        | remark
                        | rule_tag
                        | share
                        | tag
-                      )*
-                      label?;
+                      )*;
 
 allow           : (ALLOW | ACCEPT);
 class_or_credit : (CLASS | CREDIT);

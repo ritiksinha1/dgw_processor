@@ -44,7 +44,7 @@ with open('/Users/vickery/dgw_processor/testing/quarantine_list') as ql_file:
 
 # list_of_courses()
 # -------------------------------------------------------------------------------------------------
-def list_of_courses(course_tuples, title_str, highlight=False):
+def list_of_courses(course_tuples: tuple, title_str: str, highlight=False) -> str:
   """ There are two flavors of course_tuples: scribed courses have just the discipline and catalog
       number, with an optional with clause, so the length of those tuples is 3. Otherwise, the
       tuple consists of the course_id, offer_nbr, discipline, catalog_number, and optional with
@@ -70,37 +70,44 @@ def list_of_courses(course_tuples, title_str, highlight=False):
   return return_str
 
 
-# details()
+# dict_to_html_details()
 # -------------------------------------------------------------------------------------------------
-def details(info: dict) -> str:
-  """
+def dict_to_html_details(info: dict) -> str:
+  """ Convert a dict to a HTML details element. The summary element is based on the tag/label fields
+      of the dict. If there are remark or display fields, they go in paragrapsh at the beginning of
+      the body part of the details element.
   """
   try:
-    tag_name = info.pop('tag')
+    tag = info.pop('tag')
   except KeyError as ke:
-    tag_name = 'unnamed'
+    tag = 'Dict With No Tag'
   try:
     label = info.pop('label')
     if label is None:
-      tag_name = 'Missing Label'
-    else:
-      tag_name = label
+      label = 'Label Not Scribed'
   except KeyError as ke:
-    pass
+    label = 'Dict With No Label'
+  try:
+    remark = info.pop('remark')
+    remark = f'<p><strong>{remark}</strong></p>'
+  except KeyError as ke:
+    remark = ''
+  try:
+    display = info.pop('display')
+    display = f'<p><em>{display}</em></p>'
+  except KeyError as ke:
+    display = ''
 
-  return_str = f'<details><summary>{tag_name}</summary>'
+  return_str = (f'<details><summary>{label} ({tag.replace("_", " ").title()})</summary>'
+                f'{remark}{display}')
 
-  if tag_name == 'course_list':
+  if tag == 'course_list':
     # Hoo-boy, this is fun: we are going to do everything nice here: how many courses in each
     # of the three lists, and links to catalog descriptions for active courses, usw.
     try:
-
-      label = info.pop('label')
-      if label is not None:
-        return_str += f'<h2>{label}</h2>'
-
       list_type = info.pop('list_type')
       if list_type != 'None':
+        # AND/OR
         return_str += f'<p>This is an {list_type} list.</p>'
 
       scribed_courses = info.pop('scribed_courses')
@@ -205,9 +212,9 @@ def details(info: dict) -> str:
   return return_str + '</details>'
 
 
-# unordered_list()
+# list_to_html_list()
 # -------------------------------------------------------------------------------------------------
-def unordered_list(info: list) -> str:
+def list_to_html_list(info: list) -> str:
   """
   """
   num = len(info)
@@ -232,9 +239,9 @@ def to_html(info: any) -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return unordered_list(info)
+    return list_to_html_list(info)
   if isinstance(info, dict):
-    return details(info)
+    return dict_to_html_details(info)
 
   return info
 

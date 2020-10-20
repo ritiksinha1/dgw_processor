@@ -169,8 +169,7 @@ def num_class_or_num_credit(ctx) -> dict:
   else:
     assert num_classes and num_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
 
-  return {'tag': 'num_class_credit',
-          'num_classes': num_classes,
+  return {'num_classes': num_classes,
           'allow_classes': allow_classes,
           'num_credits': num_credits,
           'allow_credits': allow_credits,

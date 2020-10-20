@@ -113,7 +113,7 @@ def class_credit_body(ctx, institution):
       num_credits         : NUMBER CREDIT allow_clause?;
       allow_clause        : LP allow NUMBER RP;
 
-      course_list_body           : course_list (course_list_body_qualifier tag?)* label? ;
+      course_list_body           : course_list (course_list_body_qualifier tag?)*;
       course_list_body_qualifier : maxpassfail
                                  | maxperdisc
                                  | maxspread
@@ -139,20 +139,24 @@ def class_credit_body(ctx, institution):
   return_dict = {'tag': 'class_credit'}
   return_dict.update(num_class_or_num_credit(ctx))
   if ctx.course_list_body():
-    return_dict['courses'] = build_course_list(ctx.course_list_body().course_list(), institution)
+    return_dict.update(build_course_list(ctx.course_list_body().course_list(), institution))
     if context := ctx.course_list_body().course_list_body_qualifier():
-      return_dict['courses']['qualifiers'] = get_qualifiers(context, institution)
-    if context := ctx.course_list_body().label():
-      return_dict['courses']['label'] = (context
-                                         .string()
-                                         .getText()
-                                         .strip('"')
-                                         .replace('\'', '’'))
+      return_dict['qualifiers'] = get_qualifiers(context, institution)
+    # Can we omit the label from course_lists? The label should be attached to class_credit.
+    # if ctx.course_list_body().label():
+    #   return_dict['courses']['label'] = (ctx.course_list_body().label()
+    #                                      .string()
+    #                                      .getText()
+    #                                      .strip('"')
+    #                                      .replace('\'', '’'))
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.share():
     print(context_path(ctx), share(ctx.share(), institution))
     return_dict['share'] = share(ctx.share(), institution)
+
+  if ctx.remark():
+    return_dict.update(remark(ctx.remark(), institution))
 
   if ctx.display():
     display_text = ''
@@ -161,8 +165,18 @@ def class_credit_body(ctx, institution):
     return_dict['display'] = display_text.strip()
 
   if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+    if isinstance(ctx.label(), list):
+      return_dict['label'] = ''
+      for context in ctx.label():
+        print(f'{context_path(context)}\n  {context.getText()=}', file=sys.stderr)
+        return_dict['label'] += ' '.join([context.string().getText().strip(' "')])
+    else:
+      print(f'{context_path(ctx)}\n  {ctx.getText()=}', file=sys.stderr)
+      return_dict['label'] = ctx.label().string().getText().strip(' "')
+  else:
+    return_dict['label'] = None
 
+  print(return_dict)
   return return_dict
 
 
@@ -495,8 +509,7 @@ def noncourse(ctx, institution):
 # optional()
 # -------------------------------------------------------------------------------------------------
 def optional(ctx, institution):
-  """
-      If present, the block’s requirements are optional.
+  """ If present, the block’s requirements are optional.
   """
   return {'tag': 'optional'}
 
@@ -512,15 +525,14 @@ def proxy_advice(ctx, institution):
 # remark()
 # -------------------------------------------------------------------------------------------------
 def remark(ctx, institution):
+  """ remark          : (REMARK string SEMICOLON?)+;
   """
-      remark          : (REMARK string SEMICOLON?)+;
-  """
-  # remark_str = ctx.string().getText().strip(' "')
-  # print(remark_str, file=sys.stderr)
-  # print(ctx.remark()[0].string().getText().strip(' "'), file=sys.stderr)
-  # print(ctx.remark()[0].remark()[0].string().getText().strip(' "'), file=sys.stderr)
-  # print(ctx.remark()[0].remark()[0].remark()[0].string().getText().strip(' "'), file=sys.stderr)
-  remark_str = ' '.join([s.getText().strip(' "') for s in ctx.string()])
+  remark_str = ''
+  if isinstance(ctx, list):
+    for context in ctx:
+      remark_str += ' '.join([s.getText().strip(' "') for s in context.string()])
+  else:
+    remark_str += ' '.join([s.getText().strip(' "') for s in ctx.string()])
   return_dict = {'tag': 'remark',
                  'text': remark_str}
   return return_dict
@@ -529,8 +541,7 @@ def remark(ctx, institution):
 # rule_complete()
 # -------------------------------------------------------------------------------------------------
 def rule_complete(ctx, institution):
-  """
-      rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
+  """ rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
   """
   return_dict = {'tag': 'rule_complete'}
   return_dict['is_complete'] = True if ctx.RULE_COMPLETE() else False
