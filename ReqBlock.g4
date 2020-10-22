@@ -283,8 +283,8 @@ allow_clause        : LP allow NUMBER RP;
 
 class_credit_head   : (num_classes | num_credits)
                       (logical_op (num_classes | num_credits))?
-                      (IS? pseudo | proxy_advice | header_tag | tag)*
-                      display* proxy_advice? label?;
+                      (IS? pseudo | display | proxy_advice | header_tag | label | tag)*
+                    ;
 
 class_credit_body   : (num_classes | num_credits)
                       (logical_op (num_classes | num_credits))? course_list_body?

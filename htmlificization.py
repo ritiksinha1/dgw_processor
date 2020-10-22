@@ -72,21 +72,21 @@ def list_of_courses(course_tuples: tuple, title_str: str, highlight=False) -> st
 
 # dict_to_html_details()
 # -------------------------------------------------------------------------------------------------
-def dict_to_html_details(info: dict) -> str:
+def dict_to_html_details(info: dict, is_head, is_body) -> str:
   """ Convert a dict to a HTML details element. The summary element is based on the tag/label fields
-      of the dict. If there are remark or display fields, they go in paragrapsh at the beginning of
-      the body part of the details element.
+      of the dict. If there are remark or display fields, they go at the beginning of the body part
+      of the details element.
   """
+
   try:
     tag = info.pop('tag')
   except KeyError as ke:
-    tag = 'Dict With No Tag'
+    tag = None
   try:
     label = info.pop('label')
-    if label is None:
-      label = 'Label Not Scribed'
   except KeyError as ke:
-    label = 'Dict With No Label'
+    label = None
+
   try:
     remark = info.pop('remark')
     remark = f'<p><strong>{remark}</strong></p>'
@@ -98,10 +98,10 @@ def dict_to_html_details(info: dict) -> str:
   except KeyError as ke:
     display = ''
 
-  return_str = (f'<details><summary>{label} ({tag.replace("_", " ").title()})</summary>'
+  return_str = (f'<details><summary>{label} {tag.replace("_", " ").title()}</summary>'
                 f'{remark}{display}')
 
-  if tag == 'course_list':
+  if tag == 'class_credit_head' or tag == 'class_credit_body':
     # Hoo-boy, this is fun: we are going to do everything nice here: how many courses in each
     # of the three lists, and links to catalog descriptions for active courses, usw.
     try:
@@ -166,7 +166,7 @@ def dict_to_html_details(info: dict) -> str:
       return_str += f'<strong>Context:</strong> {context_path}'
 
     for key, value in info.items():
-      return_str += f'<dir>{key}: {info.keys()} <span class="error"> Not Interpreted.</span></dir>'
+      return_str += f'<dir>{key}: {value} <span class="error"> Not Interpreted.</span></dir>'
 
   else:
     for key, value in info.items():
@@ -214,7 +214,7 @@ def dict_to_html_details(info: dict) -> str:
 
 # list_to_html_list()
 # -------------------------------------------------------------------------------------------------
-def list_to_html_list(info: list) -> str:
+def list_to_html_list(info: list, is_head, is_body) -> str:
   """
   """
   num = len(info)
@@ -231,7 +231,7 @@ def list_to_html_list(info: list) -> str:
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(info: any) -> str:
+def to_html(info: any, is_head=False, is_body=False) -> str:
   """  Return a nested HTML data structure as described above.
   """
   if info is None:
@@ -239,9 +239,9 @@ def to_html(info: any) -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return list_to_html_list(info)
+    return list_to_html_list(info, is_head, is_body)
   if isinstance(info, dict):
-    return dict_to_html_details(info)
+    return dict_to_html_details(info, is_head, is_body)
 
   return info
 
@@ -289,8 +289,8 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
   return row.requirement_html + disclaimer + f"""
 <section>
   <h1>Head</h1>
-  {to_html(head_list)}
+  {to_html(head_list, is_head=True)}
   <h1>Body</h1>
-  {to_html(body_list)}
+  {to_html(body_list, is_body=True)}
 </section>
 """

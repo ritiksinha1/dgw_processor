@@ -67,8 +67,8 @@ def class_credit_head(ctx, institution):
   """
       class_credit_head   : (num_classes | num_credits)
                             (logical_op (num_classes | num_credits))?
-                            (IS? pseudo | header_tag | tag)*
-                            display* label?;
+                            (IS? pseudo | display | proxy_advice | header_tag | label | tag)*
+                          ;
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
@@ -87,8 +87,15 @@ def class_credit_head(ctx, institution):
       display_text += item.string().getText().strip(' "') + ' '
     return_dict['display'] = display_text.strip()
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+    if ctx.label():
+      if isinstance(ctx.label(), list):
+        return_dict['label'] = ''
+        for context in ctx.label():
+          return_dict['label'] += ' '.join([context.string().getText().strip(' "')])
+      else:
+        return_dict['label'] = ctx.label().string().getText().strip(' "')
+    else:
+      return_dict['label'] = None
 
   return return_dict
 
