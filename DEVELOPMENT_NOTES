@@ -1,3 +1,8 @@
+2020-10-22
+In htmlificization, I was handling course lists differently from other syntactic units. Instead I
+am going to let any such special treatment be taken care of by the routintes in dgw_handlers (which
+is the module where the parse tree is walked.)
+
 2020-10-03
 There have been some changes to the grammar to make the handlers of the various top-level statements
 cleaner. Whenever something appears with a + or * (or maybe even ? (?))quantifier, it shows up as a
