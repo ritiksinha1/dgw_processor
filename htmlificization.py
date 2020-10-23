@@ -80,57 +80,69 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
   """
 
   summary = '<summary class="error">No-tag-or-label Bug</summary>'
+
   try:
     tag = info.pop('tag')
     summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
   except KeyError as ke:
-    tag = None
+    pass
+
   try:
     label = info.pop('label')
-    summary = f'<summary>{label}</summary>'
+    if label is not None:
+      summary = f'<summary>{label}</summary>'
   except KeyError as ke:
-    label = None
+    pass
 
   try:
     remark = info.pop('remark')
     remark = f'<p><strong>{remark}</strong></p>'
   except KeyError as ke:
     remark = ''
+
   try:
     display = info.pop('display')
     display = f'<p><em>{display}</em></p>'
   except KeyError as ke:
     display = ''
-  try:
-    context_path = info.pop('context_path')
-    if DEBUG:
-      return_str += f'<div><strong>Context:</strong>{context_path}</div>'
-  except KeyError as ke:
-    context_path = ''
+
+  context_path = ''
+  if DEBUG:
+    try:
+      context_path = f'<div><strong>Context:</strong>{info.pop("context_path")}</div>'
+    except KeyError as ke:
+      pass
 
   return_str = (f'<details>{summary}{context_path}{remark}{display}')
 
   for key, value in info.items():
-
+    key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
     # Special presentation for course lists, if present
-    if key == 'attributes':  # Handled by active_courses
+    if key in ['attributes', 'qualifiers']:  # Handled by active_courses and scribed_courses
       continue
 
     if key == 'list_type':
       if value != 'None':
         # AND/OR
-        return_str += f'<p>List type: This is an {value} list.</p>'
+        return_str += f'<p>{key_str}: This is an {value} list.</p>'
         continue
 
     if key == 'scribed_courses':
       assert isinstance(value, list)
       return_str += list_of_courses(value, 'Scribed Course')
+      try:
+        qualifiers = info['qualifiers']
+        if qualifiers is not None and len(qualifiers) > 0:
+          return_str += to_html(qualifiers, is_head, is_body)
+      except KeyError as ke:
+        pass
       continue
 
     if key == 'active_courses':
       assert isinstance(value, list)
       if len(value) == 0:
         return_str += '<div class="error">No Active Courses!</div>'
+        continue
       else:
         attributes_str = ''
         try:
@@ -174,7 +186,7 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
     if isinstance(value, bool):
       # Show booleans only if true
       if value:
-        return_str += f'<div>{key}: {value}</div>'
+        return_str += f'<div>{key_str}: {value}</div>'
 
     elif isinstance(value, str):
       try:
@@ -183,28 +195,27 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
           # range of values: check if floats or ints
           range_floor, range_ceil = [float(v) for v in value.split(':')]
           if range_floor != int(range_floor) or range_ceil != int(range_ceil):
-            return_str += (f'<div>{key}: between {range_floor:0.1f} and '
+            return_str += (f'<div>{key_str}: between {range_floor:0.1f} and '
                            f'{range_ceil:0.1f}</div>')
           elif int(range_floor) != int(range_ceil):
-            return_str += (f'<div>{key}: between {int(range_floor)} and '
+            return_str += (f'<div>{key_str}: between {int(range_floor)} and '
                            f'{int(range_ceil)}</div>')
           else:
             # both are ints and are the same
-            return_str += f'<div>{key}: {int(range_floor)}</div>'
+            return_str += f'<div>{key_str}: {int(range_floor)}</div>'
         else:
           # single value
           if int(value) == float(value):
-            return_str += f'<div>{key}: {int(value)}</div>'
+            return_str += f'<div>{key_str}: {int(value)}</div>'
           else:
-            return_str += f'<div>{key}: {float(value):0.1f}</div>'
+            return_str += f'<div>{key_str}: {float(value):0.1f}</div>'
 
       except ValueError as ve:
         # Not a numeric string; just show the text.
-        return_str += f'<div>{key}: {value}</div>'
+        return_str += f'<div>{key_str}: {value}</div>'
 
     else:
-      # Fall through
-      print(f'Fallthrough: {key=} {value=} {is_head=} {is_body=}', file=sys.stderr)
+      # Fallthrough
       return_str += to_html(value, is_head, is_body)
 
   return return_str + '</details>'
