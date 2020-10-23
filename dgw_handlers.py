@@ -175,10 +175,8 @@ def class_credit_body(ctx, institution):
     if isinstance(ctx.label(), list):
       return_dict['label'] = ''
       for context in ctx.label():
-        print(f'{context_path(context)}\n  {context.getText()=}', file=sys.stderr)
         return_dict['label'] += ' '.join([context.string().getText().strip(' "')])
     else:
-      print(f'{context_path(ctx)}\n  {ctx.getText()=}', file=sys.stderr)
       return_dict['label'] = ctx.label().string().getText().strip(' "')
   else:
     return_dict['label'] = None
@@ -312,7 +310,7 @@ def maxclass(ctx, institution):
   """
       maxclass        : MAXCLASS NUMBER course_list? tag?;
   """
-  return_dict = {'tag': 'maxclass',
+  return_dict = {'tag': 'max_class',
                  'number': ctx.NUMBER().getText().strip()}
   return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 
@@ -325,7 +323,7 @@ def maxcredit(ctx, institution):
   """
       maxcredit       : MAXCREDIT NUMBER course_list? tag?;
   """
-  return_dict = {'tag': 'maxcredit',
+  return_dict = {'tag': 'max_credit',
                  'number': ctx.NUMBER().getText().strip()}
   return_dict['courses'] = build_course_list(ctx.course_list(), institution)
 

@@ -44,12 +44,13 @@ with open('/Users/vickery/dgw_processor/testing/quarantine_list') as ql_file:
 
 # list_of_courses()
 # -------------------------------------------------------------------------------------------------
-def list_of_courses(course_tuples: tuple, title_str: str, highlight=False) -> str:
+def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str:
   """ There are two flavors of course_tuples: scribed courses have just the discipline and catalog
-      number, with an optional with clause, so the length of those tuples is 3. Otherwise, the
-      tuple consists of the course_id, offer_nbr, discipline, catalog_number, and optional with
-      clause.
+      number, with an optional with clause, so the length of those tuples is 3. Otherwise, the tuple
+      consists of the course_id, offer_nbr, discipline, catalog_number, title, and optional with
+      clause (length 6).
   """
+  assert len(course_tuples) > 0
   suffix = '' if len(course_tuples) == 1 else 's'
   class_str = ' class="error"' if highlight else ''
   return_str = (f'<details><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</summary>')
@@ -62,8 +63,8 @@ def list_of_courses(course_tuples: tuple, title_str: str, highlight=False) -> st
     else:
       return_str += (f'<details><summary>{course_tuple[2]} {course_tuple[3]}: '
                      f'<em>{course_tuple[4]}</em>')
-      if course_tuple[5] is not None:
-        return_str += f' with {course_tuple[5]}'
+      if course_tuple[-1] is not None:
+        return_str += f' with {course_tuple[-1]}'
       return_str += '</summary>'
       return_str += f'{lookup_course(course_tuple[0], offer_nbr=course_tuple[1])[1]}</details>'
   return_str += '</details>\n'
@@ -73,17 +74,20 @@ def list_of_courses(course_tuples: tuple, title_str: str, highlight=False) -> st
 # dict_to_html_details()
 # -------------------------------------------------------------------------------------------------
 def dict_to_html_details(info: dict, is_head, is_body) -> str:
-  """ Convert a dict to a HTML details element. The summary element is based on the tag/label fields
-      of the dict. If there are remark or display fields, they go at the beginning of the body part
-      of the details element.
+  """ Convert a dict to a HTML <details> element. The <summary> element is based on the tag/label
+      fields of the dict. During development, the context path goes next. Then, if there are remark
+      or display fields, they go after that, followed by everything else.
   """
 
+  summary = '<summary class="error">No-tag-or-label Bug</summary>'
   try:
     tag = info.pop('tag')
+    summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
   except KeyError as ke:
     tag = None
   try:
     label = info.pop('label')
+    summary = f'<summary>{label}</summary>'
   except KeyError as ke:
     label = None
 
@@ -97,117 +101,111 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
     display = f'<p><em>{display}</em></p>'
   except KeyError as ke:
     display = ''
-
-  return_str = (f'<details><summary>{label} {tag.replace("_", " ").title()}</summary>'
-                f'{remark}{display}')
-
-  if tag == 'class_credit_head' or tag == 'class_credit_body':
-    # Hoo-boy, this is fun: we are going to do everything nice here: how many courses in each
-    # of the three lists, and links to catalog descriptions for active courses, usw.
-    try:
-      list_type = info.pop('list_type')
-      if list_type != 'None':
-        # AND/OR
-        return_str += f'<p>This is an {list_type} list.</p>'
-
-      scribed_courses = info.pop('scribed_courses')
-      assert isinstance(scribed_courses, list)
-      return_str += list_of_courses(scribed_courses, 'Scribed Course')
-
-      attributes_str = ''
-      attributes = info.pop('attributes')
-      if attributes is not None:
-        attributes_str = ','.join(attributes)
-
-      active_courses = info.pop('active_courses')
-      assert isinstance(active_courses, list)
-      if len(active_courses) == 0:
-        return_str += '<div class="error">No Active Courses!</div>'
-      else:
-        return_str += list_of_courses(active_courses, f'Active {attributes_str} Course')
-
-      inactive_courses = info.pop('inactive_courses')
-      assert isinstance(inactive_courses, list)
-      if len(inactive_courses) > 0:
-        return_str += list_of_courses(inactive_courses, 'Inactive Course')
-
-      include_courses = info.pop('include_courses')
-      assert isinstance(include_courses, list)
-      if len(include_courses) > 0:
-        return_str += list_of_courses(include_courses, 'Include Course')
-
-      except_courses = info.pop('except_courses')
-      assert isinstance(except_courses, list)
-      if len(except_courses) > 0:
-        return_str += list_of_courses(except_courses, 'Except Course')
-
-      missing_courses = info.pop('missing_courses')
-      if len(missing_courses) > 0:
-        return_str += list_of_courses(missing_courses,
-                                      'Not-Found-in-CUNYfirst Course', highlight=True)
-
-      qualifiers = info.pop('qualifiers')
-      if len(qualifiers) > 0:
-        if DEBUG:
-          print(f'{qualifiers=}', file=sys.stderr)
-        return_str += '<details><summary>Qualifiers</summary>'
-        return_str += '\n'.join([to_html(qualifier) for qualifier in qualifiers])
-        return_str += '</details>'
-      else:
-        if DEBUG:
-          print(f'No qualifiers: {info}', file=sys.stderr)
-
-    except KeyError as ke:
-      print(f'Missing course_list element in', info['context_path'])
-
-    # There should be no keys left except for the context_path
+  try:
     context_path = info.pop('context_path')
     if DEBUG:
-      return_str += f'<strong>Context:</strong> {context_path}'
+      return_str += f'<div><strong>Context:</strong>{context_path}</div>'
+  except KeyError as ke:
+    context_path = ''
 
-    for key, value in info.items():
-      return_str += f'<dir>{key}: {value} <span class="error"> Not Interpreted.</span></dir>'
+  return_str = (f'<details>{summary}{context_path}{remark}{display}')
 
-  else:
-    for key, value in info.items():
-      key_name = key
+  for key, value in info.items():
 
-      if value is None:
-        continue  # Omit empty fields
+    # Special presentation for course lists, if present
+    if key == 'attributes':  # Handled by active_courses
+      continue
 
-      if isinstance(value, bool):
-        # Show booleans only if true
-        if value:
-          return_str += f'<div>{key_name}: {value}</div>'
+    if key == 'list_type':
+      if value != 'None':
+        # AND/OR
+        return_str += f'<p>List type: This is an {value} list.</p>'
+        continue
 
-      elif isinstance(value, str):
-        try:
-          # Interpret numeric and range strings
-          if ':' in value and 2 == len(value.split(':')):
-            # range of values: check if floats or ints
-            range_floor, range_ceil = [float(v) for v in value.split(':')]
-            if range_floor != int(range_floor) or range_ceil != int(range_ceil):
-              return_str += (f'<div>{key_name}: between {range_floor:0.1f} and '
-                             f'{range_ceil:0.1f}</div>')
-            elif int(range_floor) != int(range_ceil):
-              return_str += (f'<div>{key_name}: between {int(range_floor)} and '
-                             f'{int(range_ceil)}</div>')
-            else:
-              # both are ints and are the same
-              return_str += f'<div>{key_name}: {int(range_floor)}</div>'
-          else:
-            # single value
-            if int(value) == float(value):
-              return_str += f'<div>{key_name}: {int(value)}</div>'
-            else:
-              return_str += f'<div>{key_name}: {float(value):0.1f}</div>'
+    if key == 'scribed_courses':
+      assert isinstance(value, list)
+      return_str += list_of_courses(value, 'Scribed Course')
+      continue
 
-        except ValueError as ve:
-          # Not a numeric string; just show the text.
-          return_str += f'<div>{value}</div>'
-
+    if key == 'active_courses':
+      assert isinstance(value, list)
+      if len(value) == 0:
+        return_str += '<div class="error">No Active Courses!</div>'
       else:
-        return_str += to_html(value)
+        attributes_str = ''
+        try:
+          attributes = info['attributes']
+          if attributes is not None:
+            attributes_str = ','.join(attributes)
+        except KeyError as ke:
+          pass
+      return_str += list_of_courses(value, f'Active {attributes_str} Course')
+      continue
+
+    if key == 'inactive_courses':
+      assert isinstance(value, list)
+      if len(value) > 0:
+        return_str += list_of_courses(value, 'Inactive Course')
+      continue
+
+    if key == 'include_courses':
+      assert isinstance(value, list)
+      if len(value) > 0:
+        return_str += list_of_courses(value, 'Include Course')
+      continue
+
+    if key == 'except_courses':
+      assert isinstance(value, list)
+      if len(value) > 0:
+        return_str += list_of_courses(value, 'Except Course')
+      continue
+
+    if key == 'missing_courses':
+      assert isinstance(value, list)
+      if len(value) > 0:
+        return_str += list_of_courses(value,
+                                      'Not-Found-in-CUNYfirst Course', highlight=True)
+      continue
+
+    # Key-value pairs not specific to course lists
+    if value is None:
+      continue  # Omit empty fields
+
+    if isinstance(value, bool):
+      # Show booleans only if true
+      if value:
+        return_str += f'<div>{key}: {value}</div>'
+
+    elif isinstance(value, str):
+      try:
+        # Interpret numeric and range strings
+        if ':' in value and 2 == len(value.split(':')):
+          # range of values: check if floats or ints
+          range_floor, range_ceil = [float(v) for v in value.split(':')]
+          if range_floor != int(range_floor) or range_ceil != int(range_ceil):
+            return_str += (f'<div>{key}: between {range_floor:0.1f} and '
+                           f'{range_ceil:0.1f}</div>')
+          elif int(range_floor) != int(range_ceil):
+            return_str += (f'<div>{key}: between {int(range_floor)} and '
+                           f'{int(range_ceil)}</div>')
+          else:
+            # both are ints and are the same
+            return_str += f'<div>{key}: {int(range_floor)}</div>'
+        else:
+          # single value
+          if int(value) == float(value):
+            return_str += f'<div>{key}: {int(value)}</div>'
+          else:
+            return_str += f'<div>{key}: {float(value):0.1f}</div>'
+
+      except ValueError as ve:
+        # Not a numeric string; just show the text.
+        return_str += f'<div>{key}: {value}</div>'
+
+    else:
+      # Fall through
+      print(f'Fallthrough: {key=} {value=} {is_head=} {is_body=}', file=sys.stderr)
+      return_str += to_html(value, is_head, is_body)
 
   return return_str + '</details>'
 
@@ -225,7 +223,7 @@ def list_to_html_list(info: list, is_head, is_body) -> str:
   else:
     num_str = f'{num:,}'
   return_str = f'<details><summary>{num_str} item{suffix}</summary>'
-  return_str += '\n'.join([f'{to_html(element)}' for element in info])
+  return_str += '\n'.join([f'{to_html(element, is_head, is_body)}' for element in info])
   return return_str + '</details>'
 
 
@@ -235,7 +233,7 @@ def to_html(info: any, is_head=False, is_body=False) -> str:
   """  Return a nested HTML data structure as described above.
   """
   if info is None:
-    return 'None'
+    return ''
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
