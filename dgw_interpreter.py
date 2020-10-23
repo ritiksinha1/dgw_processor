@@ -178,7 +178,7 @@ if __name__ == '__main__':
     for block_type in args.block_types:
       block_type = block_type.upper()
       types_count += 1
-      if args.block_values[0] == 'ALL':
+      if args.block_values[0].lower() == 'all':
         conn = PgConnection()
         cursor = conn.cursor()
         cursor.execute('select distinct block_value from requirement_blocks '

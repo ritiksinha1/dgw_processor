@@ -159,7 +159,6 @@ def class_credit_body(ctx, institution):
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.share():
-    print(context_path(ctx), share(ctx.share(), institution))
     return_dict['share'] = share(ctx.share(), institution)
 
   if ctx.remark():
@@ -181,7 +180,6 @@ def class_credit_body(ctx, institution):
   else:
     return_dict['label'] = None
 
-  print(return_dict)
   return return_dict
 
 
