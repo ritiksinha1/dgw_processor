@@ -113,7 +113,10 @@ course_list_head_qualifier : maxspread
                            | share
                            ;
 
-course_list_body           : course_list (course_list_body_qualifier tag?)* proxy_advice?;
+course_list_body           : course_list (course_list_body_qualifier tag?
+                                          | proxy_advice
+                                          | label
+                                          )*;
 course_list_body_qualifier : maxpassfail
                            | maxperdisc
                            | maxspread

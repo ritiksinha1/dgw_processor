@@ -44,7 +44,7 @@ sys.setrecursionlimit(10**6)
 
 # dgw_parser()
 # =================================================================================================
-def dgw_parser(institution, block_type, block_value, period='all', update_db=True):
+def dgw_parser(institution, block_type, block_value, period='all', update_db=True, verbose=False):
   """ For each matching Scribe Block, create a DGW_Processor to hold the info about it; the
       constructor parses the block and extracts information objects from it, creating a HTML
       representation of the Scribe Block and lists of dicts of the extracted objects, one for the
@@ -75,8 +75,9 @@ def dgw_parser(institution, block_type, block_value, period='all', update_db=Tru
   num_rows = fetch_cursor.rowcount
   num_updates = 0
   for row in fetch_cursor.fetchall():
-    print(f'{institution} {row.requirement_id} {block_type} {block_value} {row.title}',
-          file=sys.stderr)
+    if verbose:
+      print(f'{institution} {row.requirement_id} {block_type} {block_value} {row.title}',
+            file=sys.stderr)
     if period == 'current' and row.period_stop != '99999999':
       return f"""<h1 class="error">“{row.title}” is not a currently offered {block_type}
                  at {institution}.</h1>
@@ -150,8 +151,9 @@ if __name__ == '__main__':
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-f', '--format')
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
-  parser.add_argument('-n', '--no_update_db', action='store_false')
+  parser.add_argument('-np', '--progress', action='store_false')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
+  parser.add_argument('-nu', '--update_db', action='store_false')
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
 
   # Parse args
@@ -195,33 +197,12 @@ if __name__ == '__main__':
         values_count += 1
         if block_value.isnumeric() or block_value.startswith('MHC'):
           continue
-        print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
-              f'{values_count} / {num_values}', file=sys.stderr)
+        if args.progress:
+          print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
+                f'{values_count} / {num_values} ', file=sys.stderr, end='')
         head_list, body_list = dgw_parser(institution,
                                           block_type.upper(),
                                           block_value,
-                                          period='latest', update_db=args.no_update_db)
-
-#         if args.show_html:
-#           html = """
-# <html>
-#   <head>
-#     <style>
-#       details {
-#         margin: 0.1em;
-#         padding: 0.25em;
-#         border: 1px solid green;
-#       }
-#     </style>
-# """
-#           html += f"""
-#   </head>
-#   <body>
-#     <h2>HEAD</h2>
-#       {to_html(head_list)}
-#     <h2>BODY</h2>
-#       {to_html(body_list)}
-#   </body>
-# </html>
-#         """
-#           print(html)
+                                          period='latest',
+                                          update_db=args.update_db,
+                                          verbose=args.progress)

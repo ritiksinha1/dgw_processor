@@ -120,7 +120,10 @@ def class_credit_body(ctx, institution):
       num_credits         : NUMBER CREDIT allow_clause?;
       allow_clause        : LP allow NUMBER RP;
 
-      course_list_body           : course_list (course_list_body_qualifier tag?)*;
+      course_list_body           : course_list (course_list_body_qualifier tag?
+                                               | proxy_advice
+                                               | label
+                                               )*;
       course_list_body_qualifier : maxpassfail
                                  | maxperdisc
                                  | maxspread
@@ -147,6 +150,7 @@ def class_credit_body(ctx, institution):
   return_dict.update(num_class_or_num_credit(ctx))
   if ctx.course_list_body():
     return_dict.update(build_course_list(ctx.course_list_body().course_list(), institution))
+
     if context := ctx.course_list_body().course_list_body_qualifier():
       return_dict['qualifiers'] = get_qualifiers(context, institution)
     # Can we omit the label from course_lists? The label should be attached to class_credit.
@@ -243,7 +247,6 @@ requirement           : maxpassfail
   MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA, ProxyAdvice, SameDisc,
   ShareWith, MinClass, MinCredit, RuleTag.
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
   return_dict = {'tag': 'group', 'number': ctx.NUMBER().getText()}
 
   return_dict['group_qualifiers'] = get_qualifiers(ctx.requirement(), institution)

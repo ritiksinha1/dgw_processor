@@ -528,7 +528,6 @@ def get_group_list(ctx: list) -> list:
   """
   return_list = []
   for group_item in ctx.group_item():
-    print(group_item.getText(), file=sys.stderr)
     childs = group_item.getChildren()
     for child in childs:
       item_class = class_name(child)

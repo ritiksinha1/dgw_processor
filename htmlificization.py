@@ -90,6 +90,7 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
   try:
     label = info.pop('label')
     if label is not None:
+      print(f'{tag=} {label=}', file=sys.stderr)
       summary = f'<summary>{label}</summary>'
   except KeyError as ke:
     pass
@@ -250,6 +251,8 @@ def to_html(info: any, is_head=False, is_body=False) -> str:
   if isinstance(info, list):
     return list_to_html_list(info, is_head, is_body)
   if isinstance(info, dict):
+    if is_body:
+      print(f'{info=}', file=sys.stderr)
     return dict_to_html_details(info, is_head, is_body)
 
   return info
