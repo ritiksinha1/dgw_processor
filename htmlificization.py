@@ -283,11 +283,21 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
     </p>
 """
   else:
-   disclaimer = """
-   <p class="disclaimer error">
-     The following is an <strong>incomplete interpretation</strong> of the above scribe block. The
-     interpreter that produces this view is under development.
-   </p>
+    disclaimer = """
+    <div class="disclaimer">
+      <p class="error">
+        The following is an <strong>incomplete interpretation</strong> of the above scribe block.
+        The interpreter that produces this view is under development.
+      </p>
+      <p>
+        <strong>October 25, 2020:</strong> Except for if-then statements, the display below should
+        be an an accurate representation of the requirements for this block. If you see any
+        anomalies, I would appreciate hearing about them.
+      </p>
+      <p>
+        <a href="mailto:cvickery@qc.cuny.edu?subject=DGW Report">Christopher Vickery</a>
+      </p>
+   </div>
 """
 
   if len(row.head_objects) == 0 and len(row.body_objects) == 0:
