@@ -172,7 +172,7 @@ def class_credit_body(ctx, institution):
       display_text += item.string().getText().strip(' "') + ' '
     return_dict['display'] = display_text.strip()
 
-  if ctx.course_list_body().label():
+  if ctx.course_list_body() and ctx.course_list_body().label():
     if isinstance(ctx.course_list_body().label(), list):
       course_list_body_label = ''
       for context in ctx.course_list_body().label():

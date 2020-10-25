@@ -55,7 +55,7 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
   class_str = ' class="error"' if highlight else ''
   return_str = (f'<details><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</summary>')
   for course_tuple in course_tuples:
-    if len(course_tuple) == 3:
+    if len(course_tuple) < 4:  # Scribed is 3 (possible 'with'); except and including are 2
       return_str += f'<div>{course_tuple[0]} {course_tuple[1]}'
       if course_tuple[2] is not None:
         return_str += f' with {course_tuple[2]}'
