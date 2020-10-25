@@ -146,20 +146,18 @@ def class_credit_body(ctx, institution):
       LowestPriority, MaxPassFail, MaxPerDisc, MaxSpread, MaxTerm, MaxTransfer, MinAreas, MinGrade,
       MinPerDisc, MinSpread, MinTerm, NotGPA, ProxyAdvice, RuleTag, SameDisc, ShareWith, With."
   """
+  # Labels can appear in differnt contexts
+  course_list_label = course_list_body_label = class_credit_label = None
+
   return_dict = {'tag': 'class_credit'}
   return_dict.update(num_class_or_num_credit(ctx))
   if ctx.course_list_body():
     return_dict.update(build_course_list(ctx.course_list_body().course_list(), institution))
+    course_list_label = return_dict['label']
 
     if context := ctx.course_list_body().course_list_body_qualifier():
       return_dict['qualifiers'] = get_qualifiers(context, institution)
-    # Can we omit the label from course_lists? The label should be attached to class_credit.
-    # if ctx.course_list_body().label():
-    #   return_dict['courses']['label'] = (ctx.course_list_body().label()
-    #                                      .string()
-    #                                      .getText()
-    #                                      .strip('"')
-    #                                      .replace('\'', '’'))
+
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.share():
@@ -174,15 +172,31 @@ def class_credit_body(ctx, institution):
       display_text += item.string().getText().strip(' "') + ' '
     return_dict['display'] = display_text.strip()
 
+  if ctx.course_list_body().label():
+    if isinstance(ctx.course_list_body().label(), list):
+      course_list_body_label = ''
+      for context in ctx.course_list_body().label():
+        course_list_body_label += ' '.join([context.string().getText().strip(' "')])
+    else:
+      course_list_body_label = ctx.course_list_body().label().string().getText().strip(' "')
+
   if ctx.label():
     if isinstance(ctx.label(), list):
-      return_dict['label'] = ''
+      class_credit_label = ''
       for context in ctx.label():
-        return_dict['label'] += ' '.join([context.string().getText().strip(' "')])
+        class_credit_label += ' '.join([context.string().getText().strip(' "')])
     else:
-      return_dict['label'] = ctx.label().string().getText().strip(' "')
-  else:
-    return_dict['label'] = None
+      class_credit_label = ctx.label().string().getText().strip(' "')
+
+  # How many labels are there?
+  labels = [course_list_label, course_list_body_label, class_credit_label]
+  if (len(labels) - labels.count(None)) > 2:
+    print(f'Ambiguous label situation: {course_list_label=} {course_list_body_label=} '
+          f'{class_credit_label=}')
+  if course_list_body_label:
+    return_dict['label'] = course_list_body_label
+  if class_credit_label:
+    return_dict['label'] = class_credit_label
 
   return return_dict
 
