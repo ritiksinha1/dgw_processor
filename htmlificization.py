@@ -251,8 +251,6 @@ def to_html(info: any, is_head=False, is_body=False) -> str:
   if isinstance(info, list):
     return list_to_html_list(info, is_head, is_body)
   if isinstance(info, dict):
-    if is_body:
-      print(f'{info=}', file=sys.stderr)
     return dict_to_html_details(info, is_head, is_body)
 
   return info
