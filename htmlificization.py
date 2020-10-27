@@ -90,7 +90,6 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
   try:
     label = info.pop('label')
     if label is not None:
-      print(f'{tag=} {label=}', file=sys.stderr)
       summary = f'<summary>{label}</summary>'
   except KeyError as ke:
     pass
