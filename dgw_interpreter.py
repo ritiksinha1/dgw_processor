@@ -189,7 +189,7 @@ if __name__ == '__main__':
         block_values = [row.block_value for row in cursor.fetchall()]
         conn.close()
       else:
-        block_values = args.block_values
+        block_values = [value.upper() for value in args.block_values]
 
       num_values = len(block_values)
       values_count = 0

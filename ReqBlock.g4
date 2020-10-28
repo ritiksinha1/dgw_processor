@@ -150,8 +150,10 @@ discipline            : symbol
 begin_if        : BEGINIF | BEGINELSE;
 end_if          : ENDIF | ENDELSE;
 
-if_then_head    : IF expression THEN (head_rule | head_rule_group) proxy_advice? label? else_head?;
-else_head       : ELSE (head_rule | head_rule_group) proxy_advice? label?;
+if_then_head    : IF expression THEN (head_rule | head_rule_group )
+                  (proxy_advice | label)* else_head?;
+else_head       : ELSE (head_rule | head_rule_group)
+                  (proxy_advice | label)*;
 head_rule_group : (begin_if head_rule+ end_if);
 head_rule       : if_then_head
                 | block

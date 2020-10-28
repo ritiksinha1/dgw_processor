@@ -276,13 +276,67 @@ requirement           : maxpassfail
 # if_then_head()
 # -------------------------------------------------------------------------------------------------
 def if_then_head(ctx, institution):
+  """
+      if_then_head    : IF expression THEN (head_rule | head_rule_group )
+                        (proxy_advice | label)* else_head?;
+      else_head       : ELSE (head_rule | head_rule_group)
+                        (proxy_advice | label)*;
+      head_rule       : if_then_head
+                      | block
+                      | blocktype
+                      | class_credit_head
+                      | copy_rules
+                      | lastres
+                      | maxcredit
+                      | maxpassfail
+                      | maxterm
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingpa
+                      | mingrade
+                      | minperdisc
+                      | minres
+                      | minterm
+                      | noncourse
+                      | proxy_advice
+                      | remark
+                      | rule_complete
+                      | share
+                      | subset
+                      ;
+  """
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {'tag': 'if-then', 'Development status': 'Not implemented yet'}
+  return_dict = {'tag': 'if-then', 'Condition': ctx.expression().getText()}
+
+  if ctx.label():
+    assert isinstance(ctx.label(), list)
+    label_str = ' '.join([label.string() for label in ctx.label()])
+    if label_str != '':
+      return_dict['label'] = label_str
+  if ctx.head_rule():
+    return_dict['if_true'] = ctx.head_rule().getText()
+  elif ctx.head_rule_group():
+    return_dict['if_true'] = ctx.head_rule_group().getText()
+  else:
+    return_dict['if_true'] = 'Missing True Part'
+
+  if ctx.else_head():
+    if ctx.else_head().head_rule():
+      return_dict['if_false'] = ctx.else_head().head_rule().getText()
+    elif ctx.els_head().head_rule_group():
+      return_dict['if_false'] = ctx.else_head().head_rule_group().getText()
+    else:
+      return_dict['if_false'] = 'Missing False Part'
+
+  return return_dict
 
 
 # if_then_body()
 # -------------------------------------------------------------------------------------------------
 def if_then_body(ctx, institution):
+  """
+  """
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
   return {'tag': 'if-then', 'Development status': 'Not implemented yet'}
 
