@@ -99,6 +99,41 @@ def catalog_years(period_start: str, period_stop: str) -> str:
   return CatalogYears._make((catalog_type, first, last, f'{first} through {last}'))
 
 
+# get_head_rules()
+# -------------------------------------------------------------------------------------------------
+def get_head_rules(ctx):
+  """ Return a list of rules that can appear in the head orf a block
+
+      head_rule       : if_then_head
+                | block
+                | blocktype
+                | class_credit_head
+                | copy_rules
+                | lastres
+                | maxcredit
+                | maxpassfail
+                | maxterm
+                | maxtransfer
+                | minclass
+                | mincredit
+                | mingpa
+                | mingrade
+                | minperdisc
+                | minres
+                | minterm
+                | noncourse
+                | proxy_advice
+                | remark
+                | rule_complete
+                | share
+                | subset
+
+  """
+  return_list = []
+  print(f'get_head_rules {isinstance(ctx, list)=}', file=sys.stderr)
+  return [ctx.getText()]
+
+
 # get_number()
 # -------------------------------------------------------------------------------------------------
 def get_number(ctx):

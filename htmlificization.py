@@ -77,6 +77,8 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
   """ Convert a dict to a HTML <details> element. The <summary> element is based on the tag/label
       fields of the dict. During development, the context path goes next. Then, if there are remark
       or display fields, they go after that, followed by everything else.
+
+      Special handling for if-else: display order is condition => if-true => if-false
   """
 
   summary = '<summary class="error">No-tag-or-label Bug</summary>'
@@ -84,6 +86,27 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
   try:
     tag = info.pop('tag')
     summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
+
+    # This is where info related to if-then tags gets handled. Generate condition, if_true, and
+    # if_false parts in that order.
+    if_then = ''
+    if tag == 'if-then':
+      print(f'*** process {tag}', file=sys.stderr)
+      try:
+        if_then += f"<p><strong>Condition:</strong> {info['condition']}</p>"
+      except KeyError as ke:
+        return_str += '<p class="error">If-Then With No Condition!</p>'
+      print(info.keys(), file=sys.stderr)
+      missing_if_true = False
+      try:
+        if_then += to_html(info['if_true'])
+      except KeyError as ke:
+        missing_if_true = True
+      try:
+        if_then += to_html(info['if_false'])
+      except KeyError as ke:
+        if missing_if_true:
+          if_then += '<p class="error">If-Then With Neither if-true nor if-false part!</p>'
   except KeyError as ke:
     pass
 
@@ -113,10 +136,14 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
     except KeyError as ke:
       pass
 
-  return_str = (f'<details>{summary}{context_path}{remark}{display}')
+  return_str = (f'<details>{summary}{context_path}{remark}{display}{if_then}')
 
   for key, value in info.items():
     key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
+
+    if key in ['if_true', 'if_false', 'condition']:  # handled by if-then
+      continue
+
     # Special presentation for course lists, if present
     if key in ['attributes', 'qualifiers']:  # Handled by active_courses and scribed_courses
       continue

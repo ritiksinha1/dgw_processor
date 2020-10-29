@@ -8,6 +8,7 @@ from dgw_utils import class_name,\
     class_or_credit,\
     context_path,\
     get_group_list,\
+    get_head_rules,\
     get_qualifiers,\
     num_class_or_num_credit
 
@@ -307,7 +308,7 @@ def if_then_head(ctx, institution):
                       ;
   """
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return_dict = {'tag': 'if-then', 'Condition': ctx.expression().getText()}
+  return_dict = {'tag': 'if-then', 'condition': ctx.expression().getText()}
 
   if ctx.label():
     assert isinstance(ctx.label(), list)
@@ -315,17 +316,17 @@ def if_then_head(ctx, institution):
     if label_str != '':
       return_dict['label'] = label_str
   if ctx.head_rule():
-    return_dict['if_true'] = ctx.head_rule().getText()
+    return_dict['if_true'] = get_head_rules(ctx.head_rule())
   elif ctx.head_rule_group():
-    return_dict['if_true'] = ctx.head_rule_group().getText()
+    return_dict['if_true'] = get_head_rules(ctx.head_rule_group())
   else:
     return_dict['if_true'] = 'Missing True Part'
 
   if ctx.else_head():
     if ctx.else_head().head_rule():
-      return_dict['if_false'] = ctx.else_head().head_rule().getText()
+      return_dict['if_false'] = get_head_rules(ctx.head_rule())
     elif ctx.els_head().head_rule_group():
-      return_dict['if_false'] = ctx.else_head().head_rule_group().getText()
+      return_dict['if_false'] = get_head_rules(ctx.head_rule_group())
     else:
       return_dict['if_false'] = 'Missing False Part'
 
