@@ -208,14 +208,14 @@ def copy_rules(ctx, institution):
   """
       copy_rules      : COPY_RULES expression SEMICOLON?;
 
-      The expression is a rule_id enclosed in parentheses.
+      The expression is a requirement_id enclosed in parentheses (RA######).
   """
   return_dict = {'tag': 'copy_rules', 'institution': institution}
   for context in ctx.expression().getChildren():
     if class_name(context) == 'Expression':
-      return_dict['rule_id'] = context.getText().strip().upper()
+      return_dict['requirement_id'] = f'{institution} {context.getText().strip().upper()}'
 
-  assert 'rule_id' in return_dict.keys(), f'Invalid copyrules {ctx.expression().getText()}'
+  assert 'requirement_id' in return_dict.keys(), f'Invalid CopyRules {ctx.expression().getText()}'
 
   return return_dict
 
@@ -324,12 +324,12 @@ def if_then_head(ctx, institution):
 
   if ctx.else_head():
     if ctx.else_head().head_rule():
-      return_dict['if_false'] = get_head_rules(ctx.head_rule())
-    elif ctx.els_head().head_rule_group():
-      return_dict['if_false'] = get_head_rules(ctx.head_rule_group())
+      return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule())
+    elif ctx.else_head().head_rule_group():
+      return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule_group())
     else:
       return_dict['if_false'] = 'Missing False Part'
-
+  print(return_dict, file=sys.stderr)
   return return_dict
 
 

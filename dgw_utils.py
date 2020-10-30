@@ -104,7 +104,7 @@ def catalog_years(period_start: str, period_stop: str) -> str:
 def get_head_rules(ctx):
   """ Return a list of rules that can appear in the head orf a block
 
-      head_rule       : if_then_head
+head_rule       : if_then_head
                 | block
                 | blocktype
                 | class_credit_head

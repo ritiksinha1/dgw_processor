@@ -99,15 +99,17 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
       print(info.keys(), file=sys.stderr)
       missing_if_true = False
       try:
-        if_then += to_html(info['if_true'])
+        if_then += to_html(info['if_true'], kind='If-true Item')
       except KeyError as ke:
         missing_if_true = True
       try:
-        if_then += to_html(info['if_false'])
+        if_then += to_html(info['if_false'], kind='if-false Item')
       except KeyError as ke:
         if missing_if_true:
-          if_then += '<p class="error">If-Then With Neither if-true nor if-false part!</p>'
+          if_then += '<p class="error">If-Then with neither if_true nor if_false part!</p>'
   except KeyError as ke:
+    if DEBUG:
+      print(f'dict_to_html_details: no tag.\n{info=} {is_head=} {is_body=}')
     pass
 
   try:
@@ -250,7 +252,7 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
 
 # list_to_html_list()
 # -------------------------------------------------------------------------------------------------
-def list_to_html_list(info: list, is_head, is_body) -> str:
+def list_to_html_list(info: list, is_head=False, is_body=False, kind='Item') -> str:
   """
   """
   num = len(info)
@@ -260,14 +262,14 @@ def list_to_html_list(info: list, is_head, is_body) -> str:
                'Ten', 'Eleven', 'Twelve'][num]
   else:
     num_str = f'{num:,}'
-  return_str = f'<details><summary>{num_str} item{suffix}</summary>'
+  return_str = f'<details><summary>{num_str} {kind}{suffix}</summary>'
   return_str += '\n'.join([f'{to_html(element, is_head, is_body)}' for element in info])
   return return_str + '</details>'
 
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(info: any, is_head=False, is_body=False) -> str:
+def to_html(info: any, is_head=False, is_body=False, kind='Item') -> str:
   """  Return a nested HTML data structure as described above.
   """
   if info is None:
@@ -275,7 +277,7 @@ def to_html(info: any, is_head=False, is_body=False) -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return list_to_html_list(info, is_head, is_body)
+    return list_to_html_list(info, is_head, is_body, kind)
   if isinstance(info, dict):
     return dict_to_html_details(info, is_head, is_body)
 
