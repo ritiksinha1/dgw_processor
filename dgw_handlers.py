@@ -329,7 +329,7 @@ def if_then_head(ctx, institution):
       return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule_group())
     else:
       return_dict['if_false'] = 'Missing False Part'
-  print(return_dict, file=sys.stderr)
+
   return return_dict
 
 

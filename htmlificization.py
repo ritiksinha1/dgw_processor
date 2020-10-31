@@ -71,9 +71,46 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
   return return_str
 
 
+# if_then_to_details()
+# -------------------------------------------------------------------------------------------------
+def if_then_to_details(info: dict, is_head: bool, is_body: bool) -> str:
+  """  The dict for an if-then construct must have a condition, which becomes the summary of the
+       html details element. The optional label goes next, followed by nested details elements for
+       the true and the optional false branches.
+  """
+
+  try:
+    condition = info['condition']
+    summary = f"<summary><strong>{condition} ?</strong></summary>"
+  except KeyError as ke:
+    condition = '(Missing Condition)'
+    summary = '<summary class="error">If-Then With No Condition!</summary>'
+
+  try:
+    label = f"<h2>{info['label']}</h2>"
+  except KeyError as ke:
+    label = ''
+
+  try:
+    true_value = to_html(info['if_true'], kind='If-true Item')
+    if_true_part = (f"<details><summary><strong>if {condition} is true</summary>"
+                    f"{true_value}</details>")
+  except KeyError as ke:
+    if_true_part = '<p class="error">Empty If-then rule!</p>'
+
+  try:
+    false_value = to_html(info['if_false'], kind='if-false Item')
+    if_false_part = (f"<details><summary><strong>if {condition} is not true</summary>"
+                     f"{false_value}</details>")
+  except KeyError as ke:
+    if_false_part = ''  # Else is optional
+
+  return f"<details>{summary}{label}{if_true_part}{if_false_part}</details>"
+
+
 # dict_to_html_details()
 # -------------------------------------------------------------------------------------------------
-def dict_to_html_details(info: dict, is_head, is_body) -> str:
+def dict_to_html_details(info: dict, is_head: bool, is_body: bool) -> str:
   """ Convert a dict to a HTML <details> element. The <summary> element is based on the tag/label
       fields of the dict. During development, the context path goes next. Then, if there are remark
       or display fields, they go after that, followed by everything else.
@@ -85,31 +122,10 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
 
   try:
     tag = info.pop('tag')
+    if tag == 'if-then':  # Special case for if-then dicts
+      return(if_then_to_details(info, is_head, is_body))
     summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
-
-    # This is where info related to if-then tags gets handled. Generate condition, if_true, and
-    # if_false parts in that order.
-    if_then = ''
-    if tag == 'if-then':
-      print(f'*** process {tag}', file=sys.stderr)
-      try:
-        if_then += f"<p><strong>Condition:</strong> {info['condition']}</p>"
-      except KeyError as ke:
-        return_str += '<p class="error">If-Then With No Condition!</p>'
-      print(info.keys(), file=sys.stderr)
-      missing_if_true = False
-      try:
-        if_then += to_html(info['if_true'], kind='If-true Item')
-      except KeyError as ke:
-        missing_if_true = True
-      try:
-        if_then += to_html(info['if_false'], kind='if-false Item')
-      except KeyError as ke:
-        if missing_if_true:
-          if_then += '<p class="error">If-Then with neither if_true nor if_false part!</p>'
   except KeyError as ke:
-    if DEBUG:
-      print(f'dict_to_html_details: no tag.\n{info=} {is_head=} {is_body=}')
     pass
 
   try:
@@ -138,7 +154,7 @@ def dict_to_html_details(info: dict, is_head, is_body) -> str:
     except KeyError as ke:
       pass
 
-  return_str = (f'<details>{summary}{context_path}{remark}{display}{if_then}')
+  return_str = (f'<details>{summary}{context_path}{remark}{display}')
 
   for key, value in info.items():
     key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
