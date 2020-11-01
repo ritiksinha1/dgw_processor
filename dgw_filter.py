@@ -23,7 +23,7 @@ def dgw_filter(src, remove_hide=True, remove_comments=False):
   if remove_comments:
     return_str = re.sub(f'#.*\n', '', return_str)
 
-  # Remove {HIDE }, HIDE-FROM-ADVICE, and HIDE-RULE
+  # Remove {HIDE <hidden_content>}, HIDE-FROM-ADVICE, and HIDE-RULE, but leave <hidden_content>
   if remove_hide:
     return_str = re.sub(r'[Hh][Ii][Dd][Ee]-?(([Ff][Rr][Oo][Mm]-?[Aa][Dd][Vv][Ii][Cc][Ee])|'
                         r'([Rr][Uu][Ll][Ee]))?',
