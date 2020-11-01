@@ -9,8 +9,9 @@ from dgw_utils import class_name,\
     context_path,\
     expression_to_str,\
     get_group_list,\
-    get_head_rules,\
+    get_rules,\
     get_qualifiers,\
+    get_requirements,\
     num_class_or_num_credit
 
 
@@ -316,18 +317,19 @@ def if_then_head(ctx, institution):
     label_str = ' '.join([label.string() for label in ctx.label()])
     if label_str != '':
       return_dict['label'] = label_str
+
   if ctx.head_rule():
-    return_dict['if_true'] = get_head_rules(ctx.head_rule(), institution)
+    return_dict['if_true'] = get_rules(ctx.head_rule(), institution)
   elif ctx.head_rule_group():
-    return_dict['if_true'] = get_head_rules(ctx.head_rule_group(), institution)
+    return_dict['if_true'] = get_rules(ctx.head_rule_group(), institution)
   else:
     return_dict['if_true'] = 'Missing True Part'
 
   if ctx.else_head():
     if ctx.else_head().head_rule():
-      return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule(), institution)
+      return_dict['if_false'] = get_rules(ctx.else_head().head_rule(), institution)
     elif ctx.else_head().head_rule_group():
-      return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule_group(), institution)
+      return_dict['if_false'] = get_rules(ctx.else_head().head_rule_group(), institution)
     else:
       return_dict['if_false'] = 'Missing False Part'
 
@@ -337,7 +339,9 @@ def if_then_head(ctx, institution):
 # if_then_body()
 # -------------------------------------------------------------------------------------------------
 def if_then_body(ctx, institution):
-  """
+  """ Just like if_then_head, except the rule or rule_group can be followed by requirements that
+      apply to the rule or rule group.
+
       if_then_body    : IF expression THEN (body_rule | body_rule_group)
                         requirement* label? else_body?;
       else_body       : ELSE (body_rule | body_rule_group)
@@ -379,8 +383,34 @@ def if_then_body(ctx, institution):
                       | share
                       ;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return {'tag': 'if-then', 'Development status': 'Not implemented yet'}
+  return_dict = {'tag': 'if-then', 'condition': expression_to_str(ctx.expression())}
+
+  if ctx.label():
+    assert isinstance(ctx.label(), list)
+    label_str = ' '.join([label.string() for label in ctx.label()])
+    if label_str != '':
+      return_dict['label'] = label_str
+
+  if ctx.requirement():
+    assert isinstance(ctx.requirement(), list)
+    return_dict['requirement'] = get_requirements(ctx.requirement(), institution)
+
+  if ctx.body_rule():
+    return_dict['if_true'] = get_rules(ctx.body_rule(), institution)
+  elif ctx.body_rule_group():
+    return_dict['if_true'] = get_rules(ctx.body_rule_group(), institution)
+  else:
+    return_dict['if_true'] = 'Missing True Part'
+
+  if ctx.else_body():
+    if ctx.else_body().body_rule():
+      return_dict['if_false'] = get_rules(ctx.else_body().body_rule(), institution)
+    elif ctx.else_body().body_rule_group():
+      return_dict['if_false'] = get_rules(ctx.else_body().body_rule_group(), institution)
+    else:
+      return_dict['if_false'] = 'Missing False Part'
+
+  return return_dict
 
 
 # lastres()
@@ -701,7 +731,7 @@ def standalone(ctx, institution):
 
 # subset_body()
 # -------------------------------------------------------------------------------------------------
-def subset_body(ctx, institution):
+def subset(ctx, institution):
   """
       /* Body only
        */
@@ -825,10 +855,10 @@ dispatch_head = {
     'maxperdisc': maxperdisc,
     'maxterm': maxterm,
     'maxtransfer': maxtransfer,
-    'mingrade': mingrade,
     'minclass': minclass,
     'mincredit': mincredit,
     'mingpa': mingpa,
+    'mingrade': mingrade,
     'minperdisc': minperdisc,
     'minres': minres,
     'optional': optional,
@@ -850,7 +880,7 @@ dispatch_body = {
     'proxy_advice': proxy_advice,
     'remark': remark,
     'rule_complete': rule_complete,
-    'subset': subset_body
+    'subset': subset
 }
 
 

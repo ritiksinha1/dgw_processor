@@ -7,12 +7,6 @@ import re
 import sys
 import argparse
 import json
-import resource
-import traceback
-
-from enum import IntEnum
-
-# from htmlificization import to_html
 
 from ReqBlockLexer import ReqBlockLexer
 from ReqBlockParser import ReqBlockParser
@@ -21,42 +15,29 @@ from ReqBlockVisitor import ReqBlockVisitor
 from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
 
-from dgw_filter import dgw_filter
 from pgconnection import PgConnection
 from psycopg2 import Binary
 
+from dgw_filter import dgw_filter
 from dgw_handlers import dispatch
-from dgw_utils import build_course_list,\
-    catalog_years,\
-    class_name,\
-    class_or_credit,\
-    colleges,\
-    context_path,\
-    expression_terminals,\
-    get_number
+from dgw_utils import catalog_years
 
-DEBUG = os.getenv('DEBUG_PROCESSOR')
-LOG_CONTEXT_PATH = os.getenv('LOG_CONTEXT_PATH')
+DEBUG = os.getenv('DEBUG_INTERPRETER')
 
-# resource.setrlimit(resource.RLIMIT_STACK, ((resource.RLIM_INFINITY, resource.RLIM_INFINITY)))
 sys.setrecursionlimit(10**6)
 
 
-# dgw_parser()
+# dgw_interpreter()
 # =================================================================================================
-def dgw_parser(institution, block_type, block_value, period='all', update_db=True, verbose=False):
-  """ For each matching Scribe Block, create a DGW_Processor to hold the info about it; the
-      constructor parses the block and extracts information objects from it, creating a HTML
-      representation of the Scribe Block and lists of dicts of the extracted objects, one for the
-      head and one for the body of the block.
-
-      Update/replace the HTML Scribe Block and the lists of object in the requirement_blocks table.
+def dgw_interpreter(institution, block_type, block_value,
+                    period='all', update_db=True, verbose=False):
+  """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period argument can be 'current', 'latest', or 'all', which will be picked out of the
        result set for 'all'
   """
   if DEBUG:
-    print(f'*** dgw_parser({institution}, {block_type}, {block_value}. {period})', file=sys.stderr)
+    print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period})')
 
   conn = PgConnection()
   fetch_cursor = conn.cursor()
@@ -71,34 +52,25 @@ def dgw_parser(institution, block_type, block_value, period='all', update_db=Tru
   """
   fetch_cursor.execute(query, (institution, block_type, block_value))
   # Sanity Check
-  assert fetch_cursor.rowcount > 0, f'No Requirements Found\n{fetch_cursor.query}'
+  if fetch_cursor.rowcount < 1:
+    print(f'No Requirements Found\n{fetch_cursor.query}', file=sys.stderr)
+    return (None, None)
+
   num_rows = fetch_cursor.rowcount
   num_updates = 0
   for row in fetch_cursor.fetchall():
     if verbose:
-      print(f'{institution} {row.requirement_id} {block_type} {block_value} {row.title}')
-    if period == 'current' and row.period_stop != '99999999':
-      return f"""<h1 class="error">“{row.title}” is not a currently offered {block_type}
-                 at {institution}.</h1>
-              """
-    # Filter out everything after END.
-    # For parsing, also filter out "hide" things, but leave them in for display purposes.
+      print(f'{institution} {row.requirement_id} {block_type} {block_value} {row.title}: ', end='')
+      if period == 'current' and row.period_stop != '99999999':
+        print(f'Not currently offered.')
+      else:
+        print(catalog_years(row.period_start, row.period_stop).text)
+
+    # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
-    text_to_show = dgw_filter(row.requirement_text, remove_hide=False)
-    # processor = DGW_Processor(institution,
-    #                           row.requirement_id,
-    #                           block_type,
-    #                           block_value,
-    #                           row.title,
-    #                           row.period_start,
-    #                           row.period_stop,
-    #                           text_to_show)
 
-    # Default behavior is just to show the scribe block(s), and not to try parsing them in real
-    # time. (But during development, that can be useful for catching coding errors.)
-
+    # Generate the parse tree from the Antlr4 parser generator.
     # dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
-
     input_stream = InputStream(text_to_parse)
     lexer = ReqBlockLexer(input_stream)
     # lexer.removeErrorListeners()
@@ -107,10 +79,11 @@ def dgw_parser(institution, block_type, block_value, period='all', update_db=Tru
     parser = ReqBlockParser(token_stream)
     # parser.removeErrorListeners()
     # parser.addErrorListener(dgw_logger)
-    tree = parser.req_block()
+    parse_tree = parser.req_block()
 
+    # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
     head_list = []
-    head_ctx = tree.head()
+    head_ctx = parse_tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
         obj = dispatch(child, institution, 'head')
@@ -118,7 +91,7 @@ def dgw_parser(institution, block_type, block_value, period='all', update_db=Tru
           head_list.append(obj)
 
     body_list = []
-    body_ctx = tree.body()
+    body_ctx = parse_tree.body()
     if body_ctx:
       for child in body_ctx.getChildren():
         obj = dispatch(child, institution, 'body')
@@ -140,10 +113,11 @@ and requirement_id = '{row.requirement_id}'
 
 # __main__
 # =================================================================================================
-# Create DGW_Processor objects for testing
+# Select Scribe Blocks for parsing
 if __name__ == '__main__':
-  """ You can parse a block or a list of blocks from here.
-      But if you just want to update the html for the blocks you select, omit the --parse option
+  """ You can select blocks by institutions, block_types, block_values, and period from here.
+      By default, the requirement_blocks table's head_objects and body_objects fields are updated
+      for each block parsed.
   """
   # Command line args
   parser = argparse.ArgumentParser(description='Test DGW Parser')
@@ -151,6 +125,7 @@ if __name__ == '__main__':
   parser.add_argument('-f', '--format')
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
   parser.add_argument('-np', '--progress', action='store_false')
+  parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='latest')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
   parser.add_argument('-nu', '--update_db', action='store_false')
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
@@ -198,10 +173,12 @@ if __name__ == '__main__':
           continue
         if args.progress:
           print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
-                f'{values_count} / {num_values} ', end='')
-        head_list, body_list = dgw_parser(institution,
-                                          block_type.upper(),
-                                          block_value,
-                                          period='latest',
-                                          update_db=args.update_db,
-                                          verbose=args.progress)
+                f'{values_count} / {num_values} ')
+        head_list, body_list = dgw_interpreter(institution,
+                                               block_type.upper(),
+                                               block_value,
+                                               period=args.period,
+                                               update_db=args.update_db,
+                                               verbose=args.progress)
+        if args.debug:
+          print(f'{head_list=}\n{body_list=}')

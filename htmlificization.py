@@ -24,7 +24,7 @@ import sys
 
 from course_lookup import lookup_course
 
-from dgw_interpreter import dgw_parser
+from dgw_interpreter import dgw_interpreter
 
 DEBUG = os.getenv('DEBUG_HTML')
 
@@ -331,26 +331,24 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
   else:
     disclaimer = """
     <div class="disclaimer">
-      <p class="error">
-        The following is an <strong>incomplete interpretation</strong> of the above scribe block.
-        The interpreter that produces this view is under development.
+      <p class="warning">
+        This is project is now in the “beta” stage. That means that the display below
+        <em>should</em> be an an accurate representation of the requirements for this block,
+        omitting all elements that would depend on access to a student’s academic record. But there
+        are undoubtedly errors. If you see anomalies, I would appreciate hearing about them.
       </p>
       <p>
-        <strong>October 25, 2020:</strong> Except for if-then statements, the display below should
-        be an an accurate representation of the requirements for this block. If you see any
-        anomalies, I would appreciate hearing about them.
-      </p>
-      <p>
+        <em>Thanks</em>,<br>
         <a href="mailto:cvickery@qc.cuny.edu?subject=DGW Report">Christopher Vickery</a>
       </p>
    </div>
 """
 
   if len(row.head_objects) == 0 and len(row.body_objects) == 0:
-    head_list, body_list = dgw_parser(row.institution,
-                                      row.block_type,
-                                      row.block_value,
-                                      period=period)
+    head_list, body_list = dgw_interpreter(row.institution,
+                                           row.block_type,
+                                           row.block_value,
+                                           period=period)
   else:
     head_list, body_list = row.head_objects, row.body_objects
 
