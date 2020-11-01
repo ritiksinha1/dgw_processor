@@ -268,19 +268,23 @@ def dict_to_html_details(info: dict, is_head: bool, is_body: bool) -> str:
 
 # list_to_html_list()
 # -------------------------------------------------------------------------------------------------
-def list_to_html_list(info: list, is_head=False, is_body=False, kind='Item') -> str:
+def list_to_html_list(info: list, is_head: bool, is_body: bool, kind='Item') -> str:
   """
   """
   num = len(info)
-  suffix = '' if num == 1 else 's'
-  if num <= 12:
-    num_str = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-               'Ten', 'Eleven', 'Twelve'][num]
+  if num == 0:
+    return '<p class="error">Empty List</p>'
+  elif num == 1:
+    return to_html(info[0], is_head, is_body)
   else:
-    num_str = f'{num:,}'
-  return_str = f'<details><summary>{num_str} {kind}{suffix}</summary>'
-  return_str += '\n'.join([f'{to_html(element, is_head, is_body)}' for element in info])
-  return return_str + '</details>'
+    if num <= 12:
+      num_str = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+                 'Ten', 'Eleven', 'Twelve'][num]
+    else:
+      num_str = f'{num:,}'
+    return_str = f'<details><summary>{num_str} {kind}s</summary>'
+    return_str += '\n'.join([f'{to_html(element, is_head, is_body)}' for element in info])
+    return return_str + '</details>'
 
 
 # to_html()

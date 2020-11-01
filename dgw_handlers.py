@@ -7,6 +7,7 @@ from dgw_utils import class_name,\
     build_course_list,\
     class_or_credit,\
     context_path,\
+    expression_to_str,\
     get_group_list,\
     get_head_rules,\
     get_qualifiers,\
@@ -307,8 +308,8 @@ def if_then_head(ctx, institution):
                       | subset
                       ;
   """
-  print(class_name(ctx), 'not implemented yet', file=sys.stderr)
-  return_dict = {'tag': 'if-then', 'condition': ctx.expression().getText()}
+
+  return_dict = {'tag': 'if-then', 'condition': expression_to_str(ctx.expression())}
 
   if ctx.label():
     assert isinstance(ctx.label(), list)
@@ -316,17 +317,17 @@ def if_then_head(ctx, institution):
     if label_str != '':
       return_dict['label'] = label_str
   if ctx.head_rule():
-    return_dict['if_true'] = get_head_rules(ctx.head_rule())
+    return_dict['if_true'] = get_head_rules(ctx.head_rule(), institution)
   elif ctx.head_rule_group():
-    return_dict['if_true'] = get_head_rules(ctx.head_rule_group())
+    return_dict['if_true'] = get_head_rules(ctx.head_rule_group(), institution)
   else:
     return_dict['if_true'] = 'Missing True Part'
 
   if ctx.else_head():
     if ctx.else_head().head_rule():
-      return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule())
+      return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule(), institution)
     elif ctx.else_head().head_rule_group():
-      return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule_group())
+      return_dict['if_false'] = get_head_rules(ctx.else_head().head_rule_group(), institution)
     else:
       return_dict['if_false'] = 'Missing False Part'
 
@@ -337,6 +338,46 @@ def if_then_head(ctx, institution):
 # -------------------------------------------------------------------------------------------------
 def if_then_body(ctx, institution):
   """
+      if_then_body    : IF expression THEN (body_rule | body_rule_group)
+                        requirement* label? else_body?;
+      else_body       : ELSE (body_rule | body_rule_group)
+                        requirement* label?;
+      body_rule_group : (begin_if body_rule+ end_if);
+
+      body_rule       : if_then_body
+                      | block
+                      | blocktype
+                      | class_credit_body
+                      | copy_rules
+                      | group
+                      | lastres
+                      | maxcredit
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingrade
+                      | minres
+                      | noncourse
+                      | proxy_advice
+                      | remark
+                      | rule_complete
+                      | share
+                      | subset
+                      ;
+
+      requirement     : maxpassfail
+                      | maxperdisc
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingpa
+                      | mingrade
+                      | minperdisc
+                      | proxy_advice
+                      | samedisc
+                      | rule_tag
+                      | share
+                      ;
   """
   print(class_name(ctx), 'not implemented yet', file=sys.stderr)
   return {'tag': 'if-then', 'Development status': 'Not implemented yet'}

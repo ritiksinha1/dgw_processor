@@ -76,8 +76,7 @@ def dgw_parser(institution, block_type, block_value, period='all', update_db=Tru
   num_updates = 0
   for row in fetch_cursor.fetchall():
     if verbose:
-      print(f'{institution} {row.requirement_id} {block_type} {block_value} {row.title}',
-            file=sys.stderr)
+      print(f'{institution} {row.requirement_id} {block_type} {block_value} {row.title}')
     if period == 'current' and row.period_stop != '99999999':
       return f"""<h1 class="error">“{row.title}” is not a currently offered {block_type}
                  at {institution}.</h1>
@@ -199,7 +198,7 @@ if __name__ == '__main__':
           continue
         if args.progress:
           print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
-                f'{values_count} / {num_values} ', file=sys.stderr, end='')
+                f'{values_count} / {num_values} ', end='')
         head_list, body_list = dgw_parser(institution,
                                           block_type.upper(),
                                           block_value,

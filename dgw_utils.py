@@ -13,6 +13,8 @@ import json
 
 from Any import ANY
 from pgconnection import PgConnection
+
+import dgw_handlers
 from course_list_qualifier import CourseListQualifier
 
 DEBUG = os.getenv('DEBUG_UTILS')
@@ -30,36 +32,28 @@ conn.close()
 CatalogYears = namedtuple('CatalogYears', 'catalog_type first_year last_year text')
 
 
-# class_name()
-# =================================================================================================
-def class_name(obj):
-  return obj.__class__.__name__.replace('Context', '')
-
-
-# expression_terminals()
+# _with_clause()
 # -------------------------------------------------------------------------------------------------
-def expression_terminals(ctx, terminal_list):
-  """ print the terminal nodes of an expression
-  """
-  if ctx.getChildCount() == 0:
-    terminal_list.append({ctx.getParent().__class__.__name__: ctx.getText()})
-  else:
-    for child in ctx.getChildren():
-      expression_terminals(child, terminal_list)
+def _with_clause(ctx):
+  """ with_clause     : LP WITH expression RP;
 
-
-# context_path()
-# -------------------------------------------------------------------------------------------------
-def context_path(ctx, interpret=[]):
-  """ Given a context (or any object, actually), return a string showing the
-      inheritance path for the object.
+      expression      : expression relational_op expression
+                      | expression logical_op expression
+                      | expression ',' expression
+                      | full_course
+                      | discipline
+                      | NUMBER
+                      | SYMBOL
+                      | STRING
+                      | CATALOG_NUMBER
+                      | LP expression RP
+                      ;
+      This is a place where some interpretation could take place ... but does not do so yet.
   """
-  ctx_list = []
-  cur_ctx = ctx
-  while cur_ctx:
-    ctx_list.insert(0, type(cur_ctx).__name__.replace('Context', ''))
-    cur_ctx = cur_ctx.parentCtx
-  return ' => '.join(ctx_list[1:])
+  if DEBUG:
+    print('*** with_clause()', file=sys.stderr)
+  assert class_name(ctx) == 'With_clause', f'{class_name(ctx)} is not \'With_clause\''
+  return expression_to_str(ctx.expression())
 
 
 # catalog_years()
@@ -99,39 +93,76 @@ def catalog_years(period_start: str, period_stop: str) -> str:
   return CatalogYears._make((catalog_type, first, last, f'{first} through {last}'))
 
 
-# get_head_rules()
+# class_name()
 # -------------------------------------------------------------------------------------------------
-def get_head_rules(ctx):
-  """ Return a list of rules that can appear in the head orf a block
+def class_name(obj):
+  return obj.__class__.__name__.replace('Context', '')
 
-head_rule       : if_then_head
-                | block
-                | blocktype
-                | class_credit_head
-                | copy_rules
-                | lastres
-                | maxcredit
-                | maxpassfail
-                | maxterm
-                | maxtransfer
-                | minclass
-                | mincredit
-                | mingpa
-                | mingrade
-                | minperdisc
-                | minres
-                | minterm
-                | noncourse
-                | proxy_advice
-                | remark
-                | rule_complete
-                | share
-                | subset
 
+# class_or_credit()
+# -------------------------------------------------------------------------------------------------
+def class_or_credit(ctx) -> str:
+  """ class_or_credit   : (CLASS | CREDIT);
+      Tell whether it's 'class' or 'credit' regardless of how it was spelled/capitalized.
   """
-  return_list = []
-  print(f'get_head_rules {isinstance(ctx, list)=}', file=sys.stderr)
-  return [ctx.getText()]
+  if DEBUG:
+    print('*** class_or_credit()', file=sys.stderr)
+  if ctx.CREDIT():
+    return 'credit'
+  return 'class'
+
+
+# context_path()
+# -------------------------------------------------------------------------------------------------
+def context_path(ctx, interpret=[]):
+  """ Given a context (or any object, actually), return a string showing the
+      inheritance path for the object.
+  """
+  ctx_list = []
+  cur_ctx = ctx
+  while cur_ctx:
+    ctx_list.insert(0, type(cur_ctx).__name__.replace('Context', ''))
+    cur_ctx = cur_ctx.parentCtx
+  return ' => '.join(ctx_list[1:])
+
+
+# expression_terminals()
+# -------------------------------------------------------------------------------------------------
+def expression_terminals(ctx, terminal_list):
+  """ print the terminal nodes of an expression
+  """
+  if ctx.getChildCount() == 0:
+    terminal_list.append({ctx.getParent().__class__.__name__: ctx.getText()})
+  else:
+    for child in ctx.getChildren():
+      expression_terminals(child, terminal_list)
+
+
+# expression_to_str()
+# -------------------------------------------------------------------------------------------------
+def expression_to_str(ctx):
+  """ Un-parse an expression.
+expression      : expression relational_op expression
+                | expression logical_op expression
+                | expression ',' expression
+                | full_course
+                | discipline
+                | NUMBER
+                | QUESTION_MARK
+                | SYMBOL
+                | string
+                | CATALOG_NUMBER
+                | LP NONCOURSE? expression RP
+  """
+  assert class_name(ctx) == 'Expression', f'{class_name(ctx)} is not \'Expression\''
+  return_str = ''
+  for child in ctx.getChildren():
+    if class_name(child) == 'Expression':
+      return_str += expression_to_str(child) + ' '
+    else:
+      return_str += child.getText() + ' '
+
+  return return_str.strip()
 
 
 # get_number()
@@ -157,96 +188,87 @@ def get_range(ctx):
   return low, high
 
 
-# num_class_or_num_credit(ctx)
+# get_head_rules()
 # -------------------------------------------------------------------------------------------------
-def num_class_or_num_credit(ctx) -> dict:
-  """ A context can have one num_classes, one num_credits, or both. When both are allowed, they will
-      be lists of len 1, but if only one is allowed, it will be a scalar. Depends on the context.
-      num_classes     : NUMBER CLASS allow_clause?;
-      num_credits     : NUMBER CREDIT allow_clause?;
+def get_head_rules(ctx, institution):
+  """ Return a list of rules that can appear in the head of a block.
+      Given a head_rule context, determine which of the following productions are present by
+      testing each one's visitor function to see whether it returns None or not. And if not,
+      generate a production-specific dict, which gets added to the returned list of dicts.
+
+      head_rule       : if_then_head
+                      | block
+                      | blocktype
+                      | class_credit_head
+                      | copy_rules
+                      | lastres
+                      | maxcredit
+                      | maxpassfail
+                      | maxterm
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingpa
+                      | mingrade
+                      | minperdisc
+                      | minres
+                      | minterm
+                      | noncourse
+                      | proxy_advice
+                      | remark
+                      | rule_complete
+                      | share
+                      | subset
   """
-  if DEBUG:
-    print(f'{class_name(ctx)}')
-  if ctx.num_classes():
-    if isinstance(ctx.num_classes(), list):
-      class_ctx = ctx.num_classes()[0]
-    else:
-      class_ctx = ctx.num_classes()
-    num_classes = class_ctx.NUMBER().getText().strip()
-    if class_ctx.allow_clause():
-      allow_classes = class_ctx.allow_clause().NUMBER().getText().strip()
-    else:
-      allow_classes = None
+  possible_rules = ['if_then_head', 'block', 'blocktype', 'class_credit_head', 'copy_rules',
+                    'lastres', 'maxcredit', 'maxpassfail', 'maxterm', 'maxtransfer', 'minclass',
+                    'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minres', 'minterm',
+                    'noncourse', 'proxy_advice', 'remark', 'rule_complete', 'share', 'subset']
+
+  return_list = []
+  if 'group' in class_name(ctx).lower():
+    # List of rules
+    list_of_rules = ctx.head_rule()
   else:
-    num_classes = allow_classes = None
+    # Single rule; convert it to a list
+    list_of_rules = [ctx]
 
-  if ctx.num_credits():
-    if isinstance(ctx.num_credits(), list):
-      credit_ctx = ctx.num_credits()[0]
-    else:
-      credit_ctx = ctx.num_credits()
-    num_credits = credit_ctx.NUMBER().getText().strip()
-    if credit_ctx.allow_clause():
-      allow_credits = credit_ctx.allow_clause().NUMBER().getText().strip()
-    else:
-     allow_credits = None
-  else:
-    num_credits = allow_credits = None
+  for rule in list_of_rules:
+    for possible_rule in possible_rules:
+      rule_fun = getattr(rule, possible_rule, None)
+      if rule_fun() is not None:
+        rule_dict = {'tag': possible_rule}
 
-  if getattr(ctx, 'logical_op', None) and ctx.logical_op():
-    conjunction = ctx.logical_op().getText()
-  else:
-    conjunction = None
+        # Use possible_rule to decide how to handle the rule
+        # -----------------------------------------------------------------------------------------
 
-  if conjunction is None:
-    assert bool(num_classes) is not bool(num_credits), (f'Bad num_classes_or_num_credits: '
-                                                        f'{ctx.getText()}')
-  else:
-    assert num_classes and num_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
+        # if_then_head
+        if possible_rule in ['if_then_head']:
+          # This can be done by the handler
+          return_list.append(dgw_handlers.if_then_head(rule_fun(), institution))
 
-  return {'num_classes': num_classes,
-          'allow_classes': allow_classes,
-          'num_credits': num_credits,
-          'allow_credits': allow_credits,
-          'conjunction': conjunction}
+        # class_credit_head
+        if possible_rule in ['class_credit_head']:
+          return_list.append(dgw_handlers.class_credit_head(rule_fun(), institution))
 
+        # maxcredit       : MAXCREDIT NUMBER course_list? tag?;
+        if possible_rule in ['maxcredit']:
+          rule_dict['number'] = rule_fun().NUMBER().getText()
+          if rule_fun().course_list():
+            rule_dict['courses'] = build_course_list(rule_fun().course_list(), institution)
+          return_list.append(rule_dict)
 
-# class_or_credit()
-# -------------------------------------------------------------------------------------------------
-def class_or_credit(ctx) -> str:
-  """ class_or_credit   : (CLASS | CREDIT);
-      Tell whether it's 'class' or 'credit' regardless of how it was spelled/capitalized.
-  """
-  if DEBUG:
-    print('*** class_or_credit()', file=sys.stderr)
-  if ctx.CREDIT():
-    return 'credit'
-  return 'class'
+        if possible_rule in ['block', 'blocktype',
+                             'copy_rules', 'lastres', 'maxpassfail', 'maxterm',
+                             'maxtransfer', 'minclass', 'mincredit', 'mingpa', 'mingrade',
+                             'minperdisc', 'minres', 'minterm', 'noncourse', 'proxy_advice',
+                             'remark', 'rule_complete', 'share', 'subset']:
+          print(f'{possible_rule} not implemented in get_head_rules() yet')
+          rule_dict['text'] = rule_fun().getText()
+          return_list.append(rule_dict)
 
-
-# _with_clause()
-# -------------------------------------------------------------------------------------------------
-def _with_clause(ctx):
-  """ with_clause     : LP WITH expression RP;
-
-      expression      : expression relational_op expression
-                      | expression logical_op expression
-                      | expression ',' expression
-                      | full_course
-                      | discipline
-                      | NUMBER
-                      | SYMBOL
-                      | STRING
-                      | CATALOG_NUMBER
-                      | LP expression RP
-                      ;
-      This is a place where some interpretation could take place ... but does not do so yet.
-  """
-  if DEBUG:
-    print('*** with_clause()', file=sys.stderr)
-  assert ctx.__class__.__name__ == 'With_clauseContext', (f'{ctx.__class__.__name__} '
-                                                          'is not With_clauseContext')
-  return ctx.expression().getText()
+  # print(f'{return_list=}', file=sys.stderr)
+  return return_list
 
 
 # get_scribed_courses()
@@ -309,119 +331,13 @@ def get_scribed_courses(ctx):
           # print(discipline, catalog_number, with_clause)
         else:
           # This is where square brackets show up
-          print(f'Unexpected token type: {child.__class__.__name__}, text: {child.getText()}',
+          print(f'Unhandled token: {child.getText()}',
                 file=sys.stderr)
       assert catalog_number is not None, (f'Course Item with no catalog number: '
                                           f'{course_item.getText()}')
       scribed_courses.append((discipline, catalog_number, with_clause))
 
   return scribed_courses
-
-
-# get_qualifiers()
-# -------------------------------------------------------------------------------------------------
-def get_qualifiers(ctx, institution):
-  """
-  """
-  valid_qualifiers = ['dont_share', 'maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer',
-                      'minarea', 'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc',
-                      'minspread', 'ruletag', 'samedisc', 'share']
-  qualifier_list = []
-  if isinstance(ctx, list):
-    siblings = ctx
-  else:
-    siblings = ctx.parentCtx.getChildren()
-  for sibling in siblings:
-    for qualifier in valid_qualifiers:
-      if qualifier_fun := getattr(sibling, qualifier, None):
-        if qualifier_fun():
-          class_credit = None
-
-          if getattr(qualifier_fun(), 'CLASS', None) is not None:
-            class_credit = 'class'
-          if getattr(qualifier_fun(), 'CREDIT', None) is not None:
-            class_credit = 'credit'
-
-          # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
-          if qualifier == 'maxpassfail':
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText(),
-                                   'class_credit': class_credit})
-
-          # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
-          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
-          # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
-          elif qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
-            disciplines = qualifier_fun().SYMBOL()
-            if isinstance(disciplines, list):
-              disciplines = [d.getText() for d in disciplines]
-
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText(),
-                                   'class_credit': class_credit,
-                                   'disciplines': disciplines})
-
-          # maxspread       : MAXSPREAD NUMBER
-          # minarea         : MINAREA NUMBER
-          # mingrade        : MINGRADE NUMBER
-          # minspread       : MINSPREAD NUMBER
-          elif qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText()})
-
-          # minclass        : MINCLASS NUMBER course_list tag? display* label?;
-          # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
-          elif qualifier in ['minclass', 'mincredit']:
-            course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText(),
-                                   'courses': course_list_obj})
-
-          # mingpa          : MINGPA NUMBER (course_list | expression)?
-          elif qualifier == 'mingpa':
-            course_list_obj = qualifier_fun().course_list()
-            if course_list_obj:
-              course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
-
-            expression_str = qualifier_fun().expression()
-            if expression_str:
-              expression_str = expression.getText()
-
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText(),
-                                   'course_list': course_list_obj,
-                                   'expression': expression_str})
-
-          # ruletag         : RULE_TAG expression;
-          # samedisc        : SAME_DISC expression
-          elif qualifier in ['ruletag', 'samedisc']:
-            qualifier_list.append({'tag': qualifier,
-                                   'expression': qualifier_fun().expression().getText()})
-
-          # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
-          elif qualifier == 'share':
-            if qualifier_fun().DONT_SHARE():
-              qualifier = 'dont_share'
-
-            if qualifier_fun().NUMBER():
-              number = qualifier_fun().NUMBER().getText()
-            else:
-              number = None
-
-            expression = qualifier_fun().expression()
-            if expression:
-              expression = expression.getText()
-
-            qualifier_list.append({'tag': qualifier,
-                                   'number': number,
-                                   'class_credit': class_credit,
-                                   'expression': expression})
-
-          else:
-            print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}')
-            qualifier_list.append({'tag': qualifier})
-
-  return qualifier_list
 
 
 # get_course_list_qualifiers()
@@ -590,6 +506,170 @@ def get_group_list(ctx: list) -> list:
       return_list[-1].update({'label': 'Not yet'})
 
   return return_list
+
+
+# get_qualifiers()
+# -------------------------------------------------------------------------------------------------
+def get_qualifiers(ctx, institution):
+  """ Build qualifier-specific dicts for various possible qualifiers.
+      The ctx parameter might be for a list of grammar-rules or for a single grammar-rule. In the
+      latter case, get a list of all the siblings of this ctx (i.e., the children of this rule's
+      parents in the parse tree). If this seems confusing, it's because it is.
+  """
+  valid_qualifiers = ['dont_share', 'maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer',
+                      'minarea', 'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc',
+                      'minspread', 'ruletag', 'samedisc', 'share']
+  qualifier_list = []
+  if isinstance(ctx, list):
+    siblings = ctx
+  else:
+    siblings = ctx.parentCtx.getChildren()
+  for sibling in siblings:
+    for qualifier in valid_qualifiers:
+      # See whether the sibling has this qualifier
+      if qualifier_fun := getattr(sibling, qualifier, None):
+        if qualifier_fun():
+          class_credit = None
+
+          if getattr(qualifier_fun(), 'CLASS', None) is not None:
+            class_credit = 'class'
+          if getattr(qualifier_fun(), 'CREDIT', None) is not None:
+            class_credit = 'credit'
+
+          # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
+          if qualifier == 'maxpassfail':
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText(),
+                                   'class_credit': class_credit})
+
+          # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
+          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
+          # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
+          elif qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
+            disciplines = qualifier_fun().SYMBOL()
+            if isinstance(disciplines, list):
+              disciplines = [d.getText() for d in disciplines]
+
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText(),
+                                   'class_credit': class_credit,
+                                   'disciplines': disciplines})
+
+          # maxspread       : MAXSPREAD NUMBER
+          # minarea         : MINAREA NUMBER
+          # mingrade        : MINGRADE NUMBER
+          # minspread       : MINSPREAD NUMBER
+          elif qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText()})
+
+          # minclass        : MINCLASS NUMBER course_list tag? display* label?;
+          # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
+          elif qualifier in ['minclass', 'mincredit']:
+            course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText(),
+                                   'courses': course_list_obj})
+
+          # mingpa          : MINGPA NUMBER (course_list | expression)?
+          elif qualifier == 'mingpa':
+            course_list_obj = qualifier_fun().course_list()
+            if course_list_obj:
+              course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
+
+            expression_str = qualifier_fun().expression()
+            if expression_str:
+              expression_str = expression.getText()
+
+            qualifier_list.append({'tag': qualifier,
+                                   'number': qualifier_fun().NUMBER().getText(),
+                                   'course_list': course_list_obj,
+                                   'expression': expression_str})
+
+          # ruletag         : RULE_TAG expression;
+          # samedisc        : SAME_DISC expression
+          elif qualifier in ['ruletag', 'samedisc']:
+            qualifier_list.append({'tag': qualifier,
+                                   'expression': qualifier_fun().expression().getText()})
+
+          # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
+          elif qualifier == 'share':
+            if qualifier_fun().DONT_SHARE():
+              qualifier = 'dont_share'
+
+            if qualifier_fun().NUMBER():
+              number = qualifier_fun().NUMBER().getText()
+            else:
+              number = None
+
+            expression = qualifier_fun().expression()
+            if expression:
+              expression = expression.getText()
+
+            qualifier_list.append({'tag': qualifier,
+                                   'number': number,
+                                   'class_credit': class_credit,
+                                   'expression': expression})
+
+          else:
+            print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}')
+            qualifier_list.append({'tag': qualifier})
+
+  return qualifier_list
+
+
+# num_class_or_num_credit(ctx)
+# -------------------------------------------------------------------------------------------------
+def num_class_or_num_credit(ctx) -> dict:
+  """ A context can have one num_classes, one num_credits, or both. When both are allowed, they will
+      be lists of len 1, but if only one is allowed, it will be a scalar. Depends on the context.
+      num_classes     : NUMBER CLASS allow_clause?;
+      num_credits     : NUMBER CREDIT allow_clause?;
+  """
+  if DEBUG:
+    print(f'{class_name(ctx)}')
+  if ctx.num_classes():
+    if isinstance(ctx.num_classes(), list):
+      class_ctx = ctx.num_classes()[0]
+    else:
+      class_ctx = ctx.num_classes()
+    num_classes = class_ctx.NUMBER().getText().strip()
+    if class_ctx.allow_clause():
+      allow_classes = class_ctx.allow_clause().NUMBER().getText().strip()
+    else:
+      allow_classes = None
+  else:
+    num_classes = allow_classes = None
+
+  if ctx.num_credits():
+    if isinstance(ctx.num_credits(), list):
+      credit_ctx = ctx.num_credits()[0]
+    else:
+      credit_ctx = ctx.num_credits()
+    num_credits = credit_ctx.NUMBER().getText().strip()
+    if credit_ctx.allow_clause():
+      allow_credits = credit_ctx.allow_clause().NUMBER().getText().strip()
+    else:
+     allow_credits = None
+  else:
+    num_credits = allow_credits = None
+
+  if getattr(ctx, 'logical_op', None) and ctx.logical_op():
+    conjunction = ctx.logical_op().getText()
+  else:
+    conjunction = None
+
+  if conjunction is None:
+    assert bool(num_classes) is not bool(num_credits), (f'Bad num_classes_or_num_credits: '
+                                                        f'{ctx.getText()}')
+  else:
+    assert num_classes and num_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
+
+  return {'num_classes': num_classes,
+          'allow_classes': allow_classes,
+          'num_credits': num_credits,
+          'allow_credits': allow_credits,
+          'conjunction': conjunction}
 
 
 # build_string()
