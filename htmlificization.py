@@ -337,8 +337,9 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
       <p class="warning">
         This is project is now in the “beta” stage. That means that the display below
         <em>should</em> be an an accurate representation of the requirements for this block,
-        omitting all elements that would depend on access to a student’s academic record. But there
-        are undoubtedly errors. If you see anomalies, I would appreciate hearing about them.
+        omitting elements that would depend an individual student’s academic record, such as Proxy
+        Advice. But there are undoubtedly errors and omissions. If you see such anomalies, I would
+        appreciate hearing about them. (<em>Click on my name for an email link.</em>)
       </p>
       <p>
         <em>Thanks</em>,<br>
