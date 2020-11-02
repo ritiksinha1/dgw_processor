@@ -29,8 +29,8 @@ sys.setrecursionlimit(10**6)
 
 # dgw_interpreter()
 # =================================================================================================
-def dgw_interpreter(institution, block_type, block_value,
-                    period='all', update_db=True, verbose=False):
+def dgw_interpreter(institution: str, block_type: str, block_value: str,
+                    period='all', update_db=True, verbose=False) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period argument can be 'current', 'latest', or 'all', which will be picked out of the
