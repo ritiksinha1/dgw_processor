@@ -307,14 +307,15 @@ def to_html(info: any, is_head=False, is_body=False, kind='Item') -> str:
 # scribe_block_to_html()
 # -------------------------------------------------------------------------------------------------
 def scribe_block_to_html(row: tuple, period='all') -> str:
-  """ Generate html for the scribe block and interpreted head and body lists objects.
+  """ Generate html for the scribe block and interpreted head and body lists objects, unless the
+      block has been quarantined.
   """
   if row.requirement_html == 'Not Available':
     return '<h1>This scribe block is not available.</h1><p><em>Should not occur.</em></p>'
 
   if (row.institution, row.requirement_id) in quarantine_dict.keys():
+    head_list, body_list = None, None
     explanation, ellucian = quarantine_dict[(row.institution, row.requirement_id)]
-    print(f'{explanation=} {ellucian=}', file=sys.stderr)
     if ellucian:
       qualifier = 'Although the Ellucian parser does not report an error,'
     else:
@@ -327,7 +328,9 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
       </span>
         “{explanation}.”
     </p>
-"""
+    """
+    return row.requirement_html + disclaimer
+
   else:
     disclaimer = """
     <div class="disclaimer">
@@ -339,24 +342,25 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
       </p>
       <p>
         <em>Thanks</em>,<br>
-        <a href="mailto:cvickery@qc.cuny.edu?subject=DGW Report">Christopher Vickery</a>
+        <a href="mailto:cvickery@qc.cuny.edu?subject=DGW Report"
+           class="signature">Christopher Vickery</a>
       </p>
-   </div>
-"""
+    </div>
+    """
+    # Interpret the block if it hasn’t been done yet.
+    if len(row.head_objects) == 0 and len(row.body_objects) == 0:
+      head_list, body_list = dgw_interpreter(row.institution,
+                                             row.block_type,
+                                             row.block_value,
+                                             period=period)
+    else:
+      head_list, body_list = row.head_objects, row.body_objects
 
-  if len(row.head_objects) == 0 and len(row.body_objects) == 0:
-    head_list, body_list = dgw_interpreter(row.institution,
-                                           row.block_type,
-                                           row.block_value,
-                                           period=period)
-  else:
-    head_list, body_list = row.head_objects, row.body_objects
-
-  return row.requirement_html + disclaimer + f"""
-<section>
-  <h1>Head</h1>
-  {to_html(head_list, is_head=True)}
-  <h1>Body</h1>
-  {to_html(body_list, is_body=True)}
-</section>
-"""
+    return row.requirement_html + disclaimer + f"""
+    <section>
+      <h1>Head</h1>
+      {to_html(head_list, is_head=True)}
+      <h1>Body</h1>
+      {to_html(body_list, is_body=True)}
+    </section>
+    """
