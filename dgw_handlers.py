@@ -21,7 +21,7 @@ from dgw_utils import class_name,\
 
 # block()
 # -------------------------------------------------------------------------------------------------
-def block(ctx, institution):
+def block(ctx, institution, requirement_id):
   """
       block           : NUMBER BLOCK expression rule_tag? label;
 
@@ -45,7 +45,7 @@ def block(ctx, institution):
 
 # blocktype()
 # -------------------------------------------------------------------------------------------------
-def blocktype(ctx, institution):
+def blocktype(ctx, institution, requirement_id):
   """
       blocktype       : NUMBER BLOCKTYPE expression label;
 
@@ -66,7 +66,7 @@ def blocktype(ctx, institution):
 
 # class_credit_head()
 # -------------------------------------------------------------------------------------------------
-def class_credit_head(ctx, institution):
+def class_credit_head(ctx, institution, requirement_id):
   """
       class_credit_head   : (num_classes | num_credits)
                             (logical_op (num_classes | num_credits))?
@@ -105,7 +105,7 @@ def class_credit_head(ctx, institution):
 
 # class_credit_body()
 # -------------------------------------------------------------------------------------------------
-def class_credit_body(ctx, institution):
+def class_credit_body(ctx, institution, requirement_id):
   """
       class_credit_body   : (num_classes | num_credits)
                             (logical_op (num_classes | num_credits))? course_list_body?
@@ -155,19 +155,20 @@ def class_credit_body(ctx, institution):
   return_dict = {'tag': 'class_credit'}
   return_dict.update(num_class_or_num_credit(ctx))
   if ctx.course_list_body():
-    return_dict.update(build_course_list(ctx.course_list_body().course_list(), institution))
+    return_dict.update(build_course_list(ctx.course_list_body().course_list(),
+                                         institution, requirement_id))
     course_list_label = return_dict['label']
 
     if context := ctx.course_list_body().course_list_body_qualifier():
-      return_dict['qualifiers'] = get_qualifiers(context, institution)
+      return_dict['qualifiers'] = get_qualifiers(context, institution, requirement_id)
 
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.share():
-    return_dict['share'] = share(ctx.share(), institution)
+    return_dict['share'] = share(ctx.share(), institution, requirement_id)
 
   if ctx.remark():
-    return_dict.update(remark(ctx.remark(), institution))
+    return_dict.update(remark(ctx.remark(), institution, requirement_id))
 
   if ctx.display():
     display_text = ''
@@ -206,7 +207,7 @@ def class_credit_body(ctx, institution):
 
 # copy_rules()
 # -------------------------------------------------------------------------------------------------
-def copy_rules(ctx, institution):
+def copy_rules(ctx, institution, requirement_id):
   """
       copy_rules      : COPY_RULES expression SEMICOLON?;
 
@@ -224,7 +225,7 @@ def copy_rules(ctx, institution):
 
 # group()
 # -------------------------------------------------------------------------------------------------
-def group(ctx, institution):
+def group(ctx, institution, requirement_id):
   """ group           : NUMBER GROUP group_list
                         requirement* label?
                       ;
@@ -266,7 +267,7 @@ requirement           : maxpassfail
   """
   return_dict = {'tag': 'group', 'number': ctx.NUMBER().getText()}
 
-  return_dict['group_qualifiers'] = get_qualifiers(ctx.requirement(), institution)
+  return_dict['group_qualifiers'] = get_qualifiers(ctx.requirement(), institution, requirement_id)
   return_dict['group_list'] = get_group_list(ctx.group_list())
 
   return_dict['develoment_status'] = 'Under development: incomplete'
@@ -278,7 +279,7 @@ requirement           : maxpassfail
 
 # if_then_head()
 # -------------------------------------------------------------------------------------------------
-def if_then_head(ctx, institution):
+def if_then_head(ctx, institution, requirement_id):
   """
       if_then_head    : IF expression THEN (head_rule | head_rule_group )
                         (proxy_advice | label)* else_head?;
@@ -319,17 +320,19 @@ def if_then_head(ctx, institution):
       return_dict['label'] = label_str
 
   if ctx.head_rule():
-    return_dict['if_true'] = get_rules(ctx.head_rule(), institution)
+    return_dict['if_true'] = get_rules(ctx.head_rule(), institution, requirement_id)
   elif ctx.head_rule_group():
-    return_dict['if_true'] = get_rules(ctx.head_rule_group(), institution)
+    return_dict['if_true'] = get_rules(ctx.head_rule_group(), institution, requirement_id)
   else:
     return_dict['if_true'] = 'Missing True Part'
 
   if ctx.else_head():
     if ctx.else_head().head_rule():
-      return_dict['if_false'] = get_rules(ctx.else_head().head_rule(), institution)
+      return_dict['if_false'] = get_rules(ctx.else_head().head_rule(),
+                                          institution, requirement_id)
     elif ctx.else_head().head_rule_group():
-      return_dict['if_false'] = get_rules(ctx.else_head().head_rule_group(), institution)
+      return_dict['if_false'] = get_rules(ctx.else_head().head_rule_group(),
+                                          institution, requirement_id)
     else:
       return_dict['if_false'] = 'Missing False Part'
 
@@ -338,7 +341,7 @@ def if_then_head(ctx, institution):
 
 # if_then_body()
 # -------------------------------------------------------------------------------------------------
-def if_then_body(ctx, institution):
+def if_then_body(ctx, institution, requirement_id):
   """ Just like if_then_head, except the rule or rule_group can be followed by requirements that
       apply to the rule or rule group.
 
@@ -396,20 +399,22 @@ def if_then_body(ctx, institution):
 
   if ctx.requirement():
     assert isinstance(ctx.requirement(), list)
-    return_dict['requirement'] = get_requirements(ctx.requirement(), institution)
+    return_dict['requirement'] = get_requirements(ctx.requirement(), institution, requirement_id)
 
   if ctx.body_rule():
-    return_dict['if_true'] = get_rules(ctx.body_rule(), institution)
+    return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
   elif ctx.body_rule_group():
-    return_dict['if_true'] = get_rules(ctx.body_rule_group(), institution)
+    return_dict['if_true'] = get_rules(ctx.body_rule_group(), institution, requirement_id)
   else:
     return_dict['if_true'] = 'Missing True Part'
 
   if ctx.else_body():
     if ctx.else_body().body_rule():
-      return_dict['if_false'] = get_rules(ctx.else_body().body_rule(), institution)
+      return_dict['if_false'] = get_rules(ctx.else_body().body_rule(),
+                                          institution, requirement_id)
     elif ctx.else_body().body_rule_group():
-      return_dict['if_false'] = get_rules(ctx.else_body().body_rule_group(), institution)
+      return_dict['if_false'] = get_rules(ctx.else_body().body_rule_group(),
+                                          institution, requirement_id)
     else:
       return_dict['if_false'] = 'Missing False Part'
 
@@ -418,7 +423,7 @@ def if_then_body(ctx, institution):
 
 # lastres()
 # -------------------------------------------------------------------------------------------------
-def lastres(ctx, institution):
+def lastres(ctx, institution, requirement_id):
   """
       lastres         : LASTRES NUMBER (OF NUMBER)?
                         class_or_credit
@@ -434,7 +439,7 @@ def lastres(ctx, institution):
   assert len(numbers) == 0
 
   if ctx.course_list():
-    return_dict['courses'] = build_course_list(ctx.course_list(), institution)
+    return_dict['courses'] = build_course_list(ctx.course_list(), institution, requirement_id)
 
   if ctx.display():
     display_text = ''
@@ -450,33 +455,33 @@ def lastres(ctx, institution):
 
 # maxclass()
 # --------------------------------------------------------------------------------------------------
-def maxclass(ctx, institution):
+def maxclass(ctx, institution, requirement_id):
   """
       maxclass        : MAXCLASS NUMBER course_list? tag?;
   """
   return_dict = {'tag': 'max_class',
                  'number': ctx.NUMBER().getText().strip()}
-  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution, requirement_id)
 
   return return_dict
 
 
 # maxcredit()
 # --------------------------------------------------------------------------------------------------
-def maxcredit(ctx, institution):
+def maxcredit(ctx, institution, requirement_id):
   """
       maxcredit       : MAXCREDIT NUMBER course_list? tag?;
   """
   return_dict = {'tag': 'max_credit',
                  'number': ctx.NUMBER().getText().strip()}
-  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution, requirement_id)
 
   return return_dict
 
 
 # maxpassfail()
 # --------------------------------------------------------------------------------------------------
-def maxpassfail(ctx, institution):
+def maxpassfail(ctx, institution, requirement_id):
   """
       maxpassfail     : MAXPASSFAIL NUMBER class_or_credit tag?;
   """
@@ -488,7 +493,7 @@ def maxpassfail(ctx, institution):
 
 # maxperdisc()
 # -------------------------------------------------------------------------------------------------
-def maxperdisc(ctx, institution):
+def maxperdisc(ctx, institution, requirement_id):
   """
       maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
   """
@@ -502,21 +507,21 @@ def maxperdisc(ctx, institution):
 
 # maxterm()
 # -------------------------------------------------------------------------------------------------
-def maxterm(ctx, institution):
+def maxterm(ctx, institution, requirement_id):
   """
       maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
   """
   return_dict = {'tag': 'max_term',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
-  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution, requirement_id)
 
   return return_dict
 
 
 # maxtransfer()
 # -------------------------------------------------------------------------------------------------
-def maxtransfer(ctx, institution):
+def maxtransfer(ctx, institution, requirement_id):
   """
       maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
   """
@@ -532,13 +537,13 @@ def maxtransfer(ctx, institution):
 
 # minclass()
 # --------------------------------------------------------------------------------------------------
-def minclass(ctx, institution):
+def minclass(ctx, institution, requirement_id):
   """
       minclass        : MINCLASS NUMBER course_list tag? display* label?;
   """
   return_dict = {'tag': 'min_class',
                  'number': ctx.NUMBER().getText(),
-                 'course_list': build_course_list(ctx.course_list(), institution)}
+                 'course_list': build_course_list(ctx.course_list(), institution, requirement_id)}
 
   if ctx.display():
     return_dict['display'] = ' '.join([item.string().getText().strip(' "')
@@ -552,13 +557,13 @@ def minclass(ctx, institution):
 
 # mincredit()
 # --------------------------------------------------------------------------------------------------
-def mincredit(ctx, institution):
+def mincredit(ctx, institution, requirement_id):
   """
       mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
   """
   return_dict = {'tag': 'min_credit',
                  'number': ctx.NUMBER().getText()}
-  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution, requirement_id)
 
   if ctx.display():
     display_text = ''
@@ -574,14 +579,14 @@ def mincredit(ctx, institution):
 
 # mingpa()
 # --------------------------------------------------------------------------------------------------
-def mingpa(ctx, institution):
+def mingpa(ctx, institution, requirement_id):
   """
       mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
   """
   return_dict = {'tag': 'min_gpa', 'number': ctx.NUMBER().getText()}
 
   if ctx.course_list():
-    return_dict['courses'] = build_course_list(ctx.course_list(), institution)
+    return_dict['courses'] = build_course_list(ctx.course_list(), institution, requirement_id)
 
   if ctx.expression():
     return_dict['expression'] = ctx.expression().getText()
@@ -600,7 +605,7 @@ def mingpa(ctx, institution):
 
 # mingrade()
 # -------------------------------------------------------------------------------------------------
-def mingrade(ctx, institution):
+def mingrade(ctx, institution, requirement_id):
   """
       mingrade        : MINGRADE NUMBER;
   """
@@ -609,7 +614,7 @@ def mingrade(ctx, institution):
 
 # minperdisc()
 # -------------------------------------------------------------------------------------------------
-def minperdisc(ctx, institution):
+def minperdisc(ctx, institution, requirement_id):
   """
       minperdisc  : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
   """
@@ -623,7 +628,7 @@ def minperdisc(ctx, institution):
 
 # minres()
 # -------------------------------------------------------------------------------------------------
-def minres(ctx, institution):
+def minres(ctx, institution, requirement_id):
   """ minres          : MINRES (num_classes | num_credits) display* label? tag?;
   """
   return_dict = num_class_or_num_credit(ctx)
@@ -643,7 +648,7 @@ def minres(ctx, institution):
 
 # noncourse()
 # -------------------------------------------------------------------------------------------------
-def noncourse(ctx, institution):
+def noncourse(ctx, institution, requirement_id):
   """
       noncourse       : NUMBER NONCOURSE LP expression RP label?;
   """
@@ -657,7 +662,7 @@ def noncourse(ctx, institution):
 
 # optional()
 # -------------------------------------------------------------------------------------------------
-def optional(ctx, institution):
+def optional(ctx, institution, requirement_id):
   """ If present, the block’s requirements are optional.
   """
   return {'tag': 'optional'}
@@ -665,7 +670,7 @@ def optional(ctx, institution):
 
 # proxy_advice()
 # -------------------------------------------------------------------------------------------------
-def proxy_advice(ctx, institution):
+def proxy_advice(ctx, institution, requirement_id):
   """ Recognizing this, but no plans to do anything with it.
   """
   return {}
@@ -673,7 +678,7 @@ def proxy_advice(ctx, institution):
 
 # remark()
 # -------------------------------------------------------------------------------------------------
-def remark(ctx, institution):
+def remark(ctx, institution, requirement_id):
   """ remark          : (REMARK string SEMICOLON?)+;
   """
   remark_str = ''
@@ -689,7 +694,7 @@ def remark(ctx, institution):
 
 # rule_complete()
 # -------------------------------------------------------------------------------------------------
-def rule_complete(ctx, institution):
+def rule_complete(ctx, institution, requirement_id):
   """ rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
   """
   return_dict = {'tag': 'rule_complete'}
@@ -703,7 +708,7 @@ def rule_complete(ctx, institution):
 
 # share()
 # -------------------------------------------------------------------------------------------------
-def share(ctx, institution):
+def share(ctx, institution, requirement_id):
   """
       share           : (SHARE | DONT_SHARE) (NUMBER class_or_credit)? expression? tag?;
   """
@@ -725,7 +730,7 @@ def share(ctx, institution):
 
 # standalone()
 # -------------------------------------------------------------------------------------------------
-def standalone(ctx, institution):
+def standalone(ctx, institution, requirement_id):
   """
       standalone      : STANDALONE;
   """
@@ -734,7 +739,7 @@ def standalone(ctx, institution):
 
 # subset_body()
 # -------------------------------------------------------------------------------------------------
-def subset(ctx, institution):
+def subset(ctx, institution, requirement_id):
   """
       /* Body only
        */
@@ -766,38 +771,41 @@ def subset(ctx, institution):
   return_dict = {'tag': 'subset'}
 
   if len(ctx.if_then_body()) > 0:
-    return_dict['if_then'] = [if_then_body(context, institution)
+    return_dict['if_then'] = [if_then_body(context, institution, requirement_id)
                               for context in ctx.if_then_body()]
 
   if len(ctx.block()) > 0:
-    return_dict['block'] = [block(context, institution) for context in ctx.block()]
+    return_dict['block'] = [block(context, institution, requirement_id) for context in ctx.block()]
 
   if len(ctx.blocktype()) > 0:
-    return_dict['blocktype'] = [blocktype(context, institution) for context in ctx.blocktype()]
+    return_dict['blocktype'] = [blocktype(context, institution, requirement_id)
+                                for context in ctx.blocktype()]
 
   if len(ctx.class_credit_body()) > 0:
     # Return a list of class_credit dicts
-    return_dict['class_credit'] = [class_credit_body(context, institution)
+    return_dict['class_credit'] = [class_credit_body(context, institution, requirement_id)
                                    for context
                                    in ctx.class_credit_body()]
 
   if len(ctx.copy_rules()) > 0:
     assert len(ctx.copy_rules()) == 1
-    return_dict['copy_rules'] = copy_rules(ctx.copy_rules()[0], institution)
+    return_dict['copy_rules'] = copy_rules(ctx.copy_rules()[0], institution, requirement_id)
 
   if len(ctx.course_list()) > 0:
-    return_dict['courses'] = [build_course_list(context, institution)
+    return_dict['courses'] = [build_course_list(context, institution, requirement_id)
                               for context in ctx.course_list()]
 
   if len(ctx.group()) > 0:
-    return_dict['group'] = [group(context, institution) for context in ctx.group()]
+    return_dict['group'] = [group(context, institution, requirement_id) for context in ctx.group()]
 
   if len(ctx.noncourse()) > 0:
-    return_dict['noncourse'] = [noncourse(context, institution) for context in ctx.noncourse()]
+    return_dict['noncourse'] = [noncourse(context, institution, requirement_id)
+                                for context in ctx.noncourse()]
 
   if len(ctx.rule_complete()) > 0:
     assert len(ctx.rule_complete()) == 1
-    return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0], institution)
+    return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0],
+                                                 institution, requirement_id)
 
   try:
     label_ctx = ctx.label()
@@ -823,14 +831,14 @@ def subset(ctx, institution):
 
 # under()
 # -------------------------------------------------------------------------------------------------
-def under(ctx, institution):
+def under(ctx, institution, requirement_id):
   """
       under           : UNDER NUMBER class_or_credit course_list display* label;
   """
   return_dict = {'tag': 'under',
                  'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
-  return_dict['courses'] = build_course_list(ctx.course_list(), institution)
+  return_dict['courses'] = build_course_list(ctx.course_list(), institution, requirement_id)
 
   if ctx.display():
     display_text = ''
@@ -889,10 +897,19 @@ dispatch_body = {
 
 # dispatch()
 # -------------------------------------------------------------------------------------------------
-def dispatch(ctx: any, institution: str, which_part: str):
+def dispatch(ctx: any, institution: str, requirement_id: str, which_part: str):
   """ Invoke the appropriate handler given its top-level context.
   """
-  if which_part == 'head':
-    return dispatch_head[class_name(ctx).lower()](ctx, institution)
-  else:
-    return dispatch_body[class_name(ctx).lower()](ctx, institution)
+  try:
+    if which_part == 'head':
+      return dispatch_head[class_name(ctx).lower()](ctx, institution, requirement_id)
+    else:
+      return dispatch_body[class_name(ctx).lower()](ctx, institution, requirement_id)
+  except KeyError as ke:
+    print(f'No dispatch method for "{class_name(ctx).lower()}": '
+          f'{institution=}; {requirement_id=}; {which_part=}')
+    return {'tag': 'Dispatch_Error',
+            'method': class_name(ctx).lower(),
+            'institution': institution,
+            'requirement_id': requirement_id,
+            'part': which_part}

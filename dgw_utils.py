@@ -169,7 +169,7 @@ def expression_to_str(ctx):
 
 # get_rules()
 # -------------------------------------------------------------------------------------------------
-def get_rules(ctx, institution):
+def get_rules(ctx, institution, requirement_id):
   """ Return a list of rules that appear in either the head or body of a block. The parse tree has
       already differentiated between the head and the body so, for example, if_then_head and
       if_then_body will never both appear.
@@ -194,9 +194,12 @@ def get_rules(ctx, institution):
     list_of_rules = [ctx]
 
   for rule in list_of_rules:
+    # for child in rule.getChildren():
+      # print(f'{class_name(child)=}')
     for possible_rule in possible_rules:
       rule_fun = getattr(rule, possible_rule, None)
       if rule_fun and rule_fun() is not None:
+        # print(f'"{rule_fun.__name__=}"')
         rule_dict = {'tag': possible_rule}
 
         # Use the value of possible_rule to dispatch the corresponding handler, with rule_fun()
@@ -208,106 +211,106 @@ def get_rules(ctx, institution):
         # if_then_head
         if possible_rule == 'if_then_head':
           # This can be done by the handler
-          return_list.append(dgw_handlers.if_then_head(rule_fun(), institution))
+          return_list.append(dgw_handlers.if_then_head(rule_fun(), institution, requirement_id))
 
         # if_then_body
         if possible_rule == 'if_then_body':
           # This can be done by the handler
-          return_list.append(dgw_handlers.if_then_body(rule_fun(), institution))
+          return_list.append(dgw_handlers.if_then_body(rule_fun(), institution, requirement_id))
 
         # class_credit_head
         if possible_rule == 'class_credit_head':
-          return_list.append(dgw_handlers.class_credit_head(rule_fun(), institution))
+          return_list.append(dgw_handlers.class_credit_head(rule_fun(), institution, requirement_id))
 
         # class_credit_body
         if possible_rule == 'class_credit_body':
-          return_list.append(dgw_handlers.class_credit_body(rule_fun(), institution))
+          return_list.append(dgw_handlers.class_credit_body(rule_fun(), institution, requirement_id))
 
         # These are independent of whether they are in the head or the body
         # -----------------------------------------------------------------------------------------
         # block
         if possible_rule == 'block':
-          return_list.append(dgw_handlers.block(rule_fun(), institution))
+          return_list.append(dgw_handlers.block(rule_fun(), institution, requirement_id))
 
         # blocktype
         if possible_rule == 'blocktype':
-          return_list.append(dgw_handlers.blocktype(rule_fun(), institution))
+          return_list.append(dgw_handlers.blocktype(rule_fun(), institution, requirement_id))
 
         # copy_rules
         if possible_rule == 'copy_rules':
-          return_list.append(dgw_handlers.copy_rules(rule_fun(), institution))
+          return_list.append(dgw_handlers.copy_rules(rule_fun(), institution, requirement_id))
 
         # lastres
         if possible_rule == 'lastres':
-          return_list.append(dgw_handlers.lastres(rule_fun(), institution))
+          return_list.append(dgw_handlers.lastres(rule_fun(), institution, requirement_id))
 
         # maxcredit
         if possible_rule == 'maxcredit':
-          return_list.append(dgw_handlers.maxcredit(rule_fun(), institution))
+          return_list.append(dgw_handlers.maxcredit(rule_fun(), institution, requirement_id))
 
         # maxpassfail
         if possible_rule == 'maxpassfail':
-          return_list.append(dgw_handlers.maxpassfail(rule_fun(), institution))
+          return_list.append(dgw_handlers.maxpassfail(rule_fun(), institution, requirement_id))
 
         # maxterm
         if possible_rule == 'maxterm':
-          return_list.append(dgw_handlers.maxterm(rule_fun(), institution))
+          return_list.append(dgw_handlers.maxterm(rule_fun(), institution, requirement_id))
 
         # maxtransfer
         if possible_rule == 'maxtransfer':
-          return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution))
+          return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution, requirement_id))
 
         # maxtransfer
         if possible_rule == 'maxtransfer':
-          return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution))
+          return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution, requirement_id))
 
         # minclass
         if possible_rule == 'minclass':
-          return_list.append(dgw_handlers.minclass(rule_fun(), institution))
+          return_list.append(dgw_handlers.minclass(rule_fun(), institution, requirement_id))
 
         # mincredit
         if possible_rule == 'mincredit':
-          return_list.append(dgw_handlers.mincredit(rule_fun(), institution))
+          return_list.append(dgw_handlers.mincredit(rule_fun(), institution, requirement_id))
 
         # mingpa
         if possible_rule == 'mingpa':
-          return_list.append(dgw_handlers.mingpa(rule_fun(), institution))
+          return_list.append(dgw_handlers.mingpa(rule_fun(), institution, requirement_id))
 
         # mingrade
         if possible_rule == 'mingrade':
-          return_list.append(dgw_handlers.mingrade(rule_fun(), institution))
+          return_list.append(dgw_handlers.mingrade(rule_fun(), institution, requirement_id))
 
         # minperdisc
         if possible_rule == 'minperdisc':
-          return_list.append(dgw_handlers.minperdisc(rule_fun(), institution))
+          return_list.append(dgw_handlers.minperdisc(rule_fun(), institution, requirement_id))
 
         # minres
         if possible_rule == 'minres':
-          return_list.append(dgw_handlers.minres(rule_fun(), institution))
+          return_list.append(dgw_handlers.minres(rule_fun(), institution, requirement_id))
 
         # minterm
         if possible_rule == 'minterm':
-          return_list.append(dgw_handlers.minterm(rule_fun(), institution))
+          return_list.append(dgw_handlers.minterm(rule_fun(), institution, requirement_id))
 
         # noncourse
         if possible_rule == 'noncourse':
-          return_list.append(dgw_handlers.noncourse(rule_fun(), institution))
+          return_list.append(dgw_handlers.noncourse(rule_fun(), institution, requirement_id))
 
         # remark
         if possible_rule == 'remark':
-          return_list.append(dgw_handlers.remark(rule_fun(), institution))
+          return_list.append(dgw_handlers.remark(rule_fun(), institution, requirement_id))
 
         # rule_complete
         if possible_rule == 'rule_complete':
-          return_list.append(dgw_handlers.rule_complete(rule_fun(), institution))
+          return_list.append(dgw_handlers.rule_complete(rule_fun(), institution, requirement_id))
 
         # share
         if possible_rule == 'share':
-          return_list.append(dgw_handlers.share(rule_fun(), institution))
+          return_list.append(dgw_handlers.share(rule_fun(), institution, requirement_id))
 
         # subset
         if possible_rule == 'subset':
-          return_list.append(dgw_handlers.subset(rule_fun(), institution))
+          return_list.append(dgw_handlers.subset(rule_fun(), institution, requirement_id))
 
   # print(f'{return_list=}', file=sys.stderr)
   return return_list
@@ -315,11 +318,29 @@ def get_rules(ctx, institution):
 
 # get_requirements()
 # -------------------------------------------------------------------------------------------------
-def get_requirements(ctx, institution):
-  """
+def get_requirements(ctx, institution, requirement_id):
+  """ These show up in the context of if-then in the body. Just build a dict with the "requirement"
+      tag and a list of dicts returned by the respective handlers.
+      It's not at all confusing that a requirement dict should contain a list of requirement dicts,
+      each of which will have its own tag, from this list:
+
+      requirement     : maxpassfail
+                      | maxperdisc
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingpa
+                      | mingrade
+                      | minperdisc
+                      | proxy_advice
+                      | samedisc
+                      | rule_tag
+                      | share
   """
   assert isinstance(ctx, list)
+  return_dict = {'tag': 'requirement', 'requirement': []}
   for context in ctx:
+
     print(f'get_requirements not implemented yet: {context_path(context)}', file=sys.stderr)
   return 'Requirements list not implemented yet'
 
@@ -455,7 +476,7 @@ def get_course_list_qualifiers(institution, ctx):
               range_str = qualifier_fun().RANGE().getText()
             else:
               range_str = None
-            course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
+            course_list_obj = build_course_list(qualifier_fun().course_list(), institution, requirement_id)
             qualifier_list.append(CourseListQualifier(qualifier,
                                                       number=number_str,
                                                       range=range_str,
@@ -466,7 +487,7 @@ def get_course_list_qualifiers(institution, ctx):
           elif qualifier == 'mingpa':
             course_list_obj = qualifier_fun().course_list()
             if course_list_obj:
-              course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
+              course_list_obj = build_course_list(qualifier_fun().course_list(), institution, requirement_id)
 
             expression_str = qualifier_fun().expression()
             if expression_str:
@@ -563,7 +584,7 @@ def get_group_list(ctx: list) -> list:
 
 # get_qualifiers()
 # -------------------------------------------------------------------------------------------------
-def get_qualifiers(ctx, institution):
+def get_qualifiers(ctx, institution, requirement_id):
   """ Build qualifier-specific dicts for various possible qualifiers.
       The ctx parameter might be for a list of grammar-rules or for a single grammar-rule. In the
       latter case, get a list of all the siblings of this ctx (i.e., the children of this rule's
@@ -619,7 +640,7 @@ def get_qualifiers(ctx, institution):
           # minclass        : MINCLASS NUMBER course_list tag? display* label?;
           # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
           elif qualifier in ['minclass', 'mincredit']:
-            course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
+            course_list_obj = build_course_list(qualifier_fun().course_list(), institution, requirement_id)
             qualifier_list.append({'tag': qualifier,
                                    'number': qualifier_fun().NUMBER().getText(),
                                    'courses': course_list_obj})
@@ -628,7 +649,7 @@ def get_qualifiers(ctx, institution):
           elif qualifier == 'mingpa':
             course_list_obj = qualifier_fun().course_list()
             if course_list_obj:
-              course_list_obj = build_course_list(qualifier_fun().course_list(), institution)
+              course_list_obj = build_course_list(qualifier_fun().course_list(), institution, requirement_id)
 
             expression_str = qualifier_fun().expression()
             if expression_str:
@@ -745,7 +766,7 @@ def build_string(ctx) -> str:
 
 # build_course_list()
 # -------------------------------------------------------------------------------------------------
-def build_course_list(ctx, institution) -> dict:
+def build_course_list(ctx, institution, requirement_id) -> dict:
   """
       The returned dict has the following structure:
         Scribed and Active course lists.
@@ -838,7 +859,7 @@ def build_course_list(ctx, institution) -> dict:
   if ctx.include_list():
     include_courses += get_scribed_courses(ctx.include_list().course_list())
 
-  qualifiers = get_qualifiers(ctx, institution)
+  qualifiers = get_qualifiers(ctx, institution, requirement_id)
 
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
   all_blanket = True

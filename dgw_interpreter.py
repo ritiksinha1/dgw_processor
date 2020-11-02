@@ -86,7 +86,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
     head_ctx = parse_tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
-        obj = dispatch(child, institution, 'head')
+        obj = dispatch(child, institution, row.requirement_id, 'head')
         if obj != {}:
           head_list.append(obj)
 
@@ -94,7 +94,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
     body_ctx = parse_tree.body()
     if body_ctx:
       for child in body_ctx.getChildren():
-        obj = dispatch(child, institution, 'body')
+        obj = dispatch(child, institution, row.requirement_id, 'body')
         if obj != {}:
           body_list.append(obj)
 
