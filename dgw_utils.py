@@ -318,7 +318,9 @@ def get_rules(ctx, institution):
 def get_requirements(ctx, institution):
   """
   """
-  print('get_requirements not implemented yet', file=sys.stderr)
+  assert isinstance(ctx, list)
+  for context in ctx:
+    print(f'get_requirements not implemented yet: {context_path(context)}', file=sys.stderr)
   return 'Requirements list not implemented yet'
 
 

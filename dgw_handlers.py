@@ -386,8 +386,11 @@ def if_then_body(ctx, institution):
   return_dict = {'tag': 'if-then', 'condition': expression_to_str(ctx.expression())}
 
   if ctx.label():
-    assert isinstance(ctx.label(), list)
-    label_str = ' '.join([label.string() for label in ctx.label()])
+    label_str = ''
+    if isinstance(ctx.label(), list):
+      label_str = ' '.join([label.string() for label in ctx.label()])
+    else:
+      label_str = ctx.label().string().getText()
     if label_str != '':
       return_dict['label'] = label_str
 
