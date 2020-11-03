@@ -142,9 +142,6 @@ def class_credit_body(ctx, institution, requirement_id):
                                  | samedisc
                                  | share
 
-      Note: rule_tag is used only for audit presentation, and is ignored here.
-            proxy_advice is student-dependent, and is ignored here.
-
       "Allowable rule qualifiers: DontShare, Exclusive, Hide, HideRule, HighPriority, LowPriority,
       LowestPriority, MaxPassFail, MaxPerDisc, MaxSpread, MaxTerm, MaxTransfer, MinAreas, MinGrade,
       MinPerDisc, MinSpread, MinTerm, NotGPA, ProxyAdvice, RuleTag, SameDisc, ShareWith, With."
@@ -277,6 +274,38 @@ requirement           : maxpassfail
   return return_dict
 
 
+# header_tag()
+# -------------------------------------------------------------------------------------------------
+def header_tag(ctx, institution, requirement_id):
+  """ header_tag  : (HEADER_TAG nv_pair)+;
+  """
+  return_dict = {'tag': 'header_tag'}
+  return return_dict
+
+
+# rule_tag()
+# -------------------------------------------------------------------------------------------------
+def rule_tag(ctx, institution, requirement_id):
+  """ rule_tag  : (RULE_TAG nv_pair)+;
+      nv_pair   : SYMBOL '=' (STRING | SYMBOL);
+
+  """
+  if isinstance(ctx, list):
+    rule_tags = ctx
+  else:
+    rule_tags = [ctx]
+
+  return_dict = {'tag': 'rule_tag_list'}
+  tag_list = []
+  for rule_tag in rule_tags:
+    for pair in rule_tag.nv_pair():
+      name = pair.SYMBOL()[0].getText()
+      value = pair.STRING().getText() if len(pair.SYMBOL()) == 1 else pair.SYMBOL()[1].getText()
+      tag_list.append({'tag': 'rule_tag', 'name': name, 'value': value})
+    return_dict['name_value'] = tag_list
+  return return_dict
+
+
 # if_then_head()
 # -------------------------------------------------------------------------------------------------
 def if_then_head(ctx, institution, requirement_id):
@@ -398,8 +427,8 @@ def if_then_body(ctx, institution, requirement_id):
       return_dict['label'] = label_str
 
   if ctx.requirement():
-    assert isinstance(ctx.requirement(), list)
-    return_dict['requirement'] = get_requirements(ctx.requirement(), institution, requirement_id)
+    return_dict['requirements'] = [get_rules(context, institution, requirement_id)
+                                   for context in ctx.requirement()]
 
   if ctx.body_rule():
     return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
@@ -695,13 +724,21 @@ def remark(ctx, institution, requirement_id):
 # rule_complete()
 # -------------------------------------------------------------------------------------------------
 def rule_complete(ctx, institution, requirement_id):
-  """ rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) label?;
+  """ rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) (proxy_advice | rule_tag | label)*;
   """
   return_dict = {'tag': 'rule_complete'}
-  return_dict['is_complete'] = True if ctx.RULE_COMPLETE() else False
+  return_dict['is_complete?'] = True if ctx.RULE_COMPLETE() else False
 
   if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+    return_dict['label'] = ' '.join([context.string().getText().strip(' "')
+                                     for context in ctx.label()])
+
+  if ctx.rule_tag():
+    return_dict['rule_tag'] = rule_tag(ctx.rule_tag(), institution, requirement_id)
+
+  if ctx.label():
+    return_dict['label'] = ' '.join([context.string().getText().strip(' "')
+                                     for context in ctx.label()])
 
   return return_dict
 
@@ -858,6 +895,7 @@ def under(ctx, institution, requirement_id):
 """
 dispatch_head = {
     'class_credit_head': class_credit_head,
+    'header_tag': header_tag,
     'if_then_head': if_then_head,
     'lastres': lastres,
     'maxclass': maxclass,
@@ -891,6 +929,7 @@ dispatch_body = {
     'proxy_advice': proxy_advice,
     'remark': remark,
     'rule_complete': rule_complete,
+    'rule_tag': rule_tag,
     'subset': subset
 }
 
@@ -906,6 +945,7 @@ def dispatch(ctx: any, institution: str, requirement_id: str, which_part: str):
     else:
       return dispatch_body[class_name(ctx).lower()](ctx, institution, requirement_id)
   except KeyError as ke:
+    # Missing handler: report it and recover ever so gracefully
     print(f'No dispatch method for "{class_name(ctx).lower()}": '
           f'{institution=}; {requirement_id=}; {which_part=}')
     return {'tag': 'Dispatch_Error',

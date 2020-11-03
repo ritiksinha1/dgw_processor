@@ -170,150 +170,152 @@ def expression_to_str(ctx):
 # get_rules()
 # -------------------------------------------------------------------------------------------------
 def get_rules(ctx, institution, requirement_id):
-  """ Return a list of rules that appear in either the head or body of a block. The parse tree has
-      already differentiated between the head and the body so, for example, if_then_head and
-      if_then_body will never both appear.
-
-      Given a head_rule or body_rule context, determine which of the following productions are
-      present by testing each one's visitor function to see whether it returns None or not. And if
-      not, generate a production-specific dict, which gets added to the returned list of dicts.
-
+  """ Return a list of rule dicts for the children of ctx.
   """
-  possible_rules = ['if_then_head', 'if_then_body', 'block', 'blocktype', 'class_credit_head',
-                    'class_credit_body', 'copy_rules', 'lastres', 'maxcredit', 'maxpassfail',
-                    'maxterm', 'maxtransfer', 'minclass', 'mincredit', 'mingpa', 'mingrade',
-                    'minperdisc', 'minres', 'minterm', 'noncourse', 'proxy_advice', 'remark',
-                    'rule_complete', 'share', 'subset']
+  # possible_rules = ['if_then_head', 'if_then_body', 'block', 'blocktype', 'class_credit_head',
+  #                   'class_credit_body', 'copy_rules', 'lastres', 'maxcredit', 'maxpassfail',
+  #                   'maxterm', 'maxtransfer', 'minclass', 'mincredit', 'mingpa', 'mingrade',
+  #                   'minperdisc', 'minres', 'minterm', 'noncourse', 'proxy_advice', 'remark',
+  #                   'rule_complete', 'share', 'subset']
 
   return_list = []
-  if 'group' in class_name(ctx).lower():
-    # List of rules
-    list_of_rules = ctx.head_rule()
-  else:
-    # Single rule; convert it to a list
-    list_of_rules = [ctx]
 
-  for rule in list_of_rules:
-    # for child in rule.getChildren():
-      # print(f'{class_name(child)=}')
-    for possible_rule in possible_rules:
-      rule_fun = getattr(rule, possible_rule, None)
-      if rule_fun and rule_fun() is not None:
-        # print(f'"{rule_fun.__name__=}"')
-        rule_dict = {'tag': possible_rule}
-
-        # Use the value of possible_rule to dispatch the corresponding handler, with rule_fun()
-        # providing the context.
-        # =========================================================================================
-
-        # These are head-body dependent
-        # -----------------------------------------------------------------------------------------
-        # if_then_head
-        if possible_rule == 'if_then_head':
-          # This can be done by the handler
-          return_list.append(dgw_handlers.if_then_head(rule_fun(), institution, requirement_id))
-
-        # if_then_body
-        if possible_rule == 'if_then_body':
-          # This can be done by the handler
-          return_list.append(dgw_handlers.if_then_body(rule_fun(), institution, requirement_id))
-
-        # class_credit_head
-        if possible_rule == 'class_credit_head':
-          return_list.append(dgw_handlers.class_credit_head(rule_fun(), institution, requirement_id))
-
-        # class_credit_body
-        if possible_rule == 'class_credit_body':
-          return_list.append(dgw_handlers.class_credit_body(rule_fun(), institution, requirement_id))
-
-        # These are independent of whether they are in the head or the body
-        # -----------------------------------------------------------------------------------------
-        # block
-        if possible_rule == 'block':
-          return_list.append(dgw_handlers.block(rule_fun(), institution, requirement_id))
-
-        # blocktype
-        if possible_rule == 'blocktype':
-          return_list.append(dgw_handlers.blocktype(rule_fun(), institution, requirement_id))
-
-        # copy_rules
-        if possible_rule == 'copy_rules':
-          return_list.append(dgw_handlers.copy_rules(rule_fun(), institution, requirement_id))
-
-        # lastres
-        if possible_rule == 'lastres':
-          return_list.append(dgw_handlers.lastres(rule_fun(), institution, requirement_id))
-
-        # maxcredit
-        if possible_rule == 'maxcredit':
-          return_list.append(dgw_handlers.maxcredit(rule_fun(), institution, requirement_id))
-
-        # maxpassfail
-        if possible_rule == 'maxpassfail':
-          return_list.append(dgw_handlers.maxpassfail(rule_fun(), institution, requirement_id))
-
-        # maxterm
-        if possible_rule == 'maxterm':
-          return_list.append(dgw_handlers.maxterm(rule_fun(), institution, requirement_id))
-
-        # maxtransfer
-        if possible_rule == 'maxtransfer':
-          return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution, requirement_id))
-
-        # maxtransfer
-        if possible_rule == 'maxtransfer':
-          return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution, requirement_id))
-
-        # minclass
-        if possible_rule == 'minclass':
-          return_list.append(dgw_handlers.minclass(rule_fun(), institution, requirement_id))
-
-        # mincredit
-        if possible_rule == 'mincredit':
-          return_list.append(dgw_handlers.mincredit(rule_fun(), institution, requirement_id))
-
-        # mingpa
-        if possible_rule == 'mingpa':
-          return_list.append(dgw_handlers.mingpa(rule_fun(), institution, requirement_id))
-
-        # mingrade
-        if possible_rule == 'mingrade':
-          return_list.append(dgw_handlers.mingrade(rule_fun(), institution, requirement_id))
-
-        # minperdisc
-        if possible_rule == 'minperdisc':
-          return_list.append(dgw_handlers.minperdisc(rule_fun(), institution, requirement_id))
-
-        # minres
-        if possible_rule == 'minres':
-          return_list.append(dgw_handlers.minres(rule_fun(), institution, requirement_id))
-
-        # minterm
-        if possible_rule == 'minterm':
-          return_list.append(dgw_handlers.minterm(rule_fun(), institution, requirement_id))
-
-        # noncourse
-        if possible_rule == 'noncourse':
-          return_list.append(dgw_handlers.noncourse(rule_fun(), institution, requirement_id))
-
-        # remark
-        if possible_rule == 'remark':
-          return_list.append(dgw_handlers.remark(rule_fun(), institution, requirement_id))
-
-        # rule_complete
-        if possible_rule == 'rule_complete':
-          return_list.append(dgw_handlers.rule_complete(rule_fun(), institution, requirement_id))
-
-        # share
-        if possible_rule == 'share':
-          return_list.append(dgw_handlers.share(rule_fun(), institution, requirement_id))
-
-        # subset
-        if possible_rule == 'subset':
-          return_list.append(dgw_handlers.subset(rule_fun(), institution, requirement_id))
-
-  # print(f'{return_list=}', file=sys.stderr)
+  for rule in ctx.getChildren():
+    rule_name = class_name(rule).lower()
+    which_part = 'head' if context_path(ctx).startswith('Head') else 'body'
+    rule_dict = dgw_handlers.dispatch(rule, institution, requirement_id, which_part)
+    return_list.append(rule_dict)
   return return_list
+
+  # The following code has been replaced byt the previous six lines!
+  # if 'group' in class_name(ctx).lower():
+  #   # List of rules
+  #   list_of_rules = ctx.head_rule()   # This was a bug, anyway
+  # else:
+  #   # Single rule; convert it to a list
+  #   list_of_rules = [ctx]
+
+  # for rule in list_of_rules:
+  #   # for child in rule.getChildren():
+  #     # print(f'{class_name(child)=}')
+  #   for possible_rule in possible_rules:
+  #     rule_fun = getattr(rule, possible_rule, None)
+  #     if rule_fun and rule_fun() is not None:
+  #       # print(f'"{rule_fun.__name__=}"')
+  #       rule_dict = {'tag': possible_rule}
+
+  #       # Use the value of possible_rule to dispatch the corresponding handler, with rule_fun()
+  #       # providing the context.
+  #       # =========================================================================================
+
+  #       # These are head-body dependent
+  #       # -----------------------------------------------------------------------------------------
+  #       # if_then_head
+  #       if possible_rule == 'if_then_head':
+  #         # This can be done by the handler
+  #         return_list.append(dgw_handlers.if_then_head(rule_fun(), institution, requirement_id))
+
+  #       # if_then_body
+  #       if possible_rule == 'if_then_body':
+  #         # This can be done by the handler
+  #         return_list.append(dgw_handlers.if_then_body(rule_fun(), institution, requirement_id))
+
+  #       # class_credit_head
+  #       if possible_rule == 'class_credit_head':
+  #         return_list.append(dgw_handlers.class_credit_head(rule_fun(), institution, requirement_id))
+
+  #       # class_credit_body
+  #       if possible_rule == 'class_credit_body':
+  #         return_list.append(dgw_handlers.class_credit_body(rule_fun(), institution, requirement_id))
+
+  #       # These are independent of whether they are in the head or the body
+  #       # -----------------------------------------------------------------------------------------
+  #       # block
+  #       if possible_rule == 'block':
+  #         return_list.append(dgw_handlers.block(rule_fun(), institution, requirement_id))
+
+  #       # blocktype
+  #       if possible_rule == 'blocktype':
+  #         return_list.append(dgw_handlers.blocktype(rule_fun(), institution, requirement_id))
+
+  #       # copy_rules
+  #       if possible_rule == 'copy_rules':
+  #         return_list.append(dgw_handlers.copy_rules(rule_fun(), institution, requirement_id))
+
+  #       # lastres
+  #       if possible_rule == 'lastres':
+  #         return_list.append(dgw_handlers.lastres(rule_fun(), institution, requirement_id))
+
+  #       # maxcredit
+  #       if possible_rule == 'maxcredit':
+  #         return_list.append(dgw_handlers.maxcredit(rule_fun(), institution, requirement_id))
+
+  #       # maxpassfail
+  #       if possible_rule == 'maxpassfail':
+  #         return_list.append(dgw_handlers.maxpassfail(rule_fun(), institution, requirement_id))
+
+  #       # maxterm
+  #       if possible_rule == 'maxterm':
+  #         return_list.append(dgw_handlers.maxterm(rule_fun(), institution, requirement_id))
+
+  #       # maxtransfer
+  #       if possible_rule == 'maxtransfer':
+  #         return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution, requirement_id))
+
+  #       # maxtransfer
+  #       if possible_rule == 'maxtransfer':
+  #         return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution, requirement_id))
+
+  #       # minclass
+  #       if possible_rule == 'minclass':
+  #         return_list.append(dgw_handlers.minclass(rule_fun(), institution, requirement_id))
+
+  #       # mincredit
+  #       if possible_rule == 'mincredit':
+  #         return_list.append(dgw_handlers.mincredit(rule_fun(), institution, requirement_id))
+
+  #       # mingpa
+  #       if possible_rule == 'mingpa':
+  #         return_list.append(dgw_handlers.mingpa(rule_fun(), institution, requirement_id))
+
+  #       # mingrade
+  #       if possible_rule == 'mingrade':
+  #         return_list.append(dgw_handlers.mingrade(rule_fun(), institution, requirement_id))
+
+  #       # minperdisc
+  #       if possible_rule == 'minperdisc':
+  #         return_list.append(dgw_handlers.minperdisc(rule_fun(), institution, requirement_id))
+
+  #       # minres
+  #       if possible_rule == 'minres':
+  #         return_list.append(dgw_handlers.minres(rule_fun(), institution, requirement_id))
+
+  #       # minterm
+  #       if possible_rule == 'minterm':
+  #         return_list.append(dgw_handlers.minterm(rule_fun(), institution, requirement_id))
+
+  #       # noncourse
+  #       if possible_rule == 'noncourse':
+  #         return_list.append(dgw_handlers.noncourse(rule_fun(), institution, requirement_id))
+
+  #       # remark
+  #       if possible_rule == 'remark':
+  #         return_list.append(dgw_handlers.remark(rule_fun(), institution, requirement_id))
+
+  #       # rule_complete
+  #       if possible_rule == 'rule_complete':
+  #         return_list.append(dgw_handlers.rule_complete(rule_fun(), institution, requirement_id))
+
+  #       # share
+  #       if possible_rule == 'share':
+  #         return_list.append(dgw_handlers.share(rule_fun(), institution, requirement_id))
+
+  #       # subset
+  #       if possible_rule == 'subset':
+  #         return_list.append(dgw_handlers.subset(rule_fun(), institution, requirement_id))
+
+  # # print(f'{return_list=}', file=sys.stderr)
+  # return return_list
 
 
 # get_requirements()

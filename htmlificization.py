@@ -71,9 +71,9 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
   return return_str
 
 
-# if_then_to_details()
+# if_then_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def if_then_to_details(info: dict, is_head: bool, is_body: bool) -> str:
+def if_then_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
   """  The dict for an if-then construct must have a condition, which becomes the summary of the
        html details element. The optional label goes next, followed by nested details elements for
        the true and the optional false branches.
@@ -81,26 +81,26 @@ def if_then_to_details(info: dict, is_head: bool, is_body: bool) -> str:
 
   try:
     condition = info['condition']
-    summary = f"<summary><strong>{condition} ?</strong></summary>"
+    summary = f"<summary>{condition} ?</summary>"
   except KeyError as ke:
     condition = '(Missing Condition)'
     summary = '<summary class="error">If-Then With No Condition!</summary>'
 
   try:
-    label = f"<h2>{info['label']}</h2>"
+    label = f"""“{info['label'].strip('"')}”"""
   except KeyError as ke:
     label = ''
 
   try:
     true_value = to_html(info['if_true'], kind='If-true Item')
-    if_true_part = (f"<details><summary><strong>if {condition} is true</summary>"
+    if_true_part = (f"<details><summary>if {condition} is true</summary>"
                     f"{true_value}</details>")
   except KeyError as ke:
     if_true_part = '<p class="error">Empty If-then rule!</p>'
 
   try:
     false_value = to_html(info['if_false'], kind='if-false Item')
-    if_false_part = (f"<details><summary><strong>if {condition} is not true</summary>"
+    if_false_part = (f"<details><summary>if {condition} is not true</summary>"
                      f"{false_value}</details>")
   except KeyError as ke:
     if_false_part = ''  # Else is optional
@@ -108,22 +108,22 @@ def if_then_to_details(info: dict, is_head: bool, is_body: bool) -> str:
   return f"<details>{summary}{label}{if_true_part}{if_false_part}</details>"
 
 
-# dict_to_html_details()
+# dict_to_html_details_element()
 # -------------------------------------------------------------------------------------------------
-def dict_to_html_details(info: dict, is_head: bool, is_body: bool) -> str:
-  """ Convert a dict to a HTML <details> element. The <summary> element is based on the tag/label
-      fields of the dict. During development, the context path goes next. Then, if there are remark
-      or display fields, they go after that, followed by everything else.
+def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> str:
+  """ Convert a Python dict to a HTML <details> element. The <summary> element is based on the
+      tag/label fields of the dict. During development, the context path goes next. Then, if there
+      are remark or display fields, they go after that, followed by everything else.
 
       Special handling for if-else: display order is condition => if-true => if-false
   """
-
   summary = '<summary class="error">No-tag-or-label Bug</summary>'
 
   try:
     tag = info.pop('tag')
     if tag == 'if-then':  # Special case for if-then dicts
-      return(if_then_to_details(info, is_head, is_body))
+      return(if_then_to_details_element(info, is_head, is_body))
+    # Not if-then
     summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
   except KeyError as ke:
     pass
@@ -159,7 +159,8 @@ def dict_to_html_details(info: dict, is_head: bool, is_body: bool) -> str:
   for key, value in info.items():
     key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
 
-    if key in ['if_true', 'if_false', 'condition']:  # handled by if-then
+    if key in ['if_true', 'if_false', 'condition']:  # should be handled by if-then
+      return_str += f'<p class="error">Unexpected “{key}.”'
       continue
 
     # Special presentation for course lists, if present
@@ -229,9 +230,7 @@ def dict_to_html_details(info: dict, is_head: bool, is_body: bool) -> str:
       continue  # Omit empty fields
 
     if isinstance(value, bool):
-      # Show booleans only if true
-      if value:
-        return_str += f'<div>{key_str}: {value}</div>'
+      return_str += f'<div>{key_str}: {value}</div>'
 
     elif isinstance(value, str):
       try:
@@ -266,9 +265,9 @@ def dict_to_html_details(info: dict, is_head: bool, is_body: bool) -> str:
   return return_str + '</details>'
 
 
-# list_to_html_list()
+# list_to_html_list_element()
 # -------------------------------------------------------------------------------------------------
-def list_to_html_list(info: list, is_head: bool, is_body: bool, kind='Item') -> str:
+def list_to_html_list_element(info: list, is_head: bool, is_body: bool, kind='Item') -> str:
   """
   """
   num = len(info)
@@ -297,9 +296,9 @@ def to_html(info: any, is_head=False, is_body=False, kind='Item') -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return list_to_html_list(info, is_head, is_body, kind)
+    return list_to_html_list_element(info, is_head, is_body, kind)
   if isinstance(info, dict):
-    return dict_to_html_details(info, is_head, is_body)
+    return dict_to_html_details_element(info, is_head, is_body)
 
   return info
 
