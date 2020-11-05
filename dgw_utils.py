@@ -786,7 +786,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
       current_area = []
       continue
     if scribed_course == 'area_end':
-      if len(current_area) > 0:
+      if current_area and len(current_area) > 0:
         return_dict['course_areas'].append(current_area)
       current_area = None
       continue
