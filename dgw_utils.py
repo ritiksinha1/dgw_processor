@@ -52,6 +52,8 @@ def _with_clause(ctx):
   """
   if DEBUG:
     print('*** with_clause()', file=sys.stderr)
+  if isinstance(ctx, list):
+    return ' '.join([expression_to_str(context.expression()) for context in ctx])
   assert class_name(ctx) == 'With_clause', f'{class_name(ctx)} is not \'With_clause\''
   return expression_to_str(ctx.expression())
 
@@ -172,11 +174,6 @@ def expression_to_str(ctx):
 def get_rules(ctx, institution, requirement_id):
   """ Return a list of rule dicts for the children of ctx.
   """
-  # possible_rules = ['if_then_head', 'if_then_body', 'block', 'blocktype', 'class_credit_head',
-  #                   'class_credit_body', 'copy_rules', 'lastres', 'maxcredit', 'maxpassfail',
-  #                   'maxterm', 'maxtransfer', 'minclass', 'mincredit', 'mingpa', 'mingrade',
-  #                   'minperdisc', 'minres', 'minterm', 'noncourse', 'proxy_advice', 'remark',
-  #                   'rule_complete', 'share', 'subset']
 
   return_list = []
 
@@ -186,136 +183,6 @@ def get_rules(ctx, institution, requirement_id):
     rule_dict = dgw_handlers.dispatch(rule, institution, requirement_id, which_part)
     return_list.append(rule_dict)
   return return_list
-
-  # The following code has been replaced byt the previous six lines!
-  # if 'group' in class_name(ctx).lower():
-  #   # List of rules
-  #   list_of_rules = ctx.head_rule()   # This was a bug, anyway
-  # else:
-  #   # Single rule; convert it to a list
-  #   list_of_rules = [ctx]
-
-  # for rule in list_of_rules:
-  #   # for child in rule.getChildren():
-  #     # print(f'{class_name(child)=}')
-  #   for possible_rule in possible_rules:
-  #     rule_fun = getattr(rule, possible_rule, None)
-  #     if rule_fun and rule_fun() is not None:
-  #       # print(f'"{rule_fun.__name__=}"')
-  #       rule_dict = {'tag': possible_rule}
-
-  #       # Use the value of possible_rule to dispatch the corresponding handler, with rule_fun()
-  #       # providing the context.
-  #       # =========================================================================================
-
-  #       # These are head-body dependent
-  #       # -----------------------------------------------------------------------------------------
-  #       # if_then_head
-  #       if possible_rule == 'if_then_head':
-  #         # This can be done by the handler
-  #         return_list.append(dgw_handlers.if_then_head(rule_fun(), institution, requirement_id))
-
-  #       # if_then_body
-  #       if possible_rule == 'if_then_body':
-  #         # This can be done by the handler
-  #         return_list.append(dgw_handlers.if_then_body(rule_fun(), institution, requirement_id))
-
-  #       # class_credit_head
-  #       if possible_rule == 'class_credit_head':
-  #         return_list.append(dgw_handlers.class_credit_head(rule_fun(), institution, requirement_id))
-
-  #       # class_credit_body
-  #       if possible_rule == 'class_credit_body':
-  #         return_list.append(dgw_handlers.class_credit_body(rule_fun(), institution, requirement_id))
-
-  #       # These are independent of whether they are in the head or the body
-  #       # -----------------------------------------------------------------------------------------
-  #       # block
-  #       if possible_rule == 'block':
-  #         return_list.append(dgw_handlers.block(rule_fun(), institution, requirement_id))
-
-  #       # blocktype
-  #       if possible_rule == 'blocktype':
-  #         return_list.append(dgw_handlers.blocktype(rule_fun(), institution, requirement_id))
-
-  #       # copy_rules
-  #       if possible_rule == 'copy_rules':
-  #         return_list.append(dgw_handlers.copy_rules(rule_fun(), institution, requirement_id))
-
-  #       # lastres
-  #       if possible_rule == 'lastres':
-  #         return_list.append(dgw_handlers.lastres(rule_fun(), institution, requirement_id))
-
-  #       # maxcredit
-  #       if possible_rule == 'maxcredit':
-  #         return_list.append(dgw_handlers.maxcredit(rule_fun(), institution, requirement_id))
-
-  #       # maxpassfail
-  #       if possible_rule == 'maxpassfail':
-  #         return_list.append(dgw_handlers.maxpassfail(rule_fun(), institution, requirement_id))
-
-  #       # maxterm
-  #       if possible_rule == 'maxterm':
-  #         return_list.append(dgw_handlers.maxterm(rule_fun(), institution, requirement_id))
-
-  #       # maxtransfer
-  #       if possible_rule == 'maxtransfer':
-  #         return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution, requirement_id))
-
-  #       # maxtransfer
-  #       if possible_rule == 'maxtransfer':
-  #         return_list.append(dgw_handlers.maxtransfer(rule_fun(), institution, requirement_id))
-
-  #       # minclass
-  #       if possible_rule == 'minclass':
-  #         return_list.append(dgw_handlers.minclass(rule_fun(), institution, requirement_id))
-
-  #       # mincredit
-  #       if possible_rule == 'mincredit':
-  #         return_list.append(dgw_handlers.mincredit(rule_fun(), institution, requirement_id))
-
-  #       # mingpa
-  #       if possible_rule == 'mingpa':
-  #         return_list.append(dgw_handlers.mingpa(rule_fun(), institution, requirement_id))
-
-  #       # mingrade
-  #       if possible_rule == 'mingrade':
-  #         return_list.append(dgw_handlers.mingrade(rule_fun(), institution, requirement_id))
-
-  #       # minperdisc
-  #       if possible_rule == 'minperdisc':
-  #         return_list.append(dgw_handlers.minperdisc(rule_fun(), institution, requirement_id))
-
-  #       # minres
-  #       if possible_rule == 'minres':
-  #         return_list.append(dgw_handlers.minres(rule_fun(), institution, requirement_id))
-
-  #       # minterm
-  #       if possible_rule == 'minterm':
-  #         return_list.append(dgw_handlers.minterm(rule_fun(), institution, requirement_id))
-
-  #       # noncourse
-  #       if possible_rule == 'noncourse':
-  #         return_list.append(dgw_handlers.noncourse(rule_fun(), institution, requirement_id))
-
-  #       # remark
-  #       if possible_rule == 'remark':
-  #         return_list.append(dgw_handlers.remark(rule_fun(), institution, requirement_id))
-
-  #       # rule_complete
-  #       if possible_rule == 'rule_complete':
-  #         return_list.append(dgw_handlers.rule_complete(rule_fun(), institution, requirement_id))
-
-  #       # share
-  #       if possible_rule == 'share':
-  #         return_list.append(dgw_handlers.share(rule_fun(), institution, requirement_id))
-
-  #       # subset
-  #       if possible_rule == 'subset':
-  #         return_list.append(dgw_handlers.subset(rule_fun(), institution, requirement_id))
-
-  # # print(f'{return_list=}', file=sys.stderr)
-  # return return_list
 
 
 # get_requirements()
@@ -350,20 +217,37 @@ def get_requirements(ctx, institution, requirement_id):
 # get_scribed_courses()
 # -------------------------------------------------------------------------------------------------
 def get_scribed_courses(ctx):
-  """
-  """
-  context_name = ctx.__class__.__name__
-  assert ctx.__class__.__name__ == 'Course_listContext', (f'{ctx.__class__.__name__} '
-                                                          f'is not Course_listContext')
-  if DEBUG:
-    print(f'*** get_scribed_courses({ctx.__class__.__name__})', file=sys.stderr)
-  if ctx is None:
-    return []
+  """ Generate list of (discipline, catalog_number, with_clause) tuples for courses in a course
+      list. Distribute wildcards across the list so that each “scribed course” is a complete
+      (discipline, catalog_number, with_clause) tuple, even if the with clause is None.
 
+      NOT IMPLEMENTED YET For analysis purposes, with clauses should be logged.
+
+          course_list     : course_item (and_list | or_list)? (except_list | include_list)?
+                            proxy_advice? label?;
+          full_course     : discipline catalog_number with_clause*;   // Used only in expressions
+          course_item     : area_start? discipline? catalog_number with_clause* area_end?;
+          and_list        : and_list_item+ ;
+          and_list_item   : (list_and area_end? course_item) ;
+          or_list         : or_list_item+ ;
+          or_list_item    : (list_or area_end? course_item) ;
+          catalog_number  : symbol | NUMBER | CATALOG_NUMBER | WILD;
+          discipline      : symbol
+                          | string // For "SPEC." at BKL
+                          | WILD
+                          // Include keywords that appear as discipline names
+                          | BLOCK
+                          | IS;
+  """
+  assert class_name(ctx) == 'Course_list', (f'“{class_name(ctx)}” is not “Course_list”')
+  if DEBUG:
+    print(f'*** get_scribed_courses({class_name(ctx)})', file=sys.stderr)
+
+  # The list of (discipline: str, catalog_number: str, with_clause: str) tuples to return.
   scribed_courses = []
 
-  # The list has to start with both a discipline and catalog number, but sometimes just a wildcard
-  # is given.
+  # The course_item at the start of the list has to have with both a discipline and catalog number,
+  # but sometimes just a wildcard is given.
   discipline, catalog_number, with_clause = (None, None, None)
 
   catalog_number = ctx.course_item().catalog_number().getText().strip()
@@ -375,43 +259,56 @@ def get_scribed_courses(ctx):
   try:
     with_list = ctx.course_item().with_clause()
     for with_ctx in with_list:
-      if with_ctx.__class__.__name__ == 'With_clauseContext':
+      if class_name(with_ctx) == 'With_clause':
         if with_clause is None:
           with_clause = _with_clause(with_ctx)
         else:
           with_clause += ' ' + _with_clause(with_ctx)
   except AttributeError as ae:
+    # No with clause
     pass
+
+  # Enter the first course
+  if ctx.course_item().area_start():
+    scribed_courses.append('area_start')
   scribed_courses.append((discipline, catalog_number, with_clause))
+  if ctx.course_item().area_end():
+    scribed_courses.append('area_end')
+  # For the remaining scribed courses (if any), the discipline determined above will be the "seed"
+  # for distributing across succeeding courses where the discipline is not specified.
 
-  # For the remaining scribed courses, distribute disciplines across elided elements
-  list_fun = None
+  # Drill down to get a list of either and_list_item or or_list_item; it doesn't matter which kind
+  # of items they are.
+
+  list_items = None
   if ctx.and_list():
-    list_fun = ctx.and_list
+    list_items = ctx.and_list().list_item()
   if ctx.or_list():
-    list_fun = ctx.or_list
+    list_items = ctx.or_list().list_item()
 
-  if list_fun is not None:
-    course_items = list_fun().course_item()
+  if list_items is not None:
     catalog_number = None  # Must be present
-    with_clause = None  # Does not distribute (as discipline does)
-    for course_item in course_items:
-      for child in course_item.children:
-        if child.__class__.__name__ == 'DisciplineContext':
-          discipline = child.getText().strip()
-        elif child.__class__.__name__ == 'Catalog_numberContext':
-          catalog_number = child.getText().strip()
-        elif child.__class__.__name__ == 'With_clauseContext':
-          with_clause = child.getText()   # Need to interpret this
-          with_clause = _with_clause(child)
-          # print(discipline, catalog_number, with_clause)
-        else:
-          # This is where square brackets show up
-          print(f'Unhandled token: {child.getText()}',
-                file=sys.stderr)
+    with_clause = None     # Does not distribute (as discipline does)
+    for list_item in list_items:
+      if list_item.area_end():
+        scribed_courses.append('area_end')
+      course_item = list_item.course_item()
+      if course_item.area_start():
+        scribed_courses.append('area_start')
+      if course_item.discipline():
+        discipline = course_item.discipline().getText().strip()
+      if course_item.catalog_number():
+        catalog_number = course_item.catalog_number().getText().strip()
+      if course_item.with_clause():
+        with_clause = _with_clause(course_item.with_clause())
       assert catalog_number is not None, (f'Course Item with no catalog number: '
                                           f'{course_item.getText()}')
       scribed_courses.append((discipline, catalog_number, with_clause))
+      if course_item.area_end():
+        scribed_courses.append('area_end')
+
+  if DEBUG:
+    print(f'\n{scribed_courses=}')
 
   return scribed_courses
 
@@ -754,10 +651,11 @@ def build_string(ctx) -> str:
   """ string          : DBL_QUOTE ~DBL_QUOTE* DBL_QUOTE;
       What’s between the double quotes has been tokenized, so the tokens have to be joined with a
       space between them.
-      Ad hoc fixups: "C + +" is "C++"
+      Ad hoc fixups:
+        Change "C + +" to "C++"
+        - add others as needed
   """
-  assert ctx.__class__.__name__ == 'StringContext', (f'{ctx.__class__.__name} '
-                                                     f'is not StringContext')
+  assert class_name(ctx) == 'String', (f'{class_name(ctx)} 'f'is not String')
   fixups = {'C + +': 'C++'}
   tokens = [child.getText() for child in ctx.children]
   return_str = ' '.join(tokens[1:-1])
@@ -778,9 +676,18 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
         active_courses      Catalog information and WITH clause (if any) for all active courses that
                             match the scribed_courses list after expanding wildcards and
                             catalog_number ranges.
+        inactive_courses    Catalog information for all inactive courses that match the scribed
+                            course list after wildcard and range expansions.
+        missing_courses     Explicitly-scribed courses that do not exist in CUNYfirst.
+        course_areas        List of active_courses divided into distribution areas; presumably the
+                            full course list will have a MinArea qualifier, but this is not checked
+                            here. Omit inactive, missing, and except courses because they are
+                            handled in the full course list.
+        except_courses      Scribed list used for culling from active_courses
+        include_courses     Like except_courses, except this list is not actually used for anything
+                            in this method.
 
         list_type           'AND' or 'OR'
-        exclusions          List of course_lists for excluded courses
         attributes          List of all attribute values the active courses list have in common,
                             currently limited to WRIC and BKCR
 
@@ -807,6 +714,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
                  'inactive_courses': [],
                  'except_courses': [],
                  'include_courses': [],
+                 'course_areas': [],
                  'missing_courses': [],
                  'attributes': []}
   # Shortcuts to the lists in return_dict
@@ -869,7 +777,20 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   check_missing = True  # Unless there are wildcards or ranges
   conn = PgConnection()
   cursor = conn.cursor()
+
+  current_area = None
   for scribed_course in scribed_courses:
+
+    # Start and end course areas. Active courses will be added to current_area if it exists
+    if scribed_course == 'area_start':
+      current_area = []
+      continue
+    if scribed_course == 'area_end':
+      if len(current_area) > 0:
+        return_dict['course_areas'].append(current_area)
+      current_area = None
+      continue
+
     # For display to users
     display_discipline, display_catalog_number, display_with_clause = scribed_course
     # For course db query
@@ -942,8 +863,11 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
         if (row.discipline, row.catalog_number, ANY) in except_courses:
           continue
         if row.course_status == 'A':
-          active_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
-                                 row.title, with_clause))
+          active_course_tuple = (row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
+                                 row.title, with_clause)
+          active_courses.append(active_course_tuple)
+          if current_area is not None:
+            current_area.append(active_course_tuple)
           # Check BKCR and WRIC only for active courses
           if row.max_credits > 0 and 'BKCR' not in row.attributes:
             # if all_blanket:
@@ -962,6 +886,10 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
       attributes.append('Blanket Credit')
     if all_writing:
       attributes.append('Writing Intensive')
+
+  # Clean out any (area_start and area_end) strings from the scribed_courses list
+  return_dict['scribed_courses'] = [item for item in return_dict['scribed_courses']
+                                    if isinstance(item, tuple)]
 
   # Make sure each scribed course was found. Check only if there were no wildcards scribed.
   if check_missing:

@@ -50,7 +50,7 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       consists of the course_id, offer_nbr, discipline, catalog_number, title, and optional with
       clause (length 6).
   """
-  assert len(course_tuples) > 0
+  assert isinstance(course_tuples, list) and len(course_tuples) > 0
   suffix = '' if len(course_tuples) == 1 else 's'
   class_str = ' class="error"' if highlight else ''
   return_str = (f'<details><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</summary>')
@@ -62,7 +62,7 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       return_str += '</div>\n'
     else:
       return_str += (f'<details><summary>{course_tuple[2]} {course_tuple[3]}: '
-                     f'<em>{course_tuple[4]}</em>')
+                     f'<em>{course_tuple[4]}</em>')   # title
       if course_tuple[-1] is not None:
         return_str += f' with {course_tuple[-1]}'
       return_str += '</summary>'
@@ -81,15 +81,13 @@ def if_then_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
 
   try:
     condition = info['condition']
-    summary = f"<summary>{condition} ?</summary>"
   except KeyError as ke:
     condition = '(Missing Condition)'
-    summary = '<summary class="error">If-Then With No Condition!</summary>'
 
   try:
     label = f"""“{info['label'].strip('"')}”"""
   except KeyError as ke:
-    label = ''
+    label = None
 
   try:
     true_value = to_html(info['if_true'], kind='If-true Item')
@@ -105,7 +103,11 @@ def if_then_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
   except KeyError as ke:
     if_false_part = ''  # Else is optional
 
-  return f"<details>{summary}{label}{if_true_part}{if_false_part}</details>"
+  if label:
+    # Produce a details element to hold the two legs
+    return f'<details><summary>{label}</summary{if_true_part}{if_false_part}</details>'
+  else:
+    return f'{if_true_part}{if_false_part}'
 
 
 # dict_to_html_details_element()
@@ -198,6 +200,17 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
         except KeyError as ke:
           pass
       return_str += list_of_courses(value, f'Active {attributes_str} Course')
+      continue
+
+    if key == 'course_areas':
+      assert isinstance(value, list)
+      if len(value) > 0:
+        return_str += f'<details><summary>{len(value)} Areas</summary>'
+        n = 0
+        for area in value:
+          n += 1
+          return_str += list_of_courses(area, f'Area {n} Course')
+        return_str += '</details>'
       continue
 
     if key == 'inactive_courses':
@@ -364,3 +377,4 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
       {to_html(body_list, is_body=True)}
     </section>
     """
+

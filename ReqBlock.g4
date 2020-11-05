@@ -92,13 +92,22 @@ body        :
  * are balanced; it’s okay to have stray brackets floating around, which are ignored, presumably
  * unless there is a MinArea check done during audit time.
  *
- * The trick is to determine where each type of bracket might appear or not, and that will have to
- * be done in dgw_processor.
+ * The trick is to determine where each type of bracket might appear.
  */
-course_list               : L_SQB?
-                              course_item R_SQB? (and_list | or_list)?
-                            R_SQB?
-                            (except_list | include_list)? proxy_advice? label?;
+course_list     : course_item (and_list | or_list)? (except_list | include_list)?
+                  proxy_advice? label?;
+full_course     : discipline catalog_number with_clause*;   // Used only in expressions
+course_item     : area_start? discipline? catalog_number with_clause* area_end?;
+and_list        : list_item+ ;
+or_list         : list_item+ ;
+list_item       : (list_and | list_or) area_end? course_item ;
+catalog_number  : symbol | NUMBER | CATALOG_NUMBER | WILD;
+discipline      : symbol
+                | string // For "SPEC." at BKL
+                | WILD
+                // Include keywords that appear as discipline names
+                | BLOCK
+                | IS;
 
 // The following list was intended to differentiate course list qualifiers from separate statements
 // in the head, where these qualifiers can be used in course lists in the body. But it looks like
@@ -132,18 +141,6 @@ course_list_body_qualifier : maxpassfail
                            | samedisc
                            | share
                            ;
-
-full_course           : discipline catalog_number with_clause*;
-course_item           : L_SQB? discipline? catalog_number with_clause* R_SQB?;
-and_list              : (list_and R_SQB? course_item)+;
-or_list               : (list_or R_SQB? course_item)+;
-catalog_number        : symbol | NUMBER | CATALOG_NUMBER | WILD;
-discipline            : symbol
-                      | string // For "SPEC." at BKL
-                      | WILD
-                      // Include keywords that appear as discipline names
-                      | BLOCK
-                      | IS;
 
 //  if-then
 //  -----------------------------------------------------------------------------------------------
@@ -304,6 +301,8 @@ class_credit_body   : (num_classes | num_credits)
                       )*;
 
 allow           : (ALLOW | ACCEPT);
+area_end        : R_SQB;
+area_start      : L_SQB;
 class_or_credit : (CLASS | CREDIT);
 copy_rules      : COPY_RULES expression SEMICOLON?;
 // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
@@ -314,7 +313,6 @@ header_tag      : (HEADER_TAG nv_pair)+;
 include_list    : INCLUDING course_list;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice? label?;
-
 maxclass        : MAXCLASS NUMBER course_list? tag?;
 maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 
