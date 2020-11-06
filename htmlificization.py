@@ -49,25 +49,27 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       number, with an optional with clause, so the length of those tuples is 3. Otherwise, the tuple
       consists of the course_id, offer_nbr, discipline, catalog_number, title, and optional with
       clause (length 6).
+      Hitting the db for every course mentioned in a scribe block can lead to a terrible time suck.
+      For now, instead of looking up each course for a full catalog description, just show the
+      discipline and catalog number.
   """
   assert isinstance(course_tuples, list) and len(course_tuples) > 0
   suffix = '' if len(course_tuples) == 1 else 's'
   class_str = ' class="error"' if highlight else ''
-  return_str = (f'<details><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</summary>')
+  return_str = (f'<h2><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</h2><ul>')
   for course_tuple in course_tuples:
     if len(course_tuple) < 4:  # Scribed is 3 (possible 'with'); except and including are 2
-      return_str += f'<div>{course_tuple[0]} {course_tuple[1]}'
+      return_str += f'<li>{course_tuple[0]} {course_tuple[1]}'
       if course_tuple[2] is not None:
         return_str += f' with {course_tuple[2]}'
-      return_str += '</div>\n'
+      return_str += '</li>\n'
     else:
-      return_str += (f'<details><summary>{course_tuple[2]} {course_tuple[3]}: '
-                     f'<em>{course_tuple[4]}</em>')   # title
+      return_str += (f'<li>{course_tuple[2]} {course_tuple[3]}: <em>{course_tuple[4]}</em>')
       if course_tuple[-1] is not None:
-        return_str += f' with {course_tuple[-1]}'
-      return_str += '</summary>'
-      return_str += f'{lookup_course(course_tuple[0], offer_nbr=course_tuple[1])[1]}</details>'
-  return_str += '</details>\n'
+         return_str += f' <strong>with {course_tuple[-1]}</strong>'
+      return_str += '</li>'
+      # return_str += f'{lookup_course(course_tuple[0], offer_nbr=course_tuple[1])[1]}</details>'
+  return_str += '</ul>\n'
   return return_str
 
 
@@ -269,7 +271,8 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
 
       except ValueError as ve:
         # Not a numeric string; just show the text.
-        return_str += f'<div>{key_str}: {value}</div>'
+        if key != 'context_path':  # This was for development purposes
+          return_str += f'<div>{key_str}: {value}</div>'
 
     else:
       # Fallthrough
