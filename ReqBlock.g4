@@ -223,9 +223,7 @@ requirement     : maxpassfail
 //  -----------------------------------------------------------------------------------------------
 /*  Body Only
  */
-group           : NUMBER GROUP group_list
-                  requirement* label?
-                ;
+group           : NUMBER GROUP group_list requirement* label? ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
                   (block
