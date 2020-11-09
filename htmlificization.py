@@ -73,6 +73,103 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
   return return_str
 
 
+# course_list_to_details_element()
+# -------------------------------------------------------------------------------------------------
+def course_list_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
+  """  The dict for a course_list must have a scribed_courses list, and should have an active_courses
+       list. After that, there might be include and except lists, and possibly a missing from
+       CUNYfirst list. The label becomes the summary for the details element.
+  """
+  return_str = ''
+  # if key in ['attributes', 'qualifiers']:  # Handled by active_courses and scribed_courses
+  #   continue
+
+  try:
+    label = info.pop('label')
+    return_str = f'<details><summary>{label}</summary>'
+  except KeyError as ke:
+    return_str = f'<details><summary>Anonymous Course List</summary>'
+
+  try:
+    value = info.pop('list_type')
+    if value != 'None':
+      return_str += f'<p>This is an {value} list.</p>'
+  except KeyError as ke:
+    pass
+
+  # See if there is a num_* key
+  for key in info.keys():
+    if key.lower().startswith('num_'):
+      print(f'*** {key}', file=sys.stderr)
+      value = info.pop(key)
+      return_str += to_html(value)
+      break
+
+  try:
+    scribed_courses = info.pop('scribed_courses')
+    assert isinstance(scribed_courses, list)
+    return_str += list_of_courses(scribed_courses, 'Scribed Course')
+  except KeyError as ke:
+    return_str = f"""<p class="error">
+                       <em>course_list_to_details_element() with no scribed courses!</em></p>
+                       <p><strong>Context:</strong> {context_path(info)}</p>
+                  """
+
+  try:
+    qualifiers = info.pop('qualifiers')
+    if qualifiers is not None and len(qualifiers) > 0:
+      return_str += to_html(qualifiers, is_head, is_body)
+  except KeyError as ke:
+    pass
+
+  try:
+    active_courses = info.pop('active_courses')
+    assert isinstance(active_courses, list)
+    if len(active_courses) == 0:
+      return_str += '<div class="error">No Active Courses!</div>'
+    else:
+      attributes_str = ''
+      try:
+        attributes = info['attributes']
+        if attributes is not None:
+          attributes_str = ','.join(attributes)
+      except KeyError as ke:
+        pass
+      return_str += list_of_courses(active_courses, f'Active {attributes_str} Course')
+  except KeyError as ke:
+    return_str = f"""<p class="error">
+                       <em>course_list_to_details_element() with no active_courses tag!</em></p>
+                       <p><strong>Context:</strong> {context_path(info)}</p>
+                  """
+
+  include_courses = info.pop('include_courses')
+  assert isinstance(include_courses, list)
+  if len(include_courses) > 0:
+    return_str += list_of_courses(include_courses, 'Must-include Course')
+
+  except_courses = info.pop('except_courses')
+  assert isinstance(except_courses, list)
+  if len(except_courses) > 0:
+    return_str += list_of_courses(except_courses, 'Except Course')
+
+  inactive_courses = info.pop('inactive_courses')
+  assert isinstance(inactive_courses, list)
+  if len(inactive_courses) > 0:
+    return_str += list_of_courses(inactive_courses, 'Inactive Course')
+
+  missing_courses = info.pop('missing_courses')
+  assert isinstance(missing_courses, list)
+  if len(missing_courses) > 0:
+    return_str += list_of_courses(missing_courses,
+                                  'Not-Found-in-CUNYfirst Course', highlight=True)
+
+  # Any additional information
+  for key, value in info.items():
+    return_str += f'<p><strong>{key}:</strong>{value}</p>'
+
+  return return_str + '</details>'
+
+
 # if_then_to_details_element()
 # -------------------------------------------------------------------------------------------------
 def if_then_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
@@ -117,17 +214,20 @@ def if_then_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
 def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> str:
   """ Convert a Python dict to a HTML <details> element. The <summary> element is based on the
       tag/label fields of the dict. During development, the context path goes next. Then, if there
-      are remark or display fields, they go after that, followed by everything else.
-
-      Special handling for if-else: display order is condition => if-true => if-false
+      are remark or display fields, they go after that. If the tag starts with "num_", that
+      value comes next. Then everything else.
   """
   summary = '<summary class="error">No-tag-or-label Bug</summary>'
 
   try:
     tag = info.pop('tag')
+
     if tag == 'if-then':  # Special case for if-then dicts
       return(if_then_to_details_element(info, is_head, is_body))
-    # Not if-then
+    if tag == 'course_list':  # Special case for course_list dicts
+      return(course_list_to_details_element(info, is_head, is_body))
+
+    # Not if-then or course_list
     summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
   except KeyError as ke:
     pass
@@ -151,6 +251,13 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
   except KeyError as ke:
     display = ''
 
+  num_required = ''
+  for key, value in info.items():
+    if key.lower().startswith('num_') and value is not None:
+      num_required = f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
+      info.pop(key)
+      break  # Can't continue iterating after popping; assume there is only one "num_*" key
+
   context_path = ''
   if DEBUG:
     try:
@@ -158,91 +265,22 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
     except KeyError as ke:
       pass
 
-  return_str = (f'<details>{summary}{context_path}{remark}{display}')
+  return_str = (f'<details>{summary}{context_path}{remark}{display}{num_required}')
 
   for key, value in info.items():
     key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
 
-    if key in ['if_true', 'if_false', 'condition']:  # should be handled by if-then
-      return_str += f'<p class="error">Unexpected “{key}.”'
-      continue
-
-    # Special presentation for course lists, if present
-    if key in ['attributes', 'qualifiers']:  # Handled by active_courses and scribed_courses
-      continue
-
-    if key == 'list_type':
-      if value != 'None':
-        # AND/OR
-        return_str += f'<p>{key_str}: This is an {value} list.</p>'
-        continue
-
-    if key == 'scribed_courses':
-      assert isinstance(value, list)
-      return_str += list_of_courses(value, 'Scribed Course')
-      try:
-        qualifiers = info['qualifiers']
-        if qualifiers is not None and len(qualifiers) > 0:
-          return_str += to_html(qualifiers, is_head, is_body)
-      except KeyError as ke:
-        pass
-      continue
-
-    if key == 'active_courses':
-      assert isinstance(value, list)
-      if len(value) == 0:
-        return_str += '<div class="error">No Active Courses!</div>'
-        continue
-      else:
-        attributes_str = ''
-        try:
-          attributes = info['attributes']
-          if attributes is not None:
-            attributes_str = ','.join(attributes)
-        except KeyError as ke:
-          pass
-      return_str += list_of_courses(value, f'Active {attributes_str} Course')
-      continue
-
-    if key == 'course_areas':
-      assert isinstance(value, list)
-      if len(value) > 0:
-        return_str += f'<details><summary>{len(value)} Areas</summary>'
-        n = 0
-        for area in value:
-          n += 1
-          return_str += list_of_courses(area, f'Area {n} Course')
-        return_str += '</details>'
-      continue
-
-    if key == 'inactive_courses':
-      assert isinstance(value, list)
-      if len(value) > 0:
-        return_str += list_of_courses(value, 'Inactive Course')
-      continue
-
-    if key == 'include_courses':
-      assert isinstance(value, list)
-      if len(value) > 0:
-        return_str += list_of_courses(value, 'Include Course')
-      continue
-
-    if key == 'except_courses':
-      assert isinstance(value, list)
-      if len(value) > 0:
-        return_str += list_of_courses(value, 'Except Course')
-      continue
-
-    if key == 'missing_courses':
-      assert isinstance(value, list)
-      if len(value) > 0:
-        return_str += list_of_courses(value,
-                                      'Not-Found-in-CUNYfirst Course', highlight=True)
-      continue
 
     # Key-value pairs not specific to course lists
     if value is None:
       continue  # Omit empty fields
+
+    if key == 'group':
+      assert isinstance(value, list)
+      if len(value) > 0:
+        suffix = '' if len(value) == 1 else 's'
+        return_str += to_html(value, is_head, is_body, 'Group')
+      continue
 
     if isinstance(value, bool):
       return_str += f'<div>{key_str}: {value}</div>'

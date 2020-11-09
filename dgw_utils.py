@@ -188,8 +188,8 @@ def get_rules(ctx, institution, requirement_id):
 # get_requirements()
 # -------------------------------------------------------------------------------------------------
 def get_requirements(ctx, institution, requirement_id):
-  """ These show up in the context of if-then in the body. Just build a dict with the "requirement"
-      tag and a list of dicts returned by the respective handlers.
+  """ These show up in the context of if-then or group_items in the body. Just build a dict with the
+      "requirement" tag and a list of dicts returned by the respective handlers.
       It's not at all confusing that a requirement dict should contain a list of requirement dicts,
       each of which will have its own tag, from this list:
 
@@ -208,10 +208,14 @@ def get_requirements(ctx, institution, requirement_id):
   """
   assert isinstance(ctx, list)
   return_dict = {'tag': 'requirement', 'requirement': []}
-  for context in ctx:
-
-    print(f'get_requirements not implemented yet: {context_path(context)}', file=sys.stderr)
-  return 'Requirements list not implemented yet'
+  for requirement in ctx:
+    requirement_name = class_name(requirement).lower()
+    which_part = 'head' if context_path(ctx).startswith('Head') else 'body'
+    return_dict['requirement'].append(dgw_handlers.dispatch(rule,
+                                                            institution,
+                                                            requirement_id,
+                                                            which_part))
+  return return_dict
 
 
 # get_scribed_courses()
@@ -436,7 +440,7 @@ def get_course_list_qualifiers(institution, ctx):
 
 # get_group_list()
 # -------------------------------------------------------------------------------------------------
-def get_group_list(ctx: list) -> list:
+def get_group_list(ctx: list, institution: str, requirement_id: str) -> list:
   """ group_list      : group_item (logical_op group_item)*; // logical_op is always OR
       group_item      : LP
                         (  block
@@ -462,9 +466,13 @@ def get_group_list(ctx: list) -> list:
       elif item_class == 'Blocktype':
         return_list.append({'tag': 'blocktype'})
       elif item_class == 'Course_list':
-        return_list.append({'tag': 'course_list'})
+        return_list.append({'tag': 'group_item',
+                           'course_list': build_course_list(child, institution, requirement_id)})
       elif item_class == 'Class_credit_body':
-        return_list.append({'tag': 'class_credit_body'})
+        return_list.append({'tag': 'group_item',
+                           'class_credit': dgw_handlers.class_credit_body(child,
+                                                                          institution,
+                                                                          requirement_id)})
       elif item_class == 'Group':
         return_list.append({'tag': 'group'})
       elif item_class == 'Noncourse':
@@ -638,7 +646,7 @@ def num_class_or_num_credit(ctx) -> dict:
   else:
     assert num_classes and num_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
 
-  return {'num_classes': num_classes,
+  return {'num_classes_required': num_classes,
           'allow_classes': allow_classes,
           'num_credits': num_credits,
           'allow_credits': allow_credits,

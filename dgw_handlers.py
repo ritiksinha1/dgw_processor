@@ -14,6 +14,7 @@ from dgw_utils import class_name,\
     get_requirements,\
     num_class_or_num_credit
 
+from traceback import print_stack
 
 # Handlers
 # =================================================================================================
@@ -223,23 +224,21 @@ def copy_rules(ctx, institution, requirement_id):
 # group()
 # -------------------------------------------------------------------------------------------------
 def group(ctx, institution, requirement_id):
-  """ group           : NUMBER GROUP group_list
-                        requirement* label?
-                      ;
-group_list            : group_item (logical_op group_item)*; // But only OR should occur
-group_item            : LP
-                        (  block
-                         | blocktype
-                         | course_list
-                         | class_credit_body
-                         | group
-                         | noncourse
-                         | rule_complete
-                        )
-                        requirement* label?
-                        RP
-                        requirement* label?
-                      ;
+  """
+group           : NUMBER GROUP group_list requirement* label? ;
+group_list      : group_item (logical_op group_item)*; // But only OR should occur
+group_item      : LP
+                  (block
+                   | blocktype
+                   | course_list
+                   | class_credit_body
+                   | group
+                   | noncourse
+                   | rule_complete)
+                  requirement* label?
+                  RP
+                ;
+
 requirement           : maxpassfail
                       | maxperdisc
                       | maxtransfer
@@ -254,20 +253,22 @@ requirement           : maxpassfail
                       | share
                       ;
 
-  Qualifiers that must be applied to all rules in the group list must occur after the last right
+  “Qualifiers that must be applied to all rules in the group list must occur after the last right
   parenthesis and before the label at the end of the Group statement. Qualifiers that apply only to
-  a specific rule in the group list must appear inside the parentheses for that group item rule.
+  a specific rule in the group list must appear inside the parentheses for that group item rule.”
 
   Allowable rule qualifiers: DontShare, Hide, HideRule, HighPriority, LowPriority, LowestPriority,
   MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA, ProxyAdvice, SameDisc,
   ShareWith, MinClass, MinCredit, RuleTag.
   """
-  return_dict = {'tag': 'group', 'number': ctx.NUMBER().getText()}
+  return_dict = {'tag': 'groups', 'num_groups_required': ctx.NUMBER().getText()}
 
-  return_dict['group_qualifiers'] = get_qualifiers(ctx.requirement(), institution, requirement_id)
-  return_dict['group_list'] = get_group_list(ctx.group_list())
+  if len(ctx.requirement()) > 0:
+    return_dict['requirements'] = get_requirements(ctx.requirement(), institution, requirement_id)
 
-  return_dict['develoment_status'] = 'Under development: incomplete'
+  return_dict['group'] = get_group_list(ctx.group_list(), institution, requirement_id)
+
+  # return_dict['develoment_status'] = 'Under development: incomplete'
   if ctx.label():
     return_dict['label'] = ctx.label().string().getText().strip(' "')
 
@@ -933,23 +934,25 @@ dispatch_body = {
     'subset': subset
 }
 
-
 # dispatch()
 # -------------------------------------------------------------------------------------------------
 def dispatch(ctx: any, institution: str, requirement_id: str, which_part: str):
   """ Invoke the appropriate handler given its top-level context.
   """
+  key = class_name(ctx).lower()
   try:
     if which_part == 'head':
-      return dispatch_head[class_name(ctx).lower()](ctx, institution, requirement_id)
+      return dispatch_head[key](ctx, institution, requirement_id)
     else:
-      return dispatch_body[class_name(ctx).lower()](ctx, institution, requirement_id)
-  except KeyError as ke:
+      return dispatch_body[key](ctx, institution, requirement_id)
+  except KeyError as key_error:
+    print(key_error)
+    print_stack()
     # Missing handler: report it and recover ever so gracefully
-    print(f'No dispatch method for "{class_name(ctx).lower()}": '
+    print(f'No dispatch method for "{key}": '
           f'{institution=}; {requirement_id=}; {which_part=}')
     return {'tag': 'Dispatch_Error',
-            'method': class_name(ctx).lower(),
+            'method': key,
             'institution': institution,
             'requirement_id': requirement_id,
             'part': which_part}
