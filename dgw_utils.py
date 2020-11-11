@@ -207,15 +207,23 @@ def get_requirements(ctx, institution, requirement_id):
                       | share
   """
   assert isinstance(ctx, list)
-  return_dict = {'tag': 'requirement', 'requirement': []}
+  valid_requirements = ['maxpassfail', 'maxperdisc', 'maxtransfer', 'minclass', 'mincredit',
+                        'mingpa', 'mingrade', 'minperdisc', 'proxy_advice', 'samedisc', 'rule_tag']
+
+  return_list = []
   for requirement in ctx:
-    requirement_name = class_name(requirement).lower()
-    which_part = 'head' if context_path(ctx).startswith('Head') else 'body'
-    return_dict['requirement'].append(dgw_handlers.dispatch(rule,
-                                                            institution,
-                                                            requirement_id,
-                                                            which_part))
-  return return_dict
+    which_part = 'head' if context_path(requirement).startswith('Head') else 'body'
+    for valid_requirement in valid_requirements:
+      if fun := getattr(requirement, valid_requirement, None):
+        if fun is not None and fun():
+          return_list.append(dgw_handlers.dispatch(valid_requirement,
+                                                   institution,
+                                                   requirement_id,
+                                                   which_part))
+  return_list = return_list if len(return_list) > 0 else None
+  if return_list is not None:
+    print(return_list)
+  return return_list
 
 
 # get_scribed_courses()
