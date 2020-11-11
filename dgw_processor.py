@@ -3,6 +3,7 @@
 """
 import os
 import sys
+sys.exit('This module is of historical interst only. Use dgw_interpreter instead.')
 
 from enum import IntEnum
 
