@@ -317,7 +317,7 @@ def rule_tag(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def if_then_head(ctx, institution, requirement_id):
   """
-      if_then_head    : IF expression THEN (head_rule | head_rule_group )
+      if_then_head    : IF expression THEN (head_rule | head_rule_group)
                         (proxy_advice | label)* else_head?;
       else_head       : ELSE (head_rule | head_rule_group)
                         (proxy_advice | label)*;
@@ -349,7 +349,6 @@ def if_then_head(ctx, institution, requirement_id):
   """
 
   return_dict = {'tag': 'if-then', 'condition': expression_to_str(ctx.expression())}
-
   if ctx.label():
     assert isinstance(ctx.label(), list)
     label_str = ' '.join([label.string() for label in ctx.label()])
@@ -359,7 +358,9 @@ def if_then_head(ctx, institution, requirement_id):
   if ctx.head_rule():
     return_dict['if_true'] = get_rules(ctx.head_rule(), institution, requirement_id)
   elif ctx.head_rule_group():
-    return_dict['if_true'] = get_rules(ctx.head_rule_group(), institution, requirement_id)
+    return_dict['if_true'] = get_rules(ctx.head_rule_group().head_rule(),
+                                       institution,
+                                       requirement_id)
   else:
     return_dict['if_true'] = 'Missing True Part'
 
@@ -368,7 +369,7 @@ def if_then_head(ctx, institution, requirement_id):
       return_dict['if_false'] = get_rules(ctx.else_head().head_rule(),
                                           institution, requirement_id)
     elif ctx.else_head().head_rule_group():
-      return_dict['if_false'] = get_rules(ctx.else_head().head_rule_group(),
+      return_dict['if_false'] = get_rules(ctx.else_head().head_rule_group().head_rule(),
                                           institution, requirement_id)
     else:
       return_dict['if_false'] = 'Missing False Part'
@@ -441,7 +442,8 @@ def if_then_body(ctx, institution, requirement_id):
   if ctx.body_rule():
     return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
   elif ctx.body_rule_group():
-    return_dict['if_true'] = get_rules(ctx.body_rule_group(), institution, requirement_id)
+    return_dict['if_true'] = get_rules(ctx.body_rule_group().body_rule(),
+                                       institution, requirement_id)
   else:
     return_dict['if_true'] = 'Missing True Part'
 
@@ -450,7 +452,7 @@ def if_then_body(ctx, institution, requirement_id):
       return_dict['if_false'] = get_rules(ctx.else_body().body_rule(),
                                           institution, requirement_id)
     elif ctx.else_body().body_rule_group():
-      return_dict['if_false'] = get_rules(ctx.else_body().body_rule_group(),
+      return_dict['if_false'] = get_rules(ctx.else_body().body_rule_group().body_rule(),
                                           institution, requirement_id)
     else:
       return_dict['if_false'] = 'Missing False Part'

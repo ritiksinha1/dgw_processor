@@ -183,9 +183,12 @@ def get_rules(ctx, institution, requirement_id):
 
   for rule in rule_list:
     rule_name = class_name(rule).lower()
-    which_part = 'head' if context_path(ctx).startswith('Head') else 'body'
-    rule_dict = dgw_handlers.dispatch(rule, institution, requirement_id, which_part)
+    which_part = 'head' if context_path(rule).startswith('Head') else 'body'
+    children = rule.getChildren()
+    for child in children:
+      rule_dict = dgw_handlers.dispatch(child, institution, requirement_id, which_part)
     return_list.append(rule_dict)
+
   return return_list
 
 
