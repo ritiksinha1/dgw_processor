@@ -127,11 +127,41 @@ if __name__ == '__main__':
   parser.add_argument('-np', '--progress', action='store_false')
   parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='latest')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
+  parser.add_argument('-ra', '--requirement_id')
   parser.add_argument('-nu', '--update_db', action='store_false')
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
 
   # Parse args
   args = parser.parse_args()
+
+  if args.requirement_id:
+    institution = args.institutions[0].strip('10').upper() + '01'
+    requirement_id = args.requirement_id.strip('AaRr')
+    if not requirement_id.isdecimal():
+      sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
+    requirement_id = f'RA{int(requirement_id):06}'
+    # Look up the block type and value
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(f'select block_type, block_value from requirement_blocks'
+                   f"  where institution = '{institution}'"
+                   f"    and requirement_id = '{requirement_id}'")
+    assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
+                                  f'for {institution} {requirement_id}')
+    block_type, block_value = cursor.fetchone()
+    conn.close()
+    print(f'institution {requirement_id} {block_type} {block_value} {args.period}')
+    head_list, body_list = dgw_interpreter(institution,
+                                           block_type,
+                                           block_value,
+                                           period=args.period,
+                                           update_db=args.update_db,
+                                           verbose=args.progress)
+    if not args.update_db:
+      html = to_html(head_list, is_head=True)
+      html += to_html(body_list, is_body=True)
+      print(html)
+    exit()
 
   if args.institutions[0] == 'all':
     conn = PgConnection()

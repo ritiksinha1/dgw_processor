@@ -2,7 +2,10 @@
 """ These are the handlers for all the head and body rule types defined in ReqBlock.g4
 """
 
+import os
 import sys
+
+
 from dgw_utils import class_name,\
     build_course_list,\
     class_or_credit,\
@@ -15,6 +18,8 @@ from dgw_utils import class_name,\
     num_class_or_num_credit
 
 from traceback import print_stack
+
+DEBUG = os.getenv('DEBUG_HANDLERS')
 
 # Handlers
 # =================================================================================================
@@ -316,6 +321,7 @@ def if_then_head(ctx, institution, requirement_id):
                         (proxy_advice | label)* else_head?;
       else_head       : ELSE (head_rule | head_rule_group)
                         (proxy_advice | label)*;
+      head_rule_group : (begin_if head_rule+ end_if);
       head_rule       : if_then_head
                       | block
                       | blocktype
@@ -947,13 +953,15 @@ def dispatch(ctx: any, institution: str, requirement_id: str, which_part: str):
     else:
       return dispatch_body[key](ctx, institution, requirement_id)
   except KeyError as key_error:
-    print(f'KeyError: {key_error=}', file=sys.stderr)
-    print_stack(file=sys.stderr)
-    # Missing handler: report it and recover ever so gracefully
-    print(f'No dispatch method for "{key}": '
-          f'{institution=}; {requirement_id=}; {which_part=}', file=sys.stderr)
+    key_error = str(key_error).strip('\'')
+    nested = f' while processing “{key}”' if key != key_error else ''
+    if DEBUG:
+      # Missing handler: report it and recover ever so gracefully
+      # print_stack(file=sys.stderr)
+      print(f'No dispatch method for “{key_error}”{nested}: '
+            f'{institution=}; {requirement_id=}; {which_part=}', file=sys.stderr)
     return {'tag': 'Dispatch_Error',
-            'method': key,
+            'method': f'“{key_error}”{nested}',
             'institution': institution,
             'requirement_id': requirement_id,
             'part': which_part}

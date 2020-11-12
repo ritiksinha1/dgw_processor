@@ -176,8 +176,12 @@ def get_rules(ctx, institution, requirement_id):
   """
 
   return_list = []
+  if isinstance(ctx, list):
+    rule_list = ctx
+  else:
+    rule_list = [ctx]
 
-  for rule in ctx.getChildren():
+  for rule in rule_list:
     rule_name = class_name(rule).lower()
     which_part = 'head' if context_path(ctx).startswith('Head') else 'body'
     rule_dict = dgw_handlers.dispatch(rule, institution, requirement_id, which_part)
