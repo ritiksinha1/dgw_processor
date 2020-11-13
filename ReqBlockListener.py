@@ -80,12 +80,21 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#list_item.
-    def enterList_item(self, ctx:ReqBlockParser.List_itemContext):
+    # Enter a parse tree produced by ReqBlockParser#except_list.
+    def enterExcept_list(self, ctx:ReqBlockParser.Except_listContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#list_item.
-    def exitList_item(self, ctx:ReqBlockParser.List_itemContext):
+    # Exit a parse tree produced by ReqBlockParser#except_list.
+    def exitExcept_list(self, ctx:ReqBlockParser.Except_listContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#include_list.
+    def enterInclude_list(self, ctx:ReqBlockParser.Include_listContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#include_list.
+    def exitInclude_list(self, ctx:ReqBlockParser.Include_listContext):
         pass
 
 
@@ -377,30 +386,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#except_list.
-    def enterExcept_list(self, ctx:ReqBlockParser.Except_listContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#except_list.
-    def exitExcept_list(self, ctx:ReqBlockParser.Except_listContext):
-        pass
-
-
     # Enter a parse tree produced by ReqBlockParser#header_tag.
     def enterHeader_tag(self, ctx:ReqBlockParser.Header_tagContext):
         pass
 
     # Exit a parse tree produced by ReqBlockParser#header_tag.
     def exitHeader_tag(self, ctx:ReqBlockParser.Header_tagContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#include_list.
-    def enterInclude_list(self, ctx:ReqBlockParser.Include_listContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#include_list.
-    def exitInclude_list(self, ctx:ReqBlockParser.Include_listContext):
         pass
 
 

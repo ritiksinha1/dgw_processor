@@ -77,8 +77,10 @@ body        :
             )*
             ;
 
-/*  When Major is used in ShareWith it refers to the Major block in the audit. When used in an If-
- *  statement it refers to the major on the student’s curriculum.
+/* Grammar convention: Kleene Star is used in the usual "zero or more" sense, but also to allow
+ * elements to appear in any order. Thus, (a | b)* accepts a, b, ab, and ba. Both a and b will
+ * appear to the interpreter as lists, typically with one list empty and the other one of length
+ * one.
  */
 
 // Course Lists
@@ -94,13 +96,14 @@ body        :
  *
  * The trick is to determine where each type of bracket might appear.
  */
-course_list     : course_item (and_list | or_list)? (except_list | include_list)?
+course_list     : course_item (and_list | or_list)? (except_list | include_list)*
                   proxy_advice? label?;
 full_course     : discipline catalog_number with_clause*;   // Used only in expressions
 course_item     : area_start? discipline? catalog_number with_clause* area_end?;
-and_list        : list_item+ ;
-or_list         : list_item+ ;
-list_item       : (list_and | list_or) area_end? course_item ;
+and_list        : (list_and area_end? course_item)+ ;
+or_list         : (list_or area_end? course_item)+ ;
+except_list     : EXCEPT course_item (and_list | or_list)?;     // Always OR
+include_list    : INCLUDING course_item (and_list | or_list)?;  // Always AND
 catalog_number  : symbol | NUMBER | CATALOG_NUMBER | WILD;
 discipline      : symbol
                 | string // For "SPEC." at BKL
@@ -306,9 +309,7 @@ copy_rules      : COPY_RULES expression SEMICOLON?;
 // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
 display         : DISPLAY string SEMICOLON?;
-except_list     : EXCEPT course_list;
 header_tag      : (HEADER_TAG nv_pair)+;
-include_list    : INCLUDING course_list;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice? label?;
 maxclass        : MAXCLASS NUMBER course_list? tag?;
