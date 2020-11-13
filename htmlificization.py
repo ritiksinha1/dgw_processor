@@ -431,9 +431,11 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
 
     return row.requirement_html + disclaimer + f"""
     <section>
-      <h1>Header</h1>
-      {to_html(head_list, is_head=True)}
-      <h1>Body</h1>
-      {to_html(body_list, is_body=True)}
+      <details><summary>Header</summary>
+        {to_html(head_list, is_head=True)}
+      </details>
+      <details><summary>Body</summary>
+        {to_html(body_list, is_body=True)}
+      </details
     </section>
     """
