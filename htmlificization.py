@@ -76,7 +76,7 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
 
 # course_list_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def course_list_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
+def course_list_to_details_element(info: dict) -> str:
   """  The dict for a course_list must have a scribed_courses list, and should have an
        active_courses list. After that, there might be include and except lists, and possibly a
        missing from CUNYfirst list. The label becomes the summary for the details element.
@@ -117,7 +117,7 @@ def course_list_to_details_element(info: dict, is_head: bool, is_body: bool) -> 
   try:
     qualifiers = info.pop('qualifiers')
     if qualifiers is not None and len(qualifiers) > 0:
-      return_str += to_html(qualifiers, is_head, is_body)
+      return_str += to_html(qualifiers)
   except KeyError as ke:
     pass
 
@@ -143,7 +143,7 @@ def course_list_to_details_element(info: dict, is_head: bool, is_body: bool) -> 
 
   course_areas = info.pop('course_areas')
   if len(course_areas) > 0:
-    return_str += list_to_html_list_element(course_areas, is_head, is_body, kind='Course Area')
+    return_str += list_to_html_list_element(course_areas, kind='Course Area')
 
   include_courses = info.pop('include_courses')
   assert isinstance(include_courses, list)
@@ -172,10 +172,7 @@ def course_list_to_details_element(info: dict, is_head: bool, is_body: bool) -> 
       continue
     if isinstance(value, list):
       if len(value) > 0:
-        return_str += list_to_html_list_element(value,
-                                                is_head,
-                                                is_body,
-                                                kind=key.strip('s').title())
+        return_str += list_to_html_list_element(value, kind=key.strip('s').title())
     else:
       return_str += f'<p><strong>{key}:</strong> {value}</p>'
 
@@ -184,7 +181,7 @@ def course_list_to_details_element(info: dict, is_head: bool, is_body: bool) -> 
 
 # if_then_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def if_then_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
+def if_then_to_details_element(info: dict) -> str:
   """  The dict for an if-then construct must have a condition, which becomes the summary of the
        html details element. The optional label goes next, followed by nested details elements for
        the true and the optional false branches.
@@ -224,7 +221,7 @@ def if_then_to_details_element(info: dict, is_head: bool, is_body: bool) -> str:
 
 # dict_to_html_details_element()
 # -------------------------------------------------------------------------------------------------
-def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> str:
+def dict_to_html_details_element(info: dict) -> str:
   """ Convert a Python dict to a HTML <details> element. The <summary> element is based on the
       tag/label fields of the dict. During development, the context path goes next. Then, if there
       are remark or display fields, they go after that. If the tag starts with "num_", that
@@ -236,7 +233,7 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
     tag = info.pop('tag')
 
     if tag == 'if-then':  # Special case for if-then dicts
-      return(if_then_to_details_element(info, is_head, is_body))
+      return(if_then_to_details_element(info))
 
     # Not if-then
     summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
@@ -247,6 +244,14 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
     label = info.pop('label')
     if label is not None:
       summary = f'<summary>{label}</summary>'
+  except KeyError as ke:
+    pass
+
+  pseudo_msg = ''
+  try:
+    pseudo = info.pop('is_pseudo')
+    if pseudo:
+      pseudo_msg = '<p><strong>This is a Pseudo-requirement</strong></p>'
   except KeyError as ke:
     pass
 
@@ -274,7 +279,7 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
   # courses?
   course_list = ''
   if 'courses' in info.keys():
-    course_list = course_list_to_details_element(info.pop('courses'), is_head, is_body)
+    course_list = course_list_to_details_element(info.pop('courses'))
 
   # Development aid
   context_path = ''
@@ -284,7 +289,8 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
     except KeyError as ke:
       pass
 
-  return_str = (f'<details>{summary}{context_path}{remark}{display}{numerics}{course_list}')
+  return_str = (f'<details>{summary}{pseudo_msg}{context_path}{remark}{display}{numerics}'
+                f'{course_list}')
 
   for key, value in info.items():
     key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
@@ -298,7 +304,7 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
       assert isinstance(value, list)
       if len(value) > 0:
         suffix = '' if len(value) == 1 else 's'
-        return_str += to_html(value, is_head, is_body, 'Group')
+        return_str += to_html(value, 'Group')
       continue
 
     if isinstance(value, bool):
@@ -333,21 +339,21 @@ def dict_to_html_details_element(info: dict, is_head: bool, is_body: bool) -> st
 
     else:
       # Fallthrough
-      return_str += to_html(value, is_head, is_body)
+      return_str += to_html(value)
 
   return return_str + '</details>'
 
 
 # list_to_html_list_element()
 # -------------------------------------------------------------------------------------------------
-def list_to_html_list_element(info: list, is_head: bool, is_body: bool, kind='Item') -> str:
+def list_to_html_list_element(info: list, kind='Item') -> str:
   """
   """
   num = len(info)
   if num == 0:
     return '<p class="error">Empty List</p>'
   elif num == 1:
-    return to_html(info[0], is_head, is_body)
+    return to_html(info[0])
   else:
     if num <= 12:
       num_str = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
@@ -355,13 +361,13 @@ def list_to_html_list_element(info: list, is_head: bool, is_body: bool, kind='It
     else:
       num_str = f'{num:,}'
     return_str = f'<details><summary>{num_str} {kind}s</summary>'
-    return_str += '\n'.join([f'{to_html(element, is_head, is_body)}' for element in info])
+    return_str += '\n'.join([f'{to_html(element)}' for element in info])
     return return_str + '</details>'
 
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(info: any, is_head=False, is_body=False, kind='Item') -> str:
+def to_html(info: any, kind='Item') -> str:
   """  Return a nested HTML data structure as described above.
   """
   if info is None:
@@ -369,9 +375,9 @@ def to_html(info: any, is_head=False, is_body=False, kind='Item') -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return list_to_html_list_element(info, is_head, is_body, kind)
+    return list_to_html_list_element(info, kind)
   if isinstance(info, dict):
-    return dict_to_html_details_element(info, is_head, is_body)
+    return dict_to_html_details_element(info)
 
   return info
 
@@ -432,10 +438,10 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
     return row.requirement_html + disclaimer + f"""
     <section>
       <details><summary>Header</summary>
-        {to_html(head_list, is_head=True)}
+        {to_html(head_list)}
       </details>
       <details><summary>Body</summary>
-        {to_html(body_list, is_body=True)}
+        {to_html(body_list)}
       </details
     </section>
     """
