@@ -179,13 +179,14 @@ def course_list_to_details_element(info: dict) -> str:
   return return_str + '</details>'
 
 
-# if_then_to_details_element()
+# conditional_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def if_then_to_details_element(info: dict) -> str:
+def conditional_to_details_element(info: dict) -> str:
   """  The dict for an if-then construct must have a condition, which becomes the summary of the
        html details element. The optional label goes next, followed by nested details elements for
        the true and the optional false branches.
-       Note: the if_then tag itself was removed byt dict_to_html_details before calling this method.
+       Note: the conditional tag itself was removed byt dict_to_html_details before calling this
+       method.
   """
 
   try:
@@ -232,8 +233,8 @@ def dict_to_html_details_element(info: dict) -> str:
   try:
     tag = info.pop('tag')
 
-    if tag == 'if-then':  # Special case for if-then dicts
-      return(if_then_to_details_element(info))
+    if tag == 'conditional':  # Special case for conditional dicts
+      return(conditional_to_details_element(info))
 
     # Not if-then
     summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
