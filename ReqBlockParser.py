@@ -666,11 +666,11 @@ class ReqBlockParser ( Parser ):
     RULE_course_list_body_qualifier = 14
     RULE_begin_if = 15
     RULE_end_if = 16
-    RULE_if_then_head = 17
+    RULE_conditional_head = 17
     RULE_else_head = 18
     RULE_head_rule_group = 19
     RULE_head_rule = 20
-    RULE_if_then_body = 21
+    RULE_conditional_body = 21
     RULE_else_body = 22
     RULE_body_rule_group = 23
     RULE_body_rule = 24
@@ -738,8 +738,8 @@ class ReqBlockParser ( Parser ):
                    "course_item", "and_list", "or_list", "except_list", 
                    "include_list", "catalog_number", "discipline", "course_list_head_qualifier", 
                    "course_list_body", "course_list_body_qualifier", "begin_if", 
-                   "end_if", "if_then_head", "else_head", "head_rule_group", 
-                   "head_rule", "if_then_body", "else_body", "body_rule_group", 
+                   "end_if", "conditional_head", "else_head", "head_rule_group", 
+                   "head_rule", "conditional_body", "else_body", "body_rule_group", 
                    "body_rule", "requirement", "group", "group_list", "group_item", 
                    "subset", "subset_qualifier", "block", "blocktype", "allow_clause", 
                    "class_credit_head", "class_credit_body", "allow", "area_end", 
@@ -987,11 +987,11 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContext(ReqBlockParser.Class_credit_headContext,i)
 
 
-        def if_then_head(self, i:int=None):
+        def conditional_head(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.If_then_headContext)
+                return self.getTypedRuleContexts(ReqBlockParser.Conditional_headContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.If_then_headContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.Conditional_headContext,i)
 
 
         def lastres(self, i:int=None):
@@ -1167,7 +1167,7 @@ class ReqBlockParser ( Parser ):
                     pass
                 elif token in [ReqBlockParser.IF]:
                     self.state = 190
-                    self.if_then_head()
+                    self.conditional_head()
                     pass
                 elif token in [ReqBlockParser.LASTRES]:
                     self.state = 191
@@ -1302,11 +1302,11 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContext(ReqBlockParser.GroupContext,i)
 
 
-        def if_then_body(self, i:int=None):
+        def conditional_body(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.If_then_bodyContext)
+                return self.getTypedRuleContexts(ReqBlockParser.Conditional_bodyContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.If_then_bodyContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.Conditional_bodyContext,i)
 
 
         def label(self, i:int=None):
@@ -1412,7 +1412,7 @@ class ReqBlockParser ( Parser ):
 
                 elif la_ == 6:
                     self.state = 220
-                    self.if_then_body()
+                    self.conditional_body()
                     pass
 
                 elif la_ == 7:
@@ -2750,7 +2750,7 @@ class ReqBlockParser ( Parser ):
         return localctx
 
 
-    class If_then_headContext(ParserRuleContext):
+    class Conditional_headContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2793,29 +2793,29 @@ class ReqBlockParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return ReqBlockParser.RULE_if_then_head
+            return ReqBlockParser.RULE_conditional_head
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIf_then_head" ):
-                listener.enterIf_then_head(self)
+            if hasattr( listener, "enterConditional_head" ):
+                listener.enterConditional_head(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIf_then_head" ):
-                listener.exitIf_then_head(self)
+            if hasattr( listener, "exitConditional_head" ):
+                listener.exitConditional_head(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIf_then_head" ):
-                return visitor.visitIf_then_head(self)
+            if hasattr( visitor, "visitConditional_head" ):
+                return visitor.visitConditional_head(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def if_then_head(self):
+    def conditional_head(self):
 
-        localctx = ReqBlockParser.If_then_headContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 34, self.RULE_if_then_head)
+        localctx = ReqBlockParser.Conditional_headContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 34, self.RULE_conditional_head)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 360
@@ -3062,8 +3062,8 @@ class ReqBlockParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def if_then_head(self):
-            return self.getTypedRuleContext(ReqBlockParser.If_then_headContext,0)
+        def conditional_head(self):
+            return self.getTypedRuleContext(ReqBlockParser.Conditional_headContext,0)
 
 
         def block(self):
@@ -3185,7 +3185,7 @@ class ReqBlockParser ( Parser ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 397
-                self.if_then_head()
+                self.conditional_head()
                 pass
 
             elif la_ == 2:
@@ -3330,7 +3330,7 @@ class ReqBlockParser ( Parser ):
         return localctx
 
 
-    class If_then_bodyContext(ParserRuleContext):
+    class Conditional_bodyContext(ParserRuleContext):
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3370,29 +3370,29 @@ class ReqBlockParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return ReqBlockParser.RULE_if_then_body
+            return ReqBlockParser.RULE_conditional_body
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIf_then_body" ):
-                listener.enterIf_then_body(self)
+            if hasattr( listener, "enterConditional_body" ):
+                listener.enterConditional_body(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIf_then_body" ):
-                listener.exitIf_then_body(self)
+            if hasattr( listener, "exitConditional_body" ):
+                listener.exitConditional_body(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIf_then_body" ):
-                return visitor.visitIf_then_body(self)
+            if hasattr( visitor, "visitConditional_body" ):
+                return visitor.visitConditional_body(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def if_then_body(self):
+    def conditional_body(self):
 
-        localctx = ReqBlockParser.If_then_bodyContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 42, self.RULE_if_then_body)
+        localctx = ReqBlockParser.Conditional_bodyContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 42, self.RULE_conditional_body)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 422
@@ -3628,8 +3628,8 @@ class ReqBlockParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def if_then_body(self):
-            return self.getTypedRuleContext(ReqBlockParser.If_then_bodyContext,0)
+        def conditional_body(self):
+            return self.getTypedRuleContext(ReqBlockParser.Conditional_bodyContext,0)
 
 
         def block(self):
@@ -3735,7 +3735,7 @@ class ReqBlockParser ( Parser ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 463
-                self.if_then_body()
+                self.conditional_body()
                 pass
 
             elif la_ == 2:
@@ -4327,11 +4327,11 @@ class ReqBlockParser ( Parser ):
         def ENDSUB(self):
             return self.getToken(ReqBlockParser.ENDSUB, 0)
 
-        def if_then_body(self, i:int=None):
+        def conditional_body(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.If_then_bodyContext)
+                return self.getTypedRuleContexts(ReqBlockParser.Conditional_bodyContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.If_then_bodyContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.Conditional_bodyContext,i)
 
 
         def block(self, i:int=None):
@@ -4449,7 +4449,7 @@ class ReqBlockParser ( Parser ):
                 la_ = self._interp.adaptivePredict(self._input,55,self._ctx)
                 if la_ == 1:
                     self.state = 541
-                    self.if_then_body()
+                    self.conditional_body()
                     pass
 
                 elif la_ == 2:

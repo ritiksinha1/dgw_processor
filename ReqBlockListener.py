@@ -161,12 +161,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#if_then_head.
-    def enterIf_then_head(self, ctx:ReqBlockParser.If_then_headContext):
+    # Enter a parse tree produced by ReqBlockParser#conditional_head.
+    def enterConditional_head(self, ctx:ReqBlockParser.Conditional_headContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#if_then_head.
-    def exitIf_then_head(self, ctx:ReqBlockParser.If_then_headContext):
+    # Exit a parse tree produced by ReqBlockParser#conditional_head.
+    def exitConditional_head(self, ctx:ReqBlockParser.Conditional_headContext):
         pass
 
 
@@ -197,12 +197,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#if_then_body.
-    def enterIf_then_body(self, ctx:ReqBlockParser.If_then_bodyContext):
+    # Enter a parse tree produced by ReqBlockParser#conditional_body.
+    def enterConditional_body(self, ctx:ReqBlockParser.Conditional_bodyContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#if_then_body.
-    def exitIf_then_body(self, ctx:ReqBlockParser.If_then_bodyContext):
+    # Exit a parse tree produced by ReqBlockParser#conditional_body.
+    def exitConditional_body(self, ctx:ReqBlockParser.Conditional_bodyContext):
         pass
 
 

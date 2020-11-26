@@ -182,10 +182,10 @@ def course_list_to_details_element(info: dict) -> str:
 # conditional_to_details_element()
 # -------------------------------------------------------------------------------------------------
 def conditional_to_details_element(info: dict) -> str:
-  """  The dict for an if-then construct must have a condition, which becomes the summary of the
+  """  The dict for a conditional construct must have a condition, which becomes the summary of the
        html details element. The optional label goes next, followed by nested details elements for
        the true and the optional false branches.
-       Note: the conditional tag itself was removed byt dict_to_html_details before calling this
+       Note: the conditional tag itself was removed by dict_to_html_details before calling this
        method.
   """
 

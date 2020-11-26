@@ -236,11 +236,11 @@ course_list_body
 course_list_body_qualifier
 begin_if
 end_if
-if_then_head
+conditional_head
 else_head
 head_rule_group
 head_rule
-if_then_body
+conditional_body
 else_body
 body_rule_group
 body_rule

@@ -60,11 +60,14 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
   num_updates = 0
   for row in fetch_cursor.fetchall():
     if verbose:
-      print(f'{institution} {row.requirement_id} {block_type} {block_value} {row.title}: ', end='')
+      print(f'{institution} {row.requirement_id} {block_type} {block_value} ',
+            end='',
+            file=sys.stderr)
       if period == 'current' and row.period_stop != '99999999':
-        print(f'Not currently offered.')
+        print(f'Not currently offered.', end='', file=sys.stderr)
       else:
-        print(catalog_years(row.period_start, row.period_stop).text)
+        print(catalog_years(row.period_start, row.period_stop).text, end='', file=sys.stderr)
+      print(file=sys.stderr)
 
     # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
@@ -86,7 +89,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
     head_ctx = parse_tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
-        obj = dispatch(child, institution, row.requirement_id, 'head')
+        obj = dispatch(child, institution, row.requirement_id)
         if obj != {}:
           head_list.append(obj)
 
@@ -94,7 +97,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
     body_ctx = parse_tree.body()
     if body_ctx:
       for child in body_ctx.getChildren():
-        obj = dispatch(child, institution, row.requirement_id, 'body')
+        obj = dispatch(child, institution, row.requirement_id)
         if obj != {}:
           body_list.append(obj)
 
@@ -133,7 +136,6 @@ if __name__ == '__main__':
 
   # Parse args
   args = parser.parse_args()
-
   if args.requirement_id:
     institution = args.institutions[0].strip('10').upper() + '01'
     requirement_id = args.requirement_id.strip('AaRr')
@@ -150,13 +152,13 @@ if __name__ == '__main__':
                                   f'for {institution} {requirement_id}')
     block_type, block_value = cursor.fetchone()
     conn.close()
-    print(f'institution {requirement_id} {block_type} {block_value} {args.period}')
+    print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
+          file=sys.stderr)
     head_list, body_list = dgw_interpreter(institution,
                                            block_type,
                                            block_value,
                                            period=args.period,
-                                           update_db=args.update_db,
-                                           verbose=args.progress)
+                                           update_db=args.update_db)
     if not args.update_db:
       html = to_html(head_list, is_head=True)
       html += to_html(body_list, is_body=True)
@@ -202,8 +204,8 @@ if __name__ == '__main__':
         if block_value.isnumeric() or block_value.startswith('MHC'):
           continue
         if args.progress:
-          print(f'{institution_count} / {num_institutions}; {types_count} / {num_types}; '
-                f'{values_count} / {num_values} ')
+          print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
+                f'{values_count:3} / {num_values:3} ', end='', file=sys.stderr)
         head_list, body_list = dgw_interpreter(institution,
                                                block_type.upper(),
                                                block_value,

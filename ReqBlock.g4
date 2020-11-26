@@ -39,7 +39,7 @@ grammar ReqBlock;
 req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
 head        :
             ( class_credit_head
-            | if_then_head
+            | conditional_head
             | lastres
             | maxclass
             | maxcredit
@@ -67,7 +67,7 @@ body        :
             | class_credit_body
             | copy_rules
             | group
-            | if_then_body
+            | conditional_body
             | label
             | noncourse
             | proxy_advice
@@ -145,17 +145,17 @@ course_list_body_qualifier : maxpassfail
                            | share
                            ;
 
-//  if-then
+//  conditional
 //  -----------------------------------------------------------------------------------------------
-begin_if        : BEGINIF | BEGINELSE;
-end_if          : ENDIF | ENDELSE;
+begin_if          : BEGINIF | BEGINELSE;
+end_if            : ENDIF | ENDELSE;
 
-if_then_head    : IF expression THEN (head_rule | head_rule_group )
-                  (proxy_advice | label)* else_head?;
-else_head       : ELSE (head_rule | head_rule_group)
-                  (proxy_advice | label)*;
-head_rule_group : (begin_if head_rule+ end_if);
-head_rule       : if_then_head
+conditional_head  : IF expression THEN (head_rule | head_rule_group )
+                    (proxy_advice | label)* else_head?;
+else_head         : ELSE (head_rule | head_rule_group)
+                    (proxy_advice | label)*;
+head_rule_group   : (begin_if head_rule+ end_if);
+head_rule       : conditional_head
                 | block
                 | blocktype
                 | class_credit_head
@@ -181,13 +181,13 @@ head_rule       : if_then_head
                 ;
 
 
-if_then_body    : IF expression THEN (body_rule | body_rule_group)
-                  requirement* label? else_body?;
-else_body       : ELSE (body_rule | body_rule_group)
-                  requirement* label?;
+conditional_body  : IF expression THEN (body_rule | body_rule_group)
+                    requirement* label? else_body?;
+else_body         : ELSE (body_rule | body_rule_group)
+                    requirement* label?;
 body_rule_group : (begin_if body_rule+ end_if);
 
-body_rule       : if_then_body
+body_rule       : conditional_body
                 | block
                 | blocktype
                 | class_credit_body
@@ -245,7 +245,7 @@ group_item      : LP
 /*  Body Only
  */
 subset            : BEGINSUB
-                  ( if_then_body
+                  ( conditional_body
                     | block
                     | blocktype
                     | class_credit_body

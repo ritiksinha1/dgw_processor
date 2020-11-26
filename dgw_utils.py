@@ -169,6 +169,21 @@ def expression_to_str(ctx):
   return return_str.strip()
 
 
+# concentration_list()
+# -------------------------------------------------------------------------------------------------
+def concentration_list(condition: str, institution: str, requirement_id: str) -> list:
+  """ If the condition string contains equality operators (= or <>), lookup the latest concentration
+      for that institution with that block_value.
+      However, if there is no equality operator, find the subplans for the current major and return
+      figure out what the matching scribe blocks are.
+      The return array gives the titles of the concentrations, the requirement_ids, and hypertext
+      links for use by htmlificization.
+  """
+  assert 'conc' in condition.lower(), f'No CONC in “{condition}”'
+  print(f'condition: {condition}')
+  return ['concentration_list not implemented yet']
+
+
 # get_rules()
 # -------------------------------------------------------------------------------------------------
 def get_rules(ctx, institution, requirement_id):
@@ -183,10 +198,9 @@ def get_rules(ctx, institution, requirement_id):
 
   for rule in rule_list:
     rule_name = class_name(rule).lower()
-    which_part = 'head' if context_path(rule).startswith('Head') else 'body'
     children = rule.getChildren()
     for child in children:
-      rule_dict = dgw_handlers.dispatch(child, institution, requirement_id, which_part)
+      rule_dict = dgw_handlers.dispatch(child, institution, requirement_id)
     return_list.append(rule_dict)
 
   return return_list
@@ -219,17 +233,15 @@ def get_requirements(ctx, institution, requirement_id):
 
   return_list = []
   for requirement in ctx:
-    which_part = 'head' if context_path(requirement).startswith('Head') else 'body'
     for valid_requirement in valid_requirements:
       if fun := getattr(requirement, valid_requirement, None):
         if fun is not None and fun():
-          return_list.append(dgw_handlers.dispatch(valid_requirement,
+          return_list.append(dgw_handlers.dispatch(fun(),
                                                    institution,
-                                                   requirement_id,
-                                                   which_part))
+                                                   requirement_id))
   return_list = return_list if len(return_list) > 0 else None
-  if return_list is not None:
-    print(return_list)
+  # if return_list is not None:
+  #   print('get_requirements returning: ', return_list)
   return return_list
 
 
@@ -441,9 +453,9 @@ def get_course_list_qualifiers(institution, ctx):
   return qualifier_list
 
 
-# get_group_list()
+# get_group_items()
 # -------------------------------------------------------------------------------------------------
-def get_group_list(ctx: list, institution: str, requirement_id: str) -> list:
+def get_group_items(ctx: list, institution: str, requirement_id: str) -> list:
   """ group_list      : group_item (logical_op group_item)*; // logical_op is always OR
       group_item      : LP
                         (  block
@@ -458,35 +470,51 @@ def get_group_list(ctx: list, institution: str, requirement_id: str) -> list:
                         RP
   """
   return_list = []
-  for group_item in ctx.group_item():
-    childs = group_item.getChildren()
-    for child in childs:
+  for group_item_context in ctx.group_item():
+    children = group_item_context.getChildren()
+
+    for child in children:
       item_class = class_name(child)
-      if item_class == 'TerminalNodeImpl':
-        pass
-      elif item_class == 'Block':
-        return_list.append({'tag': 'block'})
-      elif item_class == 'Blocktype':
-        return_list.append({'tag': 'blocktype'})
-      elif item_class == 'Course_list':
-        return_list.append({'tag': 'group_item',
-                           'course_list': build_course_list(child, institution, requirement_id)})
-      elif item_class == 'Class_credit_body':
-        return_list.append({'tag': 'group_item',
-                           'class_credit': dgw_handlers.class_credit_body(child,
-                                                                          institution,
-                                                                          requirement_id)})
-      elif item_class == 'Group':
-        return_list.append({'tag': 'group'})
-      elif item_class == 'Noncourse':
-        return_list.append({'tag': 'noncourse'})
-      elif item_class == 'Rule_complete':
-        return_list.append({'tag': 'rule_complete'})
-      else:
-        return_list.append({'tag': f'Unknown group_item: “{item_class}”'})
-    if group_item.requirement():
+
+      # Ignore LP | RP
+      if item_class.lower() == 'terminalnodeimpl':
+        continue
+
+      return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
+      continue
+
+      # elif item_class == 'Block':
+      #   return_list.append({'tag': 'block'})
+
+      # elif item_class == 'Blocktype':
+      #   return_list.append({'tag': 'blocktype'})
+
+      # elif item_class == 'Course_list':
+      #   return_list.append({'tag': 'group_item',
+      #                      'course_list': build_course_list(child, institution, requirement_id)})
+
+      # elif item_class == 'Class_credit_body':
+      #   return_list.append({'tag': 'group_item',
+      #                      'class_credit': dgw_handlers.class_credit_body(child,
+      #                                                                     institution,
+      #                                                                     requirement_id)})
+      # elif item_class == 'Group':
+      #   return_list.append({'tag': 'group',
+      #                      'group_items': get_group_items(child, institution, requirement_id)})
+
+      # elif item_class == 'Noncourse':
+      #   return_list.append({'tag': 'noncourse'})
+
+      # elif item_class == 'Rule_complete':
+      #   return_list.append({'tag': 'rule_complete'})
+
+      # else:
+      #   return_list.append({'tag': f'Unknown group_item: “{item_class}”'})
+
+    if group_item_context.requirement():
       return_list[-1].update({'requirement': 'Not yet'})
-    if group_item.label():
+
+    if group_item_context.label():
       return_list[-1].update({'label': 'Not yet'})
 
   return return_list
@@ -596,7 +624,8 @@ def get_qualifiers(ctx, institution, requirement_id):
                                    'expression': expression})
 
           else:
-            print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}')
+            print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}',
+                  file=sys.stderr)
             qualifier_list.append({'tag': qualifier})
 
   return qualifier_list

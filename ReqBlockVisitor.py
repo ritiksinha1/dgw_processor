@@ -94,8 +94,8 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#if_then_head.
-    def visitIf_then_head(self, ctx:ReqBlockParser.If_then_headContext):
+    # Visit a parse tree produced by ReqBlockParser#conditional_head.
+    def visitConditional_head(self, ctx:ReqBlockParser.Conditional_headContext):
         return self.visitChildren(ctx)
 
 
@@ -114,8 +114,8 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#if_then_body.
-    def visitIf_then_body(self, ctx:ReqBlockParser.If_then_bodyContext):
+    # Visit a parse tree produced by ReqBlockParser#conditional_body.
+    def visitConditional_body(self, ctx:ReqBlockParser.Conditional_bodyContext):
         return self.visitChildren(ctx)
 
 

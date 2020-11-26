@@ -9,9 +9,10 @@ import sys
 from dgw_utils import class_name,\
     build_course_list,\
     class_or_credit,\
+    concentration_list,\
     context_path,\
     expression_to_str,\
-    get_group_list,\
+    get_group_items,\
     get_rules,\
     get_qualifiers,\
     get_requirements,\
@@ -61,6 +62,7 @@ def blocktype(ctx, institution, requirement_id):
   for context in ctx.expression().getChildren():
     if class_name(context) == 'Expression':
       return_dict['block_type'] = context.getText().strip().upper()
+  print(f'blocktype: {return_dict["block_type"]}')
 
   assert 'block_type' in return_dict.keys(), f'Invalid blocktype {ctx.expression().getText()}'
 
@@ -200,11 +202,170 @@ def class_credit_body(ctx, institution, requirement_id):
   labels = [course_list_label, course_list_body_label, class_credit_label]
   if (len(labels) - labels.count(None)) > 2:
     print(f'Ambiguous label situation: {course_list_label=} {course_list_body_label=} '
-          f'{class_credit_label=}')
+          f'{class_credit_label=}', file=sys.stderr)
   if course_list_body_label:
     return_dict['label'] = course_list_body_label
   if class_credit_label:
     return_dict['label'] = class_credit_label
+
+  return return_dict
+
+
+# conditional_head()
+# -------------------------------------------------------------------------------------------------
+def conditional_head(ctx, institution, requirement_id):
+  """
+      conditional_head    : IF expression THEN (head_rule | head_rule_group)
+                        (proxy_advice | label)* else_head?;
+      else_head       : ELSE (head_rule | head_rule_group)
+                        (proxy_advice | label)*;
+      head_rule_group : (begin_if head_rule+ end_if);
+      head_rule       : conditional_head
+                      | block
+                      | blocktype
+                      | class_credit_head
+                      | copy_rules
+                      | lastres
+                      | maxcredit
+                      | maxpassfail
+                      | maxterm
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingpa
+                      | mingrade
+                      | minperdisc
+                      | minres
+                      | minterm
+                      | noncourse
+                      | proxy_advice
+                      | remark
+                      | rule_complete
+                      | share
+                      | subset
+                      ;
+  """
+
+  return_dict = {'tag': 'conditional'}
+  condition = expression_to_str(ctx.expression())
+  return_dict['condition'] = condition
+  if 'conc' in condition.lower():
+    return_dict['concentrations'] = concentration_list(condition,
+                                                       institution,
+                                                       requirement_id)
+  if ctx.label():
+    assert isinstance(ctx.label(), list)
+    label_str = ' '.join([label.string() for label in ctx.label()])
+    if label_str != '':
+      return_dict['label'] = label_str
+
+  if ctx.head_rule():
+    return_dict['if_true'] = get_rules(ctx.head_rule(), institution, requirement_id)
+  elif ctx.head_rule_group():
+    return_dict['if_true'] = get_rules(ctx.head_rule_group().head_rule(),
+                                       institution,
+                                       requirement_id)
+  else:
+    return_dict['if_true'] = 'Missing True Part'
+
+  if ctx.else_head():
+    if ctx.else_head().head_rule():
+      return_dict['if_false'] = get_rules(ctx.else_head().head_rule(),
+                                          institution, requirement_id)
+    elif ctx.else_head().head_rule_group():
+      return_dict['if_false'] = get_rules(ctx.else_head().head_rule_group().head_rule(),
+                                          institution, requirement_id)
+    else:
+      return_dict['if_false'] = 'Missing False Part'
+
+  return return_dict
+
+
+# conditional_body()
+# -------------------------------------------------------------------------------------------------
+def conditional_body(ctx, institution, requirement_id):
+  """ Just like conditional_head, except the rule or rule_group can be followed by requirements that
+      apply to the rule or rule group.
+
+      conditional_body    : IF expression THEN (body_rule | body_rule_group)
+                        requirement* label? else_body?;
+      else_body       : ELSE (body_rule | body_rule_group)
+                        requirement* label?;
+      body_rule_group : (begin_if body_rule+ end_if);
+
+      body_rule       : conditional_body
+                      | block
+                      | blocktype
+                      | class_credit_body
+                      | copy_rules
+                      | group
+                      | lastres
+                      | maxcredit
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingrade
+                      | minres
+                      | noncourse
+                      | proxy_advice
+                      | remark
+                      | rule_complete
+                      | share
+                      | subset
+                      ;
+
+      requirement     : maxpassfail
+                      | maxperdisc
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingpa
+                      | mingrade
+                      | minperdisc
+                      | proxy_advice
+                      | samedisc
+                      | rule_tag
+                      | share
+                      ;
+  """
+  return_dict = {'tag': 'conditional'}
+  condition = expression_to_str(ctx.expression())
+  return_dict['condition'] = condition
+  if 'conc' in condition.lower():
+    return_dict['concentrations'] = concentration_list(condition,
+                                                       institution,
+                                                       requirement_id)
+
+  if ctx.label():
+    label_str = ''
+    if isinstance(ctx.label(), list):
+      label_str = ' '.join([label.string() for label in ctx.label()])
+    else:
+      label_str = ctx.label().string().getText()
+    if label_str != '':
+      return_dict['label'] = label_str
+
+  if ctx.requirement():
+    return_dict['requirements'] = [get_rules(context, institution, requirement_id)
+                                   for context in ctx.requirement()]
+
+  if ctx.body_rule():
+    return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
+  elif ctx.body_rule_group():
+    return_dict['if_true'] = get_rules(ctx.body_rule_group().body_rule(),
+                                       institution, requirement_id)
+  else:
+    return_dict['if_true'] = 'Missing True Part'
+
+  if ctx.else_body():
+    if ctx.else_body().body_rule():
+      return_dict['if_false'] = get_rules(ctx.else_body().body_rule(),
+                                          institution, requirement_id)
+    elif ctx.else_body().body_rule_group():
+      return_dict['if_false'] = get_rules(ctx.else_body().body_rule_group().body_rule(),
+                                          institution, requirement_id)
+    else:
+      return_dict['if_false'] = 'Missing False Part'
 
   return return_dict
 
@@ -272,7 +433,7 @@ requirement           : maxpassfail
   if len(ctx.requirement()) > 0:
     return_dict['requirements'] = get_requirements(ctx.requirement(), institution, requirement_id)
 
-  return_dict['group'] = get_group_list(ctx.group_list(), institution, requirement_id)
+  return_dict['group_items'] = get_group_items(ctx.group_list(), institution, requirement_id)
 
   # return_dict['develoment_status'] = 'Under development: incomplete'
   if ctx.label():
@@ -310,153 +471,6 @@ def rule_tag(ctx, institution, requirement_id):
       value = pair.STRING().getText() if len(pair.SYMBOL()) == 1 else pair.SYMBOL()[1].getText()
       tag_list.append({'tag': 'rule_tag', 'name': name, 'value': value})
     return_dict['name_value'] = tag_list
-  return return_dict
-
-
-# if_then_head()
-# -------------------------------------------------------------------------------------------------
-def if_then_head(ctx, institution, requirement_id):
-  """
-      if_then_head    : IF expression THEN (head_rule | head_rule_group)
-                        (proxy_advice | label)* else_head?;
-      else_head       : ELSE (head_rule | head_rule_group)
-                        (proxy_advice | label)*;
-      head_rule_group : (begin_if head_rule+ end_if);
-      head_rule       : if_then_head
-                      | block
-                      | blocktype
-                      | class_credit_head
-                      | copy_rules
-                      | lastres
-                      | maxcredit
-                      | maxpassfail
-                      | maxterm
-                      | maxtransfer
-                      | minclass
-                      | mincredit
-                      | mingpa
-                      | mingrade
-                      | minperdisc
-                      | minres
-                      | minterm
-                      | noncourse
-                      | proxy_advice
-                      | remark
-                      | rule_complete
-                      | share
-                      | subset
-                      ;
-  """
-
-  return_dict = {'tag': 'if-then', 'condition': expression_to_str(ctx.expression())}
-  if ctx.label():
-    assert isinstance(ctx.label(), list)
-    label_str = ' '.join([label.string() for label in ctx.label()])
-    if label_str != '':
-      return_dict['label'] = label_str
-
-  if ctx.head_rule():
-    return_dict['if_true'] = get_rules(ctx.head_rule(), institution, requirement_id)
-  elif ctx.head_rule_group():
-    return_dict['if_true'] = get_rules(ctx.head_rule_group().head_rule(),
-                                       institution,
-                                       requirement_id)
-  else:
-    return_dict['if_true'] = 'Missing True Part'
-
-  if ctx.else_head():
-    if ctx.else_head().head_rule():
-      return_dict['if_false'] = get_rules(ctx.else_head().head_rule(),
-                                          institution, requirement_id)
-    elif ctx.else_head().head_rule_group():
-      return_dict['if_false'] = get_rules(ctx.else_head().head_rule_group().head_rule(),
-                                          institution, requirement_id)
-    else:
-      return_dict['if_false'] = 'Missing False Part'
-
-  return return_dict
-
-
-# if_then_body()
-# -------------------------------------------------------------------------------------------------
-def if_then_body(ctx, institution, requirement_id):
-  """ Just like if_then_head, except the rule or rule_group can be followed by requirements that
-      apply to the rule or rule group.
-
-      if_then_body    : IF expression THEN (body_rule | body_rule_group)
-                        requirement* label? else_body?;
-      else_body       : ELSE (body_rule | body_rule_group)
-                        requirement* label?;
-      body_rule_group : (begin_if body_rule+ end_if);
-
-      body_rule       : if_then_body
-                      | block
-                      | blocktype
-                      | class_credit_body
-                      | copy_rules
-                      | group
-                      | lastres
-                      | maxcredit
-                      | maxtransfer
-                      | minclass
-                      | mincredit
-                      | mingrade
-                      | minres
-                      | noncourse
-                      | proxy_advice
-                      | remark
-                      | rule_complete
-                      | share
-                      | subset
-                      ;
-
-      requirement     : maxpassfail
-                      | maxperdisc
-                      | maxtransfer
-                      | minclass
-                      | mincredit
-                      | mingpa
-                      | mingrade
-                      | minperdisc
-                      | proxy_advice
-                      | samedisc
-                      | rule_tag
-                      | share
-                      ;
-  """
-  return_dict = {'tag': 'if-then', 'condition': expression_to_str(ctx.expression())}
-
-  if ctx.label():
-    label_str = ''
-    if isinstance(ctx.label(), list):
-      label_str = ' '.join([label.string() for label in ctx.label()])
-    else:
-      label_str = ctx.label().string().getText()
-    if label_str != '':
-      return_dict['label'] = label_str
-
-  if ctx.requirement():
-    return_dict['requirements'] = [get_rules(context, institution, requirement_id)
-                                   for context in ctx.requirement()]
-
-  if ctx.body_rule():
-    return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
-  elif ctx.body_rule_group():
-    return_dict['if_true'] = get_rules(ctx.body_rule_group().body_rule(),
-                                       institution, requirement_id)
-  else:
-    return_dict['if_true'] = 'Missing True Part'
-
-  if ctx.else_body():
-    if ctx.else_body().body_rule():
-      return_dict['if_false'] = get_rules(ctx.else_body().body_rule(),
-                                          institution, requirement_id)
-    elif ctx.else_body().body_rule_group():
-      return_dict['if_false'] = get_rules(ctx.else_body().body_rule_group().body_rule(),
-                                          institution, requirement_id)
-    else:
-      return_dict['if_false'] = 'Missing False Part'
-
   return return_dict
 
 
@@ -790,7 +804,7 @@ def subset(ctx, institution, requirement_id):
       /* Body only
        */
       subset            : BEGINSUB
-                        ( if_then_body
+                        ( conditional_body
                           | block
                           | blocktype
                           | class_credit_body
@@ -816,9 +830,9 @@ def subset(ctx, institution, requirement_id):
   """
   return_dict = {'tag': 'subset'}
 
-  if len(ctx.if_then_body()) > 0:
-    return_dict['if_then'] = [if_then_body(context, institution, requirement_id)
-                              for context in ctx.if_then_body()]
+  if len(ctx.conditional_body()) > 0:
+    return_dict['conditional'] = [conditional_body(context, institution, requirement_id)
+                                  for context in ctx.conditional_body()]
 
   if len(ctx.block()) > 0:
     return_dict['block'] = [block(context, institution, requirement_id) for context in ctx.block()]
@@ -900,12 +914,12 @@ def under(ctx, institution, requirement_id):
 
 # Dispatch Tables
 # =================================================================================================
-""" There are two in case If-then and Share need to be handled differently in Head and Body.
+""" There are two in case conditional and Share need to be handled differently in Head and Body.
 """
-dispatch_head = {
+dispatch_header = {
     'class_credit_head': class_credit_head,
     'header_tag': header_tag,
-    'if_then_head': if_then_head,
+    'conditional_head': conditional_head,
     'lastres': lastres,
     'maxclass': maxclass,
     'maxcredit': maxcredit,
@@ -933,7 +947,8 @@ dispatch_body = {
     'class_credit_body': class_credit_body,
     'copy_rules': copy_rules,
     'group': group,
-    'if_then_body': if_then_body,
+    'conditional_body': conditional_body,
+    'maxperdisc': maxperdisc,
     'noncourse': noncourse,
     'proxy_advice': proxy_advice,
     'remark': remark,
@@ -945,13 +960,14 @@ dispatch_body = {
 
 # dispatch()
 # -------------------------------------------------------------------------------------------------
-def dispatch(ctx: any, institution: str, requirement_id: str, which_part: str):
+def dispatch(ctx: any, institution: str, requirement_id: str):
   """ Invoke the appropriate handler given its top-level context.
   """
+  which_part = 'header' if context_path(ctx).lower().startswith('head') else 'body'
   key = class_name(ctx).lower()
   try:
-    if which_part == 'head':
-      return dispatch_head[key](ctx, institution, requirement_id)
+    if which_part == 'header':
+      return dispatch_header[key](ctx, institution, requirement_id)
     else:
       return dispatch_body[key](ctx, institution, requirement_id)
   except KeyError as key_error:
