@@ -85,13 +85,13 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
     parse_tree = parser.req_block()
 
     # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
-    head_list = []
+    header_list = []
     head_ctx = parse_tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
         obj = dispatch(child, institution, row.requirement_id)
         if obj != {}:
-          head_list.append(obj)
+          header_list.append(obj)
 
     body_list = []
     body_ctx = parse_tree.body()
@@ -103,15 +103,15 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
 
     if update_db:
       update_cursor.execute(f"""
-update requirement_blocks set head_objects = %s, body_objects = %s
+update requirement_blocks set header_list = %s, body_list = %s
 where institution = '{row.institution}'
 and requirement_id = '{row.requirement_id}'
-""", (json.dumps(head_list), json.dumps(body_list)))
+""", (json.dumps(header_list), json.dumps(body_list)))
     if period == 'current' or period == 'latest':
       break
   conn.commit()
   conn.close()
-  return (head_list, body_list)
+  return (header_list, body_list)
 
 
 # __main__
@@ -154,13 +154,13 @@ if __name__ == '__main__':
     conn.close()
     print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
           file=sys.stderr)
-    head_list, body_list = dgw_interpreter(institution,
-                                           block_type,
-                                           block_value,
-                                           period=args.period,
-                                           update_db=args.update_db)
+    header_list, body_list = dgw_interpreter(institution,
+                                             block_type,
+                                             block_value,
+                                             period=args.period,
+                                             update_db=args.update_db)
     if not args.update_db:
-      html = to_html(head_list, is_head=True)
+      html = to_html(header_list, is_head=True)
       html += to_html(body_list, is_body=True)
       print(html)
     exit()
@@ -206,11 +206,11 @@ if __name__ == '__main__':
         if args.progress:
           print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
                 f'{values_count:3} / {num_values:3} ', end='', file=sys.stderr)
-        head_list, body_list = dgw_interpreter(institution,
-                                               block_type.upper(),
-                                               block_value,
-                                               period=args.period,
-                                               update_db=args.update_db,
-                                               verbose=args.progress)
+        header_list, body_list = dgw_interpreter(institution,
+                                                 block_type.upper(),
+                                                 block_value,
+                                                 period=args.period,
+                                                 update_db=args.update_db,
+                                                 verbose=args.progress)
         if args.debug:
-          print(f'{head_list=}\n{body_list=}')
+          print(f'{header_list=}\n{body_list=}')

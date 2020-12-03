@@ -393,7 +393,7 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
     return '<h1>This scribe block is not available.</h1><p><em>Should not occur.</em></p>'
 
   if (row.institution, row.requirement_id) in quarantine_dict.keys():
-    head_list, body_list = None, None
+    header_list, body_list = None, None
     explanation, ellucian = quarantine_dict[(row.institution, row.requirement_id)]
     if ellucian:
       qualifier = 'Although the Ellucian parser does not report an error,'
@@ -428,18 +428,18 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
     </div>
     """
     # Interpret the block if it hasn’t been done yet.
-    if len(row.head_objects) == 0 and len(row.body_objects) == 0:
-      head_list, body_list = dgw_interpreter(row.institution,
-                                             row.block_type,
-                                             row.block_value,
-                                             period=period)
+    if len(row.header_list) == 0 and len(row.body_list) == 0:
+      header_list, body_list = dgw_interpreter(row.institution,
+                                               row.block_type,
+                                               row.block_value,
+                                               period=period)
     else:
-      head_list, body_list = row.head_objects, row.body_objects
+      header_list, body_list = row.header_list, row.body_list
 
     return row.requirement_html + disclaimer + f"""
     <section>
       <details><summary>Header</summary>
-        {to_html(head_list)}
+        {to_html(header_list)}
       </details>
       <details><summary>Body</summary>
         {to_html(body_list)}
