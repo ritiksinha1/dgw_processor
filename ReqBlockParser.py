@@ -1,4 +1,4 @@
-# Generated from ReqBlock.g4 by ANTLR 4.8
+# Generated from ReqBlock.g4 by ANTLR 4.9.1
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -865,7 +865,7 @@ class ReqBlockParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.8")
+        self.checkVersion("4.9.1")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -873,6 +873,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Req_blockContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -975,6 +976,7 @@ class ReqBlockParser ( Parser ):
 
 
     class HeadContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1262,6 +1264,7 @@ class ReqBlockParser ( Parser ):
 
 
     class BodyContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1460,6 +1463,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Course_listContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1591,6 +1595,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Full_courseContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1662,6 +1667,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Course_itemContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1763,6 +1769,7 @@ class ReqBlockParser ( Parser ):
 
 
     class And_listContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1848,6 +1855,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Or_listContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1933,6 +1941,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Except_listContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2008,6 +2017,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Include_listContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2083,6 +2093,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Catalog_numberContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2162,6 +2173,7 @@ class ReqBlockParser ( Parser ):
 
 
     class DisciplineContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2250,6 +2262,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Course_list_head_qualifierContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2359,6 +2372,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Course_list_bodyContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2469,6 +2483,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Course_list_body_qualifierContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2641,6 +2656,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Begin_ifContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2696,6 +2712,7 @@ class ReqBlockParser ( Parser ):
 
 
     class End_ifContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2751,6 +2768,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Conditional_headContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2879,6 +2897,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Else_headContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -2984,6 +3003,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Head_rule_groupContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3057,6 +3077,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Head_ruleContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3331,6 +3352,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Conditional_bodyContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3452,6 +3474,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Else_bodyContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3550,6 +3573,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Body_rule_groupContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3623,6 +3647,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Body_ruleContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -3857,6 +3882,7 @@ class ReqBlockParser ( Parser ):
 
 
     class RequirementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4011,6 +4037,7 @@ class ReqBlockParser ( Parser ):
 
 
     class GroupContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4098,6 +4125,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Group_listContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4168,6 +4196,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Group_itemContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4316,6 +4345,7 @@ class ReqBlockParser ( Parser ):
 
 
     class SubsetContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4545,6 +4575,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Subset_qualifierContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4690,6 +4721,7 @@ class ReqBlockParser ( Parser ):
 
 
     class BlockContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4778,6 +4810,7 @@ class ReqBlockParser ( Parser ):
 
 
     class BlocktypeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4854,6 +4887,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Allow_clauseContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -4916,6 +4950,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Class_credit_headContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5107,6 +5142,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Class_credit_bodyContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5332,6 +5368,7 @@ class ReqBlockParser ( Parser ):
 
 
     class AllowContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5387,6 +5424,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Area_endContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5433,6 +5471,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Area_startContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5479,6 +5518,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Class_or_creditContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5534,6 +5574,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Copy_rulesContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5597,6 +5638,7 @@ class ReqBlockParser ( Parser ):
 
 
     class DisplayContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5660,6 +5702,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Header_tagContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5730,6 +5773,7 @@ class ReqBlockParser ( Parser ):
 
 
     class LabelContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5793,6 +5837,7 @@ class ReqBlockParser ( Parser ):
 
 
     class LastresContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -5932,6 +5977,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MaxclassContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6008,6 +6054,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MaxcreditContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6084,6 +6131,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MaxpassfailContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6153,6 +6201,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MaxperdiscContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6260,6 +6309,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MaxspreadContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6323,6 +6373,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MaxtermContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6399,6 +6450,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MaxtransferContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6512,6 +6564,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MinareaContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6575,6 +6628,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MinclassContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6686,6 +6740,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MincreditContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6797,6 +6852,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MingpaContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6922,6 +6978,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MingradeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -6973,6 +7030,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MinperdiscContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7098,6 +7156,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MinresContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7220,6 +7279,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MinspreadContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7283,6 +7343,7 @@ class ReqBlockParser ( Parser ):
 
 
     class MintermContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7382,6 +7443,7 @@ class ReqBlockParser ( Parser ):
 
 
     class NoncourseContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7473,6 +7535,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Num_classesContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7537,6 +7600,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Num_creditsContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7601,6 +7665,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Nv_pairContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7666,6 +7731,7 @@ class ReqBlockParser ( Parser ):
 
 
     class OptionalContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7712,6 +7778,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Proxy_adviceContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7781,6 +7848,7 @@ class ReqBlockParser ( Parser ):
 
 
     class PseudoContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7836,6 +7904,7 @@ class ReqBlockParser ( Parser ):
 
 
     class RemarkContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -7920,6 +7989,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Rule_completeContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8023,6 +8093,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Rule_tagContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8093,6 +8164,7 @@ class ReqBlockParser ( Parser ):
 
 
     class SamediscContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8157,6 +8229,7 @@ class ReqBlockParser ( Parser ):
 
 
     class ShareContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8253,6 +8326,7 @@ class ReqBlockParser ( Parser ):
 
 
     class StandaloneContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8299,6 +8373,7 @@ class ReqBlockParser ( Parser ):
 
 
     class StringContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8345,6 +8420,7 @@ class ReqBlockParser ( Parser ):
 
 
     class SymbolContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8391,6 +8467,7 @@ class ReqBlockParser ( Parser ):
 
 
     class TagContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8465,6 +8542,7 @@ class ReqBlockParser ( Parser ):
 
 
     class UnderContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8570,6 +8648,7 @@ class ReqBlockParser ( Parser ):
 
 
     class With_clauseContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8632,6 +8711,7 @@ class ReqBlockParser ( Parser ):
 
 
     class ExpressionContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8839,6 +8919,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Logical_opContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8894,6 +8975,7 @@ class ReqBlockParser ( Parser ):
 
 
     class Relational_opContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -8967,6 +9049,7 @@ class ReqBlockParser ( Parser ):
 
 
     class List_orContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -9022,6 +9105,7 @@ class ReqBlockParser ( Parser ):
 
 
     class List_andContext(ParserRuleContext):
+        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
