@@ -1,7 +1,7 @@
-CLASSPATH := .:/usr/local/lib/antlr-4.8-complete.jar
-antlr4 := java -Xmx500M -cp .:/usr/local/lib/antlr-4.8-complete.jar org.antlr.v4.Tool
+CLASSPATH := .:/usr/local/lib/antlr-4.9-complete.jar
+antlr4 := java -Xmx500M -cp .:/usr/local/lib/antlr-4.9-complete.jar org.antlr.v4.Tool
 antpy := antlr4 -Dlanguage=Python3
-grun := java -Xmx500M -cp .:/usr/local/lib/antlr-4.8-complete.jar org.antlr.v4.gui.TestRig
+grun := java -Xmx500M -cp .:/usr/local/lib/antlr-4.9-complete.jar org.antlr.v4.gui.TestRig
 
 build_args := -Xlog
 build_args :=

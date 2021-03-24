@@ -1,5 +1,5 @@
-antlr := java -Xmx500M -cp .:/usr/local/lib/antlr-4.8-complete.jar org.antlr.v4.Tool
-antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/usr/local/lib/antlr-4.8-complete.jar org.antlr.v4.Tool
+antlr := java -Xmx500M -cp .:/usr/local/lib/antlr-4.9-complete.jar org.antlr.v4.Tool
+antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/usr/local/lib/antlr-4.9-complete.jar org.antlr.v4.Tool
 
 .PHONY: parser
 
