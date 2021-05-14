@@ -29,7 +29,7 @@ from dgw_interpreter import dgw_interpreter
 DEBUG = os.getenv('DEBUG_HTML')
 
 quarantine_dict = {}
-with open('/Users/vickery/dgw_processor/testing/quarantine_list') as ql_file:
+with open('/Users/vickery/Projects/dgw_processor/testing/quarantine_list') as ql_file:
   quarantine_list = ql_file.readlines()
   for line in quarantine_list:
     if line[0] == '#':
