@@ -1,6 +1,7 @@
 #! /usr/local/bin/python3
-""" This is like dgw_processor.py, only different.
-    Instead of walking the tree and triggering callbacks. explore the structure of the tree.
+""" This module replaces dgw_processor.py.
+    Instead of walking the parse tree and triggering callbacks, this module explores the tree
+    directly.
 """
 import os
 import re
@@ -33,8 +34,8 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
                     period='all', update_db=True, verbose=False) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
-       The period argument can be 'current', 'latest', or 'all', which will be picked out of the
-       result set for 'all'
+       The period argument can be 'all', 'current', or 'latest', with the latter two being picked
+       out of the result set for 'all'
   """
   if DEBUG:
     print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period})')
@@ -73,15 +74,10 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
     text_to_parse = dgw_filter(row.requirement_text)
 
     # Generate the parse tree from the Antlr4 parser generator.
-    # dgw_logger = DGW_Logger(institution, block_type, block_value, row.period_stop)
     input_stream = InputStream(text_to_parse)
     lexer = ReqBlockLexer(input_stream)
-    # lexer.removeErrorListeners()
-    # lexer.addErrorListener(dgw_logger)
     token_stream = CommonTokenStream(lexer)
     parser = ReqBlockParser(token_stream)
-    # parser.removeErrorListeners()
-    # parser.addErrorListener(dgw_logger)
     parse_tree = parser.req_block()
 
     # Walk the head and body parts of the parse tree, interpreting the parts to be saved.

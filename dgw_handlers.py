@@ -914,7 +914,7 @@ def under(ctx, institution, requirement_id):
 
 # Dispatch Tables
 # =================================================================================================
-""" There are two in case conditional and Share need to be handled differently in Head and Body.
+""" There are two so that conditional can be handled differently in Head and Body.
 """
 dispatch_header = {
     'class_credit_head': class_credit_head,
