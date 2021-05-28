@@ -29,3 +29,4 @@ Logs/
 /testing/test_data.*/
 /testing/test_results.*/
 /testing/test_timeouts
+/out
