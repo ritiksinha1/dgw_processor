@@ -83,7 +83,6 @@ def course_list_to_details_element(info: dict) -> str:
        Note: the course_list tag itself was removed byt dict_to_html_details before calling this
        method.
   """
-  assert info.pop('tag') == 'course_list'
   return_str = ''
   # if key in ['attributes', 'qualifiers']:  # Handled by active_courses and scribed_courses
   #   continue
@@ -279,8 +278,8 @@ def dict_to_html_details_element(info: dict) -> str:
 
   # courses?
   course_list = ''
-  if 'courses' in info.keys():
-    course_list = course_list_to_details_element(info.pop('courses'))
+  if 'course_list' in info.keys():
+    course_list = course_list_to_details_element(info.pop('course_list'))
 
   # Development aid
   context_path = ''
@@ -302,6 +301,7 @@ def dict_to_html_details_element(info: dict) -> str:
       continue  # Omit empty fields
 
     if key == 'group':
+      # YOU ARE HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       assert isinstance(value, list)
       if len(value) > 0:
         suffix = '' if len(value) == 1 else 's'
