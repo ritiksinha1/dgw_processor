@@ -167,8 +167,8 @@ def course_list_to_details_element(info: dict) -> str:
 
   # Any additional information
   for key, value in info.items():
-    if key == 'context_path':
-      continue
+    # if key == 'context_path':
+    #   continue
     if isinstance(value, list):
       if len(value) > 0:
         return_str += list_to_html_list_element(value, kind=key.strip('s').title())
@@ -226,128 +226,140 @@ def dict_to_html_details_element(info: dict) -> str:
       tag/label fields of the dict. During development, the context path goes next. Then, if there
       are remark or display fields, they go after that. If the tag starts with "num_", that
       value comes next. Then everything else.
+
+      There are two scenarios: a single key with a dict as its value, or multiple keys (with any
+      type of value, including dicts).
+        Case 1: If there is a single key, that’s the summary element.
+        Case 2: If there are multiple keys, use the label as the summary element, or 'No Label' if
+        there is none.
   """
   summary = '<summary class="error">No-tag-or-label Bug</summary>'
 
-  try:
-    tag = info.pop('tag')
-
-    if tag == 'conditional':  # Special case for conditional dicts
+  keys = info.keys()
+  if len(keys) == 1:
+    # Case 1
+    key = list(info)[0]
+    if key == 'conditional':  # Special case for conditional dicts
       return(conditional_to_details_element(info))
 
     # Not if-then
-    summary = f'<summary>{tag.replace("_", " ").title()}</summary>'
-  except KeyError as ke:
-    pass
+    summary = f'<summary>{key.replace("_", " ").title()}</summary>'
+    value = info[key]
+    if isinstance(value, dict):
+      return f'<details>{summary}{dict_to_html_details_element(value)}</details>'
+    elif isinstance(value, list):
+      return f'<details>{summary}{list_to_html_list_element(value)}</details>'
+    else:
+      return f'<details>{summary}{to_html(value)}</details>'
 
-  try:
-    label = info.pop('label')
-    if label is not None:
-      summary = f'<summary>{label}</summary>'
-  except KeyError as ke:
-    pass
-
-  pseudo_msg = ''
-  try:
-    pseudo = info.pop('is_pseudo')
-    if pseudo:
-      pseudo_msg = '<p><strong>This is a Pseudo-requirement</strong></p>'
-  except KeyError as ke:
-    pass
-
-  try:
-    remark = info.pop('remark')
-    remark = f'<p><strong>{remark}</strong></p>'
-  except KeyError as ke:
-    remark = ''
-
-  try:
-    display = info.pop('display')
-    display = f'<p><em>{display}</em></p>'
-  except KeyError as ke:
-    display = ''
-
-  # min, max, and num items
-  numerics = ''
-  keys = [key for key in info.keys()]
-  for key in keys:
-    if key[0:3].lower() in ['max', 'min', 'num']:
-      value = info.pop(key)
-      if value is not None:
-        numerics += f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
-
-  # courses?
-  course_list = ''
-  if 'course_list' in info.keys():
-    course_list = course_list_to_details_element(info.pop('course_list'))
-
-  # Development aid
-  context_path = ''
-  if DEBUG:
+  else:
+    # Case 2
     try:
-      context_path = f'<div><strong>Context:</strong>{info.pop("context_path")}</div>'
+      label = info.pop('label')
+      if label is not None:
+        summary = f'<summary>{label}</summary>'
+    except KeyError as ke:
+        summary = f'<summary>No Label</summary>'
+
+    pseudo_msg = ''
+    try:
+      pseudo = info.pop('is_pseudo')
+      if pseudo:
+        pseudo_msg = '<p><strong>This is a Pseudo-requirement</strong></p>'
     except KeyError as ke:
       pass
 
-  return_str = (f'<details>{summary}{pseudo_msg}{context_path}{remark}{display}{numerics}'
-                f'{course_list}')
+    try:
+      remark = info.pop('remark')
+      remark = f'<p><strong>{remark}</strong></p>'
+    except KeyError as ke:
+      remark = ''
 
-  for key, value in info.items():
-    key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
+    try:
+      display = info.pop('display')
+      display = f'<p><em>{display}</em></p>'
+    except KeyError as ke:
+      display = ''
 
-    # Key-value pairs not specific to course lists
-    # --------------------------------------------
-    if value is None:
-      continue  # Omit empty fields
+    # min, max, and num items
+    numerics = ''
+    keys = [key for key in info.keys()]
+    for key in keys:
+      if key[0:3].lower() in ['max', 'min', 'num']:
+        value = info.pop(key)
+        if value is not None:
+          numerics += f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
 
-    if key == 'group':
-      # YOU ARE HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-      assert isinstance(value, list)
-      if len(value) > 0:
-        suffix = '' if len(value) == 1 else 's'
-        return_str += to_html(value, 'Group')
-      continue
+    # courses?
+    course_list = ''
+    if 'course_list' in info.keys():
+      course_list = course_list_to_details_element(info.pop('course_list'))
 
-    if isinstance(value, bool):
-      return_str += f'<div>{key_str}: {value}</div>'
-
-    elif isinstance(value, str):
+    # Development aid
+    context_path = ''
+    if DEBUG:
       try:
-        # Interpret numeric and range strings
-        if ':' in value and 2 == len(value.split(':')):
-          # range of values: check if floats or ints
-          range_floor, range_ceil = [float(v) for v in value.split(':')]
-          if range_floor != int(range_floor) or range_ceil != int(range_ceil):
-            return_str += (f'<div>{key_str}: between {range_floor:0.1f} and '
-                           f'{range_ceil:0.1f}</div>')
-          elif int(range_floor) != int(range_ceil):
-            return_str += (f'<div>{key_str}: between {int(range_floor)} and '
-                           f'{int(range_ceil)}</div>')
+        context_path = f'<div><strong>Context:</strong>{info.pop("context_path")}</div>'
+      except KeyError as ke:
+        pass
+
+    return_str = (f'<details>{summary}{pseudo_msg}{context_path}{remark}{display}{numerics}'
+                  f'{course_list}')
+
+    for key, value in info.items():
+      key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
+
+      # Key-value pairs not specific to course lists
+      # --------------------------------------------
+      if value is None:
+        continue  # Omit empty fields
+
+      if key == 'group':
+        if len(value) > 0:
+          suffix = '' if len(value) == 1 else 's'
+          return_str += to_html(value, 'Group')
+        continue
+
+      if isinstance(value, bool):
+        return_str += f'<div>{key_str}: {value}</div>'
+
+      elif isinstance(value, str):
+        try:
+          # Interpret numeric and range strings
+          if ':' in value and 2 == len(value.split(':')):
+            # range of values: check if floats or ints
+            range_floor, range_ceil = [float(v) for v in value.split(':')]
+            if range_floor != int(range_floor) or range_ceil != int(range_ceil):
+              return_str += (f'<div>{key_str}: between {range_floor:0.1f} and '
+                             f'{range_ceil:0.1f}</div>')
+            elif int(range_floor) != int(range_ceil):
+              return_str += (f'<div>{key_str}: between {int(range_floor)} and '
+                             f'{int(range_ceil)}</div>')
+            else:
+              # both are ints and are the same
+              return_str += f'<div>{key_str}: {int(range_floor)}</div>'
           else:
-            # both are ints and are the same
-            return_str += f'<div>{key_str}: {int(range_floor)}</div>'
-        else:
-          # single value
-          if int(value) == float(value):
-            return_str += f'<div>{key_str}: {int(value)}</div>'
-          else:
-            return_str += f'<div>{key_str}: {float(value):0.1f}</div>'
+            # single value
+            if int(value) == float(value):
+              return_str += f'<div>{key_str}: {int(value)}</div>'
+            else:
+              return_str += f'<div>{key_str}: {float(value):0.1f}</div>'
 
-      except ValueError as ve:
-        # Not a numeric string; just show the text.
-        if key != 'context_path':  # This was for development purposes
-          return_str += f'<div>{key_str}: {value}</div>'
+        except ValueError as ve:
+          # Not a numeric string; just show the text.
+          if key != 'context_path':  # This was for development purposes
+            return_str += f'<div>{key_str}: {value}</div>'
 
-    else:
-      # Fallthrough
-      return_str += to_html(value)
+      else:
+        # Fallthrough
+        return_str += to_html(value)
 
-  return return_str + '</details>'
+    return return_str + '</details>'
 
 
 # list_to_html_list_element()
 # -------------------------------------------------------------------------------------------------
-def list_to_html_list_element(info: list, kind='Item') -> str:
+def list_to_html_list_element(info: list, kind='Requirement') -> str:
   """
   """
   num = len(info)
@@ -368,7 +380,7 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(info: any, kind='Item') -> str:
+def to_html(info: any, kind='Requirement') -> str:
   """  Return a nested HTML data structure as described above.
   """
   if info is None:
