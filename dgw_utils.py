@@ -552,8 +552,7 @@ def get_qualifiers(ctx, institution, requirement_id):
 
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if qualifier == 'maxpassfail':
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText(),
+            qualifier_list.append({'number': qualifier_fun().NUMBER().getText(),
                                    'class_credit': class_credit})
 
           # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
@@ -564,8 +563,7 @@ def get_qualifiers(ctx, institution, requirement_id):
             if isinstance(disciplines, list):
               disciplines = [d.getText() for d in disciplines]
 
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText(),
+            qualifier_list.append({'number': qualifier_fun().NUMBER().getText(),
                                    'class_credit': class_credit,
                                    'disciplines': disciplines})
 
@@ -574,16 +572,14 @@ def get_qualifiers(ctx, institution, requirement_id):
           # mingrade        : MINGRADE NUMBER
           # minspread       : MINSPREAD NUMBER
           elif qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText()})
+            qualifier_list.append({'number': qualifier_fun().NUMBER().getText()})
 
           # minclass        : MINCLASS NUMBER course_list tag? display* label?;
           # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
           elif qualifier in ['minclass', 'mincredit']:
             course_list_obj = build_course_list(qualifier_fun().course_list(),
                                                 institution, requirement_id)
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText(),
+            qualifier_list.append({'number': qualifier_fun().NUMBER().getText(),
                                    'courses': course_list_obj})
 
           # mingpa          : MINGPA NUMBER (course_list | expression)?
@@ -597,16 +593,14 @@ def get_qualifiers(ctx, institution, requirement_id):
             if expression_str:
               expression_str = expression.getText()
 
-            qualifier_list.append({'tag': qualifier,
-                                   'number': qualifier_fun().NUMBER().getText(),
+            qualifier_list.append({'number': qualifier_fun().NUMBER().getText(),
                                    'course_list': course_list_obj,
                                    'expression': expression_str})
 
           # ruletag         : RULE_TAG expression;
           # samedisc        : SAME_DISC expression
           elif qualifier in ['ruletag', 'samedisc']:
-            qualifier_list.append({'tag': qualifier,
-                                   'expression': qualifier_fun().expression().getText()})
+            qualifier_list.append({'expression': qualifier_fun().expression().getText()})
 
           # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
           elif qualifier == 'share':
@@ -622,17 +616,16 @@ def get_qualifiers(ctx, institution, requirement_id):
             if expression:
               expression = expression.getText()
 
-            qualifier_list.append({'tag': qualifier,
-                                   'number': number,
+            qualifier_list.append({'number': number,
                                    'class_credit': class_credit,
                                    'expression': expression})
 
           else:
             print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}',
                   file=sys.stderr)
-            qualifier_list.append({'tag': qualifier})
+            # qualifier_list.append({'tag': qualifier})
 
-  return qualifier_list
+  return {qualifier: qualifier_list}
 
 
 # num_class_or_num_credit(ctx)
@@ -799,7 +792,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     return_dict['list_type'] = 'OR'
     list_items = ctx.or_list().course_item()
   else:
-    return_dict['list_type'] = 'None'
+    return_dict['list_type'] = None
     list_items = []
 
   scribed_courses += get_scribed_courses(course_item, list_items)

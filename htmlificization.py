@@ -2,20 +2,11 @@
 """
     Generate HTML representation of nested lists/dicts.
 
-    Each list will be presented as an unordered list, which will be the contents of a details
-    element.
-
-    Each dict will be presented as a definition list, with the keys as definition terms and the
-    values as definitions.
-
     Lists and dicts can be nested within one another to any depth.
 
-    The unordered and definition lists will be contained in details elements.
-
-      If a dict has a "tag" key, it's value will be the summary element of the details element.
-      Otherwise the summary will be the word "unnamed."
-
-      The length of each list is appended to the summary element of its containing details element.
+    Everything is presented as HTML details elements, with the summary element being either the
+    label for the dict, the name of the first key in the dict, or the length of the item,
+    in that priority order.
 
 """
 
@@ -45,20 +36,26 @@ with open('/Users/vickery/Projects/dgw_processor/testing/quarantine_list') as ql
 # list_of_courses()
 # -------------------------------------------------------------------------------------------------
 def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str:
-  """ There are two flavors of course_tuples: scribed courses have just the discipline and catalog
-      number, with an optional with clause, so the length of those tuples is 3. Otherwise, the tuple
-      consists of the course_id, offer_nbr, discipline, catalog_number, title, and optional with
-      clause (length 6).
-      Hitting the db for every course mentioned in a scribe block can lead to a terrible time suck.
-      For now, instead of looking up each course for a full catalog description, just show the
-      discipline and catalog number.
+  """ This is called from course_list_to_details_element to format scribed, missing, active,
+      inactive, include, and except course lists into a HTML unordered list element inside the body
+      of a details element, where the title_str received is used as the summary element. The title
+      string normally specifies how many courses from the list are required.
+
+      Highlight the summary if highlight is True, namely for missing courses.
+
+      There are two flavors of course_tuples:
+      - scribed and missing courses have just the discipline and catalog number, and an optional
+        with clause, so the length of those tuples is 3
+      - active and inactive courses have the course_id, offer_nbr, discipline, catalog_number,
+        title, and optional with clause, so the length of those tuples is 6.
   """
-  assert isinstance(course_tuples, list) and len(course_tuples) > 0
   suffix = '' if len(course_tuples) == 1 else 's'
   class_str = ' class="error"' if highlight else ''
   return_str = (f'<details><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</summary>'
                 f'<ul>')
   for course_tuple in course_tuples:
+    assert len(course_tuple) == 3 or len(course_tuple) == 6, \
+        f'{len(course_tuple)} is not three or six'
     if len(course_tuple) < 4:  # Scribed is 3 (possible 'with'); except and including are 2
       return_str += f'<li>{course_tuple[0]} {course_tuple[1]}'
       if course_tuple[2] is not None:
@@ -69,18 +66,17 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       if course_tuple[-1] is not None:
          return_str += f' <strong>with {course_tuple[-1]}</strong>'
       return_str += '</li>'
-      # return_str += f'{lookup_course(course_tuple[0], offer_nbr=course_tuple[1])[1]}</details>'
   return_str += '</ul>\n</details>'
   return return_str
 
 
 # course_list_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def course_list_to_details_element(info: dict) -> str:
+def course_list_to_details_element(info: dict, num_required='Unknown Number of') -> str:
   """  The dict for a course_list must have a scribed_courses list, and should have an
        active_courses list. After that, there might be include and except lists, and possibly a
-       missing from CUNYfirst list. The label becomes the summary for the details element.
-       Note: the course_list tag itself was removed byt dict_to_html_details before calling this
+       missing (from CUNYfirst) list. The label becomes the summary for the details element.
+       Note: the course_list tag itself was removed by dict_to_html_details before calling this
        method.
   """
   return_str = ''
@@ -89,16 +85,18 @@ def course_list_to_details_element(info: dict) -> str:
 
   try:
     label = info.pop('label')
-    if label is not None:
-      return_str = f'<details><summary>{label}</summary>'
-    else:
-      return_str = '<details><summary>Courses</summary>'
+    if label is None:
+      label = 'Empty Label'
   except KeyError as ke:
-    return_str = f'<details><summary>Anonymous Course List</summary>'
+    label = 'Missing Label'
+  suffix = '' if num_required == '1' else 's'
+  return_str = f'<details><summary>{num_required} Course{suffix} in {label.title()}</summary>'
 
   try:
     value = info.pop('list_type')
-    if value != 'None':
+    if value is None:
+      pass
+    else:
       return_str += f'<p>This is an {value} list.</p>'
   except KeyError as ke:
     pass
@@ -233,7 +231,6 @@ def dict_to_html_details_element(info: dict) -> str:
         Case 2: If there are multiple keys, use the label as the summary element, or 'No Label' if
         there is none.
   """
-  summary = '<summary class="error">No-tag-or-label Bug</summary>'
 
   keys = info.keys()
   if len(keys) == 1:
@@ -293,7 +290,10 @@ def dict_to_html_details_element(info: dict) -> str:
     # courses?
     course_list = ''
     if 'course_list' in info.keys():
-      course_list = course_list_to_details_element(info.pop('course_list'))
+      num_required = 'Unknown'
+      if 'num_courses_required' in info.keys():
+        num_required = info.pop('num_courses_required')
+      course_list = course_list_to_details_element(info.pop('course_list'), num_required=f'{num_required}')
 
     # Development aid
     context_path = ''
