@@ -12,10 +12,12 @@
 
 import os
 import sys
+from pprint import pprint
 
 from course_lookup import lookup_course
 
-from dgw_interpreter import dgw_interpreter
+from dgw_interpreter import dgw_interpreter, catalog_years
+from dgw_utils import college_names
 
 DEBUG = os.getenv('DEBUG_HTML')
 
@@ -72,10 +74,11 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
 
 # course_list_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def course_list_to_details_element(info: dict, num_required='Unknown Number of') -> str:
+def course_list_to_details_element(info: dict) -> str:
   """  The dict for a course_list must have a scribed_courses list, and should have an
        active_courses list. After that, there might be include and except lists, and possibly a
        missing (from CUNYfirst) list. The label becomes the summary for the details element.
+       If there is no label, return just the lists, not enclosed in a details element.
        Note: the course_list tag itself was removed by dict_to_html_details before calling this
        method.
   """
@@ -85,12 +88,10 @@ def course_list_to_details_element(info: dict, num_required='Unknown Number of')
 
   try:
     label = info.pop('label')
-    if label is None:
-      label = 'Empty Label'
   except KeyError as ke:
-    label = 'Missing Label'
-  suffix = '' if num_required == '1' else 's'
-  return_str = f'<details><summary>{num_required} Course{suffix} in {label.title()}</summary>'
+    label = None
+  if label is not None:
+    summary = f'<summary>{label.title()}</summary>'
 
   try:
     value = info.pop('list_type')
@@ -173,7 +174,10 @@ def course_list_to_details_element(info: dict, num_required='Unknown Number of')
     else:
       return_str += f'<p><strong>{key}:</strong> {value}</p>'
 
-  return return_str + '</details>'
+  if label is None:
+    return return_str
+  else:
+    return f'<details open="open">{summary}{return_str}</details>'
 
 
 # conditional_to_details_element()
@@ -198,21 +202,21 @@ def conditional_to_details_element(info: dict) -> str:
 
   try:
     true_value = to_html(info['if_true'], kind='If-true Item')
-    if_true_part = (f"<details><summary>if {condition} is true</summary>"
-                    f"{true_value}</details>")
+    if_true_part = (f'<details open="open"><summary>if {condition} is true</summary>'
+                    f'{true_value}</details>')
   except KeyError as ke:
     if_true_part = '<p class="error">Empty If-then rule!</p>'
 
   try:
     false_value = to_html(info['if_false'], kind='if-false Item')
-    if_false_part = (f"<details><summary>if {condition} is not true</summary>"
-                     f"{false_value}</details>")
+    if_false_part = (f'<details open="open"><summary>if {condition} is not true</summary>'
+                     f'{false_value}</details>')
   except KeyError as ke:
     if_false_part = ''  # Else is optional
 
   if label:
     # Produce a details element to hold the two legs
-    return f'<details><summary>{label}</summary{if_true_part}{if_false_part}</details>'
+    return f'<details><summary open="open">{label}</summary{if_true_part}{if_false_part}</details>'
   else:
     return f'{if_true_part}{if_false_part}'
 
@@ -228,8 +232,9 @@ def dict_to_html_details_element(info: dict) -> str:
       There are two scenarios: a single key with a dict as its value, or multiple keys (with any
       type of value, including dicts).
         Case 1: If there is a single key, that’s the summary element.
-        Case 2: If there are multiple keys, use the label as the summary element, or 'No Label' if
-        there is none.
+        Case 2: If there are multiple keys, use the label as the summary element. But if there is no
+        label, this isn’t a details-worthy item, and just return the fields for use in the body
+        of the parent.
   """
 
   keys = info.keys()
@@ -237,17 +242,17 @@ def dict_to_html_details_element(info: dict) -> str:
     # Case 1
     key = list(info)[0]
     if key == 'conditional':  # Special case for conditional dicts
-      return(conditional_to_details_element(info))
+      return(conditional_to_details_element(info['conditional']))
 
     # Not if-then
     summary = f'<summary>{key.replace("_", " ").title()}</summary>'
     value = info[key]
     if isinstance(value, dict):
-      return f'<details>{summary}{dict_to_html_details_element(value)}</details>'
+      return f'<details open="open">{summary}{dict_to_html_details_element(value)}</details>'
     elif isinstance(value, list):
-      return f'<details>{summary}{list_to_html_list_element(value)}</details>'
+      return f'<details open="open">{summary}{list_to_html_list_element(value)}</details>'
     else:
-      return f'<details>{summary}{to_html(value)}</details>'
+      return f'<details open="open">{summary}{to_html(value)}</details>'
 
   else:
     # Case 2
@@ -256,7 +261,8 @@ def dict_to_html_details_element(info: dict) -> str:
       if label is not None:
         summary = f'<summary>{label}</summary>'
     except KeyError as ke:
-        summary = f'<summary>No Label</summary>'
+      # Indicator for not returning a nest-able display element
+      summary = None
 
     pseudo_msg = ''
     try:
@@ -289,11 +295,11 @@ def dict_to_html_details_element(info: dict) -> str:
 
     # courses?
     course_list = ''
+    #   num_required = 'Unknown'
+    #   if 'num_courses_required' in info.keys():
+    #     num_required = info.pop('num_courses_required')
     if 'course_list' in info.keys():
-      num_required = 'Unknown'
-      if 'num_courses_required' in info.keys():
-        num_required = info.pop('num_courses_required')
-      course_list = course_list_to_details_element(info.pop('course_list'), num_required=f'{num_required}')
+      course_list = course_list_to_details_element(info.pop('course_list'))
 
     # Development aid
     context_path = ''
@@ -303,8 +309,7 @@ def dict_to_html_details_element(info: dict) -> str:
       except KeyError as ke:
         pass
 
-    return_str = (f'<details>{summary}{pseudo_msg}{context_path}{remark}{display}{numerics}'
-                  f'{course_list}')
+    return_str = f'{pseudo_msg}{context_path}{remark}{display}{numerics}{course_list}'
 
     for key, value in info.items():
       key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
@@ -354,7 +359,10 @@ def dict_to_html_details_element(info: dict) -> str:
         # Fallthrough
         return_str += to_html(value)
 
-    return return_str + '</details>'
+    if summary is None:
+      return return_str
+    else:
+      return f'<details open="open">{summary}{return_str}</details>'
 
 
 # list_to_html_list_element()
@@ -373,7 +381,12 @@ def list_to_html_list_element(info: list, kind='Requirement') -> str:
                  'Ten', 'Eleven', 'Twelve'][num]
     else:
       num_str = f'{num:,}'
-    return_str = f'<details><summary>{num_str} {kind}s</summary>'
+    # Pluralization awkwardness
+    if kind == 'Property':
+      kind = 'Properties'
+    else:
+      kind = kind + 's'
+    return_str = f'<details open="open"/><summary>{num_str} {kind}</summary>'
     return_str += '\n'.join([f'{to_html(element)}' for element in info])
     return return_str + '</details>'
 
@@ -397,12 +410,13 @@ def to_html(info: any, kind='Requirement') -> str:
 
 # scribe_block_to_html()
 # -------------------------------------------------------------------------------------------------
-def scribe_block_to_html(row: tuple, period='all') -> str:
+def scribe_block_to_html(row: tuple, period_range='current') -> str:
   """ Generate html for the scribe block and interpreted head and body lists objects, unless the
       block has been quarantined.
   """
   if row.requirement_html == 'Not Available':
-    return '<h1>This scribe block is not available.</h1><p><em>Should not occur.</em></p>'
+    return ('<h1 class="error">This scribe block is not available.</h1>'
+            '<p><em>Should not occur.</em></p>')
 
   if (row.institution, row.requirement_id) in quarantine_dict.keys():
     header_list, body_list = None, None
@@ -423,13 +437,16 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
     return row.requirement_html + disclaimer
 
   else:
+    catalog_type, first_year, last_year, catalog_years_text = catalog_years(row.period_start,
+                                                                            row.period_stop)
+    college_name = college_names[row.institution]
     disclaimer = """
     <div class="disclaimer">
       <p class="warning">
-        This is project is now in the “beta” stage. That means that the display below
+        This is project is in the “beta” stage. That means that the display below
         <em>should</em> be an an accurate representation of the requirements for this block,
         omitting elements that would depend an individual student’s academic record, such as Proxy
-        Advice. But there are undoubtedly errors and omissions. If you see such anomalies, I would
+        Advice. But there may be errors and omissions. If you see such anomalies, I would
         appreciate hearing about them. (<em>Click on my name for an email link.</em>)
       </p>
       <p>
@@ -444,14 +461,17 @@ def scribe_block_to_html(row: tuple, period='all') -> str:
       header_list, body_list = dgw_interpreter(row.institution,
                                                row.block_type,
                                                row.block_value,
-                                               period=period)
+                                               period_range=period_range)
     else:
       header_list, body_list = row.header_list, row.body_list
 
-    return row.requirement_html + disclaimer + f"""
+    return disclaimer + f"""
+    <h1>{college_name} {row.requirement_id}: <em>{row.title}</em></h1>
+    <p>Requirements for {catalog_type} Catalog Years {catalog_years_text}</p>
+    <section>{row.requirement_html}</section>
     <section>
       <details><summary>Header</summary>
-        {to_html(header_list)}
+        {to_html(header_list, kind='Property')}
       </details>
       <details><summary>Body</summary>
         {to_html(body_list)}

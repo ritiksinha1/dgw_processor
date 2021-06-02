@@ -56,9 +56,10 @@ with open('./debug', 'w') as debug:
           print(f'{institution} {block_type} {block_value} {period}')
           header_list, body_list = (row.header_list, row.body_list)
           if len(header_list) == 0 or len(body_list) == 0 or args.force:
-            header_list, body_list = dgw_interpreter(institution, block_type, block_value, period)
+            header_list, body_list = dgw_interpreter(institution, block_type, block_value,
+                                                     period_range=period)
 
-          # Find course lists and show their sizes and contexts (Don't get distracted by other stuff)
+          # Find course lists and show their sizes and contexts
           print(f'\nHEADER')
           pprint(header_list, sort_dicts=False)
           print('\nBODY')

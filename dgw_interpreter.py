@@ -31,14 +31,16 @@ sys.setrecursionlimit(10**6)
 # dgw_interpreter()
 # =================================================================================================
 def dgw_interpreter(institution: str, block_type: str, block_value: str,
-                    period='all', update_db=True, verbose=False) -> tuple:
+                    period_range='current', update_db=True, verbose=False) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
-       The period argument can be 'all', 'current', or 'latest', with the latter two being picked
-       out of the result set for 'all'
+       The period_range argument can be 'all', 'current', or 'latest', with the latter two being
+       picked out of the result set for 'all'. If there is more than one block in the selected
+       range, all will be updated in the db, but only the oldest one’s header and body lists will be
+       returned.
   """
   if DEBUG:
-    print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period})')
+    print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period_range})')
 
   conn = PgConnection()
   fetch_cursor = conn.cursor()
@@ -64,7 +66,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
       print(f'{institution} {row.requirement_id} {block_type} {block_value} ',
             end='',
             file=sys.stderr)
-      if period == 'current' and row.period_stop != '99999999':
+      if period_range == 'current' and row.period_stop != '99999999':
         print(f'Not currently offered.', end='', file=sys.stderr)
       else:
         print(catalog_years(row.period_start, row.period_stop).text, end='', file=sys.stderr)
@@ -103,7 +105,7 @@ update requirement_blocks set header_list = %s, body_list = %s
 where institution = '{row.institution}'
 and requirement_id = '{row.requirement_id}'
 """, (json.dumps(header_list), json.dumps(body_list)))
-    if period == 'current' or period == 'latest':
+    if period_range == 'current' or period_range == 'latest':
       break
   conn.commit()
   conn.close()
@@ -153,7 +155,7 @@ if __name__ == '__main__':
     header_list, body_list = dgw_interpreter(institution,
                                              block_type,
                                              block_value,
-                                             period=args.period,
+                                             period_range=args.period,
                                              update_db=args.update_db)
     if not args.update_db:
       html = to_html(header_list, is_head=True)
@@ -205,7 +207,7 @@ if __name__ == '__main__':
         header_list, body_list = dgw_interpreter(institution,
                                                  block_type.upper(),
                                                  block_value,
-                                                 period=args.period,
+                                                 period_range=args.period,
                                                  update_db=args.update_db,
                                                  verbose=args.progress)
         if args.debug:

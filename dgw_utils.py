@@ -19,15 +19,12 @@ from course_list_qualifier import CourseListQualifier
 
 DEBUG = os.getenv('DEBUG_UTILS')
 
-# Dict of known colleges
-colleges = dict()
+# Dict of CUNY college names
 conn = PgConnection()
 cursor = conn.cursor()
 cursor.execute('select code, name from cuny_institutions')
-for row in cursor.fetchall():
-  colleges[row.code] = row.name
+college_names = {row.code: row.name for row in cursor.fetchall()}
 conn.close()
-
 
 CatalogYears = namedtuple('CatalogYears', 'catalog_type first_year last_year text')
 
