@@ -857,10 +857,10 @@ def subset(ctx, institution, requirement_id):
     if len(label_ctx) > 1:
       print(f'Multiple ({len(label_ctx)}) labels at {context_path(ctx)}', file=sys.stderr)
     label_ctx = label_ctx.pop()
-    return_dict['label'] = label_ctx.string().getText().strip(' "')
+    label_str = label_ctx.string().getText().strip(' "')
   except (KeyError, IndexError):
     # No label: note it
-    return_dict['label'] = 'No Label for this subset!'
+    label_str = 'No Label for this subset!'
 
   try:
     if len(ctx.remark()) > 1:
@@ -871,7 +871,7 @@ def subset(ctx, institution, requirement_id):
   except (KeyError, IndexError):
     pass
 
-  return {'subset': return_dict}
+  return {'subset': return_dict, 'label': label_str}
 
 
 # under()

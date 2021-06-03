@@ -672,7 +672,7 @@ def num_class_or_num_credit(ctx) -> dict:
   else:
     assert num_classes and num_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
 
-  return {'num_classes_required': num_classes,
+  return {'num_classes': num_classes,
           'allow_classes': allow_classes,
           'num_credits': num_credits,
           'allow_credits': allow_credits,
@@ -893,7 +893,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
           catnum_clause = "catalog_number = ''"  # Will match no courses
     course_query = f"""
 select institution, course_id, offer_nbr, discipline, catalog_number, title,
-       requisites, description, course_status, contact_hours, max_credits, designation,
+       requisites, description, course_status, contact_hours, min_credits, max_credits, designation,
        replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
        as attributes
   from cuny_courses
@@ -911,8 +911,12 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
         if (row.discipline, row.catalog_number, ANY) in except_courses:
           continue
         if row.course_status == 'A':
+          if row.min_credits == row.max_credits:
+            credits = f'{row.min_credits:0.1f}'
+          else:
+            credits = f'{row.min_credits:0.1f}:{row.max_credits:0.1f}'
           active_course_tuple = (row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
-                                 row.title, with_clause)
+                                 row.title, credits, with_clause)
           active_courses.append(active_course_tuple)
           if current_area is not None:
             current_area.append(active_course_tuple)
