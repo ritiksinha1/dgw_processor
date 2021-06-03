@@ -4,31 +4,83 @@
 """
 
 from argparse import ArgumentParser
+from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_interpreter import dgw_interpreter
 
 from pprint import pprint
 
+Course = namedtuple('Course',
+                    'course_id offer_nbr discipline catalog_number title credits restriction')
 
-# search_for()
+
+# search_for_courses()
 # -------------------------------------------------------------------------------------------------
-def search_for(target: str, where: any, path: str, found_list: list) -> None:
-  """ Depth-first recursive search of nested lists/dicts for dict keys matching target.
-      Append the context_path to the found list.
+def search_for(where: any, current_path: list, found_list: list) -> None:
+  """ Depth-first recursive search of nested lists/dicts for course_list keys.
+      For each course_list, tell how many are required, and list the active ones found.
   """
+  global depth
+  # print(f'{depth}enter', ':'.join(current_path), found_list)
+  depth += '..'
   if isinstance(where, list):
+    # print(f'{depth}is list with {len(where)} elements')
     for index in range(len(where)):
       if isinstance(where[index], dict):
-        path += f' => [{index}/{len(where)}]'
-        search_for(target, where[index], path, found_list)
+        # current_path.append(f'{index}')
+        search_for(where[index], current_path, found_list)
+        # current_path.pop()
   elif isinstance(where, dict):
+    # print(f'{depth}is dict with {len(where)} entries')
     for key, value in where.items():
-      path += f' => {key}'
-      if key == target:
-        found_list.append(f'{target} @ {path}')
+      # print(f'{depth}{key} {isinstance(value, dict)}')
+      if key == 'course_list':
+        # Bingo!
+        # Now to extract the number of classes and/or credits required and:
+        #   for each active course: its course_id:offer_nbr, discipline-catalog_number, title, and
+        #                           min credits
+        #   for each missing course: its discipline-catalog_number
+        requirement_str = []
+        # Suffix handling: value might be missing, float or int, unity, or a range.
+        if (num_classes := where['num_classes']) is not None:
+          try:
+            suffix = '' if float(num_classes) == 1 else 'es'
+          except ValueError as ve:
+            suffix = 'es'
+          requirement_str.append(f'{num_classes} class{suffix}')
+        if (num_credits := where['num_credits']) is not None:
+          try:
+            suffix = '' if float(num_credits) == 1 else 's'
+          except ValueError as ve:
+            suffix = 's'
+          requirement_str.append(f'{num_credits} credit{suffix}')
+        if 'label' in value.keys() and (label := value['label']) is not None:
+          in_clause = f' in {value["label"]}'
+        else:
+          in_clause = ''
+        requirement_str = ' or '.join(requirement_str) + in_clause
+        # Active courses
+        active_courses = [Course._make(c) for c in value['active_courses']]
+        # Missing courses
+        missing_courses = [f'{c[0]} {c[1]}' for c in value['missing_courses']]
+        missing_msg = '' if len(missing_courses) == 0 else (f'Missing from CUNYfirst: '
+                                                            f'{" and ".join(missing_courses)}')
+
+        found_list.append(''.join(f'[{p}]' for p in current_path) + f' {requirement_str}' + ' from '
+                          + ' or '.join([f'{c.course_id:06}:{c.offer_nbr}'
+                                         for c in active_courses]) + missing_msg)
+      else:
+        if 'label' in where.keys():
+          current_path.append(where['label'])
+        else:
+          current_path.append(key)
+        search_for(value, current_path, found_list)
+        current_path.pop()
   else:
     # Ignore things that aren't dicts or lists
+    # print(f'{depth}{where}: not list or dict')
     pass
+  depth = depth[0:-2]
 
 
 # __main__()
@@ -85,7 +137,9 @@ if __name__ == '__main__':
 
             pprint(body_list, stream=debug)
             # Find course lists in the body
-            path = 'body'
+            depth = ''
+            current_path = [institution[0:3], block_type, block_value]
             contexts = []
-            search_for('course_list', body_list, path, contexts)
-            pprint(contexts)
+            search_for(body_list, current_path, contexts)
+            for context in contexts:
+              print(context)
