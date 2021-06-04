@@ -910,11 +910,11 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
         # skip excluded courses
         if (row.discipline, row.catalog_number, ANY) in except_courses:
           continue
+        if row.min_credits == row.max_credits:
+          credits = f'{row.min_credits:0.1f}'
+        else:
+          credits = f'{row.min_credits:0.1f}:{row.max_credits:0.1f}'
         if row.course_status == 'A':
-          if row.min_credits == row.max_credits:
-            credits = f'{row.min_credits:0.1f}'
-          else:
-            credits = f'{row.min_credits:0.1f}:{row.max_credits:0.1f}'
           active_course_tuple = (row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                  row.title, credits, with_clause)
           active_courses.append(active_course_tuple)
@@ -930,7 +930,7 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
             all_writing = False
         else:
           inactive_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
-                                   row.title, with_clause))
+                                   row.title, credits, with_clause))
 
   conn.close()
   if len(active_courses) > 0:

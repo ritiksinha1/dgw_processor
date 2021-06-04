@@ -49,14 +49,14 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       - scribed and missing courses have just the discipline and catalog number, and an optional
         with clause, so the length of those tuples is 3
       - active and inactive courses have the course_id, offer_nbr, discipline, catalog_number,
-        title, and optional with clause, so the length of those tuples is 6.
+        title, credits, and optional with clause, so the length of those tuples is 7.
   """
   suffix = '' if len(course_tuples) == 1 else 's'
   class_str = ' class="error"' if highlight else ''
   return_str = (f'<details><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</summary>'
                 f'<ul>')
   for course_tuple in course_tuples:
-    assert len(course_tuple) == 3 or len(course_tuple) == 6, \
+    assert len(course_tuple) == 3 or len(course_tuple) == 7, \
         f'{len(course_tuple)} is not three or six'
     if len(course_tuple) < 4:  # Scribed is 3 (possible 'with'); except and including are 2
       return_str += f'<li>{course_tuple[0]} {course_tuple[1]}'
