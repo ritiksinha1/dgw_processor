@@ -10,6 +10,7 @@ course_id integer,
 offer_nbr integer,
 institution text,
 discipline text,
+catalog_nbr text,
 title text,
 credits text,
 primary key (course_id, offer_nbr));
