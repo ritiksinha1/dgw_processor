@@ -55,8 +55,10 @@ def search_for(where: any, current_path: list, found_list: list) -> None:
             suffix = 's'
           requirement_str.append(f'{num_credits} credit{suffix}')
         if 'label' in value.keys() and (label := value['label']) is not None:
-          in_clause = f' in {value["label"]}'
+          label = value['label']
+          in_clause = f' in {label}'
         else:
+          label = ''
           in_clause = ''
         requirement_str = ' or '.join(requirement_str) + in_clause
         # Active courses
@@ -69,6 +71,8 @@ def search_for(where: any, current_path: list, found_list: list) -> None:
         found_list.append(''.join(f'[{p}]' for p in current_path) + f' {requirement_str}' + ' from '
                           + ' or '.join([f'{c.course_id:06}:{c.offer_nbr}'
                                          for c in active_courses]) + missing_msg)
+        college, requirement_type, requirement_value, *context_path = current_path
+        print(college, requirement_type, requirement_value, context_path)
       else:
         if 'label' in where.keys():
           current_path.append(where['label'])
@@ -143,3 +147,4 @@ if __name__ == '__main__':
             search_for(body_list, current_path, contexts)
             for context in contexts:
               print(context)
+
