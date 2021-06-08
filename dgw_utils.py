@@ -478,43 +478,13 @@ def get_group_items(ctx: list, institution: str, requirement_id: str) -> list:
       # Ignore LP | RP
       if item_class.lower() == 'terminalnodeimpl':
         continue
-
       return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
-      continue
-
-      # elif item_class == 'Block':
-      #   return_list.append({'tag': 'block'})
-
-      # elif item_class == 'Blocktype':
-      #   return_list.append({'tag': 'blocktype'})
-
-      # elif item_class == 'Course_list':
-      #   return_list.append({'tag': 'group_item',
-      #                      'course_list': build_course_list(child, institution, requirement_id)})
-
-      # elif item_class == 'Class_credit_body':
-      #   return_list.append({'tag': 'group_item',
-      #                      'class_credit': dgw_handlers.class_credit_body(child,
-      #                                                                     institution,
-      #                                                                     requirement_id)})
-      # elif item_class == 'Group':
-      #   return_list.append({'tag': 'group',
-      #                      'group_items': get_group_items(child, institution, requirement_id)})
-
-      # elif item_class == 'Noncourse':
-      #   return_list.append({'tag': 'noncourse'})
-
-      # elif item_class == 'Rule_complete':
-      #   return_list.append({'tag': 'rule_complete'})
-
-      # else:
-      #   return_list.append({'tag': f'Unknown group_item: “{item_class}”'})
 
     if group_item_context.requirement():
-      return_list[-1].update({'requirement': 'Not yet'})
+      return_list[-1].update({'group item requirement': 'Not yet'})
 
     if group_item_context.label():
-      return_list[-1].update({'label': 'Not yet'})
+      return_list[-1].update({'group item label': 'Not yet'})
 
   return return_list
 

@@ -427,7 +427,7 @@ requirement           : maxpassfail
   MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA, ProxyAdvice, SameDisc,
   ShareWith, MinClass, MinCredit, RuleTag.
   """
-  return_dict = {'num_groups_required': ctx.NUMBER().getText()}
+  return_dict = {'num_groups_required': ctx.NUMBER().getText().strip()}
 
   if len(ctx.requirement()) > 0:
     return_dict['requirements'] = get_requirements(ctx.requirement(), institution, requirement_id)
@@ -841,7 +841,7 @@ def subset(ctx, institution, requirement_id):
                                    for context in ctx.course_list()]
 
   if len(ctx.group()) > 0:
-    return_dict['groups'] = [group(context, institution, requirement_id) for context in ctx.group()]
+    return_dict['group'] = [group(context, institution, requirement_id) for context in ctx.group()]
 
   if len(ctx.noncourse()) > 0:
     return_dict['noncourse'] = [noncourse(context, institution, requirement_id)
