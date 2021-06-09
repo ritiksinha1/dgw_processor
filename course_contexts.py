@@ -9,6 +9,7 @@ from pgconnection import PgConnection
 from dgw_interpreter import dgw_interpreter
 
 from pprint import pprint
+from inspect import currentframe, getframeinfo
 
 Course = namedtuple('Course',
                     'course_id offer_nbr discipline catalog_number title credits restriction')
@@ -20,20 +21,20 @@ def search_for(where: any, current_path: list, found_list: list) -> None:
   """ Depth-first recursive search of nested lists/dicts for course_list keys.
       For each course_list, tell how many are required, and list the active ones found.
   """
-  global depth
-  # print(f'{depth}enter', ':'.join(current_path), found_list)
-  depth += '..'
+  current_path_str =' | '.join(current_path)
   if isinstance(where, list):
-    # print(f'{depth}is list with {len(where)} elements')
+    print(f'List of {len(where)} items @ {current_path_str}')
     for index in range(len(where)):
-      if isinstance(where[index], dict):
-        # current_path.append(f'{index}')
-        search_for(where[index], current_path, found_list)
-        # current_path.pop()
+      search_for(where[index], current_path, found_list)
+    print(f'pop {getframeinfo(currentframe()).lineno}:', current_path.pop())
+
   elif isinstance(where, dict):
-    # print(f'{depth}is dict with {len(where)} entries')
+    # print(f'Dict with {len(where.keys())} keys:', ' : '.join(list(where.keys())))
+    if 'label' in where.keys():
+      current_path.append(where['label'])
+
     for key, value in where.items():
-      # print(f'{depth}{key} {isinstance(value, dict)}')
+      print(f'{key} @ {current_path_str}')
       if key == 'course_list':
         # Bingo!
         # Now to extract the number of classes and/or credits required and:
@@ -71,20 +72,36 @@ def search_for(where: any, current_path: list, found_list: list) -> None:
         found_list.append(''.join(f'[{p}]' for p in current_path) + f' {requirement_str}' + ' from '
                           + ' or '.join([f'{c.course_id:06}:{c.offer_nbr}'
                                          for c in active_courses]) + missing_msg)
-        college, requirement_type, requirement_value, *context_path = current_path
-        print(college, requirement_type, requirement_value, context_path)
-      else:
-        if 'label' in where.keys():
-          current_path.append(where['label'])
+
+      elif key == 'group':
+        assert isinstance(value, dict) or isinstance(value, list)
+        # Tell how many groups are required and how many groups there are to choose from
+        name_str = 'Unnamed'
+        num_required = 'unknown'
+        num_available = 'unknown'
+        if isinstance(value, dict):
+          for k, v in value.items():
+            if k == 'label':
+              name_str = v
+            if k == 'num_groups_required':
+              num_required = v
+              suffix = '' if len(v) == 1 else 's'
+            if k == 'group_items':
+              num_available = len(v)
+          current_path.append(f'{name_str}: {num_required} group{suffix} out of {num_available}')
         else:
-          current_path.append(key)
+          for index in range(len(value)):
+            search_for(value[index], current_path, found_list)
+
+      elif key == 'conditional':
+        print('conditional')
+
+      else:
         search_for(value, current_path, found_list)
-        current_path.pop()
+
   else:
     # Ignore things that aren't dicts or lists
-    # print(f'{depth}{where}: not list or dict')
     pass
-  depth = depth[0:-2]
 
 
 # __main__()
@@ -141,10 +158,8 @@ if __name__ == '__main__':
 
             pprint(body_list, stream=debug)
             # Find course lists in the body
-            depth = ''
             current_path = [institution[0:3], block_type, block_value]
             contexts = []
             search_for(body_list, current_path, contexts)
             for context in contexts:
               print(context)
-
