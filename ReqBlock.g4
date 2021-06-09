@@ -182,9 +182,9 @@ head_rule       : conditional_head
 
 
 conditional_body  : IF expression THEN (body_rule | body_rule_group)
-                    requirement* label? else_body?;
+                    qualifier* label? else_body?;
 else_body         : ELSE (body_rule | body_rule_group)
-                    requirement* label?;
+                    qualifier* label?;
 body_rule_group : (begin_if body_rule+ end_if);
 
 body_rule       : conditional_body
@@ -208,7 +208,7 @@ body_rule       : conditional_body
                 | subset
                 ;
 
-requirement     : maxpassfail
+qualifier     : maxpassfail
                 | maxperdisc
                 | maxtransfer
                 | minclass
@@ -226,7 +226,7 @@ requirement     : maxpassfail
 //  -----------------------------------------------------------------------------------------------
 /*  Body Only
  */
-group           : NUMBER GROUP group_list requirement* label? ;
+group           : NUMBER GROUP group_list qualifier* label? ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
                   (block
@@ -236,7 +236,7 @@ group_item      : LP
                    | group
                    | noncourse
                    | rule_complete)
-                  requirement* label?
+                  qualifier* label?
                   RP
                 ;
 
@@ -379,7 +379,7 @@ STRING          : '"' ~'"'* '"';
 
 //  Skips
 //  -----------------------------------------------------------------------------------------------
-// Comments and auditor directives, not requirements.
+// Comments and auditor directives, not rules.
 CHECKELECTIVES  : [Cc][Hh][Ee][Cc][Kk]
                   [Ee][Ll][Ee][Cc][Tt][Ii][Vv][Ee]
                   [Cc][Rr][Ee][Dd][Ii][Tt][Ss]

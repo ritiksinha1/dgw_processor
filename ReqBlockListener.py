@@ -233,12 +233,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#requirement.
-    def enterRequirement(self, ctx:ReqBlockParser.RequirementContext):
+    # Enter a parse tree produced by ReqBlockParser#qualifier.
+    def enterQualifier(self, ctx:ReqBlockParser.QualifierContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#requirement.
-    def exitRequirement(self, ctx:ReqBlockParser.RequirementContext):
+    # Exit a parse tree produced by ReqBlockParser#qualifier.
+    def exitQualifier(self, ctx:ReqBlockParser.QualifierContext):
         pass
 
 

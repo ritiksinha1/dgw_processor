@@ -134,8 +134,8 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#requirement.
-    def visitRequirement(self, ctx:ReqBlockParser.RequirementContext):
+    # Visit a parse tree produced by ReqBlockParser#qualifier.
+    def visitQualifier(self, ctx:ReqBlockParser.QualifierContext):
         return self.visitChildren(ctx)
 
 

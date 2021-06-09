@@ -244,7 +244,7 @@ conditional_body
 else_body
 body_rule_group
 body_rule
-requirement
+qualifier
 group
 group_list
 group_item

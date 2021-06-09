@@ -674,7 +674,7 @@ class ReqBlockParser ( Parser ):
     RULE_else_body = 22
     RULE_body_rule_group = 23
     RULE_body_rule = 24
-    RULE_requirement = 25
+    RULE_qualifier = 25
     RULE_group = 26
     RULE_group_list = 27
     RULE_group_item = 28
@@ -740,7 +740,7 @@ class ReqBlockParser ( Parser ):
                    "course_list_body", "course_list_body_qualifier", "begin_if", 
                    "end_if", "conditional_head", "else_head", "head_rule_group", 
                    "head_rule", "conditional_body", "else_body", "body_rule_group", 
-                   "body_rule", "requirement", "group", "group_list", "group_item", 
+                   "body_rule", "qualifier", "group", "group_list", "group_item", 
                    "subset", "subset_qualifier", "block", "blocktype", "allow_clause", 
                    "class_credit_head", "class_credit_body", "allow", "area_end", 
                    "area_start", "class_or_credit", "copy_rules", "display", 
@@ -3376,11 +3376,11 @@ class ReqBlockParser ( Parser ):
             return self.getTypedRuleContext(ReqBlockParser.Body_rule_groupContext,0)
 
 
-        def requirement(self, i:int=None):
+        def qualifier(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.RequirementContext)
+                return self.getTypedRuleContexts(ReqBlockParser.QualifierContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.RequirementContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.QualifierContext,i)
 
 
         def label(self):
@@ -3443,7 +3443,7 @@ class ReqBlockParser ( Parser ):
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     self.state = 429
-                    self.requirement() 
+                    self.qualifier() 
                 self.state = 434
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,40,self._ctx)
@@ -3491,11 +3491,11 @@ class ReqBlockParser ( Parser ):
             return self.getTypedRuleContext(ReqBlockParser.Body_rule_groupContext,0)
 
 
-        def requirement(self, i:int=None):
+        def qualifier(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.RequirementContext)
+                return self.getTypedRuleContexts(ReqBlockParser.QualifierContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.RequirementContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.QualifierContext,i)
 
 
         def label(self):
@@ -3550,7 +3550,7 @@ class ReqBlockParser ( Parser ):
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     self.state = 446
-                    self.requirement() 
+                    self.qualifier() 
                 self.state = 451
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,44,self._ctx)
@@ -3881,7 +3881,7 @@ class ReqBlockParser ( Parser ):
         return localctx
 
 
-    class RequirementContext(ParserRuleContext):
+    class QualifierContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3937,29 +3937,29 @@ class ReqBlockParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return ReqBlockParser.RULE_requirement
+            return ReqBlockParser.RULE_qualifier
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRequirement" ):
-                listener.enterRequirement(self)
+            if hasattr( listener, "enterQualifier" ):
+                listener.enterQualifier(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRequirement" ):
-                listener.exitRequirement(self)
+            if hasattr( listener, "exitQualifier" ):
+                listener.exitQualifier(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRequirement" ):
-                return visitor.visitRequirement(self)
+            if hasattr( visitor, "visitQualifier" ):
+                return visitor.visitQualifier(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def requirement(self):
+    def qualifier(self):
 
-        localctx = ReqBlockParser.RequirementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 50, self.RULE_requirement)
+        localctx = ReqBlockParser.QualifierContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 50, self.RULE_qualifier)
         try:
             self.state = 496
             self._errHandler.sync(self)
@@ -4053,11 +4053,11 @@ class ReqBlockParser ( Parser ):
             return self.getTypedRuleContext(ReqBlockParser.Group_listContext,0)
 
 
-        def requirement(self, i:int=None):
+        def qualifier(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.RequirementContext)
+                return self.getTypedRuleContexts(ReqBlockParser.QualifierContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.RequirementContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.QualifierContext,i)
 
 
         def label(self):
@@ -4102,7 +4102,7 @@ class ReqBlockParser ( Parser ):
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     self.state = 501
-                    self.requirement() 
+                    self.qualifier() 
                 self.state = 506
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,49,self._ctx)
@@ -4236,11 +4236,11 @@ class ReqBlockParser ( Parser ):
             return self.getTypedRuleContext(ReqBlockParser.Rule_completeContext,0)
 
 
-        def requirement(self, i:int=None):
+        def qualifier(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.RequirementContext)
+                return self.getTypedRuleContexts(ReqBlockParser.QualifierContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.RequirementContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.QualifierContext,i)
 
 
         def label(self):
@@ -4320,7 +4320,7 @@ class ReqBlockParser ( Parser ):
             _la = self._input.LA(1)
             while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.DONT_SHARE) | (1 << ReqBlockParser.MAXPASSFAIL) | (1 << ReqBlockParser.MAXPERDISC) | (1 << ReqBlockParser.MAXTRANSFER) | (1 << ReqBlockParser.MINGPA) | (1 << ReqBlockParser.MINGRADE) | (1 << ReqBlockParser.MINCLASS) | (1 << ReqBlockParser.MINCREDIT) | (1 << ReqBlockParser.MINPERDISC) | (1 << ReqBlockParser.PROXY_ADVICE) | (1 << ReqBlockParser.RULE_TAG) | (1 << ReqBlockParser.SHARE) | (1 << ReqBlockParser.SAME_DISC))) != 0):
                 self.state = 529
-                self.requirement()
+                self.qualifier()
                 self.state = 534
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
