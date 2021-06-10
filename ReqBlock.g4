@@ -35,6 +35,9 @@ grammar ReqBlock;
 
 /* Parser
  * ================================================================================================
+ * The head specifies _properties_ (my term) that apply to the requirement block in general.
+   Ellucian documentation calls many of these properties "qualifiers." The
+ * body contains _rules_ that specify what courses must be taken to satisfy the requirements.
  */
 req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
 head        :
@@ -65,9 +68,9 @@ body        :
             ( block
             | blocktype
             | class_credit_body
+            | conditional_body
             | copy_rules
             | group
-            | conditional_body
             | label
             | noncourse
             | proxy_advice
@@ -86,7 +89,7 @@ body        :
 // Course Lists
 // ------------------------------------------------------------------------------------------------
 /* Differentiate between lists in the head versus lists in the body because some course list
- * qualifiers can be standalone rules in the Head.
+ * qualifiers can be standalone properties in the Head.
  *
  * Course lists can be divided into “areas” using square brackets, for use with the MinArea
  * qualifier. But (a) just because a list is divided into areas doesn’t mean there has to be a
@@ -108,14 +111,14 @@ catalog_number  : symbol | NUMBER | CATALOG_NUMBER | WILD;
 discipline      : symbol
                 | string // For "SPEC." at BKL
                 | WILD
-                // Include keywords that appear as discipline names
+                // Include keywords that appear as discipline names at CUNY
                 | BLOCK
                 | IS;
 
-// The following list was intended to differentiate course list qualifiers from separate statements
-// in the head, where these qualifiers can be used in course lists in the body. But it looks like
-// they are not needed: course lists in the head seem never to be qualified. There remains a bit of
-// confusion here on my part. 2020-10-05
+/* The following list was intended to differentiate course list qualifiers from separate properties
+ * in the head, where these same items can be used in course lists in the body. But it looks like
+ * they are not needed: course lists in the head seem never to be qualified. Given the Ellucian
+ * documentation, there remains a bit of confusion here on my part. 2020-10-05 */
 course_list_head_qualifier : maxspread
                            | mingpa
                            | mingrade
@@ -155,30 +158,30 @@ conditional_head  : IF expression THEN (head_rule | head_rule_group )
 else_head         : ELSE (head_rule | head_rule_group)
                     (proxy_advice | label)*;
 head_rule_group   : (begin_if head_rule+ end_if);
-head_rule       : conditional_head
-                | block
-                | blocktype
-                | class_credit_head
-                | copy_rules
-                | lastres
-                | maxcredit
-                | maxpassfail
-                | maxterm
-                | maxtransfer
-                | minclass
-                | mincredit
-                | mingpa
-                | mingrade
-                | minperdisc
-                | minres
-                | minterm
-                | noncourse
-                | proxy_advice
-                | remark
-                | rule_complete
-                | share
-                | subset
-                ;
+head_rule         : conditional_head
+                  | block
+                  | blocktype
+                  | class_credit_head
+                  | copy_rules
+                  | lastres
+                  | maxcredit
+                  | maxpassfail
+                  | maxterm
+                  | maxtransfer
+                  | minclass
+                  | mincredit
+                  | mingpa
+                  | mingrade
+                  | minperdisc
+                  | minres
+                  | minterm
+                  | noncourse
+                  | proxy_advice
+                  | remark
+                  | rule_complete
+                  | share
+                  | subset
+                  ;
 
 
 conditional_body  : IF expression THEN (body_rule | body_rule_group)
@@ -208,7 +211,7 @@ body_rule       : conditional_body
                 | subset
                 ;
 
-qualifier     : maxpassfail
+qualifier       : maxpassfail
                 | maxperdisc
                 | maxtransfer
                 | minclass
@@ -217,8 +220,8 @@ qualifier     : maxpassfail
                 | mingrade
                 | minperdisc
                 | proxy_advice
-                | samedisc
                 | rule_tag
+                | samedisc
                 | share
                 ;
 
@@ -240,10 +243,8 @@ group_item      : LP
                   RP
                 ;
 
-//  Rule Subset
+//  Rule Subset (body only)
 //  -----------------------------------------------------------------------------------------------
-/*  Body Only
- */
 subset            : BEGINSUB
                   ( conditional_body
                     | block
@@ -260,6 +261,8 @@ subset            : BEGINSUB
 /*  Allowable rule (subset) qualifiers:
  *  DontShare, HighPriority, LowPriority, LowestPriority, MaxPerDisc, MaxPassFail, MaxTransfer,
  *  MaxSpread, MinGrade, MinPerDisc, MinSpread, ShareWith, NotGPA, ProxyAdvice, SameDisc
+ *  But some of the above are skipped because they are student-specific. The following are
+ *  recognized here.
  */
 subset_qualifier  : maxpassfail
                   | maxperdisc

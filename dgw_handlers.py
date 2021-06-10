@@ -154,6 +154,10 @@ def class_credit_body(ctx, institution, requirement_id):
       LowestPriority, MaxPassFail, MaxPerDisc, MaxSpread, MaxTerm, MaxTransfer, MinAreas, MinGrade,
       MinPerDisc, MinSpread, MinTerm, NotGPA, ProxyAdvice, RuleTag, SameDisc, ShareWith, With."
   """
+  valid_qualifiers = ['DontShare', 'Exclusive', 'Hide', 'HideRule', 'HighPriority', 'LowPriority',
+                      'LowestPriority', 'MaxPassFail', 'MaxPerDisc', 'MaxSpread', 'MaxTerm',
+                      'MaxTransfer', 'MinAreas', 'MinGrade', 'MinPerDisc', 'MinSpread', 'MinTerm',
+                      'NotGPA', 'ProxyAdvice', 'RuleTag', 'SameDisc', 'ShareWith', 'With']
   # Labels can appear in different contexts
   course_list_label = course_list_body_label = class_credit_label = None
 
@@ -165,7 +169,8 @@ def class_credit_body(ctx, institution, requirement_id):
       course_list_label = return_dict['course_list']['label']
 
     if context := ctx.course_list_body().course_list_body_qualifier():
-      return_dict['qualifiers'] = get_qualifiers(context, institution, requirement_id)
+      return_dict['qualifiers'] = get_qualifiers(context, institution, requirement_id,
+                                                 valid_qualifiers)
 
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
