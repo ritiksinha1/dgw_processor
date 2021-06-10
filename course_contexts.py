@@ -21,7 +21,7 @@ def search_for(where: any, current_path: list, found_list: list) -> None:
   """ Depth-first recursive search of nested lists/dicts for course_list keys.
       For each course_list, tell how many are required, and list the active ones found.
   """
-  current_path_str =' | '.join(current_path)
+  current_path_str = ' | '.join(current_path)
   if isinstance(where, list):
     print(f'List of {len(where)} items @ {current_path_str}')
     for index in range(len(where)):
@@ -98,10 +98,6 @@ def search_for(where: any, current_path: list, found_list: list) -> None:
 
       else:
         search_for(value, current_path, found_list)
-
-  else:
-    # Ignore things that aren't dicts or lists
-    pass
 
 
 # __main__()
