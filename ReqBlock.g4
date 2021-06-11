@@ -36,8 +36,10 @@ grammar ReqBlock;
 /* Parser
  * ================================================================================================
  * The head specifies _properties_ (my term) that apply to the requirement block in general.
-   Ellucian documentation calls many of these properties "qualifiers." The
- * body contains _rules_ that specify what courses must be taken to satisfy the requirements.
+ * Ellucian documentation calls these properties "qualifiers," and many can appear in the body part
+ * as well, where they apply to rules, rule subsets, or conditionals.
+ * The body contains _rules_ that specify what courses must be taken to satisfy the block’s
+ * requirements.
  */
 req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
 head        :
@@ -128,10 +130,16 @@ course_list_head_qualifier : maxspread
                            | share
                            ;
 
-course_list_body           : course_list (course_list_body_qualifier tag?
+course_list_body           : course_list (qualifier tag?
                                           | proxy_advice
                                           | label
                                           )*;
+/* The following set of qualifiers has been subsumed into a single "qualifier" Antlr rule. Althogh
+ * not all qualifiers are allowed in each context (rule, subset, concitional), we use a union of
+ * them all in order to simplfy the code that interprets a particular req_block. We don't have to
+ * worry about the semantics because we need to interpret only req_blocks that also are deemed
+ * correct by the Ellucian auditer.
+
 course_list_body_qualifier : maxpassfail
                            | maxperdisc
                            | maxspread
@@ -147,6 +155,24 @@ course_list_body_qualifier : maxpassfail
                            | samedisc
                            | share
                            ;
+*/
+
+qualifier       : maxpassfail
+                | maxperdisc
+                | maxspread
+                | maxtransfer
+                | minarea
+                | minclass
+                | mincredit
+                | mingpa
+                | mingrade
+                | minperdisc
+                | minspread
+                | proxy_advice
+                | rule_tag
+                | samedisc
+                | share
+                ;
 
 //  conditional
 //  -----------------------------------------------------------------------------------------------
@@ -211,20 +237,6 @@ body_rule       : conditional_body
                 | subset
                 ;
 
-qualifier       : maxpassfail
-                | maxperdisc
-                | maxtransfer
-                | minclass
-                | mincredit
-                | mingpa
-                | mingrade
-                | minperdisc
-                | proxy_advice
-                | rule_tag
-                | samedisc
-                | share
-                ;
-
 //  Groups
 //  -----------------------------------------------------------------------------------------------
 /*  Body Only
@@ -256,14 +268,14 @@ subset            : BEGINSUB
                     | noncourse
                     | rule_complete
                   )+
-                  ENDSUB subset_qualifier* (remark | label)*;
+                  ENDSUB qualifier* (remark | label)*;
 
 /*  Allowable rule (subset) qualifiers:
  *  DontShare, HighPriority, LowPriority, LowestPriority, MaxPerDisc, MaxPassFail, MaxTransfer,
  *  MaxSpread, MinGrade, MinPerDisc, MinSpread, ShareWith, NotGPA, ProxyAdvice, SameDisc
  *  But some of the above are skipped because they are student-specific. The following are
- *  recognized here.
- */
+ *  the alowed subset qualifiers have been folded into our generic qualifiers Antlr rule.
+
 subset_qualifier  : maxpassfail
                   | maxperdisc
                   | maxspread
@@ -276,6 +288,7 @@ subset_qualifier  : maxpassfail
                   | rule_tag
                   | share
                   ;
+ */
 
 // Blocks
 // ------------------------------------------------------------------------------------------------

@@ -134,12 +134,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#course_list_body_qualifier.
-    def enterCourse_list_body_qualifier(self, ctx:ReqBlockParser.Course_list_body_qualifierContext):
+    # Enter a parse tree produced by ReqBlockParser#qualifier.
+    def enterQualifier(self, ctx:ReqBlockParser.QualifierContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#course_list_body_qualifier.
-    def exitCourse_list_body_qualifier(self, ctx:ReqBlockParser.Course_list_body_qualifierContext):
+    # Exit a parse tree produced by ReqBlockParser#qualifier.
+    def exitQualifier(self, ctx:ReqBlockParser.QualifierContext):
         pass
 
 
@@ -233,15 +233,6 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#qualifier.
-    def enterQualifier(self, ctx:ReqBlockParser.QualifierContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#qualifier.
-    def exitQualifier(self, ctx:ReqBlockParser.QualifierContext):
-        pass
-
-
     # Enter a parse tree produced by ReqBlockParser#group.
     def enterGroup(self, ctx:ReqBlockParser.GroupContext):
         pass
@@ -275,15 +266,6 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#subset.
     def exitSubset(self, ctx:ReqBlockParser.SubsetContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#subset_qualifier.
-    def enterSubset_qualifier(self, ctx:ReqBlockParser.Subset_qualifierContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#subset_qualifier.
-    def exitSubset_qualifier(self, ctx:ReqBlockParser.Subset_qualifierContext):
         pass
 
 
