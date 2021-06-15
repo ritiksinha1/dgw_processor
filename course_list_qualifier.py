@@ -1,5 +1,7 @@
 #! /usr/local/bin/python3
 """
+NOT USED: Historical Artifact
+
 maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
 maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
 maxspread       : MAXSPREAD NUMBER                                      # not a group_list_qualifier
