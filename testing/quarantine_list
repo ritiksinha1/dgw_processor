@@ -1,6 +1,6 @@
 # College block_id Reason :: Does Degreeworks parser accept it?
 BAR01 RA000625 Empty block (all comments) :: No
-BKL01 RA001606 Missing comma on line 36
+BKL01 RA001606 Missing comma on line 36 :: Yes
 # BKL01 RA002211 Missing commas at ends of lines 14 and 15 :: Yes
 # BKL01 RA002502 Missing comma on line 39. :: Yes
 # BKL01 RA002661 Missing comma on line 127 :: Yes
