@@ -1,12 +1,12 @@
 #! /usr/local/bin/python3
 """
-    Generate HTML representation of nested lists/dicts.
+    Convert a scribe block and it (json-encoded) parsed representation into a web page.
 
-    Lists and dicts can be nested within one another to any depth.
+    The json-encoded lists and dicts produced by the dgw_interpreter can be nested within one
+    another to any depth.
 
-    Everything is presented as HTML details elements, with the summary element being either the
-    label for the dict, the name of the first key in the dict, or the length of the item,
-    in that priority order.
+    Everything is presented as HTML details elements, with the label of a dict being the
+    summary element. Subsets, Groups, Conditionals, and course lists are handles specially.
 
 """
 
@@ -15,12 +15,22 @@ import sys
 from pprint import pprint
 
 from course_lookup import lookup_course
-
 from dgw_interpreter import dgw_interpreter, catalog_years
-from dgw_utils import college_names
+from pgconnection import PgConnection
 
 DEBUG = os.getenv('DEBUG_HTML')
 
+# Module Initialization
+# =================================================================================================
+
+# Dict of CUNY college names
+conn = PgConnection()
+cursor = conn.cursor()
+cursor.execute('select code, name from cuny_institutions')
+college_names = {row.code: row.name for row in cursor.fetchall()}
+conn.close()
+
+# Quarantined blocks
 quarantine_dict = {}
 with open('/Users/vickery/Projects/dgw_processor/testing/quarantine_list') as ql_file:
   quarantine_list = ql_file.readlines()
@@ -82,6 +92,8 @@ def course_list_to_details_element(info: dict) -> str:
        Note: the course_list tag itself was removed by dict_to_html_details before calling this
        method.
   """
+  if DEBUG:
+    print('course_list_to_details_element', info.keys())
   return_str = ''
   # if key in ['attributes', 'qualifiers']:  # Handled by active_courses and scribed_courses
   #   continue
@@ -180,45 +192,126 @@ def course_list_to_details_element(info: dict) -> str:
     return f'<details open="open">{summary}{return_str}</details>'
 
 
-# conditional_to_details_element()
+# subset_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def conditional_to_details_element(info: dict) -> str:
+def subset_to_details_element(info: dict, outer_label) -> str:
+  """  The dict for a subset:
+        subset    : BEGINSUB
+                  ( conditional_body
+                    | block
+                    | blocktype
+                    | class_credit_body
+                    | copy_rules
+                    | course_list
+                    | group
+                    | noncourse
+                    | rule_complete
+                  )+
+                  ENDSUB qualifier* (remark | label)*;
+
+      If there is a remark, it goes right after the summary (inner label)
+      Then any qualifiers
+      Then all the other items
+
+       There are four possibilities for labels: outer, inner, both, or neither (really?). If both,
+       return the inner part nested inside a details element with the outer label as its summary
+  """
+  try:
+    inner_label = info.pop('label')
+  except KeyError as ke:
+    inner_label = None
+
+  try:
+    remark_str = info.pop('remark')
+  except KeyError as ke:
+    remark_str = ''
+
+  qualifiers = None
+  try:
+    qualifiers = info.pop('qualifiers')
+  except KeyError as ke:
+    qualifiers = [f'{ke=}']
+  print(f'*** {qualifiers=}', file=sys.stderr)
+
+  details = []
+  for key in info.keys():
+    print(f'*** {key=}', file=sys.stderr)
+
+  if inner_label is None:
+    inner_details = ''
+  else:
+    inner_details = (f'<details><summary>{x}')
+    if outer_label is None:
+      details = 'No inner'
+    else:
+      return details
+
+
+# group_to_details_element()
+# -------------------------------------------------------------------------------------------------
+def group_to_details_element(info: dict, outer_label: str) -> str:
   """  The dict for a conditional construct must have a condition, which becomes the summary of the
        html details element. The optional label goes next, followed by nested details elements for
        the true and the optional false branches.
-       Note: the conditional tag itself was removed by dict_to_html_details before calling this
-       method.
+
+       There are four possibilities for labels: outer, inner, both, or neither (really?). If both,
+       return the parts nested inside a details element with the outer summary
+  """
+  return details
+
+
+# conditional_to_details_element()
+# -------------------------------------------------------------------------------------------------
+def conditional_to_details_element(info: dict, outer_label: str) -> str:
+  """  The dict for a conditional construct must have a condition, which becomes the summary of the
+       html details element. The optional label goes next, followed by nested details elements for
+       the true and the optional false branches.
+
+       There are four possibilities for labels: outer, inner, both, or neither (really?). If both,
+       return the parts nested inside a details element with the outer summary
   """
 
   try:
-    condition = info['condition']
+    condition = info.pop('condition')
   except KeyError as ke:
     condition = '(Missing Condition)'
 
   try:
-    label = f"""“{info['label'].strip('"')}”"""
+    inner_label = info.pop('label')
   except KeyError as ke:
-    label = None
+    inner_label = None
 
   try:
     true_value = to_html(info['if_true'], kind='If-true Item')
-    if_true_part = (f'<details open="open"><summary>if {condition} is true</summary>'
+    if_true_part = (f'<details open="open"><summary>if ({condition}) is true</summary>'
                     f'{true_value}</details>')
   except KeyError as ke:
     if_true_part = '<p class="error">Empty If-then rule!</p>'
 
   try:
     false_value = to_html(info['if_false'], kind='if-false Item')
-    if_false_part = (f'<details open="open"><summary>if {condition} is not true</summary>'
+    if_false_part = (f'<details open="open"><summary>if ({condition}) is not true</summary>'
                      f'{false_value}</details>')
   except KeyError as ke:
     if_false_part = ''  # Else is optional
 
-  if label:
-    # Produce a details element to hold the two legs
-    return f'<details><summary open="open">{label}</summary{if_true_part}{if_false_part}</details>'
+  if inner_label:
+    inner_details = (f'<details><summary open="open">{inner_label}</summary'
+                     f'{if_true_part}{if_false_part}</details>')
+
+    # Return one of the four possibilities
+    if outer_label is None:
+      return inner_details
+    else:
+      return (f'<details><summary open="open"><summary{outer_label}</summary>'
+              f'<details>{inner_details}</details>')
   else:
-    return f'{if_true_part}{if_false_part}'
+    inner_details = f'{if_true_part}{if_false_part}'
+    if outer_label is None:
+      return inner_details
+    else:
+      return (f'<details><summary open="open"><summary{outer_label}</summary>'
+              f'{inner_details}</details>')
 
 
 # dict_to_html_details_element()
@@ -237,15 +330,32 @@ def dict_to_html_details_element(info: dict) -> str:
         of the parent.
   """
 
+  if DEBUG:
+      print('dict_to_html_details_element', info.keys(), file=sys.stderr)
+
+  # Indicator for not returning a nest-able display element
+  label = None
+  try:
+    label = info.pop('label')
+  except KeyError as ke:
+    pass
+
   keys = info.keys()
+
   if len(keys) == 1:
-    # Case 1
+    # If there is a single key, see if it is group, subset, or conditional, and special-case if so
     key = list(info)[0]
     if key == 'conditional':  # Special case for conditional dicts
-      return(conditional_to_details_element(info['conditional']))
-
-    # Not if-then
-    summary = f'<summary>{key.replace("_", " ").title()}</summary>'
+      return conditional_to_details_element(info['conditional'], label)
+    elif key == 'subset':
+      return subset_to_details_element(info['subset'], label)
+    elif key == 'group':
+      return group_to_details_element(info['group'], label)
+    # Not special-case
+    if label is None:
+      summary = f'<summary>{key.replace("_", " ").title()}</summary>'
+    else:
+      summary = f'<summary>{label}</summary>'
     value = info[key]
     if isinstance(value, dict):
       return f'<details open="open">{summary}{dict_to_html_details_element(value)}</details>'
@@ -256,13 +366,6 @@ def dict_to_html_details_element(info: dict) -> str:
 
   else:
     # Case 2
-    try:
-      label = info.pop('label')
-      if label is not None:
-        summary = f'<summary>{label}</summary>'
-    except KeyError as ke:
-      # Indicator for not returning a nest-able display element
-      summary = None
 
     pseudo_msg = ''
     try:
@@ -359,15 +462,15 @@ def dict_to_html_details_element(info: dict) -> str:
         # Fallthrough
         return_str += to_html(value)
 
-    if summary is None:
+    if label is None:
       return return_str
     else:
-      return f'<details open="open">{summary}{return_str}</details>'
+      return f'<details open="open"><summary>{label}</summary>{return_str}</details>'
 
 
 # list_to_html_list_element()
 # -------------------------------------------------------------------------------------------------
-def list_to_html_list_element(info: list, kind='Requirement') -> str:
+def list_to_html_list_element(info: list, kind='Item') -> str:
   """
   """
   num = len(info)
@@ -387,13 +490,14 @@ def list_to_html_list_element(info: list, kind='Requirement') -> str:
     else:
       kind = kind + 's'
     return_str = f'<details open="open"/><summary>{num_str} {kind}</summary>'
-    return_str += '\n'.join([f'{to_html(element)}' for element in info])
+    return_str += '\n'.join([f'{to_html(element)}'
+                             for element in info])
     return return_str + '</details>'
 
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(info: any, kind='Requirement') -> str:
+def to_html(info: any) -> str:
   """  Return a nested HTML data structure as described above.
   """
   if info is None:
@@ -401,7 +505,7 @@ def to_html(info: any, kind='Requirement') -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return list_to_html_list_element(info, kind)
+    return list_to_html_list_element(info)
   if isinstance(info, dict):
     return dict_to_html_details_element(info)
 
@@ -471,7 +575,7 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
     <section>{row.requirement_html}</section>
     <section>
       <details><summary>Header</summary>
-        {to_html(header_list, kind='Property')}
+        {to_html(header_list)}
       </details>
       <details><summary>Body</summary>
         {to_html(body_list)}

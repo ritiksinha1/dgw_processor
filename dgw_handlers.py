@@ -131,28 +131,11 @@ def class_credit_body(ctx, institution, requirement_id):
       num_credits         : NUMBER CREDIT allow_clause?;
       allow_clause        : LP allow NUMBER RP;
 
-      course_list_body           : course_list (course_list_body_qualifier tag?
-                                               | proxy_advice
-                                               | label
-                                               )*;
-      course_list_body_qualifier : maxpassfail
-                                 | maxperdisc
-                                 | maxspread
-                                 | maxtransfer
-                                 | minarea
-                                 | minclass
-                                 | mincredit
-                                 | mingpa
-                                 | mingrade
-                                 | minperdisc
-                                 | minspread
-                                 | rule_tag
-                                 | samedisc
-                                 | share
+      course_list_body           : course_list (qualifier tag?
+                                          | proxy_advice
+                                          | label
+                                          )*;
 
-      "Allowable rule qualifiers: DontShare, Exclusive, Hide, HideRule, HighPriority, LowPriority,
-      LowestPriority, MaxPassFail, MaxPerDisc, MaxSpread, MaxTerm, MaxTransfer, MinAreas, MinGrade,
-      MinPerDisc, MinSpread, MinTerm, NotGPA, ProxyAdvice, RuleTag, SameDisc, ShareWith, With."
   """
   valid_qualifiers = ['DontShare', 'Exclusive', 'Hide', 'HideRule', 'HighPriority', 'LowPriority',
                       'LowestPriority', 'MaxPassFail', 'MaxPerDisc', 'MaxSpread', 'MaxTerm',
@@ -168,9 +151,8 @@ def class_credit_body(ctx, institution, requirement_id):
     if 'label' in return_dict['course_list'].keys():
       course_list_label = return_dict['course_list']['label']
 
-    if context := ctx.course_list_body().course_list_body_qualifier():
-      return_dict['qualifiers'] = get_qualifiers(context, institution, requirement_id,
-                                                 valid_qualifiers)
+    if context := ctx.course_list_body().qualifier():
+      return_dict['qualifiers'] = get_qualifiers(context.qualifiers(), institution, requirement_id)
 
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
@@ -434,8 +416,7 @@ requirement           : maxpassfail
   """
   return_dict = {'num_groups_required': ctx.NUMBER().getText().strip()}
 
-  if len(ctx.requirement()) > 0:
-    return_dict['requirements'] = get_requirements(ctx.requirement(), institution, requirement_id)
+  return_dict['qualifiers'] = get_qualifiers(ctx.qualifier(), institution, requirement_id)
 
   return_dict['group_items'] = get_group_items(ctx.group_list(), institution, requirement_id)
 
@@ -787,12 +768,10 @@ def standalone(ctx, institution, requirement_id):
   return{'standalone': 'This is a standalone requirement block.'}
 
 
-# subset_body()
+# subset()
 # -------------------------------------------------------------------------------------------------
 def subset(ctx, institution, requirement_id):
   """
-      /* Body only
-       */
       subset            : BEGINSUB
                         ( conditional_body
                           | block
@@ -804,20 +783,10 @@ def subset(ctx, institution, requirement_id):
                           | noncourse
                           | rule_complete
                         )+
-                        ENDSUB subset_qualifier* (remark | label)*;
+                        ENDSUB qualifier* (remark | label)*;
 
-      subset_qualifier  : maxpassfail
-                        | maxperdisc
-                        | maxspread
-                        | maxtransfer
-                        | mingpa
-                        | mingrade
-                        | minperdisc
-                        | minspread
-                        | rule_tag
-                        | share
-                        ;
   """
+  print('*** subset', file=sys.stderr)
   return_dict = dict()
 
   if len(ctx.conditional_body()) > 0:
@@ -857,6 +826,12 @@ def subset(ctx, institution, requirement_id):
     return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0],
                                                  institution, requirement_id)
 
+  print(f'{ctx.qualifier()=}', file=sys.stderr)
+  if len(ctx.qualifier()) > 0:
+    print(f'{ctx.qualifier()[0]=}', file=sys.stderr)
+    return_dict['qualifiers'] = get_qualifiers(ctx.qualifier(), institution, requirement_id)
+    print(return_dict['qualifiers'], file=sys.stderr)
+
   try:
     label_ctx = ctx.label()
     if len(label_ctx) > 1:
@@ -866,6 +841,7 @@ def subset(ctx, institution, requirement_id):
   except (KeyError, IndexError):
     # No label: note it
     label_str = 'No Label for this subset!'
+  return_dict['label'] = label_str
 
   try:
     if len(ctx.remark()) > 1:
@@ -876,7 +852,7 @@ def subset(ctx, institution, requirement_id):
   except (KeyError, IndexError):
     pass
 
-  return {'subset': return_dict, 'label': label_str}
+  return {'subset': return_dict}
 
 
 # under()
@@ -952,8 +928,10 @@ dispatch_body = {
 def dispatch(ctx: any, institution: str, requirement_id: str):
   """ Invoke the appropriate handler given its top-level context.
   """
+  print('dispatch', file=sys.stderr)
   which_part = 'header' if context_path(ctx).lower().startswith('head') else 'body'
   key = class_name(ctx).lower()
+  print(key, file=sys.stderr)
   try:
     if which_part == 'header':
       return dispatch_header[key](ctx, institution, requirement_id)
