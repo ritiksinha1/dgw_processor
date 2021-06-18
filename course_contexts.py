@@ -15,7 +15,7 @@ Course = namedtuple('Course',
                     'course_id offer_nbr discipline catalog_number title credits restriction')
 
 
-# search_for_courses()
+# search_for()
 # -------------------------------------------------------------------------------------------------
 def search_for(where: any, current_path: list, found_list: list) -> None:
   """ Depth-first recursive search of nested lists/dicts for course_list keys.
