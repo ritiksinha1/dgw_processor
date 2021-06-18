@@ -40,7 +40,8 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
        returned.
   """
   if DEBUG:
-    print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period_range})')
+    print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period_range})',
+          file=sys.stderr)
 
   conn = PgConnection()
   fetch_cursor = conn.cursor()
@@ -215,4 +216,4 @@ if __name__ == '__main__':
                                                  update_db=args.update_db,
                                                  verbose=args.progress)
         if args.debug:
-          print(f'{header_list=}\n{body_list=}')
+          print(f'{header_list=}\n{body_list=}', file=sys.stderr)

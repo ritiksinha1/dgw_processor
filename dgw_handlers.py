@@ -6,6 +6,7 @@
 import os
 import sys
 
+from typing import Any
 
 from dgw_utils import class_name,\
     build_course_list,\
@@ -13,10 +14,11 @@ from dgw_utils import class_name,\
     concentration_list,\
     context_path,\
     expression_to_str,\
+    get_display,\
     get_group_items,\
+    get_label,\
     get_rules,\
     get_qualifiers,\
-    get_requirements,\
     num_class_or_num_credit
 
 from traceback import print_stack
@@ -46,8 +48,8 @@ def block(ctx, institution, requirement_id):
   return_dict['block_type'] = symbols[0].upper().strip()
   return_dict['block_value'] = symbols[1].upper().strip()
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
+
   return {'block': return_dict}
 
 
@@ -67,8 +69,7 @@ def blocktype(ctx, institution, requirement_id):
 
   assert 'block_type' in return_dict.keys(), f'Invalid blocktype {ctx.expression().getText()}'
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
   return {'blocktype': return_dict}
 
@@ -93,20 +94,25 @@ def class_credit_head(ctx, institution, requirement_id):
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
   if ctx.display():
-    display_text = ''
-    for item in ctx.display():
-      display_text += item.string().getText().strip(' "') + ' '
-    return_dict['display'] = display_text.strip()
+    return_dict['display'] = get_display(ctx)
 
-    if ctx.label():
-      if isinstance(ctx.label(), list):
-        return_dict['label'] = ''
-        for context in ctx.label():
-          return_dict['label'] += ' '.join([context.string().getText().strip(' "')])
-      else:
-        return_dict['label'] = ctx.label().string().getText().strip(' "')
-    else:
-      return_dict['label'] = None
+  return_dict['label'] = get_label(ctx)
+
+  # if ctx.display():
+  #   display_text = ''
+  #   for item in ctx.display():
+  #     display_text += item.string().getText().strip(' "') + ' '
+  #   return_dict['display'] = display_text.strip()
+
+  #   if ctx.label():
+  #     if isinstance(ctx.label(), list):
+  #       return_dict['label'] = ''
+  #       for context in ctx.label():
+  #         return_dict['label'] += ' '.join([context.string().getText().strip(' "')])
+  #     else:
+  #       return_dict['label'] = ctx.label().string().getText().strip(' "')
+  #   else:
+  #     return_dict['label'] = None
 
   return {'class_credit': return_dict}
 
@@ -129,72 +135,74 @@ def class_credit_body(ctx, institution, requirement_id):
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
-      allow_clause        : LP allow NUMBER RP;
 
       course_list_body           : course_list (qualifier tag?
-                                          | proxy_advice
-                                          | label
-                                          )*;
+                                                | proxy_advice
+                                                | label
+                                                )*;
 
+    Ignore rule_tag and tag.
   """
-  valid_qualifiers = ['DontShare', 'Exclusive', 'Hide', 'HideRule', 'HighPriority', 'LowPriority',
-                      'LowestPriority', 'MaxPassFail', 'MaxPerDisc', 'MaxSpread', 'MaxTerm',
-                      'MaxTransfer', 'MinAreas', 'MinGrade', 'MinPerDisc', 'MinSpread', 'MinTerm',
-                      'NotGPA', 'ProxyAdvice', 'RuleTag', 'SameDisc', 'ShareWith', 'With']
-  # Labels can appear in different contexts
-  course_list_label = course_list_body_label = class_credit_label = None
+  # valid_qualifiers = ['DontShare', 'Exclusive', 'Hide', 'HideRule', 'HighPriority', 'LowPriority',
+  #                     'LowestPriority', 'MaxPassFail', 'MaxPerDisc', 'MaxSpread', 'MaxTerm',
+  #                     'MaxTransfer', 'MinAreas', 'MinGrade', 'MinPerDisc', 'MinSpread', 'MinTerm',
+  #                     'NotGPA', 'ProxyAdvice', 'RuleTag', 'SameDisc', 'ShareWith', 'With']
+  # # Labels can appear in different contexts
+  # course_list_label = course_list_body_label = class_credit_label = None
 
   return_dict = num_class_or_num_credit(ctx)
+
   if ctx.course_list_body():
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
-    if 'label' in return_dict['course_list'].keys():
-      course_list_label = return_dict['course_list']['label']
+    # if 'label' in return_dict['course_list'].keys():
+    #   course_list_label = return_dict['course_list']['label']
 
-    if context := ctx.course_list_body().qualifier():
-      return_dict['qualifiers'] = get_qualifiers(context.qualifiers(), institution, requirement_id)
+    # if context := ctx.course_list_body().qualifier():
+    #   return_dict['qualifiers'] = get_qualifiers(context.qualifiers(), institution, requirement_id)
 
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
-  if ctx.share():
-    return_dict['share'] = share(ctx.share(), institution, requirement_id)
+  if ctx.display():
+    return_dict['display'] = get_display(ctx)
 
   if ctx.remark():
-    return_dict.update(remark(ctx.remark(), institution, requirement_id))
+    return_dict['remark'] = remark(ctx, institution, requirement_id)
 
-  if ctx.display():
-    display_text = ''
-    for item in ctx.display():
-      display_text += item.string().getText().strip(' "') + ' '
-    return_dict['display'] = display_text.strip()
+  if ctx.share():
+    assert 'share' not in return_dict.keys(), 'Multiple shares in class_credit_body not implemented'
+    return_dict['share'] = share(ctx.share(), institution, requirement_id)
 
-  if ctx.course_list_body() and ctx.course_list_body().label():
-    if isinstance(ctx.course_list_body().label(), list):
-      course_list_body_label = ''
-      for context in ctx.course_list_body().label():
-        course_list_body_label += ' '.join([context.string().getText().strip(' "')])
-    else:
-      course_list_body_label = ctx.course_list_body().label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
-  if ctx.label():
-    if isinstance(ctx.label(), list):
-      class_credit_label = ''
-      for context in ctx.label():
-        class_credit_label += ' '.join([context.string().getText().strip(' "')])
-    else:
-      class_credit_label = ctx.label().string().getText().strip(' "')
+  # if ctx.course_list_body() and ctx.course_list_body().label():
+  #   if isinstance(ctx.course_list_body().label(), list):
+  #     course_list_body_label = ''
+  #     for context in ctx.course_list_body().label():
+  #       course_list_body_label += ' '.join([context.string().getText().strip(' "')])
+  #   else:
+  #     course_list_body_label = ctx.course_list_body().label().string().getText().strip(' "')
 
-  # How many labels are there?
-  labels = [course_list_label, course_list_body_label, class_credit_label]
-  if (len(labels) - labels.count(None)) > 2:
-    print(f'Ambiguous label situation: {course_list_label=} {course_list_body_label=} '
-          f'{class_credit_label=}', file=sys.stderr)
-  if course_list_body_label:
-    return_dict['label'] = course_list_body_label
-  if class_credit_label:
-    return_dict['label'] = class_credit_label
+  # if ctx.label():
+  #   if isinstance(ctx.label(), list):
+  #     class_credit_label = ''
+  #     for context in ctx.label():
+  #       class_credit_label += ' '.join([context.string().getText().strip(' "')])
+  #   else:
+  #     class_credit_label = ctx.label().string().getText().strip(' "')
 
-  return return_dict
+  # # How many labels are there?
+  # labels = [course_list_label, course_list_body_label, class_credit_label]
+  # if (len(labels) - labels.count(None)) > 2:
+  #   print(f'Ambiguous label situation: {course_list_label=} {course_list_body_label=} '
+  #         f'{class_credit_label=}', file=sys.stderr)
+
+  # if course_list_body_label:
+  #   return_dict['label'] = course_list_body_label
+  # if class_credit_label:
+  #   return_dict['label'] = class_credit_label
+
+  return {'class_credit': return_dict}
 
 
 # conditional_head()
@@ -239,11 +247,11 @@ def conditional_head(ctx, institution, requirement_id):
     return_dict['concentrations'] = concentration_list(condition,
                                                        institution,
                                                        requirement_id)
-  if ctx.label():
-    assert isinstance(ctx.label(), list)
-    label_str = ' '.join([label.string() for label in ctx.label()])
-    if label_str != '':
-      return_dict['label'] = label_str
+  # if ctx.label():
+  #   assert isinstance(ctx.label(), list)
+  #   label_str = ' '.join([label.string() for label in ctx.label()])
+  #   if label_str != '':
+  return_dict['label'] = get_label(ctx)
 
   if ctx.head_rule():
     return_dict['if_true'] = get_rules(ctx.head_rule(), institution, requirement_id)
@@ -273,10 +281,10 @@ def conditional_body(ctx, institution, requirement_id):
   """ Just like conditional_head, except the rule or rule_group can be followed by requirements that
       apply to the rule or rule group.
 
-      conditional_body    : IF expression THEN (body_rule | body_rule_group)
-                        requirement* label? else_body?;
-      else_body       : ELSE (body_rule | body_rule_group)
-                        requirement* label?;
+      conditional_body  : IF expression THEN (body_rule | body_rule_group)
+                          qualifier* label? else_body?;
+      else_body         : ELSE (body_rule | body_rule_group)
+                          qualifier* label?;
       body_rule_group : (begin_if body_rule+ end_if);
 
       body_rule       : conditional_body
@@ -299,41 +307,29 @@ def conditional_body(ctx, institution, requirement_id):
                       | share
                       | subset
                       ;
-
-      requirement     : maxpassfail
-                      | maxperdisc
-                      | maxtransfer
-                      | minclass
-                      | mincredit
-                      | mingpa
-                      | mingrade
-                      | minperdisc
-                      | proxy_advice
-                      | samedisc
-                      | rule_tag
-                      | share
-                      ;
   """
   return_dict = dict()
   condition = expression_to_str(ctx.expression())
   return_dict['condition'] = condition
+
   if 'conc' in condition.lower():
     return_dict['concentrations'] = concentration_list(condition,
                                                        institution,
                                                        requirement_id)
 
-  if ctx.label():
-    label_str = ''
-    if isinstance(ctx.label(), list):
-      label_str = ' '.join([label.string() for label in ctx.label()])
-    else:
-      label_str = ctx.label().string().getText()
-    if label_str != '':
-      return_dict['label'] = label_str
+  # if ctx.label():
+  #   label_str = ''
+  #   if isinstance(ctx.label(), list):
+  #     label_str = ' '.join([label.string() for label in ctx.label()])
+  #   else:
+  #     label_str = ctx.label().string().getText()
+  #   if label_str != '':
+  return_dict['label'] = get_label(ctx)
 
-  if ctx.requirement():
-    return_dict['requirements'] = [get_rules(context, institution, requirement_id)
-                                   for context in ctx.requirement()]
+  # if ctx.requirement():
+  #   return_dict['requirements'] = [get_rules(context, institution, requirement_id)
+  #                                  for context in ctx.requirement()]
+  return_dict.update(get_qualifiers(ctx))
 
   if ctx.body_rule():
     return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
@@ -421,8 +417,7 @@ requirement           : maxpassfail
   return_dict['group_items'] = get_group_items(ctx.group_list(), institution, requirement_id)
 
   # return_dict['develoment_status'] = 'Under development: incomplete'
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
   return {'group': return_dict}
 
@@ -479,13 +474,9 @@ def lastres(ctx, institution, requirement_id):
     return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
   if ctx.display():
-    display_text = ''
-    for item in ctx.display():
-      display_text += item.string().getText().strip(' "') + ' '
-    return_dict['display'] = display_text.strip()
+    return_dict['display'] = get_display(ctx)
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
   return {'last_res': return_dict}
 
@@ -575,11 +566,9 @@ def minclass(ctx, institution, requirement_id):
                  'courses': build_course_list(ctx.course_list(), institution, requirement_id)}
 
   if ctx.display():
-    return_dict['display'] = ' '.join([item.string().getText().strip(' "')
-                                      for item in ctx.display()]).strip()
+    return_dict['display'] = get_display(ctx)
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
   return {'min_class': return_dict}
 
@@ -594,13 +583,9 @@ def mincredit(ctx, institution, requirement_id):
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
   if ctx.display():
-    display_text = ''
-    for item in ctx.display():
-      display_text += item.string().getText().strip(' "') + ' '
-    return_dict['display'] = display_text.strip()
+    return_dict['display'] = get_display(ctx)
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
   return {'min_credit': return_dict}
 
@@ -620,13 +605,9 @@ def mingpa(ctx, institution, requirement_id):
     return_dict['expression'] = ctx.expression().getText()
 
   if ctx.display():
-    display_text = ''
-    for item in ctx.display():
-      display_text += item.string().getText().strip(' "') + ' '
-    return_dict['display'] = display_text.strip()
+    return_dict['display'] = get_display(ctx)
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
   return {'min_gpa': return_dict}
 
@@ -661,13 +642,9 @@ def minres(ctx, institution, requirement_id):
   return_dict = num_class_or_num_credit(ctx)
 
   if ctx.display():
-    display_text = ''
-    for item in ctx.display():
-      display_text += item.string().getText().strip(' "') + ' '
-    return_dict['display'] = display_text.strip()
+    return_dict['display'] = get_display(ctx)
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
   return {'min_res': return_dict}
 
@@ -706,13 +683,15 @@ def proxy_advice(ctx, institution, requirement_id):
 def remark(ctx, institution, requirement_id):
   """ remark          : (REMARK string SEMICOLON?)+;
   """
-  remark_str = ''
-  if isinstance(ctx, list):
-    for context in ctx:
-      remark_str += ' '.join([s.getText().strip(' "') for s in context.string()])
+  if remark_contexts := ctx.remark():
+    if not isinstance(remark_contexts, list):
+      remark_contexts = [remark_contexts]
+    remark_str = ''
+    for remark_context in remark_contexts:
+      remark_str += ' '.join([c.getText().strip(' "') for c in remark_context.string()])
+    return {'remark': remark_str}
   else:
-    remark_str += ' '.join([s.getText().strip(' "') for s in ctx.string()])
-  return {'remark': remark_str}
+    return {}
 
 
 # rule_complete()
@@ -723,16 +702,10 @@ def rule_complete(ctx, institution, requirement_id):
   return_dict = dict()
   return_dict['is_complete?'] = True if ctx.RULE_COMPLETE() else False
 
-  if ctx.label():
-    return_dict['label'] = ' '.join([context.string().getText().strip(' "')
-                                     for context in ctx.label()])
+  return_dict['label'] = get_label(ctx)
 
   if ctx.rule_tag():
     return_dict['rule_tag'] = rule_tag(ctx.rule_tag(), institution, requirement_id)
-
-  if ctx.label():
-    return_dict['label'] = ' '.join([context.string().getText().strip(' "')
-                                     for context in ctx.label()])
 
   return {'rule_complete': return_dict}
 
@@ -789,59 +762,55 @@ def subset(ctx, institution, requirement_id):
   print('*** subset', file=sys.stderr)
   return_dict = dict()
 
-  if len(ctx.conditional_body()) > 0:
+  if ctx.conditional_body():
     return_dict['conditional'] = [conditional_body(context, institution, requirement_id)
                                   for context in ctx.conditional_body()]
 
-  if len(ctx.block()) > 0:
+  if ctx.block():
     return_dict['block'] = [block(context, institution, requirement_id) for context in ctx.block()]
 
-  if len(ctx.blocktype()) > 0:
+  if ctx.blocktype():
     return_dict['blocktype'] = [blocktype(context, institution, requirement_id)
                                 for context in ctx.blocktype()]
 
-  if len(ctx.class_credit_body()) > 0:
+  if ctx.class_credit_body():
     # Return a list of class_credit dicts
     return_dict['class_credit'] = [class_credit_body(context, institution, requirement_id)
                                    for context
                                    in ctx.class_credit_body()]
 
-  if len(ctx.copy_rules()) > 0:
+  if ctx.copy_rules():
     assert len(ctx.copy_rules()) == 1
     return_dict['copy_rules'] = copy_rules(ctx.copy_rules()[0], institution, requirement_id)
 
-  if len(ctx.course_list()) > 0:
+  if ctx.course_list():
     return_dict['course_lists'] = [build_course_list(context, institution, requirement_id)
                                    for context in ctx.course_list()]
 
-  if len(ctx.group()) > 0:
+  if ctx.group():
     return_dict['group'] = [group(context, institution, requirement_id) for context in ctx.group()]
 
-  if len(ctx.noncourse()) > 0:
+  if ctx.noncourse():
     return_dict['noncourse'] = [noncourse(context, institution, requirement_id)
                                 for context in ctx.noncourse()]
 
-  if len(ctx.rule_complete()) > 0:
+  if ctx.rule_complete():
     assert len(ctx.rule_complete()) == 1
     return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0],
                                                  institution, requirement_id)
 
-  print(f'{ctx.qualifier()=}', file=sys.stderr)
-  if len(ctx.qualifier()) > 0:
-    print(f'{ctx.qualifier()[0]=}', file=sys.stderr)
-    return_dict['qualifiers'] = get_qualifiers(ctx.qualifier(), institution, requirement_id)
-    print(return_dict['qualifiers'], file=sys.stderr)
+  return_dict.update(get_qualifiers(ctx, institution, requirement_id))
 
-  try:
-    label_ctx = ctx.label()
-    if len(label_ctx) > 1:
-      print(f'Multiple ({len(label_ctx)}) labels at {context_path(ctx)}', file=sys.stderr)
-    label_ctx = label_ctx.pop()
-    label_str = label_ctx.string().getText().strip(' "')
-  except (KeyError, IndexError):
-    # No label: note it
-    label_str = 'No Label for this subset!'
-  return_dict['label'] = label_str
+  # try:
+  #   label_ctx = ctx.label()
+  #   if len(label_ctx) > 1:
+  #     print(f'Multiple ({len(label_ctx)}) labels at {context_path(ctx)}', file=sys.stderr)
+  #   label_ctx = label_ctx.pop()
+  #   label_str = label_ctx.string().getText().strip(' "')
+  # except (KeyError, IndexError):
+  #   # No label: note it
+  #   label_str = 'No Label for this subset!'
+  return_dict['label'] = get_label(ctx)
 
   try:
     if len(ctx.remark()) > 1:
@@ -866,13 +835,9 @@ def under(ctx, institution, requirement_id):
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
   if ctx.display():
-    display_text = ''
-    for item in ctx.display():
-      display_text += item.string().getText().strip(' "') + ' '
-    return_dict['display'] = display_text.strip()
+    return_dict['display'] = get_display(ctx)
 
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip(' "')
+  return_dict['label'] = get_label(ctx)
 
   return {'under': return_dict}
 

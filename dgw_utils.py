@@ -3,7 +3,7 @@
 """
 
 from collections import namedtuple
-from typing import List, Set, Dict, Tuple, Optional, Union
+from typing import List, Set, Dict, Tuple, Optional, Union, Any
 
 import argparse
 import os
@@ -178,7 +178,7 @@ def concentration_list(condition: str, institution: str, requirement_id: str) ->
       links for use by htmlificization.
   """
   assert 'conc' in condition.lower(), f'No CONC in “{condition}”'
-  print(f'condition: {condition}')
+  print(f'*** concentration_list({condition}) not implemented yet', file=sys.stderr)
   return ['concentration_list not implemented yet']
 
 
@@ -206,41 +206,76 @@ def get_rules(ctx, institution, requirement_id):
 
 # get_requirements()
 # -------------------------------------------------------------------------------------------------
-def get_requirements(ctx, institution, requirement_id):
-  """ These show up in the context of if-then or group_items in the body. Just build a dict with the
-      "requirement" tag and a list of dicts returned by the respective handlers.
-      It's not at all confusing that a requirement dict should contain a list of requirement dicts,
-      each of which will have its own tag, from this list:
+# def get_requirements(ctx, institution, requirement_id):
+#   """ These show up in the context of if-then or group_items in the body. Just build a dict with the
+#       "requirement" tag and a list of dicts returned by the respective handlers.
+#       It's not at all confusing that a requirement dict should contain a list of requirement dicts,
+#       each of which will have its own tag, from this list:
 
-      requirement     : maxpassfail
-                      | maxperdisc
-                      | maxtransfer
-                      | minclass
-                      | mincredit
-                      | mingpa
-                      | mingrade
-                      | minperdisc
-                      | proxy_advice
-                      | samedisc
-                      | rule_tag
-                      | share
+#       requirement     : maxpassfail
+#                       | maxperdisc
+#                       | maxtransfer
+#                       | minclass
+#                       | mincredit
+#                       | mingpa
+#                       | mingrade
+#                       | minperdisc
+#                       | proxy_advice
+#                       | samedisc
+#                       | rule_tag
+#                       | share
+#   """
+#   assert isinstance(ctx, list)
+#   valid_requirements = ['maxpassfail', 'maxperdisc', 'maxtransfer', 'minclass', 'mincredit',
+#                         'mingpa', 'mingrade', 'minperdisc', 'proxy_advice', 'samedisc', 'rule_tag']
+
+#   return_list = []
+#   for requirement in ctx:
+#     for valid_requirement in valid_requirements:
+#       if fun := getattr(requirement, valid_requirement, None):
+#         if fun is not None and fun():
+#           return_list.append(dgw_handlers.dispatch(fun(),
+#                                                    institution,
+#                                                    requirement_id))
+#   return_list = return_list if len(return_list) > 0 else None
+#   # if return_list is not None:
+#   #   print('get_requirements returning: ', return_list)
+#   return return_list
+
+# get_display()
+# -------------------------------------------------------------------------------------------------
+def get_display(ctx: Any) -> str:
+  """ Gather subsstrings from a list of display items into a single string.
   """
-  assert isinstance(ctx, list)
-  valid_requirements = ['maxpassfail', 'maxperdisc', 'maxtransfer', 'minclass', 'mincredit',
-                        'mingpa', 'mingrade', 'minperdisc', 'proxy_advice', 'samedisc', 'rule_tag']
+  if ctx.display():
+    if instance(ctx.display(), list):
+      display_str = ''
+      for item in ctx.display():
+        display_str += item.string().getText().strip(' "') + ' '
+    else:
+      display_str = ctx.display().getText().strip(' "')
+  else:
+    display_str = None
 
-  return_list = []
-  for requirement in ctx:
-    for valid_requirement in valid_requirements:
-      if fun := getattr(requirement, valid_requirement, None):
-        if fun is not None and fun():
-          return_list.append(dgw_handlers.dispatch(fun(),
-                                                   institution,
-                                                   requirement_id))
-  return_list = return_list if len(return_list) > 0 else None
-  # if return_list is not None:
-  #   print('get_requirements returning: ', return_list)
-  return return_list
+  return display_str
+
+
+# get_label()
+# -------------------------------------------------------------------------------------------------
+def get_label(ctx: Any) -> str:
+  """ Like get_display, only for labels.
+  """
+  if ctx.label():
+    if isinstance(ctx.label(), list):
+      label_str = ''
+      for context in ctx.label():
+        label_str += ' '.join([context.string().getText().strip(' "')])
+    else:
+      label_str = ctx.label().string().getText().strip(' "')
+  else:
+    label_str = None
+
+  return label_str
 
 
 # get_scribed_courses()
@@ -325,7 +360,7 @@ def get_scribed_courses(course_item, list_items: list) -> list:
       scribed_courses.append('area_end')
 
   if DEBUG:
-    print(f'\n{scribed_courses=}')
+    print(f'\n{scribed_courses=}', file=sys.stderr)
 
   return scribed_courses
 
@@ -498,8 +533,8 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
       contexts. On the other hand, we ignore qualifiers that apply to the operation of degree audits
       but which are not part of a degree or program’s requirement structure.
 
-      Normally, ctx is a list of qualifier contexts, but handle a bare qualifier context just in
-      case. always return a list of dicts.
+      The ctx can be either a single context of a list of them. But within a list, we don't expect
+      the same qualifier to be repeated.
 
       And Ignore the next paragraph.
 
@@ -525,21 +560,20 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
                   | share
   """
 
-  valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea', 'minclass', 'mincredit',
-                      'mingpa', 'mingrade', 'minperdisc', 'minspread', 'proxy_advice', 'rule_tag', 'samedisc',
-                      'share']
-  qualifier_funcs = ['MaxPassFail', 'Maxperdisc', 'MaxSpread', 'MaxTransfer', 'MinArea', 'MinClass', 'MinCredit',
-                     'MinGPA', 'MinGrade', 'MinPerDisc', 'MinSpread', 'Proxy_Advice', 'Rule_Tag', 'SameDisc',
-                     'Share', 'DontShare']
+  valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
+                      'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+                      'proxy_advice', 'rule_tag', 'samedisc', 'share']
+
   if DEBUG:
     print(f'get_qualifiers({class_name(ctx)})', file=sys.stderr)
-  quqlifier_dicts = []
+
   if isinstance(ctx, list):
     contexts = ctx
   else:
     contexts = [ctx]
+  qualifier_dict = dict()
   for context in contexts:
-    qualifier_dict = dict()
+
     class_credit = None
     if getattr(context, 'class_credit', None):
       # Class or credit is an attribute of several qualifiers. Extract it here.
@@ -551,8 +585,9 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
     # See which qualifiers, if any, are part of this context
     for valid_qualifier in valid_qualifiers:
       if qualifier_func := getattr(context, valid_qualifier, None):
-        print(f'Got {valid_qualifier} {qualifier_func=}', file=sys.stderr)
         if qualifier_ctx := qualifier_func():
+          print(f'Got {valid_qualifier}', file=sys.stderr)
+          assert valid_qualifier not in qualifier_dict.keys()
 
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if valid_qualifier == 'maxpassfail':
@@ -560,35 +595,35 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
                                                'class_credit': class_credit}
             print('maxpassfail says', qualifier_dict, file=sys.stderr)
 
-        #   # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
-        #   # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
-        #   # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
-        #   elif qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
-        #     disciplines = qualifier_func().SYMBOL()
-        #     if isinstance(disciplines, list):
-        #       disciplines = [d.getText() for d in disciplines]
+          # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
+          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
+          # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
+          elif qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
+            disciplines = qualifier_ctx.SYMBOL()
+            if isinstance(disciplines, list):
+              disciplines = [d.getText() for d in disciplines]
 
-        #     qualifier_list.append({'number': qualifier_func().NUMBER().getText(),
-        #                            'class_credit': class_credit,
-        #                            'disciplines': disciplines})
+            qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
+                                               'class_credit': class_credit,
+                                               'disciplines': disciplines}
 
           # maxspread       : MAXSPREAD NUMBER
           # minarea         : MINAREA NUMBER
           # mingrade        : MINGRADE NUMBER
-          if valid_qualifier in ['maxspread', 'minarea', 'mingrade']:
+          # minspread       : MINSPREAD NUMBER
+          elif valid_qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
             qualifier_dict[valid_qualifier] = qualifier_ctx.NUMBER().getText()
 
-        #   # minspread       : MINSPREAD NUMBER
-        #   elif qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
-        #     qualifier_list.append({'number': qualifier_func().NUMBER().getText()})
-
-        #   # minclass        : MINCLASS NUMBER course_list tag? display* label?;
-        #   # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
-        #   elif qualifier in ['minclass', 'mincredit']:
-        #     course_list_obj = build_course_list(qualifier_func().course_list(),
-        #                                         institution, requirement_id)
-        #     qualifier_list.append({'number': qualifier_func().NUMBER().getText(),
-        #                            'courses': course_list_obj})
+          # minclass        : MINCLASS NUMBER course_list tag? display* label?;
+          # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
+          elif qualifier in ['minclass', 'mincredit']:
+            # build_course_list returns its own dict, with "course_list" as the key, so we start
+            # with that, and add the number, display, and label elements to that.
+            qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list(),
+                                                                institution, requirement_id)
+            qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
+            if qualifier_ctx.display():
+              qualifier_dict[valid_qualifier]['display'] = get_display(qualifier_ctx)
 
         #   # mingpa          : MINGPA NUMBER (course_list | expression)?
         #   elif qualifier == 'mingpa':
@@ -633,8 +668,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
         #           file=sys.stderr)
         #     # qualifier_list.append({'tag': qualifier})
     pprint(qualifier_dict, stream=sys.stderr)
-    qualifier_dicts.append(qualifier_dict)
-  return qualifier_dicts
+  return {'qualifiers': qualifier_dict}
 
 
 # num_class_or_num_credit(ctx)
@@ -646,7 +680,7 @@ def num_class_or_num_credit(ctx) -> dict:
       num_credits     : NUMBER CREDIT allow_clause?;
   """
   if DEBUG:
-    print(f'{class_name(ctx)}')
+    print(f'{class_name(ctx)}', file=sys.stderr)
   if ctx.num_classes():
     if isinstance(ctx.num_classes(), list):
       class_ctx = ctx.num_classes()[0]
@@ -791,8 +825,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   return_dict['context_path'] = context_path(ctx)
 
   # Pick up the label, if there is one
-  if ctx.label():
-    return_dict['label'] = ctx.label().string().getText().strip('"').replace('\'', '’')
+  return_dict['label'] = get_label(ctx)
 
   # get context of the required course_item and list of optional additional course_items.
   course_item = ctx.course_item()
