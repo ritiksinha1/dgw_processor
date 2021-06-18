@@ -84,6 +84,8 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
 
     # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
     header_list = []
+    if DEBUG:
+      print('\n*** PARSE HEAD ***', file=sys.stderr)
     head_ctx = parse_tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
@@ -92,6 +94,8 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
           header_list.append(obj)
 
     body_list = []
+    if DEBUG:
+      print('\n*** PARSE BODY ***', file=sys.stderr)
     body_ctx = parse_tree.body()
     if body_ctx:
       for child in body_ctx.getChildren():

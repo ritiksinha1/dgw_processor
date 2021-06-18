@@ -8,6 +8,7 @@ from typing import List, Set, Dict, Tuple, Optional, Union
 import argparse
 import os
 import sys
+from pprint import pprint
 
 import json
 
@@ -532,32 +533,32 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
                      'Share', 'DontShare']
   if DEBUG:
     print(f'get_qualifiers({class_name(ctx)})', file=sys.stderr)
-  qualifier_list = []
+  quqlifier_dicts = []
   if isinstance(ctx, list):
     contexts = ctx
   else:
     contexts = [ctx]
-  print(f'{contexts=}', file=sys.stderr)
   for context in contexts:
-    print(f'{dir(context)=}', file=sys.stderr)
-    # assert class_name(ctx) == 'qualifier', f'{class_name(ctx)} is not "qualifier"'
+    qualifier_dict = dict()
+    class_credit = None
+    if getattr(context, 'class_credit', None):
+      # Class or credit is an attribute of several qualifiers. Extract it here.
+      if getattr(qualifier_func(), 'CLASS', None) is not None:
+        class_credit = 'class'
+      if getattr(qualifier_func(), 'CREDIT', None) is not None:
+        class_credit = 'credit'
+
+    # See which qualifiers, if any, are part of this context
     for valid_qualifier in valid_qualifiers:
-      # See whether the sibling has this qualifier
-      if qualifier := getattr(context, valid_qualifier, None):
-        print(f'Got {qualifier}', file=sys.stderr)
+      if qualifier_func := getattr(context, valid_qualifier, None):
+        print(f'Got {valid_qualifier} {qualifier_func=}', file=sys.stderr)
+        if qualifier_ctx := qualifier_func():
 
-        # if qualifier_func():
-        #   class_credit = None
-        #   # Class or credit is an attribute of several qualifiers. Extract it here.
-        #   if getattr(qualifier_func(), 'CLASS', None) is not None:
-        #     class_credit = 'class'
-        #   if getattr(qualifier_func(), 'CREDIT', None) is not None:
-        #     class_credit = 'credit'
-
-        #   # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
-        #   if qualifier == 'maxpassfail':
-        #     qualifier_list.append({'number': qualifier_func().NUMBER().getText(),
-        #                            'class_credit': class_credit})
+          # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
+          if valid_qualifier == 'maxpassfail':
+            qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
+                                               'class_credit': class_credit}
+            print('maxpassfail says', qualifier_dict, file=sys.stderr)
 
         #   # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
         #   # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
@@ -571,9 +572,12 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
         #                            'class_credit': class_credit,
         #                            'disciplines': disciplines})
 
-        #   # maxspread       : MAXSPREAD NUMBER
-        #   # minarea         : MINAREA NUMBER
-        #   # mingrade        : MINGRADE NUMBER
+          # maxspread       : MAXSPREAD NUMBER
+          # minarea         : MINAREA NUMBER
+          # mingrade        : MINGRADE NUMBER
+          if valid_qualifier in ['maxspread', 'minarea', 'mingrade']:
+            qualifier_dict[valid_qualifier] = qualifier_ctx.NUMBER().getText()
+
         #   # minspread       : MINSPREAD NUMBER
         #   elif qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
         #     qualifier_list.append({'number': qualifier_func().NUMBER().getText()})
@@ -628,9 +632,9 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
         #     print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}',
         #           file=sys.stderr)
         #     # qualifier_list.append({'tag': qualifier})
-
-        print('*** returning hello', file=sys.stderr)
-        return [{hello_qualifier: 'hello'}]
+    pprint(qualifier_dict, stream=sys.stderr)
+    qualifier_dicts.append(qualifier_dict)
+  return qualifier_dicts
 
 
 # num_class_or_num_credit(ctx)
