@@ -9,6 +9,8 @@ import sys
 import argparse
 import json
 
+from pprint import pprint
+
 from ReqBlockLexer import ReqBlockLexer
 from ReqBlockParser import ReqBlockParser
 from ReqBlockVisitor import ReqBlockVisitor
@@ -39,6 +41,8 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
        range, all will be updated in the db, but only the oldest one’s header and body lists will be
        returned.
   """
+  global args
+
   if DEBUG:
     print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period_range})',
           file=sys.stderr)
@@ -114,6 +118,14 @@ and requirement_id = '{row.requirement_id}'
       break
   conn.commit()
   conn.close()
+
+  if args.pprint:
+    with open('./debug', 'w') as debug_file:
+      print('*** HEADER LIST ***', file=debug_file)
+      pprint(header_list, stream=debug_file)
+      print('*** BODY LIST ***', file=debug_file)
+      pprint(body_list, stream=debug_file)
+
   return (header_list, body_list)
 
 
@@ -128,10 +140,10 @@ if __name__ == '__main__':
   # Command line args
   parser = argparse.ArgumentParser(description='Test DGW Parser')
   parser.add_argument('-d', '--debug', action='store_true', default=False)
-  parser.add_argument('-f', '--format')
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
   parser.add_argument('-np', '--progress', action='store_false')
   parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='latest')
+  parser.add_argument('-pp', '--pprint', action='store_true')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
   parser.add_argument('-ra', '--requirement_id')
   parser.add_argument('-nu', '--update_db', action='store_false')
