@@ -240,7 +240,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   if inner_label is None:
     inner_details = ''
   else:
-    inner_details = (f'<details><summary>{x}')
+    inner_details = (f'<details><summary>{inner_label}')
     if outer_label is None:
       details = 'No inner'
     else:
