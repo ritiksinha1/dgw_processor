@@ -97,9 +97,6 @@ def course_list_to_details_element(info: dict) -> str:
 
   return_str = ''
 
-  # if key in ['attributes', 'qualifiers']:  # Handled by active_courses and scribed_courses
-  #   continue
-
   try:
     label = info.pop('label')
   except KeyError as ke:
@@ -203,8 +200,16 @@ def requirement_to_detail_element(requirement: dict) -> str:
             num_credits.
       Ignoring allow_classes and allow_credits: they are audit controls.
   """
-  requirements = []
 
+  try:
+    label = requirement.pop('label')
+    if not label:
+      raise KeyError
+    label_str = f'<p><strong>{label}</strong></p>'
+  except KeyError as ke:
+    label_str = ''
+
+  requirements = []
   if 'is_pseudo' in requirement.keys() and requirement['is_pseudo']:
     requirements.append('<p><strong>NOTE:</strong> This requirement does not have a strict credit '
                         'limit.</p>')
@@ -214,29 +219,22 @@ def requirement_to_detail_element(requirement: dict) -> str:
     conjunction_str = f' {conjunction} '
   except KeyError as ke:
     conjunction_str = '<span class="error">Missing Conjunction</span>'
+
   if num_classes := requirement['num_classes']:
     suffix = '' if num_classes == '1' else 'es'
     requirements.append(f'{num_classes} class{suffix}')
   if num_credits := requirement['num_credits']:
     suffix = '' if num_credits == '1' else 's'
     requirements.append(f'{num_credits} credit{suffix}')
-  if len(requirements) > 0:
-    requirements_str = '<strong>' + conjunction_str.join(requirements) + ' required.</strong>'
+
+  if len(requirements) < 1:
+    requirement_str = '<p class="error">Error: No Requirements</p>'
   else:
-    requirements_str = ('<p class="error">Error! Requirement with no '
-                        'classes or credits required!</p>')
+    requirements_str = f'<p><strong>{conjunction_str.join(requirements)} required</strong></p>'
 
-  requirements_str += course_list_to_details_element(requirement.pop('course_list'))
+  course_str = course_list_to_details_element(requirement.pop('course_list'))
 
-  try:
-    label = requirement.pop('label')
-  except KeyError as ke:
-    label = 'Unnamed Requirement'
-  summary = f'<summary>{label}</summary>'
-
-  body = requirements_str
-
-  return f'<details open="open">{summary}{body}</details>'
+  return f'{label_str}{requirements_str}{course_str}'
 
 
 # subset_to_details_element()
@@ -271,9 +269,6 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   except KeyError as ke:
     inner_label = None
 
-  print(f'{outer_label=}', file=sys.stderr)
-  print(f'{inner_label=}', file=sys.stderr)
-
   try:
     remark = info.pop('remark')
     remark_str = f'<p>{remark}</p>'
@@ -291,6 +286,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   # List of course requirements
   try:
     requirements = info.pop('requirements')
+    print(f'*** list of course requirements{len(requirements)=}', file=sys.stderr)
     course_requirements = [requirement_to_detail_element(requirement)
                            for requirement in requirements]
   except KeyError as ke:
@@ -310,7 +306,6 @@ def subset_to_details_element(info: dict, outer_label) -> str:
     details_str += '<p class="error">Error: No Requirements!</p>'
   else:
     for detail in details:
-      print(f'{detail=}', file=sys.stderr)
       details_str += to_html(detail)
 
   # Here we deal with the four inner/outer label possibilities
