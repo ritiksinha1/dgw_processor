@@ -94,7 +94,9 @@ def course_list_to_details_element(info: dict) -> str:
   """
   if DEBUG:
     print('course_list_to_details_element', info.keys())
+
   return_str = ''
+
   # if key in ['attributes', 'qualifiers']:  # Handled by active_courses and scribed_courses
   #   continue
 
@@ -192,6 +194,51 @@ def course_list_to_details_element(info: dict) -> str:
     return f'<details open="open">{summary}{return_str}</details>'
 
 
+# requirement_to_detail_element()
+# -------------------------------------------------------------------------------------------------
+def requirement_to_detail_element(requirement: dict) -> str:
+  """ This starts as class_credit_body in the grammar; dgw_interpreter has turned it into a list of
+      dicts. This method interprets one element of that list.
+      Keys: allow_classes, allow_credits, conjunction, COURSE_LIST, is_pseudo, label, num_classes,
+            num_credits.
+      Ignoring allow_classes and allow_credits: they are audit controls.
+  """
+  requirements = []
+
+  if 'is_pseudo' in requirement.keys() and requirement['is_pseudo']:
+    requirements.append('<p><strong>NOTE:</strong> This requirement does not have a strict credit '
+                        'limit.</p>')
+
+  try:
+    conjunction = requirement.pop('conjunction')
+    conjunction_str = f' {conjunction} '
+  except KeyError as ke:
+    conjunction_str = '<span class="error">Missing Conjunction</span>'
+  if num_classes := requirement['num_classes']:
+    suffix = '' if num_classes == '1' else 'es'
+    requirements.append(f'{num_classes} class{suffix}')
+  if num_credits := requirement['num_credits']:
+    suffix = '' if num_credits == '1' else 's'
+    requirements.append(f'{num_credits} credit{suffix}')
+  if len(requirements) > 0:
+    requirements_str = '<strong>' + conjunction_str.join(requirements) + ' required.</strong>'
+  else:
+    requirements_str = ('<p class="error">Error! Requirement with no '
+                        'classes or credits required!</p>')
+
+  requirements_str += course_list_to_details_element(requirement.pop('course_list'))
+
+  try:
+    label = requirement.pop('label')
+  except KeyError as ke:
+    label = 'Unnamed Requirement'
+  summary = f'<summary>{label}</summary>'
+
+  body = requirements_str
+
+  return f'<details open="open">{summary}{body}</details>'
+
+
 # subset_to_details_element()
 # -------------------------------------------------------------------------------------------------
 def subset_to_details_element(info: dict, outer_label) -> str:
@@ -210,41 +257,77 @@ def subset_to_details_element(info: dict, outer_label) -> str:
                   ENDSUB qualifier* (remark | label)*;
 
       If there is a remark, it goes right after the summary (inner label)
-      Then any qualifiers
-      Then all the other items
+      Then any qualifiers.
+      Then all the other items. Note that dgw_interpreter has renamed class_credit_body as
+      'requirements', which gets listed last as “courses.”
 
        There are four possibilities for labels: outer, inner, both, or neither (really?). If both,
        return the inner part nested inside a details element with the outer label as its summary
   """
+  print(f'subset_to_details_element({info.keys()=})', file=sys.stderr)
+
   try:
     inner_label = info.pop('label')
   except KeyError as ke:
     inner_label = None
 
+  print(f'{outer_label=}', file=sys.stderr)
+  print(f'{inner_label=}', file=sys.stderr)
+
   try:
-    remark_str = info.pop('remark')
+    remark = info.pop('remark')
+    remark_str = f'<p>{remark}</p>'
   except KeyError as ke:
     remark_str = ''
 
-  qualifiers = None
   try:
     qualifiers = info.pop('qualifiers')
+    if len(qualifiers) == 0:
+      raise KeyError
+    qualifiers_str = f'<p>{qualifiers}</p>'
   except KeyError as ke:
-    qualifiers = [f'{ke=}']
-  print(f'*** {qualifiers=}', file=sys.stderr)
+    qualifiers_str = ''
+
+  # List of course requirements
+  try:
+    requirements = info.pop('requirements')
+    course_requirements = [requirement_to_detail_element(requirement)
+                           for requirement in requirements]
+  except KeyError as ke:
+    course_requirements = None
 
   details = []
-  for key in info.keys():
-    print(f'*** {key=}', file=sys.stderr)
 
-  if inner_label is None:
-    inner_details = ''
+  for key in info.keys():
+    details.append(to_html(info[key]))
+
+  if course_requirements is not None:
+    details.append(course_requirements)
+
+    details_str = f'{remark_str}{qualifiers_str}'
+
+  if len(details) == 0:
+    details_str += '<p class="error">Error: No Requirements!</p>'
   else:
-    inner_details = (f'<details><summary>{inner_label}')
-    if outer_label is None:
-      details = 'No inner'
-    else:
-      return details
+    for detail in details:
+      print(f'{detail=}', file=sys.stderr)
+      details_str += to_html(detail)
+
+  # Here we deal with the four inner/outer label possibilities
+  if outer_label and inner_label:
+    summary = f'<summary>{outer_label}</summary'
+    body = f'<details><summary>{inner_label}</summary>{details_str}</details>'
+  elif outer_label and not inner_label:
+    summary = f'<summary>{outer_label}</summary>'
+    body = details_str
+  elif not outer_label and inner_label:
+    summary = f'<summary>{inner_label}</summary>'
+    body = details_str
+  else:
+    summary = 'Unnamed Requirement'
+    body = details_str
+
+  return f'<details>{summary}{body}</details>'
 
 
 # group_to_details_element()
