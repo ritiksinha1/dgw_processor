@@ -65,7 +65,6 @@ def blocktype(ctx, institution, requirement_id):
   for context in ctx.expression().getChildren():
     if class_name(context) == 'Expression':
       return_dict['block_type'] = context.getText().strip().upper()
-  print(f'blocktype: {return_dict["block_type"]}')
 
   assert 'block_type' in return_dict.keys(), f'Invalid blocktype {ctx.expression().getText()}'
 
@@ -130,6 +129,11 @@ def class_credit_body(ctx, institution, requirement_id):
   return_dict = num_class_or_num_credit(ctx)
 
   if ctx.course_list_body():
+    if isinstance(ctx.course_list_body().label(), list):
+      for item in ctx.course_list_body().label():
+        if item:
+          pass
+          # print(item.getText())
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
 
@@ -263,7 +267,8 @@ def conditional_body(ctx, institution, requirement_id):
 
   return_dict['label'] = get_label(ctx)
 
-  return_dict.update(get_qualifiers(ctx))
+  if qualifiers := get_qualifiers(ctx, institution, requirement_id):
+    return_dict.update(qualifiers)
 
   if ctx.body_rule():
     return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
@@ -616,15 +621,12 @@ def proxy_advice(ctx, institution, requirement_id):
 def remark(ctx, institution, requirement_id):
   """ remark          : (REMARK string SEMICOLON?)+;
   """
-  if remark_contexts := ctx.remark():
-    if not isinstance(remark_contexts, list):
-      remark_contexts = [remark_contexts]
-    remark_str = ''
-    for remark_context in remark_contexts:
-      remark_str += ' '.join([c.getText().strip(' "') for c in remark_context.string()])
-    return {'remark': remark_str}
-  else:
-    return {}
+  if not isinstance(remark_contexts := ctx, list):
+    remark_contexts = [remark_contexts]
+  remark_str = ''
+  for remark_context in remark_contexts:
+    remark_str += ' '.join([c.getText().strip(' "') for c in remark_context.string()])
+  return {'remark': remark_str}
 
 
 # rule_complete()
@@ -692,7 +694,6 @@ def subset(ctx, institution, requirement_id):
                         ENDSUB qualifier* (remark | label)*;
 
   """
-  print('*** subset', file=sys.stderr)
   return_dict = dict()
 
   if ctx.conditional_body():
@@ -731,7 +732,8 @@ def subset(ctx, institution, requirement_id):
     return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0],
                                                  institution, requirement_id)
 
-  return_dict.update(get_qualifiers(ctx, institution, requirement_id))
+  if qualifiers := get_qualifiers(ctx, institution, requirement_id):
+    return_dict.update(qualifiers)
 
   return_dict['label'] = get_label(ctx)
 
@@ -812,10 +814,8 @@ dispatch_body = {
 def dispatch(ctx: any, institution: str, requirement_id: str):
   """ Invoke the appropriate handler given its top-level context.
   """
-  print('dispatch', file=sys.stderr)
   which_part = 'header' if context_path(ctx).lower().startswith('head') else 'body'
   key = class_name(ctx).lower()
-  print(key, file=sys.stderr)
   try:
     if which_part == 'header':
       return dispatch_header[key](ctx, institution, requirement_id)

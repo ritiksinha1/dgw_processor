@@ -425,14 +425,12 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
     for valid_qualifier in valid_qualifiers:
       if qualifier_func := getattr(context, valid_qualifier, None):
         if qualifier_ctx := qualifier_func():
-          print(f'Got {valid_qualifier}', file=sys.stderr)
           assert valid_qualifier not in qualifier_dict.keys()
 
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if valid_qualifier == 'maxpassfail':
             qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
                                                'class_credit': class_credit}
-            print('maxpassfail says', qualifier_dict, file=sys.stderr)
 
           # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
           # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
@@ -502,11 +500,13 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
         #                            'class_credit': class_credit,
         #                            'expression': expression})
 
-        #   else:
-        #     print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}',
-        #           file=sys.stderr)
-        #     # qualifier_list.append({'tag': qualifier})
-    pprint(qualifier_dict, stream=sys.stderr)
+          else:
+            print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}',
+                  file=sys.stderr)
+
+  if len(qualifier_dict) == 0:
+    return None
+
   return {'qualifiers': qualifier_dict}
 
 
@@ -520,6 +520,7 @@ def num_class_or_num_credit(ctx) -> dict:
   """
   if DEBUG:
     print(f'{class_name(ctx)}', file=sys.stderr)
+
   if ctx.num_classes():
     if isinstance(ctx.num_classes(), list):
       class_ctx = ctx.num_classes()[0]
@@ -702,6 +703,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     include_courses += get_scribed_courses(course_item, list_items)
 
   # Qualifiers: course lists don't have them.
+  assert getattr(ctx, 'qualifier', None) is None
   # qualifiers = get_qualifiers(ctx.qualifier(), institution, requirement_id)
 
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
