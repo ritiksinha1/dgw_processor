@@ -435,7 +435,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
           # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
           # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
           # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
-          elif qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
+          elif valid_qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
             disciplines = qualifier_ctx.SYMBOL()
             if isinstance(disciplines, list):
               disciplines = [d.getText() for d in disciplines]
@@ -453,7 +453,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
 
           # minclass        : MINCLASS NUMBER course_list tag? display* label?;
           # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
-          elif qualifier in ['minclass', 'mincredit']:
+          elif valid_qualifier in ['minclass', 'mincredit']:
             # build_course_list returns its own dict, with "course_list" as the key, so we start
             # with that, and add the number, display, and label elements to that.
             qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list(),
@@ -501,7 +501,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict
         #                            'expression': expression})
 
           else:
-            print(f'Unrecognized qualifier: {qualifier} in {context_path(ctx)} for {institution}',
+            print(f'Unrecognized qualifier: {valid_qualifier} in {requirement_id} for {institution}',
                   file=sys.stderr)
 
   if len(qualifier_dict) == 0:
