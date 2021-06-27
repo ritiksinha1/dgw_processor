@@ -33,7 +33,7 @@ sys.setrecursionlimit(10**6)
 # dgw_interpreter()
 # =================================================================================================
 def dgw_interpreter(institution: str, block_type: str, block_value: str,
-                    period_range='current', update_db=True, verbose=False) -> tuple:
+                    period_range='current', update_db=True, verbose=False, pprint=False) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period_range argument can be 'all', 'current', or 'latest', with the latter two being
@@ -119,7 +119,7 @@ and requirement_id = '{row.requirement_id}'
   conn.commit()
   conn.close()
 
-  if args.pprint:
+  if pprint:
     with open('./debug', 'w') as debug_file:
       print('*** HEADER LIST ***', file=debug_file)
       pprint(header_list, stream=debug_file)
@@ -226,6 +226,7 @@ if __name__ == '__main__':
                                                  block_value,
                                                  period_range=args.period,
                                                  update_db=args.update_db,
-                                                 verbose=args.progress)
+                                                 verbose=args.progress,
+                                                 pprint=args.pprint)
         if args.debug:
           print(f'{header_list=}\n{body_list=}', file=sys.stderr)
