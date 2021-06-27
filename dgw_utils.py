@@ -210,7 +210,7 @@ def get_display(ctx: Any) -> str:
   """ Gather subsstrings from a list of display items into a single string.
   """
   if ctx.display():
-    if instance(ctx.display(), list):
+    if isinstance(ctx.display(), list):
       display_str = ''
       for item in ctx.display():
         display_str += item.string().getText().strip(' "') + ' '
@@ -366,7 +366,7 @@ def get_group_items(ctx: list, institution: str, requirement_id: str) -> list:
 
 # get_qualifiers()
 # -------------------------------------------------------------------------------------------------
-def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list[dict]:
+def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
   """ Build qualifier-specific dicts for various possible qualifiers. The grammar, and this method,
       recognize any qualifier, even though Degree Works allows only certain subsets in different
       contexts. On the other hand, we ignore qualifiers that apply to the operation of degree audits
