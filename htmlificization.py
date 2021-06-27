@@ -292,6 +292,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   except KeyError as ke:
     course_requirements = None
 
+  details_str = f'{remark_str}{qualifiers_str}'
   details = []
 
   for key in info.keys():
@@ -299,8 +300,6 @@ def subset_to_details_element(info: dict, outer_label) -> str:
 
   if course_requirements is not None:
     details.append(course_requirements)
-
-    details_str = f'{remark_str}{qualifiers_str}'
 
   if len(details) == 0:
     details_str += '<p class="error">Error: No Requirements!</p>'
