@@ -132,7 +132,6 @@ course_list_head_qualifier : maxspread
 
 course_list_body           : course_list (qualifier tag?
                                           | proxy_advice
-                                          | label
                                           )*;
 /* The following set of qualifiers has been subsumed into a single "qualifier" Antlr rule. Althogh
  * not all qualifiers are allowed in each context (rule, subset, concitional), we use a union of
