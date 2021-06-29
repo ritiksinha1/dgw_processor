@@ -12,6 +12,7 @@
 
 import os
 import sys
+import argparse
 from pprint import pprint
 
 from course_lookup import lookup_course
@@ -191,11 +192,13 @@ def course_list_to_details_element(info: dict) -> str:
     return f'<details open="open">{summary}{return_str}</details>'
 
 
-# requirement_to_detail_element()
+# requirement_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def requirement_to_detail_element(requirement: dict) -> str:
+def requirement_to_details_element(requirement: dict) -> str:
   """ This starts as class_credit_body in the grammar; dgw_interpreter has turned it into a list of
       dicts. This method interprets one element of that list.
+      If there is a label, return a full details element with the label as the summary. Otherwise,
+      just return the HTML that will make up the body of an enclosing details element.
       Keys: allow_classes, allow_credits, conjunction, COURSE_LIST, is_pseudo, label, num_classes,
             num_credits.
       Ignoring allow_classes and allow_credits: they are audit controls.
@@ -207,12 +210,12 @@ def requirement_to_detail_element(requirement: dict) -> str:
       raise KeyError
     label_str = f'<p><strong>{label}</strong></p>'
   except KeyError as ke:
-    label_str = ''
+    label_str = None
 
-  requirements = []
+  requirement_list = []
   if 'is_pseudo' in requirement.keys() and requirement['is_pseudo']:
-    requirements.append('<p><strong>NOTE:</strong> This requirement does not have a strict credit '
-                        'limit.</p>')
+    requirement_list.append('<p><strong>NOTE:</strong> This requirement does not have a strict '
+                            'credit limit.</p>')
 
   try:
     conjunction = requirement.pop('conjunction')
@@ -220,21 +223,36 @@ def requirement_to_detail_element(requirement: dict) -> str:
   except KeyError as ke:
     conjunction_str = '<span class="error">Missing Conjunction</span>'
 
-  if num_classes := requirement['num_classes']:
-    suffix = '' if num_classes == '1' else 'es'
-    requirements.append(f'{num_classes} class{suffix}')
-  if num_credits := requirement['num_credits']:
-    suffix = '' if num_credits == '1' else 's'
-    requirements.append(f'{num_credits} credit{suffix}')
+  try:
+    if num_classes := requirement['num_classes']:
+      suffix = '' if num_classes == '1' else 'es'
+      requirement_list.append(f'{num_classes} class{suffix}')
+  except KeyError as ke:
+    pass
+  try:
+    if num_credits := requirement['num_credits']:
+      suffix = '' if num_credits == '1' else 's'
+      requirement_list.append(f'{num_credits} credit{suffix}')
+  except KeyError as ke:
+    pass
 
-  if len(requirements) < 1:
-    requirement_str = '<p class="error">Error: No Requirements</p>'
+  if not requirement_list:
+    requirements_str = ''
   else:
-    requirements_str = f'<p><strong>{conjunction_str.join(requirements)} required</strong></p>'
+    requirements_str = f'<p><strong>{conjunction_str.join(requirement_list)} required</strong></p>'
 
-  course_str = course_list_to_details_element(requirement.pop('course_list'))
+  # If nothing else, expect a list of courses for the requirement
+  try:
+    course_str = course_list_to_details_element(requirement.pop('course_list'))
+  except KeyError as ke:
+    course_str = ''
 
-  return f'{label_str}{requirements_str}{course_str}'
+  print(f'rtode: {label_str=}\nrtode: {requirements_str=}\nrtode: {course_str=}', file=sys.stderr)
+  if label_str:
+    return (f'<details open="open"><summary>{label_str}</summary>'
+            f'{requirements_str}{course_str}</details>')
+  else:
+    return f'{requirements_str}{course_str}'
 
 
 # subset_to_details_element()
@@ -262,7 +280,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
        There are four possibilities for labels: outer, inner, both, or neither (really?). If both,
        return the inner part nested inside a details element with the outer label as its summary
   """
-  print(f'subset_to_details_element({info.keys()=})', file=sys.stderr)
+  print(f'SUBSET: {info.keys()=}', file=sys.stderr)
 
   try:
     inner_label = info.pop('label')
@@ -283,44 +301,47 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   except KeyError as ke:
     qualifiers_str = ''
 
+  print(f'stode: {inner_label=}\n{remark_str=}\n{qualifiers_str=}\n{info.keys()=}', file=sys.stderr)
   # List of course requirements
   try:
-    requirements = info.pop('requirements')
-    print(f'*** list of course requirements{len(requirements)=}', file=sys.stderr)
-    course_requirements = [requirement_to_detail_element(requirement)
-                           for requirement in requirements]
+    course_requirements = info.pop('requirements')
+    suffix = '' if len(course_requirements) == 1 else 's'
+    course_requirements_summary = (f'<summary><strong>{len(course_requirements)} '
+                                   f'Course Requirement{suffix}</strong></summary>')
+    course_requirements_body = ''.join([requirement_to_details_element(course_requirement)
+                                        for course_requirement in course_requirements])
   except KeyError as ke:
-    course_requirements = None
+    print(f'{ke=}', file=sys.stderr)
+    course_requirements_body = ''
 
-  details_str = f'{remark_str}{qualifiers_str}'
-  details = []
+  assert len(course_requirements) == 0 or course_requirements_body
 
-  for key in info.keys():
-    details.append(to_html(info[key]))
+  course_requirements_element = (f'<details>{course_requirements_summary}'
+                                 f'{course_requirements_body}</details>')
 
-  if course_requirements is not None:
-    details.append(course_requirements)
+  # Remaining keys are info to appear before the course_requirements
+  details_str = ''.join([to_html(info[key]) for key in info.keys()])
 
-  if len(details) == 0:
-    details_str += '<p class="error">Error: No Requirements!</p>'
-  else:
-    for detail in details:
-      details_str += to_html(detail)
+  requirements_str = f'{remark_str}{qualifiers_str}{details_str}{course_requirements_element}'
+  if len(requirements_str) == 0:
+    requirements_str += '<p class="error">Error: No Requirements! 324</p>'
 
   # Here we deal with the four inner/outer label possibilities
   if outer_label and inner_label:
     summary = f'<summary>{outer_label}</summary'
-    body = f'<details><summary>{inner_label}</summary>{details_str}</details>'
+    body = f'<details><summary>{inner_label}</summary>{requirements_str}</details>'
   elif outer_label and not inner_label:
     summary = f'<summary>{outer_label}</summary>'
-    body = details_str
+    body = requirements_str
   elif not outer_label and inner_label:
     summary = f'<summary>{inner_label}</summary>'
-    body = details_str
+    body = requirements_str
   else:
     summary = 'Unnamed Requirement'
-    body = details_str
+    body = requirements_str
 
+  print(f'stode: {summary=}', file=sys.stderr)
+  print(f'stode: {body=}', file=sys.stderr)
   return f'<details>{summary}{body}</details>'
 
 
@@ -435,11 +456,11 @@ def dict_to_html_details_element(info: dict) -> str:
       summary = f'<summary>{label}</summary>'
     value = info[key]
     if isinstance(value, dict):
-      return f'<details open="open">{summary}{dict_to_html_details_element(value)}</details>'
+      return f'<details>{summary}{dict_to_html_details_element(value)}</details>'
     elif isinstance(value, list):
-      return f'<details open="open">{summary}{list_to_html_list_element(value)}</details>'
+      return f'<details>{summary}{list_to_html_list_element(value)}</details>'
     else:
-      return f'<details open="open">{summary}{to_html(value)}</details>'
+      return f'<details>{summary}{to_html(value)}</details>'
 
   else:
     # Case 2
@@ -475,9 +496,6 @@ def dict_to_html_details_element(info: dict) -> str:
 
     # courses?
     course_list = ''
-    #   num_required = 'Unknown'
-    #   if 'num_courses_required' in info.keys():
-    #     num_required = info.pop('num_courses_required')
     if 'course_list' in info.keys():
       course_list = course_list_to_details_element(info.pop('course_list'))
 
@@ -542,7 +560,7 @@ def dict_to_html_details_element(info: dict) -> str:
     if label is None:
       return return_str
     else:
-      return f'<details open="open"><summary>{label}</summary>{return_str}</details>'
+      return f'<details><summary>{label}</summary>{return_str}</details>'
 
 
 # list_to_html_list_element()
@@ -659,3 +677,104 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
       </details
     </section>
     """
+
+
+# __main__
+# =================================================================================================
+# Select Scribe Blocks for parsing
+if __name__ == '__main__':
+  """ You can select blocks by institutions, block_types, block_values, and period from here.
+      By default, the requirement_blocks table's head_objects and body_objects fields are updated
+      for each block parsed.
+  """
+  # Command line args
+  parser = argparse.ArgumentParser(description='Test DGW Parser')
+  parser.add_argument('-d', '--debug', action='store_true', default=False)
+  parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
+  parser.add_argument('-np', '--progress', action='store_false')
+  parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='latest')
+  parser.add_argument('-pp', '--pprint', action='store_true')
+  parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
+  parser.add_argument('-ra', '--requirement_id')
+  parser.add_argument('-nu', '--update_db', action='store_false')
+  parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
+
+  # Parse args
+  args = parser.parse_args()
+  if args.requirement_id:
+    # During development, the use of the ra option generates a web page for debugging.
+    institution = args.institutions[0].strip('10').upper() + '01'
+    requirement_id = args.requirement_id.strip('AaRr')
+    if not requirement_id.isdecimal():
+      sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
+    requirement_id = f'RA{int(requirement_id):06}'
+    # Look up the block type and value
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(f'select block_type, block_value, requirement_html from requirement_blocks'
+                   f"  where institution = '{institution}'"
+                   f"    and requirement_id = '{requirement_id}'")
+    assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
+                                  f'for {institution} {requirement_id}')
+    block_type, block_value, scribe_html = cursor.fetchone()
+    conn.close()
+    print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
+          file=sys.stderr)
+    header_list, body_list = dgw_interpreter(institution,
+                                             block_type,
+                                             block_value,
+                                             period_range=args.period,
+                                             update_db=args.update_db)
+    html_head = """<html>
+  <head>
+    <style>details {border: 1px solid green; padding: 0.2em}</style>
+  </head>"""
+    html = (f'{html_head}<body>{scribe_html}'
+            f'<details open="open"><summary><strong>HEAD</strong></summary>'
+            f'{to_html(header_list)}</details>'
+            f'<details open="open"><summary><strong>BODY</strong></summary>'
+            f'{to_html(body_list)}</details><body></html>')
+    print(html)
+    exit()
+
+  if args.institutions[0] == 'all':
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute('select code from cuny_institutions')
+    institutions = [row.code for row in cursor.fetchall()]
+    conn.close()
+  else:
+    institutions = args.institutions
+
+  num_institutions = len(institutions)
+  institution_count = 0
+  for institution in institutions:
+    institution_count += 1
+    institution = institution.upper() + ('01' * (len(institution) == 3))
+    if args.block_types[0] == 'all':
+      args.block_types = ['DEGREE', 'MAJOR', 'MINOR', 'CONC', 'OTHER']
+    types_count = 0
+    num_types = len(args.block_types)
+    for block_type in args.block_types:
+      block_type = block_type.upper()
+      types_count += 1
+      if args.block_values[0].lower() == 'all':
+        conn = PgConnection()
+        cursor = conn.cursor()
+        cursor.execute('select distinct block_value from requirement_blocks '
+                       'where institution = %s and block_type = %s'
+                       'order by block_value', (institution, block_type))
+        block_values = [row.block_value for row in cursor.fetchall()]
+        conn.close()
+      else:
+        block_values = [value.upper() for value in args.block_values]
+
+      num_values = len(block_values)
+      values_count = 0
+      for block_value in block_values:
+        values_count += 1
+        if block_value.isnumeric() or block_value.startswith('MHC'):
+          continue
+        if args.progress:
+          print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
+                f'{values_count:3} / {num_values:3} ', end='', file=sys.stderr)
