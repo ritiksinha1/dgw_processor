@@ -126,14 +126,8 @@ def class_credit_body(ctx, institution, requirement_id):
 
     Ignore rule_tag and tag.
   """
-  return_dict = num_class_or_num_credit(ctx)
-
+  return_dict = {}
   if ctx.course_list_body():
-    if isinstance(ctx.course_list_body().label(), list):
-      for item in ctx.course_list_body().label():
-        if item:
-          pass
-          # print(item.getText())
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
 
@@ -637,7 +631,8 @@ def rule_complete(ctx, institution, requirement_id):
   return_dict = dict()
   return_dict['is_complete?'] = True if ctx.RULE_COMPLETE() else False
 
-  return_dict['label'] = get_label(ctx)
+  if label_str := get_label(ctx):
+    return_dict['label'] = label_str
 
   if ctx.rule_tag():
     return_dict['rule_tag'] = rule_tag(ctx.rule_tag(), institution, requirement_id)

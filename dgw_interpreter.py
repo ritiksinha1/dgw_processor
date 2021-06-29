@@ -33,7 +33,8 @@ sys.setrecursionlimit(10**6)
 # dgw_interpreter()
 # =================================================================================================
 def dgw_interpreter(institution: str, block_type: str, block_value: str,
-                    period_range='current', update_db=True, verbose=False, pprint=False) -> tuple:
+                    period_range='current', update_db=True, verbose=False,
+                    do_pprint=False) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period_range argument can be 'all', 'current', or 'latest', with the latter two being
@@ -41,12 +42,10 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
        range, all will be updated in the db, but only the oldest one’s header and body lists will be
        returned.
   """
-  global args
 
   if DEBUG:
     print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period_range})',
           file=sys.stderr)
-
   conn = PgConnection()
   fetch_cursor = conn.cursor()
   update_cursor = conn.cursor()
@@ -79,52 +78,55 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
 
     # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
-
-    # Generate the parse tree from the Antlr4 parser generator.
-    input_stream = InputStream(text_to_parse)
-    lexer = ReqBlockLexer(input_stream)
-    token_stream = CommonTokenStream(lexer)
-    parser = ReqBlockParser(token_stream)
-    parse_tree = parser.req_block()
-
-    # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
-    header_list = []
-    if DEBUG:
-      print('\n*** PARSE HEAD ***', file=sys.stderr)
-    head_ctx = parse_tree.head()
-    if head_ctx:
-      for child in head_ctx.getChildren():
-        obj = dispatch(child, institution, row.requirement_id)
-        if obj != {}:
-          header_list.append(obj)
-
-    body_list = []
-    if DEBUG:
-      print('\n*** PARSE BODY ***', file=sys.stderr)
-    body_ctx = parse_tree.body()
-    if body_ctx:
-      for child in body_ctx.getChildren():
-        obj = dispatch(child, institution, row.requirement_id)
-        if obj != {}:
-          body_list.append(obj)
-
-    if update_db:
-      update_cursor.execute(f"""
-update requirement_blocks set header_list = %s, body_list = %s
-where institution = '{row.institution}'
-and requirement_id = '{row.requirement_id}'
-""", (json.dumps(header_list), json.dumps(body_list)))
-    if period_range == 'current' or period_range == 'latest':
-      break
-  conn.commit()
-  conn.close()
-
-  if pprint:
     with open('./debug', 'w') as debug_file:
+      if do_pprint:
+        print('*** SCRIBE BLOCK ***', file=debug_file)
+        print(text_to_parse, file=debug_file)
+
+      # Generate the parse tree from the Antlr4 parser generator.
+      input_stream = InputStream(text_to_parse)
+      lexer = ReqBlockLexer(input_stream)
+      token_stream = CommonTokenStream(lexer)
+      parser = ReqBlockParser(token_stream)
+      parse_tree = parser.req_block()
+
+      # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
+      header_list = []
+      if DEBUG:
+        print('\n*** PARSE HEAD ***', file=sys.stderr)
+      head_ctx = parse_tree.head()
+      if head_ctx:
+        for child in head_ctx.getChildren():
+          obj = dispatch(child, institution, row.requirement_id)
+          if obj != {}:
+            header_list.append(obj)
+
+      body_list = []
+      if DEBUG:
+        print('\n*** PARSE BODY ***', file=sys.stderr)
+      body_ctx = parse_tree.body()
+      if body_ctx:
+        for child in body_ctx.getChildren():
+          obj = dispatch(child, institution, row.requirement_id)
+          if obj != {}:
+            body_list.append(obj)
+
+      if update_db:
+        update_cursor.execute(f"""
+  update requirement_blocks set header_list = %s, body_list = %s
+  where institution = '{row.institution}'
+  and requirement_id = '{row.requirement_id}'
+  """, (json.dumps(header_list), json.dumps(body_list)))
+
       print('*** HEADER LIST ***', file=debug_file)
       pprint(header_list, stream=debug_file)
       print('*** BODY LIST ***', file=debug_file)
       pprint(body_list, stream=debug_file)
+
+      if period_range == 'current' or period_range == 'latest':
+        break
+  conn.commit()
+  conn.close()
 
   return (header_list, body_list)
 
@@ -227,6 +229,6 @@ if __name__ == '__main__':
                                                  period_range=args.period,
                                                  update_db=args.update_db,
                                                  verbose=args.progress,
-                                                 pprint=args.pprint)
+                                                 do_pprint=args.pprint)
         if args.debug:
           print(f'{header_list=}\n{body_list=}', file=sys.stderr)

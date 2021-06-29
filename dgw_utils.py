@@ -425,7 +425,6 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
     for valid_qualifier in valid_qualifiers:
       if qualifier_func := getattr(context, valid_qualifier, None):
         if qualifier_ctx := qualifier_func():
-          assert valid_qualifier not in qualifier_dict.keys()
 
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if valid_qualifier == 'maxpassfail':
@@ -663,7 +662,8 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   return_dict['context_path'] = context_path(ctx)
 
   # Pick up the label, if there is one
-  return_dict['label'] = get_label(ctx)
+  if label_str := get_label(ctx):
+    return_dict['label'] = label_str
 
   # The Scribe context in which the list appeared
   course_item = ctx.course_item()
