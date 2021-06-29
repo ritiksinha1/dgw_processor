@@ -123,8 +123,8 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
       print('*** BODY LIST ***', file=debug_file)
       pprint(body_list, stream=debug_file)
 
-      if period_range == 'current' or period_range == 'latest':
-        break
+    if period_range == 'current' or period_range == 'latest':
+      break
   conn.commit()
   conn.close()
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
   parser.add_argument('-np', '--progress', action='store_false')
-  parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='latest')
+  parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='current')
   parser.add_argument('-pp', '--pprint', action='store_true')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
   parser.add_argument('-ra', '--requirement_id')
