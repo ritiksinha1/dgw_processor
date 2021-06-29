@@ -310,14 +310,11 @@ def subset_to_details_element(info: dict, outer_label) -> str:
                                    f'Course Requirement{suffix}</strong></summary>')
     course_requirements_body = ''.join([requirement_to_details_element(course_requirement)
                                         for course_requirement in course_requirements])
+    course_requirements_element = (f'<details>{course_requirements_summary}'
+                                   f'{course_requirements_body}</details>')
   except KeyError as ke:
     print(f'{ke=}', file=sys.stderr)
-    course_requirements_body = ''
-
-  assert len(course_requirements) == 0 or course_requirements_body
-
-  course_requirements_element = (f'<details>{course_requirements_summary}'
-                                 f'{course_requirements_body}</details>')
+    course_requirements_element = ''
 
   # Remaining keys are info to appear before the course_requirements
   details_str = ''.join([to_html(info[key]) for key in info.keys()])
@@ -380,14 +377,14 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
     inner_label = None
 
   try:
-    true_value = to_html(info['if_true'], kind='If-true Item')
+    true_value = to_html(info['if_true'])
     if_true_part = (f'<details open="open"><summary>if ({condition}) is true</summary>'
                     f'{true_value}</details>')
   except KeyError as ke:
     if_true_part = '<p class="error">Empty If-then rule!</p>'
 
   try:
-    false_value = to_html(info['if_false'], kind='if-false Item')
+    false_value = to_html(info['if_false'])
     if_false_part = (f'<details open="open"><summary>if ({condition}) is not true</summary>'
                      f'{false_value}</details>')
   except KeyError as ke:
