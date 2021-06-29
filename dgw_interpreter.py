@@ -29,6 +29,20 @@ DEBUG = os.getenv('DEBUG_INTERPRETER')
 
 sys.setrecursionlimit(10**6)
 
+# Quarantined blocks
+quarantine_dict = {}
+with open('/Users/vickery/Projects/dgw_processor/testing/quarantine_list') as ql_file:
+  quarantine_list = ql_file.readlines()
+  for line in quarantine_list:
+    if line[0] == '#':
+      continue
+    body, ellucian = line.split('::')
+    ellucian = 'y' in ellucian or 'Y' in ellucian
+    college, requirement_id, *explanation = body.split(' ')
+    explanation = ' '.join(explanation).strip()
+
+    quarantine_dict[(college, requirement_id)] = (explanation.strip('.'), ellucian)
+
 
 # dgw_interpreter()
 # =================================================================================================
@@ -66,15 +80,20 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
   num_rows = fetch_cursor.rowcount
   num_updates = 0
   for row in fetch_cursor.fetchall():
-    if verbose:
-      print(f'{institution} {row.requirement_id} {block_type} {block_value} ',
-            end='',
-            file=sys.stderr)
-      if period_range == 'current' and row.period_stop != '99999999':
-        print(f'Not currently offered.', end='', file=sys.stderr)
-      else:
-        print(catalog_years(row.period_start, row.period_stop).text, end='', file=sys.stderr)
-      print(file=sys.stderr)
+    header_list = None
+    body_list = None
+    print(f'{institution} {row.requirement_id} {block_type} {block_value} ',
+          end='',
+          file=sys.stderr)
+    if (institution, row.requirement_id) in quarantine_dict.keys():
+      print('is quarantined', file=sys.stderr)
+      continue
+    elif period_range == 'current' and row.period_stop != '99999999':
+      print(f'Not currently offered.', file=sys.stderr)
+      continue
+    else:
+      print(catalog_years(row.period_start, row.period_stop).text, end='', file=sys.stderr)
+    print(file=sys.stderr)
 
     # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
