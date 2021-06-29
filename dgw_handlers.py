@@ -296,7 +296,7 @@ def copy_rules(ctx, institution, requirement_id):
   return_dict = {'institution': institution}
   for context in ctx.expression().getChildren():
     if class_name(context) == 'Expression':
-      return_dict['requirement_id'] = f'{institution} {context.getText().strip().upper()}'
+      return_dict['requirement_id'] = f'{context.getText().strip().upper()}'
 
   assert 'requirement_id' in return_dict.keys(), f'Invalid CopyRules {ctx.expression().getText()}'
 
