@@ -189,7 +189,7 @@ def course_list_to_details_element(info: dict) -> str:
   if label is None:
     return return_str
   else:
-    return f'<details open="open">{summary}{return_str}</details>'
+    return f'<details>{summary}{return_str}</details>'
 
 
 # requirement_to_details_element()
@@ -208,7 +208,7 @@ def requirement_to_details_element(requirement: dict) -> str:
     label = requirement.pop('label')
     if not label:
       raise KeyError
-    label_str = f'<p><strong>{label}</strong></p>'
+    label_str = f'<p><strong>{label.title()}</strong></p>'
   except KeyError as ke:
     label_str = None
 
@@ -249,7 +249,7 @@ def requirement_to_details_element(requirement: dict) -> str:
 
   print(f'rtode: {label_str=}\nrtode: {requirements_str=}\nrtode: {course_str=}', file=sys.stderr)
   if label_str:
-    return (f'<details open="open"><summary>{label_str}</summary>'
+    return (f'<details><summary>{label_str}</summary>'
             f'{requirements_str}{course_str}</details>')
   else:
     return f'{requirements_str}{course_str}'
@@ -326,12 +326,12 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   # Here we deal with the four inner/outer label possibilities
   if outer_label and inner_label:
     summary = f'<summary>{outer_label}</summary'
-    body = f'<details><summary>{inner_label}</summary>{requirements_str}</details>'
+    body = f'<details><summary>{inner_label.title()}</summary>{requirements_str}</details>'
   elif outer_label and not inner_label:
-    summary = f'<summary>{outer_label}</summary>'
+    summary = f'<summary>{outer_label.title()}</summary>'
     body = requirements_str
   elif not outer_label and inner_label:
-    summary = f'<summary>{inner_label}</summary>'
+    summary = f'<summary>{inner_label.title()}</summary>'
     body = requirements_str
   else:
     summary = 'Unnamed Requirement'
@@ -391,21 +391,21 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
     if_false_part = ''  # Else is optional
 
   if inner_label:
-    inner_details = (f'<details><summary open="open">{inner_label}</summary'
+    inner_details = (f'<details><summary open="open">{inner_label.title()}</summary'
                      f'{if_true_part}{if_false_part}</details>')
 
     # Return one of the four possibilities
     if outer_label is None:
       return inner_details
     else:
-      return (f'<details><summary open="open"><summary{outer_label}</summary>'
+      return (f'<details><summary open="open"><summary{outer_label.title()}</summary>'
               f'<details>{inner_details}</details>')
   else:
     inner_details = f'{if_true_part}{if_false_part}'
     if outer_label is None:
       return inner_details
     else:
-      return (f'<details><summary open="open"><summary{outer_label}</summary>'
+      return (f'<details><summary open="open"><summary{outer_label.title()}</summary>'
               f'{inner_details}</details>')
 
 
@@ -450,7 +450,7 @@ def dict_to_html_details_element(info: dict) -> str:
     if label is None:
       summary = f'<summary>{key.replace("_", " ").title()}</summary>'
     else:
-      summary = f'<summary>{label}</summary>'
+      summary = f'<summary>{label.title()}</summary>'
     value = info[key]
     if isinstance(value, dict):
       return f'<details>{summary}{dict_to_html_details_element(value)}</details>'
@@ -557,7 +557,7 @@ def dict_to_html_details_element(info: dict) -> str:
     if label is None:
       return return_str
     else:
-      return f'<details><summary>{label}</summary>{return_str}</details>'
+      return f'<details><summary>{label.title()}</summary>{return_str}</details>'
 
 
 # list_to_html_list_element()
