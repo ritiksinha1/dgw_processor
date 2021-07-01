@@ -1,11 +1,12 @@
+create schema if not exists dgw;
 -- What requirements can a course satisfy?
-drop table if exists active_courses cascade;
-drop table if exists requirements cascade;
-drop table if exists mappings cascade;
+drop table if exists dgw.active_courses cascade;
+drop table if exists dgw.requirements cascade;
+drop table if exists dgw.mappings cascade;
 
 -- One row for each active course that has been found in any list of courses for any requirement.
 -- This information is redundant to a subset of the information in cuny_curriculum.cuny_courses.
-create table active_courses (
+create table dgw.active_courses (
 course_id integer,
 offer_nbr integer,
 institution text,
@@ -21,7 +22,7 @@ primary key (course_id, offer_nbr));
 --  XXX_required: How many classes/credits are required
 --  XXX_alternatives: Totals for all the courses that can satisfy this requirement.
 --  The context is a '|' concatenated list of requirement names, sub-names, sub-sub-names, ...
-create table requirements (
+create table dgw.requirements (
 id integer primary key,
 institution text,
 type text,
@@ -35,11 +36,11 @@ context text
 
 -- For each course that satisfies a requirement tell which requirement and whether there is a
 -- residency requirement.
-create table mappings (
+create table dgw.mappings (
 course_id integer,
 offer_nbr integer,
-requirement_id integer references requirements,
+requirement_id integer references dgw.requirements,
 residency_required boolean,
-foreign key (course_id, offer_nbr) references active_courses,
+foreign key (course_id, offer_nbr) references dgw.active_courses,
 primary key (course_id, offer_nbr, requirement_id)
 );
