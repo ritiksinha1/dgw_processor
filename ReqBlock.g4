@@ -291,6 +291,9 @@ subset_qualifier  : maxpassfail
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
+/* The Block rule pulls another requirements block into audit.
+ * The Blocktype rule specifies that a block with the specified type must exist in the audit.
+ */
 block           : NUMBER BLOCK expression rule_tag? proxy_advice? label;
 blocktype       : NUMBER BLOCKTYPE expression proxy_advice? label;
 
