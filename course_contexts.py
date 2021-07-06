@@ -2,8 +2,47 @@
 """ Look at course lists and their Scribe contexts.
     How to categorize courses as required, possible, forbidden?
 
+    Observed top-level keys at BKL, LEH, QNS:
+
+      MAJOR ['block']
+      MAJOR ['blocktype']
+      MAJOR ['conditional']
+      MAJOR ['copy_rules']
+      MAJOR ['course_list', 'is_pseudo', 'label', 'remark']
+      MAJOR ['course_list', 'is_pseudo', 'label']
+      MAJOR ['group_items', 'label', 'num_groups_required', 'qualifiers']
+      MAJOR ['noncourse']
+      MAJOR ['remark']
+      MAJOR ['subset']
+
+      MINOR ['conditional']
+      MINOR ['course_list', 'is_pseudo', 'label', 'remark']
+      MINOR ['course_list', 'is_pseudo', 'label']
+      MINOR ['group_items', 'label', 'num_groups_required', 'qualifiers']
+      MINOR ['noncourse']
+      MINOR ['remark']
+      MINOR ['subset']
+
+      CONC ['block']
+      CONC ['blocktype']
+      CONC ['conditional']
+      CONC ['copy_rules']
+      CONC ['course_list', 'is_pseudo', 'label', 'remark']
+      CONC ['course_list', 'is_pseudo', 'label']
+      CONC ['group_items', 'label', 'num_groups_required', 'qualifiers']
+      CONC ['noncourse']
+      CONC ['remark']
+      CONC ['subset']
+
+    We want to extract both the context (the label structure) and the specificity (how many
+    alternatives there are) for each course.
+
+    Block, blocktype, copy_rules, noncourse, and remarks are all irrelevant for present purposes.
+    Specificity depends on the structure of the course_list, the group (and area) structure, and
+    conditional factors.
 """
 
+import os
 import sys
 
 from argparse import ArgumentParser
@@ -13,6 +52,8 @@ from dgw_interpreter import dgw_interpreter
 
 from pprint import pprint
 from inspect import currentframe, getframeinfo
+
+DEBUG = os.getenv('DEBUG_CONTEXTS')
 
 Course = namedtuple('Course',
                     'course_id offer_nbr discipline catalog_number title credits restriction')
@@ -118,6 +159,36 @@ def search_for(where: any, current_path: list, found_list: list) -> None:
         search_for(value, current_path, found_list)
 
 
+# Context Handlers
+# =================================================================================================
+def do_course_list(item: dict) -> str:
+  """ For a course list, the label gives the requirement name, the length of the list and the
+      conjunction determine how many alternatives there are.
+  """
+  if DEBUG:
+    print('*** do_course_list()', file=sys.stderr)
+  return_str = ''
+
+
+  return return_str
+
+
+def do_group_items(item: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print('*** do_group_items()')
+  return ''
+
+
+def do_conditional(item: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print('*** do_conditional()')
+  return ''
+
+
 # __main__()
 # =================================================================================================
 if __name__ == '__main__':
@@ -174,6 +245,7 @@ if __name__ == '__main__':
             # print(f'{institution} {block_type} {block_value} {period}: ', end='')
             header_list, body_list = (row.header_list, row.body_list)
             if (len(header_list) == 0 and len(body_list)) == 0 or args.force:
+              print('reinterpret')
               header_list, body_list = dgw_interpreter(institution, block_type, block_value,
                                                        period_range=period)
 
@@ -184,8 +256,14 @@ if __name__ == '__main__':
             # What are the top-level rules(?) in the body?
             for item in body_list:
               keys = sorted(list(item.keys()))
-              print(f'{block_type} {keys}')
-            # print()
+              if 'course_list' in keys:
+                do_course_list(item)
+              elif 'group_items' in keys:
+                do_group_items(item)
+              elif 'conditional' in keys:
+                do_conditional(item)
+              else:
+                pass
 
             # Find course lists in the body
             # current_path = [institution[0:3], block_type, block_value]
