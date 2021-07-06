@@ -107,9 +107,13 @@ def class_or_credit(ctx) -> str:
   """
   if DEBUG:
     print('*** class_or_credit()', file=sys.stderr)
-  if ctx.CREDIT():
-    return 'credit'
-  return 'class'
+
+  try:
+    if ctx.CREDIT():
+      return 'credit'
+    return 'class'
+  except AttributeError as ae:
+    return 'Neither Class nor Credit'
 
 
 # context_path()
@@ -512,54 +516,64 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
 # num_class_or_num_credit(ctx)
 # -------------------------------------------------------------------------------------------------
 def num_class_or_num_credit(ctx) -> dict:
-  """ A context can have one num_classes, one num_credits, or both. When both are allowed, they will
-      be lists of len 1, but if only one is allowed, it will be a scalar. Depends on the context.
+  """
+      Expected context: (num_classes | num_credits) (logical_op (num_classes | num_credits))?
+
+      If there is a logical_op it tells whether the requirement is for either or both, and we assume
+      that the lhs and rhs are mutually exclusive (classes ^ credits). That is, the class_contexts
+      and credit_contexts lists will be either empty or of length one.
+      The number of classes can be either an int or a range of ints. The number of credits can be
+      either a float or a range of floats. For ranges, return both min_x and max_x
+
       num_classes     : NUMBER CLASS allow_clause?;
       num_credits     : NUMBER CREDIT allow_clause?;
   """
   if DEBUG:
     print(f'{class_name(ctx)}', file=sys.stderr)
 
-  if ctx.num_classes():
-    if isinstance(ctx.num_classes(), list):
-      class_ctx = ctx.num_classes()[0]
-    else:
-      class_ctx = ctx.num_classes()
-    num_classes = class_ctx.NUMBER().getText().strip()
-    if class_ctx.allow_clause():
-      allow_classes = class_ctx.allow_clause().NUMBER().getText().strip()
-    else:
-      allow_classes = None
-  else:
-    num_classes = allow_classes = None
+  if class_contexts := ctx.num_classes():
+    if not isinstance(class_contexts, list):
+      class_contexts = [class_contexts]
+    for class_ctx in class_contexts:
+      num_classes = class_ctx.NUMBER().getText().split(':')
+      if len(num_classes) == 1:
+        min_classes = max_classes = int(num_classes[0])
+      else:
+        min_classes, max_classes = [int(num) for num in num_classes]
 
-  if ctx.num_credits():
-    if isinstance(ctx.num_credits(), list):
-      credit_ctx = ctx.num_credits()[0]
-    else:
-      credit_ctx = ctx.num_credits()
-    num_credits = credit_ctx.NUMBER().getText().strip()
-    if credit_ctx.allow_clause():
-      allow_credits = credit_ctx.allow_clause().NUMBER().getText().strip()
-    else:
-     allow_credits = None
+      if class_ctx.allow_clause():
+        allow_classes = class_ctx.allow_clause().NUMBER().getText().strip()
+      else:
+        allow_classes = None
   else:
-    num_credits = allow_credits = None
+    min_classes = max_classes = allow_classes = None
+
+  if credit_contexts := ctx.num_credits():
+    if not isinstance(credit_contexts, list):
+      credit_contexts = [credit_contexts]
+    for credit_ctx in credit_contexts:
+      num_credits = credit_ctx.NUMBER().getText().split(':')
+      if len(num_credits) == 1:
+        min_credits = max_credits = float(num_credits[0])
+      else:
+          min_credits, max_credits = [float(num) for num in num_credits]
+      if credit_ctx.allow_clause():
+        allow_credits = credit_ctx.allow_clause().NUMBER().getText().strip()
+      else:
+       allow_credits = None
+  else:
+    min_credits = max_credits = allow_credits = None
 
   if getattr(ctx, 'logical_op', None) and ctx.logical_op():
     conjunction = ctx.logical_op().getText()
   else:
     conjunction = None
 
-  if conjunction is None:
-    assert bool(num_classes) is not bool(num_credits), (f'Bad num_classes_or_num_credits: '
-                                                        f'{ctx.getText()}')
-  else:
-    assert num_classes and num_credits, f'Bad num_classes_or_num_credits: {ctx.getText()}'
-
-  return {'num_classes': num_classes,
+  return {'min_classes': min_classes,
+          'max_classes': max_classes,
           'allow_classes': allow_classes,
-          'num_credits': num_credits,
+          'min_credits': min_credits,
+          'max_credits': max_credits,
           'allow_credits': allow_credits,
           'conjunction': conjunction}
 

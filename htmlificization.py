@@ -17,6 +17,7 @@ from pprint import pprint
 
 from course_lookup import lookup_course
 from dgw_interpreter import dgw_interpreter, catalog_years
+
 from pgconnection import PgConnection
 
 DEBUG = os.getenv('DEBUG_HTML')
@@ -94,7 +95,8 @@ def course_list_to_details_element(info: dict) -> str:
        method.
   """
   if DEBUG:
-    print('course_list_to_details_element', info.keys())
+    print(f'course_list_to_details_element({info.keys()})', file=sys.stderr)
+  print(f'course_list_to_details_element({info.keys()})', file=sys.stderr)
 
   return_str = ''
 
@@ -121,7 +123,7 @@ def course_list_to_details_element(info: dict) -> str:
   except KeyError as ke:
     return_str = f"""<p class="error">
                        <em>course_list_to_details_element() with no scribed courses!</em></p>
-                       <p><strong>Context:</strong> {context_path(info)}</p>
+                       <p><strong>Keys:</strong> {info.keys()}</p>
                   """
 
   try:
@@ -130,26 +132,20 @@ def course_list_to_details_element(info: dict) -> str:
       return_str += to_html(qualifiers)
   except KeyError as ke:
     pass
-
-  try:
-    active_courses = info.pop('active_courses')
-    assert isinstance(active_courses, list)
-    if len(active_courses) == 0:
-      return_str += '<div class="error">No Active Courses!</div>'
-    else:
-      attributes_str = ''
-      try:
-        attributes = info['attributes']
-        if attributes is not None:
-          attributes_str = ','.join(attributes)
-      except KeyError as ke:
-        pass
-      return_str += list_of_courses(active_courses, f'Active {attributes_str} Course')
-  except KeyError as ke:
-    return_str = f"""<p class="error">
-                       <em>course_list_to_details_element() with no active_courses tag!</em></p>
-                       <p><strong>Context:</strong> {context_path(info)}</p>
-                  """
+  print(info.keys(), file=sys.stderr)
+  active_courses = info.pop('active_courses')
+  assert isinstance(active_courses, list)
+  if len(active_courses) == 0:
+    return_str += '<div class="error">No Active Courses!</div>'
+  else:
+    attributes_str = ''
+    try:
+      attributes = info['attributes']
+      if attributes is not None:
+        attributes_str = ','.join(attributes)
+    except KeyError as ke:
+      pass
+    return_str += list_of_courses(active_courses, f'Active {attributes_str} Course')
 
   course_areas = info.pop('course_areas')
   if len(course_areas) > 0:
@@ -247,7 +243,6 @@ def requirement_to_details_element(requirement: dict) -> str:
   except KeyError as ke:
     course_str = ''
 
-  print(f'rtode: {label_str=}\nrtode: {requirements_str=}\nrtode: {course_str=}', file=sys.stderr)
   if label_str:
     return (f'<details><summary>{label_str}</summary>'
             f'{requirements_str}{course_str}</details>')
@@ -280,7 +275,6 @@ def subset_to_details_element(info: dict, outer_label) -> str:
        There are four possibilities for labels: outer, inner, both, or neither (really?). If both,
        return the inner part nested inside a details element with the outer label as its summary
   """
-  print(f'SUBSET: {info.keys()=}', file=sys.stderr)
 
   try:
     inner_label = info.pop('label')
@@ -301,7 +295,6 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   except KeyError as ke:
     qualifiers_str = ''
 
-  print(f'stode: {inner_label=}\n{remark_str=}\n{qualifiers_str=}\n{info.keys()=}', file=sys.stderr)
   # List of course requirements
   try:
     course_requirements = info.pop('requirements')

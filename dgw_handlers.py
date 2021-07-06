@@ -22,6 +22,7 @@ from dgw_utils import class_name,\
     num_class_or_num_credit
 
 from traceback import print_stack
+from pprint import pprint
 
 DEBUG = os.getenv('DEBUG_HANDLERS')
 
@@ -126,12 +127,15 @@ def class_credit_body(ctx, institution, requirement_id):
 
     Ignore rule_tag and tag.
   """
-  return_dict = {}
+
+  return_dict = num_class_or_num_credit(ctx)
+
   if ctx.course_list_body():
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
 
-  return_dict['is_pseudo'] = True if ctx.pseudo() else False
+  if ctx.pseudo():
+    return_dict['is_pseudo'] = True
 
   if ctx.display():
     return_dict['display'] = get_display(ctx)
@@ -141,12 +145,15 @@ def class_credit_body(ctx, institution, requirement_id):
                                      for c in ctx.remark()
                                      for s in c.string()])
 
-  if ctx.share():
-    assert 'share' not in return_dict.keys(), 'Multiple shares in class_credit_body not implemented'
-    return_dict['share'] = share(ctx.share(), institution, requirement_id)
+  if share_contexts := ctx.share():
+    if not isinstance(share_contexts, list):
+      share_contexts = [share_contexts]
+    return_dict['share'] = '; '.join([share(ctx.share(), institution, requirement_id)
+                                     for ctx in share_contexts])
 
-  return_dict['label'] = get_label(ctx)
-
+  if label_str := get_label(ctx):
+    return_dict['label'] = label_str
+  pprint(return_dict)
   return return_dict
 
 
