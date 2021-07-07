@@ -512,7 +512,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
   if len(qualifier_dict) == 0:
     return None
 
-  return {'qualifiers': qualifier_dict}
+  return qualifier_dict
 
 
 # num_class_or_num_credit(ctx)

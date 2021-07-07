@@ -131,8 +131,9 @@ def class_credit_body(ctx, institution, requirement_id):
   return_dict = num_class_or_num_credit(ctx)
 
   if ctx.course_list_body():
-    return_dict['qualifiers'] = get_qualifiers(ctx.course_list_body().qualifier(),
-                                               institution, requirement_id)
+    if qualifiers := get_qualifiers(ctx.course_list_body().qualifier(),
+                                    institution, requirement_id):
+      return_dict.update(qualifiers)
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
 
@@ -354,7 +355,8 @@ requirement           : maxpassfail
   """
   return_dict = {'num_groups_required': ctx.NUMBER().getText().strip()}
 
-  return_dict['qualifiers'] = get_qualifiers(ctx.qualifier(), institution, requirement_id)
+  if ctx.qualifier():
+    return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
 
   return_dict['group_items'] = get_group_items(ctx.group_list(), institution, requirement_id)
 
