@@ -20,6 +20,7 @@ from dgw_interpreter import dgw_interpreter, catalog_years
 
 from pgconnection import PgConnection
 
+from traceback import print_tb
 DEBUG = os.getenv('DEBUG_HTML')
 
 # Module Initialization
@@ -50,10 +51,10 @@ with open('/Users/vickery/Projects/dgw_processor/testing/quarantine_list') as ql
 # list_of_courses()
 # -------------------------------------------------------------------------------------------------
 def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str:
-  """ This is called from course_list_to_details_element to format scribed, missing, active,
-      inactive, include, and except course lists into a HTML unordered list element inside the body
-      of a details element, where the title_str received is used as the summary element. The title
-      string normally specifies how many courses from the list are required.
+  """ This is called from course_list_details to format scribed, missing, active, inactive, include,
+      and except course lists into a HTML unordered list element inside the body of a details
+      element, where the title_str received is used as the summary element. The title string
+      normally specifies how many courses from the list are required.
 
       Highlight the summary if highlight is True, namely for missing courses.
 
@@ -84,108 +85,165 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
   return return_str
 
 
-# course_list_to_details_element()
+# class_credit_to_str()
 # -------------------------------------------------------------------------------------------------
-def course_list_to_details_element(info: dict) -> str:
-  """  The dict for a course_list must have a scribed_courses list, and should have an
-       active_courses list. After that, there might be include and except lists, and possibly a
-       missing (from CUNYfirst) list. The label becomes the summary for the details element.
-       If there is no label, return just the lists, not enclosed in a details element.
-       Note: the course_list tag itself was removed by dict_to_html_details before calling this
-       method.
+def class_credit_to_str(min_classes: int, max_classes: int,
+                        min_credits: float, max_credits: float, conjunction: str) -> str:
+  """ Tell how many classes and/or credits are required.
+  """
+  if min_classes:
+    if min_classes == max_classes:
+      suffix = '' if min_classes == 1 else 'es'
+      num_classes = f'{min_classes} class{suffix}'
+    else:
+      num_classes = f'between {min_classes} and {max_classes} classes'
+  else:
+    num_classes = ''
+  if min_credits:
+    if min_credits == max_credits:
+      suffix = '' if min_credits == 1.0 else 's'
+      num_credits = f'{min_credits} credit{suffix}'
+    else:
+      num_credits = f'between {min_credits} and {max_credits} credits'
+  else:
+    num_credits = ''
+
+  if num_credits and num_classes:
+    requirements_str = f'{num_classes} {conjunction.lower()} {num_credits}'
+  else:
+    # Possibly empty string
+    requirements_str = f'{num_classes}{num_credits}'
+
+  return requirements_str
+
+
+# course_list_details()
+# -------------------------------------------------------------------------------------------------
+def course_list_details(info: dict) -> str:
+  """ The dict for a course_list must have a scribed_courses list, and should have an
+      active_courses list. After that, there might be include and except lists, and possibly a
+      missing (from CUNYfirst) list.
+
+      Returns a tuple of (label, description of the course requirements). The label may be missing,
+      but is structured for use as a HTML summary element; the description is suitable for use as
+      the body of a HTML details element.
   """
   if DEBUG:
-    print(f'course_list_to_details_element({info.keys()})', file=sys.stderr)
-  print(f'course_list_to_details_element({info.keys()})', file=sys.stderr)
+    print(f'course_list_details({info.keys()})', file=sys.stderr)
 
-  return_str = ''
+  details_str = ''
 
   try:
     label = info.pop('label')
+    if label is None:
+      raise KeyError
+    label_str = label.title()
   except KeyError as ke:
-    label = None
-  if label is not None:
-    summary = f'<summary>{label.title()}</summary>'
+    label_str = ''
 
-  try:
-    value = info.pop('list_type')
-    if value is None:
-      pass
-    else:
-      return_str += f'<p>This is an {value} list.</p>'
-  except KeyError as ke:
-    pass
+  list_type = info.pop('list_type')
 
   try:
     scribed_courses = info.pop('scribed_courses')
     assert isinstance(scribed_courses, list)
-    return_str += list_of_courses(scribed_courses, 'Scribed Course')
+
+    if len(scribed_courses) > 1:
+      if list_type == 'OR':
+        if len(scribed_courses) == 2:
+          details_str += f'<p>Either of these courses may be used for this requirement.</p>'
+        else:
+          details_str += f'<p>Any of these courses may be used for this requirement.</p>'
+      else:
+        details_str += f'<p>All of these courses are required.</p>'
+
+    details_str += list_of_courses(scribed_courses, 'Scribed Course')
   except KeyError as ke:
-    return_str = f"""<p class="error">
-                       <em>course_list_to_details_element() with no scribed courses!</em></p>
-                       <p><strong>Keys:</strong> {info.keys()}</p>
+    details_str = f"""<p class="error">
+                       <em>course_list_details() with no scribed courses!</em></p>
+                       <p><strong>Keys:</strong> {course_listkeys()}</p>
                   """
 
   try:
     qualifiers = info.pop('qualifiers')
     if qualifiers is not None and len(qualifiers) > 0:
-      return_str += to_html(qualifiers)
+      details_str += to_html(qualifiers)
   except KeyError as ke:
     pass
-  print(info.keys(), file=sys.stderr)
-  active_courses = info.pop('active_courses')
-  assert isinstance(active_courses, list)
-  if len(active_courses) == 0:
-    return_str += '<div class="error">No Active Courses!</div>'
+  try:
+    active_courses = info.pop('active_courses')
+    assert isinstance(active_courses, list)
+    if len(active_courses) == 0:
+      details_str += '<div class="error">No Active Courses!</div>'
+    else:
+      attributes_str = ''
+      try:
+        attributes = info['attributes']
+        if attributes is not None:
+          attributes_str = ','.join(attributes)
+      except KeyError as ke:
+        pass
+      details_str += list_of_courses(active_courses, f'Active {attributes_str} Course')
+
+    course_areas = info.pop('course_areas')
+    if len(course_areas) > 0:
+      details_str += list_to_html_list_element(course_areas, kind='Course Area')
+
+    include_courses = info.pop('include_courses')
+    assert isinstance(include_courses, list)
+    if len(include_courses) > 0:
+      details_str += list_of_courses(include_courses, 'Must-include Course')
+
+    except_courses = info.pop('except_courses')
+    assert isinstance(except_courses, list)
+    if len(except_courses) > 0:
+      details_str += list_of_courses(except_courses, 'Except Course')
+
+    inactive_courses = info.pop('inactive_courses')
+    assert isinstance(inactive_courses, list)
+    if len(inactive_courses) > 0:
+      details_str += list_of_courses(inactive_courses, 'Inactive Course')
+
+    missing_courses = info.pop('missing_courses')
+    assert isinstance(missing_courses, list)
+    if len(missing_courses) > 0:
+      details_str += list_of_courses(missing_courses,
+                                    'Not-Found-in-CUNYfirst Course', highlight=True)
+  except KeyError as ke:
+    print(f'Invalid Course List: missing key is {ke}', file=sys.stderr)
+    pprint(info, stream=sys.stderr)
+
+  # Class/Credit info
+  if 'conjunction' in info.keys():
+    conjunction = info.pop('conjunction')
   else:
-    attributes_str = ''
-    try:
-      attributes = info['attributes']
-      if attributes is not None:
-        attributes_str = ','.join(attributes)
-    except KeyError as ke:
-      pass
-    return_str += list_of_courses(active_courses, f'Active {attributes_str} Course')
+    conjunction = None
+  if 'min_classes' in info.keys():
+    min_classes = info.pop('min_classes')
+    max_classes = info.pop('max_classes')
+  else:
+    min_classes = max_classes = None
+  if 'min_credits' in info.keys():
+    min_credits = info.pop('min_credits')
+    max_credits = info.pop('max_credits')
+  else:
+    min_credits = max_credits = None
 
-  course_areas = info.pop('course_areas')
-  if len(course_areas) > 0:
-    return_str += list_to_html_list_element(course_areas, kind='Course Area')
-
-  include_courses = info.pop('include_courses')
-  assert isinstance(include_courses, list)
-  if len(include_courses) > 0:
-    return_str += list_of_courses(include_courses, 'Must-include Course')
-
-  except_courses = info.pop('except_courses')
-  assert isinstance(except_courses, list)
-  if len(except_courses) > 0:
-    return_str += list_of_courses(except_courses, 'Except Course')
-
-  inactive_courses = info.pop('inactive_courses')
-  assert isinstance(inactive_courses, list)
-  if len(inactive_courses) > 0:
-    return_str += list_of_courses(inactive_courses, 'Inactive Course')
-
-  missing_courses = info.pop('missing_courses')
-  assert isinstance(missing_courses, list)
-  if len(missing_courses) > 0:
-    return_str += list_of_courses(missing_courses,
-                                  'Not-Found-in-CUNYfirst Course', highlight=True)
-
+  requirements_str = class_credit_to_str(min_classes, max_classes,
+                                         min_credits, max_credits, conjunction)
+  if label_str and requirements_str:
+    label_str = f'{requirements_str} in {label_str}'
+  else:
+    # Could be one, the other, or neither
+    label_str = f'{requirements_str}{label_str}'
   # Any additional information
   for key, value in info.items():
-    # if key == 'context_path':
-    #   continue
     if isinstance(value, list):
       if len(value) > 0:
-        return_str += list_to_html_list_element(value, kind=key.strip('s').title())
+        details_str += list_to_html_list_element(value, kind=key.strip('s').title())
     else:
-      return_str += f'<p><strong>{key}:</strong> {value}</p>'
+      details_str += f'<p>{key}: {value}</p>'
 
-  if label is None:
-    return return_str
-  else:
-    return f'<details>{summary}{return_str}</details>'
+  return label_str, details_str
 
 
 # requirement_to_details_element()
@@ -204,50 +262,43 @@ def requirement_to_details_element(requirement: dict) -> str:
     label = requirement.pop('label')
     if not label:
       raise KeyError
-    label_str = f'<p><strong>{label.title()}</strong></p>'
+    outer_label_str = f'{label.title()}'
   except KeyError as ke:
-    label_str = None
+    outer_label_str = ''
 
   requirement_list = []
   if 'is_pseudo' in requirement.keys() and requirement['is_pseudo']:
-    requirement_list.append('<p><strong>NOTE:</strong> This requirement does not have a strict '
-                            'credit limit.</p>')
+    requirement_list.append('<p>This requirement does not have a strict credit limit.</p>')
 
-  try:
-    conjunction = requirement.pop('conjunction')
-    conjunction_str = f' {conjunction} '
-  except KeyError as ke:
-    conjunction_str = '<span class="error">Missing Conjunction</span>'
-
-  try:
-    if num_classes := requirement['num_classes']:
-      suffix = '' if num_classes == '1' else 'es'
-      requirement_list.append(f'{num_classes} class{suffix}')
-  except KeyError as ke:
-    pass
-  try:
-    if num_credits := requirement['num_credits']:
-      suffix = '' if num_credits == '1' else 's'
-      requirement_list.append(f'{num_credits} credit{suffix}')
-  except KeyError as ke:
-    pass
-
-  if not requirement_list:
-    requirements_str = ''
+  if 'min_classes' in requirement.keys():
+    min_classes = requirement.pop('min_classes')
+    max_classes = requirement.pop('max_classes')
   else:
-    requirements_str = f'<p><strong>{conjunction_str.join(requirement_list)} required</strong></p>'
+    min_classes = max_classes = None
+  if 'min_credits' in requirement.keys():
+    min_credits = requirement.pop('min_credits')
+    max_credits = requirement.pop('max_credits')
+  else:
+    min_credits = max_credits = None
+  assert min_credits or min_classes
+
+  conjunction = requirement.pop('conjunction')
+  if conjunction is None:
+    conjunction = '?'
+
+  requirements_str = class_credit_to_str(min_classes, max_classes,
+                                         min_credits, max_credits, conjunction)
 
   # If nothing else, expect a list of courses for the requirement
   try:
-    course_str = course_list_to_details_element(requirement.pop('course_list'))
+    print('FROM 258', file=sys.stderr)
+    inner_label_str, course_str = course_list_details(requirement.pop('course_list'))
   except KeyError as ke:
-    course_str = ''
+    inner_label_str = course_str = ''
 
-  if label_str:
-    return (f'<details><summary>{label_str}</summary>'
-            f'{requirements_str}{course_str}</details>')
-  else:
-    return f'{requirements_str}{course_str}'
+  # Not expecting both inner and outer labels; combine if present
+  return (f'<details><summary>{requirements_str} in {outer_label_str} {inner_label_str}</summary>'
+          f'{course_str}</details>')
 
 
 # subset_to_details_element()
@@ -299,8 +350,8 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   try:
     course_requirements = info.pop('requirements')
     suffix = '' if len(course_requirements) == 1 else 's'
-    course_requirements_summary = (f'<summary><strong>{len(course_requirements)} '
-                                   f'Course Requirement{suffix}</strong></summary>')
+    course_requirements_summary = (f'<summary>{len(course_requirements)} '
+                                   f'Requirement{suffix}</summary>')
     course_requirements_body = ''.join([requirement_to_details_element(course_requirement)
                                         for course_requirement in course_requirements])
     course_requirements_element = (f'<details>{course_requirements_summary}'
@@ -487,7 +538,8 @@ def dict_to_html_details_element(info: dict) -> str:
     # courses?
     course_list = ''
     if 'course_list' in info.keys():
-      course_list = course_list_to_details_element(info.pop('course_list'))
+      print('FROM 507', file=sys.stderr)
+      course_list = course_list_details(info.pop('course_list'))
 
     # Development aid
     context_path = ''
@@ -582,7 +634,7 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(info: any) -> str:
+def to_html(info: any, kind='Item') -> str:
   """  Return a nested HTML data structure as described above.
   """
   if info is None:
@@ -590,7 +642,7 @@ def to_html(info: any) -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return list_to_html_list_element(info)
+    return list_to_html_list_element(info, kind)
   if isinstance(info, dict):
     return dict_to_html_details_element(info)
 
@@ -663,7 +715,7 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
         {to_html(header_list)}
       </details>
       <details><summary>Body</summary>
-        {to_html(body_list)}
+        {to_html(body_list, kind='Requirement')}
       </details
     </section>
     """
@@ -701,30 +753,36 @@ if __name__ == '__main__':
     # Look up the block type and value
     conn = PgConnection()
     cursor = conn.cursor()
-    cursor.execute(f'select block_type, block_value, requirement_html from requirement_blocks'
-                   f"  where institution = '{institution}'"
-                   f"    and requirement_id = '{requirement_id}'")
+    cursor.execute(f'select block_type, block_value, requirement_text, requirement_html'
+                   f'  from requirement_blocks'
+                   f" where institution = '{institution}'"
+                   f"   and requirement_id = '{requirement_id}'")
     assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
                                   f'for {institution} {requirement_id}')
-    block_type, block_value, scribe_html = cursor.fetchone()
+    block_type, block_value, requirement_text, requirement_html = cursor.fetchone()
     conn.close()
     print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
           file=sys.stderr)
-    header_list, body_list = dgw_interpreter(institution,
-                                             block_type,
-                                             block_value,
-                                             period_range=args.period,
-                                             update_db=args.update_db)
-    html_head = """<html>
-  <head>
-    <style>details {border: 1px solid green; padding: 0.2em}</style>
-  </head>"""
-    html = (f'{html_head}<body>{scribe_html}'
-            f'<details open="open"><summary><strong>HEAD</strong></summary>'
-            f'{to_html(header_list)}</details>'
-            f'<details open="open"><summary><strong>BODY</strong></summary>'
-            f'{to_html(body_list)}</details><body></html>')
-    print(html)
+    with open('./debug.html', 'w') as debug_html:
+      html_head = """<html>
+    <head>
+      <style>details {border: 1px solid green; padding: 0.2em}</style>
+    </head>
+    """
+      print(f'{html_head}'
+            f'<body>'
+            f'  <h2>{institution} {requirement_id} {block_type} {block_value} {args.period}</h2>'
+            f'  {requirement_html}', file=debug_html)
+      header_list, body_list = dgw_interpreter(institution,
+                                               block_type,
+                                               block_value,
+                                               period_range=args.period,
+                                               update_db=args.update_db)
+      html = (f'<details open="open"><summary><strong>HEAD</strong></summary>'
+              f'{to_html(header_list)}</details>'
+              f'<details open="open"><summary><strong>BODY</strong></summary>'
+              f'{to_html(body_list, kind="Requirement")}</details><body></html>')
+      print(html, file=debug_html)
     exit()
 
   if args.institutions[0] == 'all':
