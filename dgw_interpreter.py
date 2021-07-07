@@ -97,38 +97,38 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
 
     # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
-    with open('./debug', 'w') as debug_file:
-      if do_pprint:
-        print('*** SCRIBE BLOCK ***', file=debug_file)
-        print(text_to_parse, file=debug_file)
 
-      # Generate the parse tree from the Antlr4 parser generator.
-      input_stream = InputStream(text_to_parse)
-      lexer = ReqBlockLexer(input_stream)
-      token_stream = CommonTokenStream(lexer)
-      parser = ReqBlockParser(token_stream)
-      parse_tree = parser.req_block()
+    if DEBUG:
+      debug_file = open('./debug', 'w')
+      print(f'*** SCRIBE BLOCK ***\n{text_to_parse}', file=debug_file)
 
-      # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
-      header_list = []
-      if DEBUG:
-        print('\n*** PARSE HEAD ***', file=sys.stderr)
-      head_ctx = parse_tree.head()
-      if head_ctx:
-        for child in head_ctx.getChildren():
-          obj = dispatch(child, institution, row.requirement_id)
-          if obj != {}:
-            header_list.append(obj)
+    # Generate the parse tree from the Antlr4 parser generator.
+    input_stream = InputStream(text_to_parse)
+    lexer = ReqBlockLexer(input_stream)
+    token_stream = CommonTokenStream(lexer)
+    parser = ReqBlockParser(token_stream)
+    parse_tree = parser.req_block()
 
-      body_list = []
-      if DEBUG:
-        print('\n*** PARSE BODY ***', file=sys.stderr)
-      body_ctx = parse_tree.body()
-      if body_ctx:
-        for child in body_ctx.getChildren():
-          obj = dispatch(child, institution, row.requirement_id)
-          if obj != {}:
-            body_list.append(obj)
+    # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
+    header_list = []
+    if DEBUG:
+      print('\n*** PARSE HEAD ***', file=debug_file)
+    head_ctx = parse_tree.head()
+    if head_ctx:
+      for child in head_ctx.getChildren():
+        obj = dispatch(child, institution, row.requirement_id)
+        if obj != {}:
+          header_list.append(obj)
+
+    body_list = []
+    if DEBUG:
+      print('\n*** PARSE BODY ***', file=debug_file)
+    body_ctx = parse_tree.body()
+    if body_ctx:
+      for child in body_ctx.getChildren():
+        obj = dispatch(child, institution, row.requirement_id)
+        if obj != {}:
+          body_list.append(obj)
 
       if update_db:
         update_cursor.execute(f"""
@@ -137,10 +137,11 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
   and requirement_id = '{row.requirement_id}'
   """, (json.dumps(header_list), json.dumps(body_list)))
 
-      print('*** HEADER LIST ***', file=debug_file)
-      pprint(header_list, stream=debug_file)
-      print('*** BODY LIST ***', file=debug_file)
-      pprint(body_list, stream=debug_file)
+      if DEBUG:
+        print('\n*** HEADER LIST ***', file=debug_file)
+        pprint(header_list, stream=debug_file)
+        print('\n*** BODY LIST ***', file=debug_file)
+        pprint(body_list, stream=debug_file)
 
     if period_range == 'current' or period_range == 'latest':
       break
