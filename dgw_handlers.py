@@ -131,6 +131,8 @@ def class_credit_body(ctx, institution, requirement_id):
   return_dict = num_class_or_num_credit(ctx)
 
   if ctx.course_list_body():
+    return_dict['qualifiers'] = get_qualifiers(ctx.course_list_body().qualifier(),
+                                               institution, requirement_id)
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
 

@@ -408,7 +408,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
                       'proxy_advice', 'rule_tag', 'samedisc', 'share']
 
   if DEBUG:
-    print(f'get_qualifiers({class_name(ctx)})', file=sys.stderr)
+    print(f'*** get_qualifiers({class_name(ctx)=})', file=sys.stderr)
 
   if isinstance(ctx, list):
     contexts = ctx
@@ -429,6 +429,8 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
     for valid_qualifier in valid_qualifiers:
       if qualifier_func := getattr(context, valid_qualifier, None):
         if qualifier_ctx := qualifier_func():
+          if DEBUG:
+            print(f'    got [{valid_qualifier}]', file=sys.stderr)
 
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if valid_qualifier == 'maxpassfail':
