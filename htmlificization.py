@@ -20,7 +20,6 @@ from dgw_interpreter import dgw_interpreter, catalog_years
 
 from pgconnection import PgConnection
 
-from traceback import print_tb
 DEBUG = os.getenv('DEBUG_HTML')
 
 # Module Initialization
@@ -112,14 +111,15 @@ def class_credit_to_str(min_classes: int, max_classes: int,
     num_credits = ''
 
   if num_credits and num_classes:
-    requirements_str = f'{num_classes} {conjunction.lower()} {num_credits}'
+    class_credit_str = f'{num_classes} {conjunction.lower()} {num_credits}'
   else:
     # Possibly empty string
-    requirements_str = f'{num_classes}{num_credits}'
+    class_credit_str = f'{num_classes}{num_credits}'
 
   if DEBUG:
-    print(f'    returning “{requirements_str}”', file=sys.stderr)
-  return requirements_str
+    print(f'    returning “{class_credit_str}”', file=sys.stderr)
+
+  return class_credit_str
 
 
 # course_list_details()
@@ -129,9 +129,9 @@ def course_list_details(info: dict) -> str:
       active_courses list. After that, there might be include and except lists, and possibly a
       missing (from CUNYfirst) list.
 
-      Returns a tuple of (label, description of the course requirements). The label may be missing,
-      but is structured for use as a HTML summary element; the description is suitable for use as
-      the body of a HTML details element.
+      Returns a string representing the course list, suitable for use as the body of a HTML details
+      element. If a non-empty label is found, a complete details element is returned with the label
+      as the element’s summary.
   """
   if DEBUG:
     print(f'*** course_list_details({info.keys()})', file=sys.stderr)
@@ -151,15 +151,15 @@ def course_list_details(info: dict) -> str:
   try:
     scribed_courses = info.pop('scribed_courses')
     assert isinstance(scribed_courses, list)
-
-    if len(scribed_courses) > 1:
+    scribed_text = ''.join([str(sc) for sc in scribed_courses])
+    if len(scribed_courses) > 1 or ':' in scribed_text or '@' in scribed_text:
       if list_type == 'OR':
         if len(scribed_courses) == 2:
-          details_str += f'<p>Either of these courses may be used for this requirement.</p>'
+          details_str += f'<p>Either of these courses</p>'
         else:
-          details_str += f'<p>Any of these courses may be used for this requirement.</p>'
+          details_str += f'<p>Any of these courses.</p>'
       else:
-        details_str += f'<p>All of these courses are required.</p>'
+        details_str += f'<p>All of these courses.</p>'
 
     details_str += list_of_courses(scribed_courses, 'Scribed Course')
   except KeyError as ke:
@@ -248,9 +248,11 @@ def course_list_details(info: dict) -> str:
         details_str += list_to_html_list_element(value, kind=key.strip('s').title())
     else:
       details_str += f'<p>{key}: {value}</p>'
+
   if DEBUG:
-    print(f'    returning ({label_str=}, {details_str=})', file=sys.stderr)
-  return label_str, details_str
+    print(f'    returning [{label_str=} {details_str=}]', file=sys.stderr)
+
+  return (label_str, details_str)
 
 
 # requirement_to_details_element()
@@ -265,7 +267,7 @@ def requirement_to_details_element(requirement: dict) -> str:
       Ignoring allow_classes and allow_credits: they are audit controls.
   """
   if DEBUG:
-    print(f'*** requirement_to_details_element({requirement.keys()=})')
+    print(f'*** requirement_to_details_element({requirement.keys()=})', file=sys.stderr)
   try:
     label = requirement.pop('label')
     if not label:
@@ -301,17 +303,15 @@ def requirement_to_details_element(requirement: dict) -> str:
   try:
     print('*** From requirement_to_details_element', file=sys.stderr)
     inner_label_str, course_str = course_list_details(requirement.pop('course_list'))
-    if inner_label_str:
-      # If there was a non-empty label, nest the list in its own details element
-      course_str = f'<details><summary>{inner_label_str}</summary>{course_str}</details>'
   except KeyError as ke:
     inner_label_str = course_str = ''
 
   # Not expecting both inner and outer labels; combine if present
   if DEBUG:
-    print(f'    returning <details><summary>{requirements_str} in {outer_label_str}</summary>'
+    print(f'    returning <details><summary>{requirements_str} in '
+          f'{inner_label_str}{outer_label_str}</summary>'
           f'[{course_str}]</details>', file=sys.stderr)
-  return (f'<details><summary>{requirements_str} in {outer_label_str}</summary>'
+  return (f'<details><summary>{requirements_str} in {inner_label_str}{outer_label_str}</summary>'
           f'{course_str}</details>')
 
 
@@ -371,8 +371,12 @@ def subset_to_details_element(info: dict, outer_label) -> str:
     course_requirements_element = (f'<details>{course_requirements_summary}'
                                    f'{course_requirements_body}</details>')
   except KeyError as ke:
-    print(f'{ke=}', file=sys.stderr)
+    if DEBUG:
+      print(f'{ke=} in subset_to_details_element', file=sys.stderr)
     course_requirements_element = ''
+
+  if DEBUG:
+    print(f'{info.keys()=} in subset_to_details_element', file=sys.stderr)
 
   # Remaining keys are info to appear before the course_requirements
   details_str = ''.join([to_html(info[key]) for key in info.keys()])
@@ -395,8 +399,10 @@ def subset_to_details_element(info: dict, outer_label) -> str:
     summary = 'Unnamed Requirement'
     body = requirements_str
 
-  print(f'stode: {summary=}', file=sys.stderr)
-  print(f'stode: {body=}', file=sys.stderr)
+  if DEBUG:
+    print(f'stode: {summary=}', file=sys.stderr)
+    print(f'stode: {body=}', file=sys.stderr)
+
   return f'<details>{summary}{body}</details>'
 
 
@@ -540,8 +546,21 @@ def dict_to_html_details_element(info: dict) -> str:
     except KeyError as ke:
       display = ''
 
-    # min, max, and num items
-    numerics = ''
+    # Class/Credit?
+    try:
+      min_classes = info.pop('min_classes')
+      max_classes = info.pop('max_classes')
+      min_credits = info.pop('min_credits')
+      max_credits = info.pop('max_credits')
+      conjunction = info.pop('conjunction')
+      cr_str = class_credit_to_str(min_classes, max_classes, min_credits, max_credits, conjunction)
+      if cr_str:
+        cr_str = f'<p>{cr_str}</p>'
+    except KeyError as ke:
+      cr_str = ''
+
+    # Other min, max, and num items
+    numerics = cr_str
     keys = [key for key in info.keys()]
     for key in keys:
       if key[0:3].lower() in ['max', 'min', 'num']:
@@ -552,9 +571,8 @@ def dict_to_html_details_element(info: dict) -> str:
     # courses?
     course_list = ''
     if 'course_list' in info.keys():
-      print('*** FROM dict_to_html_details_element', file=sys.stderr)
       label_str, course_list = course_list_details(info.pop('course_list'))
-      # If the course_list has a non-empty label, nest it in its own details element
+      # If there is a non-empty label, use it as the summary of a complete details element
       if label_str:
         course_list = f'<details><summary>{label_str}</summary>{course_list}</details>'
 
@@ -796,9 +814,9 @@ if __name__ == '__main__':
                                                block_value,
                                                period_range=args.period,
                                                update_db=args.update_db)
-      html = (f'<details open="open"><summary><strong>HEAD</strong></summary>'
+      html = (f'<details><summary><strong>HEAD</strong></summary>'
               f'{to_html(header_list)}</details>'
-              f'<details open="open"><summary><strong>BODY</strong></summary>'
+              f'<details><summary><strong>BODY</strong></summary>'
               f'{to_html(body_list, kind="Requirement")}</details><body></html>')
       print(html, file=debug_html)
     exit()
