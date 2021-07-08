@@ -91,6 +91,9 @@ def class_credit_to_str(min_classes: int, max_classes: int,
                         min_credits: float, max_credits: float, conjunction: str) -> str:
   """ Tell how many classes and/or credits are required.
   """
+  if DEBUG:
+    print(f'*** class_credit_to_str({min_classes=}, {max_classes=}, {min_credits=}, '
+          f'{max_credits=}, {conjunction=})', file=sys.stderr)
   if min_classes:
     if min_classes == max_classes:
       suffix = '' if min_classes == 1 else 'es'
@@ -114,6 +117,8 @@ def class_credit_to_str(min_classes: int, max_classes: int,
     # Possibly empty string
     requirements_str = f'{num_classes}{num_credits}'
 
+  if DEBUG:
+    print(f'    returning “{requirements_str}”', file=sys.stderr)
   return requirements_str
 
 
@@ -129,7 +134,7 @@ def course_list_details(info: dict) -> str:
       the body of a HTML details element.
   """
   if DEBUG:
-    print(f'course_list_details({info.keys()})', file=sys.stderr)
+    print(f'*** course_list_details({info.keys()})', file=sys.stderr)
 
   details_str = ''
 
@@ -160,7 +165,7 @@ def course_list_details(info: dict) -> str:
   except KeyError as ke:
     details_str = f"""<p class="error">
                        <em>course_list_details() with no scribed courses!</em></p>
-                       <p><strong>Keys:</strong> {course_listkeys()}</p>
+                       <p><strong>Keys:</strong> {course_list.keys()}</p>
                   """
 
   try:
@@ -206,8 +211,8 @@ def course_list_details(info: dict) -> str:
     missing_courses = info.pop('missing_courses')
     assert isinstance(missing_courses, list)
     if len(missing_courses) > 0:
-      details_str += list_of_courses(missing_courses,
-                                    'Not-Found-in-CUNYfirst Course', highlight=True)
+      details_str += list_of_courses(missing_courses, 'Not-Found-in-CUNYfirst Course',
+                                     highlight=True)
   except KeyError as ke:
     print(f'Invalid Course List: missing key is {ke}', file=sys.stderr)
     pprint(info, stream=sys.stderr)
@@ -235,6 +240,7 @@ def course_list_details(info: dict) -> str:
   else:
     # Could be one, the other, or neither
     label_str = f'{requirements_str}{label_str}'
+
   # Any additional information
   for key, value in info.items():
     if isinstance(value, list):
@@ -242,7 +248,8 @@ def course_list_details(info: dict) -> str:
         details_str += list_to_html_list_element(value, kind=key.strip('s').title())
     else:
       details_str += f'<p>{key}: {value}</p>'
-
+  if DEBUG:
+    print(f'    returning ({label_str=}, {details_str=})', file=sys.stderr)
   return label_str, details_str
 
 
@@ -257,7 +264,8 @@ def requirement_to_details_element(requirement: dict) -> str:
             num_credits.
       Ignoring allow_classes and allow_credits: they are audit controls.
   """
-
+  if DEBUG:
+    print(f'*** requirement_to_details_element({requirement.keys()=})')
   try:
     label = requirement.pop('label')
     if not label:
@@ -291,13 +299,19 @@ def requirement_to_details_element(requirement: dict) -> str:
 
   # If nothing else, expect a list of courses for the requirement
   try:
-    print('FROM 258', file=sys.stderr)
+    print('*** From requirement_to_details_element', file=sys.stderr)
     inner_label_str, course_str = course_list_details(requirement.pop('course_list'))
+    if inner_label_str:
+      # If there was a non-empty label, nest the list in its own details element
+      course_str = f'<details><summary>{inner_label_str}</summary>{course_str}</details>'
   except KeyError as ke:
     inner_label_str = course_str = ''
 
   # Not expecting both inner and outer labels; combine if present
-  return (f'<details><summary>{requirements_str} in {outer_label_str} {inner_label_str}</summary>'
+  if DEBUG:
+    print(f'    returning <details><summary>{requirements_str} in {outer_label_str}</summary>'
+          f'[{course_str}]</details>', file=sys.stderr)
+  return (f'<details><summary>{requirements_str} in {outer_label_str}</summary>'
           f'{course_str}</details>')
 
 
@@ -470,7 +484,7 @@ def dict_to_html_details_element(info: dict) -> str:
   """
 
   if DEBUG:
-      print('dict_to_html_details_element', info.keys(), file=sys.stderr)
+      print(f'*** dict_to_html_details_element({info.keys()=})', file=sys.stderr)
 
   # Indicator for not returning a nest-able display element
   label = None
@@ -538,26 +552,29 @@ def dict_to_html_details_element(info: dict) -> str:
     # courses?
     course_list = ''
     if 'course_list' in info.keys():
-      print('FROM 507', file=sys.stderr)
-      course_list = course_list_details(info.pop('course_list'))
+      print('*** FROM dict_to_html_details_element', file=sys.stderr)
+      label_str, course_list = course_list_details(info.pop('course_list'))
+      # If the course_list has a non-empty label, nest it in its own details element
+      if label_str:
+        course_list = f'<details><summary>{label_str}</summary>{course_list}</details>'
 
     # Development aid
     context_path = ''
     if DEBUG:
       try:
-        context_path = f'<div><strong>Context:</strong>{info.pop("context_path")}</div>'
+        context_path = f'<div>Context: {info.pop("context_path")}</div>'
       except KeyError as ke:
         pass
 
     return_str = f'{pseudo_msg}{context_path}{remark}{display}{numerics}{course_list}'
 
+    # Key-value pairs not specific to course lists
+    # --------------------------------------------
     for key, value in info.items():
-      key_str = f'<strong>{key.replace("_", " ").title()}</strong>'
-
-      # Key-value pairs not specific to course lists
-      # --------------------------------------------
       if value is None:
         continue  # Omit empty fields
+
+      key_str = f'{key.replace("_", " ").title()}'
 
       if key == 'group':
         if len(value) > 0:
@@ -766,6 +783,7 @@ if __name__ == '__main__':
     with open('./debug.html', 'w') as debug_html:
       html_head = """<html>
     <head>
+      <meta charset="utf-8"/>
       <style>details {border: 1px solid green; padding: 0.2em}</style>
     </head>
     """
