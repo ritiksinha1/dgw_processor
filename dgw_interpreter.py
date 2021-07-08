@@ -97,7 +97,6 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
 
     # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
-
     if DEBUG:
       debug_file = open('./debug', 'w')
       print(f'*** SCRIBE BLOCK ***\n{text_to_parse}', file=debug_file)
@@ -113,6 +112,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
     header_list = []
     if DEBUG:
       print('\n*** PARSE HEAD ***', file=debug_file)
+
     head_ctx = parse_tree.head()
     if head_ctx:
       for child in head_ctx.getChildren():
