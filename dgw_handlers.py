@@ -156,7 +156,10 @@ def class_credit_body(ctx, institution, requirement_id):
 
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
-  pprint(return_dict)
+
+  if DEBUG:
+    pprint(return_dict, file=sys.stderr)
+
   return return_dict
 
 
