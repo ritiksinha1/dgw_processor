@@ -301,7 +301,8 @@ def requirement_to_details_element(requirement: dict) -> str:
 
   # If nothing else, expect a list of courses for the requirement
   try:
-    print('*** From requirement_to_details_element', file=sys.stderr)
+    if DEBUG:
+      print('*** From requirement_to_details_element', file=sys.stderr)
     inner_label_str, course_str = course_list_details(requirement.pop('course_list'))
   except KeyError as ke:
     inner_label_str = course_str = ''
@@ -809,6 +810,7 @@ if __name__ == '__main__':
             f'<body>'
             f'  <h2>{institution} {requirement_id} {block_type} {block_value} {args.period}</h2>'
             f'  {requirement_html}', file=debug_html)
+
       header_list, body_list = dgw_interpreter(institution,
                                                block_type,
                                                block_value,
