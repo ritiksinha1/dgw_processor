@@ -127,12 +127,16 @@ def class_credit_body(ctx, institution, requirement_id):
 
     Ignore rule_tag and tag.
   """
-
+  if DEBUG:
+    print(f'*** class_credit_body({class_name(ctx)=}, {institution=}, {requirement_id=})',
+          file=sys.stderr)
   return_dict = num_class_or_num_credit(ctx)
 
   if ctx.course_list_body():
     if qualifiers := get_qualifiers(ctx.course_list_body().qualifier(),
                                     institution, requirement_id):
+      if DEBUG:
+        print(f'{qualifiers=}', file=sys.stderr)
       return_dict.update(qualifiers)
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
@@ -158,7 +162,7 @@ def class_credit_body(ctx, institution, requirement_id):
     return_dict['label'] = label_str
 
   if DEBUG:
-    pprint(return_dict, file=sys.stderr)
+    pprint(return_dict, stream=sys.stderr)
 
   return return_dict
 
@@ -467,6 +471,8 @@ def maxperdisc(ctx, institution, requirement_id):
   """
       maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
   """
+  if DEBUG:
+    print(f'*** maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}', file=sys.stderr)
   return_dict = {'max_allowed_per_discipline': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]

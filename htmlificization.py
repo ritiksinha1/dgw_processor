@@ -84,6 +84,34 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
   return return_str
 
 
+# format_maxperdisc()
+# -------------------------------------------------------------------------------------------------
+def format_maxperdisc(maxperdisc_dict: dict) -> str:
+  """
+  """
+  limit = float(maxperdisc_dict['number'])
+  class_credit = maxperdisc_dict['class_credit']
+  disciplines = maxperdisc_dict['disciplines']
+  discipline_str = ', '.join(disciplines)
+  if len(disciplines) == 1:
+    suffix = ''
+    anyof = ''
+  else:
+    suffix = 's'
+    anyof = ' any of '
+
+  if class_credit == 'class':
+    class_str = 'class' if limit == 1 else 'classes'
+    return (f'No more than {int(limit)} {class_str} in {anyof}the following discipline{suffix}: '
+            f'{discipline_str}')
+  elif class_credit == 'credit':
+    credit_str = 'credit' if limit == 1 else 'credits'
+    return (f'No more than {limit:0.1f} {credit_str} in {anyof}the following discipline{suffix}: '
+            f'{discipline_str}')
+
+  return '<span class="error">Error: invalid MaxPerDisc</span>'
+
+
 # class_credit_to_str()
 # -------------------------------------------------------------------------------------------------
 def class_credit_to_str(min_classes: int, max_classes: int,
@@ -157,9 +185,9 @@ def course_list_details(info: dict) -> str:
         if len(scribed_courses) == 2:
           details_str += f'<p>Either of these courses</p>'
         else:
-          details_str += f'<p>Any of these courses.</p>'
+          details_str += f'<p>Any of these courses</p>'
       else:
-        details_str += f'<p>All of these courses.</p>'
+        details_str += f'<p>All of these courses</p>'
 
     details_str += list_of_courses(scribed_courses, 'Scribed Course')
   except KeyError as ke:
@@ -559,6 +587,15 @@ def dict_to_html_details_element(info: dict) -> str:
         cr_str = f'<p>{cr_str}</p>'
     except KeyError as ke:
       cr_str = ''
+
+    # Maxperdisc?
+    try:
+      maxperdisc = info.pop('maxperdisc')
+      cr_str += format_maxperdisc(maxperdisc)
+      if DEBUG:
+        print(f'    {maxperdisc_str=}', file=sys.stderr)
+    except KeyError as ke:
+      pass
 
     # Other min, max, and num items
     numerics = cr_str
