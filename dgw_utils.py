@@ -106,7 +106,7 @@ def class_or_credit(ctx) -> str:
       Tell whether it's 'class' or 'credit' regardless of how it was spelled/capitalized.
   """
   if DEBUG:
-    print('*** class_or_credit()', file=sys.stderr)
+    print(f'*** class_or_credit({class_name(ctx)})', file=sys.stderr)
 
   try:
     if ctx.CREDIT():
@@ -417,20 +417,25 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
   qualifier_dict = dict()
   for context in contexts:
 
-    class_credit = None
-    if getattr(context, 'class_credit', None):
-      # Class or credit is an attribute of several qualifiers. Extract it here.
-      if getattr(qualifier_func(), 'CLASS', None) is not None:
-        class_credit = 'class'
-      if getattr(qualifier_func(), 'CREDIT', None) is not None:
-        class_credit = 'credit'
-
     # See which qualifiers, if any, are part of this context
     for valid_qualifier in valid_qualifiers:
+      class_credit = None
       if qualifier_func := getattr(context, valid_qualifier, None):
         if qualifier_ctx := qualifier_func():
+          if getattr(qualifier_ctx, 'class_or_credit', None):
+            # Class or credit is an attribute of several qualifiers. Extract it here.
+            class_str = qualifier_ctx.class_or_credit().CLASS()
+            credit_str = qualifier_ctx.class_or_credit().CREDIT()
+            if class_str:
+              class_credit = 'class'
+            elif credit_str:
+              class_credit = 'credit'
+            else:
+              print(f'*** Error: neither {class_str=} nor {credit_str=} in get_qualifiers',
+                    file=sys.stderr)
           if DEBUG:
-            print(f'    got [{valid_qualifier}]', file=sys.stderr)
+            print(f'    get_qualifiers got {valid_qualifier=} with {class_credit=}',
+                  file=sys.stderr)
 
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if valid_qualifier == 'maxpassfail':
@@ -467,12 +472,12 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
             if qualifier_ctx.display():
               qualifier_dict[valid_qualifier]['display'] = get_display(qualifier_ctx)
 
-        #   # mingpa          : MINGPA NUMBER (course_list | expression)?
-        #   elif qualifier == 'mingpa':
-        #     course_list_obj = qualifier_func().course_list()
-        #     if course_list_obj:
-        #       course_list_obj = build_course_list(qualifier_func().course_list(),
-        #                                           institution, requirement_id)
+          # mingpa : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice? label?;
+          elif valid_qualifier == 'mingpa':
+            if course_list_ctx := qualifier_ctx.course_list():
+              course_list_obj = build_course_list(course_list_ctx, institution, requirement_id)
+            if expression_ctx := qualifier_ctx.expression():
+              oops()
 
         #     expression_str = qualifier_func().expression()
         #     if expression_str:
