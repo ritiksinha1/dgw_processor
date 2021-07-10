@@ -424,18 +424,19 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
         if qualifier_ctx := qualifier_func():
           if getattr(qualifier_ctx, 'class_or_credit', None):
             # Class or credit is an attribute of several qualifiers. Extract it here.
-            class_str = qualifier_ctx.class_or_credit().CLASS()
-            credit_str = qualifier_ctx.class_or_credit().CREDIT()
-            if class_str:
-              class_credit = 'class'
-            elif credit_str:
-              class_credit = 'credit'
-            else:
-              print(f'*** Error: neither {class_str=} nor {credit_str=} in get_qualifiers',
+            if coc_ctx := qualifier_ctx.class_or_credit():
+              class_str = qualifier_ctx.class_or_credit().CLASS()
+              credit_str = qualifier_ctx.class_or_credit().CREDIT()
+              if class_str:
+                class_credit = 'class'
+              elif credit_str:
+                class_credit = 'credit'
+              else:
+                print(f'*** Error: neither {class_str=} nor {credit_str=} in get_qualifiers',
+                      file=sys.stderr)
+            if DEBUG:
+              print(f'    get_qualifiers got {valid_qualifier=} with {class_credit=}',
                     file=sys.stderr)
-          if DEBUG:
-            print(f'    get_qualifiers got {valid_qualifier=} with {class_credit=}',
-                  file=sys.stderr)
 
           # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
           if valid_qualifier == 'maxpassfail':
@@ -474,48 +475,34 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
 
           # mingpa : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice? label?;
           elif valid_qualifier == 'mingpa':
-            if course_list_ctx := qualifier_ctx.course_list():
-              course_list_obj = build_course_list(course_list_ctx, institution, requirement_id)
-            if expression_ctx := qualifier_ctx.expression():
-              oops()
+            qualifier_dict.update(dgw_handlers.mingpa(qualifier_ctx, institution, requirement_id))
 
-        #     expression_str = qualifier_func().expression()
-        #     if expression_str:
-        #       expression_str = expression.getText()
+          # proxy_advice    : (PROXY_ADVICE STRING)+;
+          # ruletag         : RULE_TAG expression;
+          # samedisc        : SAME_DISC expression
 
-        #     qualifier_list.append({'number': qualifier_func().NUMBER().getText(),
-        #                            'course_list': course_list_obj,
-        #                            'expression': expression_str})
+          elif valid_qualifier in ['proxy_advice', 'ruletag', 'samedisc']:
+            # These are used for managing the audit process and are ignored here
+            pass
 
-        #   # ruletag         : RULE_TAG expression;
-        #   # samedisc        : SAME_DISC expression
-        #   elif qualifier in ['ruletag', 'samedisc']:
-        #     qualifier_list.append({'expression': qualifier_func().expression().getText()})
+          # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
+          elif valid_qualifier == 'share':
+            if qualifier_ctx.DONT_SHARE():
+              valid_qualifier = 'dont_share'
+            qualifier_dict[valid_qualifier] = dict()
 
-        #   # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
-        #   elif qualifier == 'share':
-        #     if qualifier_func().DONT_SHARE():
-        #       qualifier = 'dont_share'
+            if qualifier_ctx.NUMBER():
+              qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
+              qualifier_dict[valid_qualifier]['class_credit'] = class_credit
 
-        #     if qualifier_func().NUMBER():
-        #       number = qualifier_func().NUMBER().getText()
-        #     else:
-        #       number = None
-
-        #     expression = qualifier_func().expression()
-        #     if expression:
-        #       expression = expression.getText()
-
-        #     qualifier_list.append({'number': number,
-        #                            'class_credit': class_credit,
-        #                            'expression': expression})
+            if qualifier_ctx.expression():
+              expression = qualifier_func().expression()
+              if expression:
+                qualifier_dict[valid_qualifier]['expression'] = expression.getText()
 
           else:
-            print(f'Unrecognized qualifier: {valid_qualifier} in {requirement_id} for {institution}',
+            print(f'Unexpected qualifier: {valid_qualifier} in {requirement_id} for {institution}',
                   file=sys.stderr)
-
-  if len(qualifier_dict) == 0:
-    return None
 
   return qualifier_dict
 

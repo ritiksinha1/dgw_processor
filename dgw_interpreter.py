@@ -82,18 +82,18 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
   for row in fetch_cursor.fetchall():
     header_list = None
     body_list = None
-    print(f'{institution} {row.requirement_id} {block_type} {block_value} ',
-          end='',
-          file=sys.stderr)
+    if verbose:
+      print(f'{institution} {row.requirement_id} {block_type} {block_value} ', end='')
     if (institution, row.requirement_id) in quarantine_dict.keys():
-      print('is quarantined', file=sys.stderr)
+      if verbose:
+        print('Skipping: quarantined.')
       continue
     elif period_range == 'current' and row.period_stop != '99999999':
-      print(f'Not currently offered.', file=sys.stderr)
+      if verbose:
+        print(f'Skipping: not currently offered.')
       continue
-    else:
-      print(catalog_years(row.period_start, row.period_stop).text, end='', file=sys.stderr)
-    print(file=sys.stderr)
+    if verbose:
+      print(catalog_years(row.period_start, row.period_stop).text)
 
     # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
@@ -242,7 +242,7 @@ if __name__ == '__main__':
           continue
         if args.progress:
           print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
-                f'{values_count:3} / {num_values:3} ', end='', file=sys.stderr)
+                f'{values_count:3} / {num_values:3} ', end='')
         header_list, body_list = dgw_interpreter(institution,
                                                  block_type.upper(),
                                                  block_value,

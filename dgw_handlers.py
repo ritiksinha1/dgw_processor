@@ -324,7 +324,7 @@ def copy_rules(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def group(ctx, institution, requirement_id):
   """
-group           : NUMBER GROUP group_list requirement* label? ;
+group           : NUMBER GROUP group_list qualifier* label? ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
 group_item      : LP
                   (block
@@ -334,24 +334,9 @@ group_item      : LP
                    | group
                    | noncourse
                    | rule_complete)
-                  requirement* label?
+                  qualifier* label?
                   RP
                 ;
-
-requirement           : maxpassfail
-                      | maxperdisc
-                      | maxtransfer
-                      | minclass
-                      | mincredit
-                      | mingpa
-                      | mingrade
-                      | minperdisc
-                      | proxy_advice
-                      | samedisc
-                      | rule_tag
-                      | share
-                      ;
-
   “Qualifiers that must be applied to all rules in the group list must occur after the last right
   parenthesis and before the label at the end of the Group statement. Qualifiers that apply only to
   a specific rule in the group list must appear inside the parentheses for that group item rule.”
@@ -367,7 +352,8 @@ requirement           : maxpassfail
 
   return_dict['group_items'] = get_group_items(ctx.group_list(), institution, requirement_id)
 
-  return_dict['label'] = get_label(ctx)
+  if ctx.label():
+    return_dict['label'] = get_label(ctx)
 
   return return_dict
 
@@ -473,7 +459,7 @@ def maxperdisc(ctx, institution, requirement_id):
   """
   if DEBUG:
     print(f'*** maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}', file=sys.stderr)
-  return_dict = {'max_allowed_per_discipline': ctx.NUMBER().getText(),
+  return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
 
@@ -547,8 +533,12 @@ def mincredit(ctx, institution, requirement_id):
 def mingpa(ctx, institution, requirement_id):
   """
       mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
+
+      MinGPA is a standalone property when it appears in the header, and we think it doesn't include
+      anything but the number. In the body, it's a qualifier, and the other parts can appear. The
+      returned dict accommodates both scenarios.
   """
-  return_dict = {'min_number': ctx.NUMBER().getText()}
+  return_dict = {'number': ctx.NUMBER().getText()}
 
   if ctx.course_list():
     return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
@@ -559,7 +549,8 @@ def mingpa(ctx, institution, requirement_id):
   if ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  return_dict['label'] = get_label(ctx)
+  if ctx.label():
+    return_dict['label'] = get_label(ctx)
 
   return {'min_gpa': return_dict}
 
