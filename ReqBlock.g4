@@ -511,7 +511,7 @@ OR          : [Oo][Rr];
 
 // Scribe "tokens"
 //NUMBER          : DIGIT+ (DOT DIGIT*)?;
-NUMBER          : DIGIT+ (DOT DIGIT*)? ' '* ([:\-] ' '* DIGIT+ (DOT DIGIT*)?)?;
+NUMBER          : DIGIT+ (DOT DIGIT*)? ' '* ([:] ' '* DIGIT+ (DOT DIGIT*)?)?;
 CATALOG_NUMBER  : DIGIT+ LETTER+;
 WILD            : (SYMBOL)* AT (SYMBOL)*;
 SYMBOL          : (LETTER | DIGIT | DOT | HYPHEN | UNDERSCORE | AMPERSAND | '/')+;

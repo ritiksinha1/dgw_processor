@@ -546,11 +546,14 @@ def num_class_or_num_credit(ctx) -> dict:
     if not isinstance(credit_contexts, list):
       credit_contexts = [credit_contexts]
     for credit_ctx in credit_contexts:
-      num_credits = credit_ctx.NUMBER().getText().split(':')
-      if len(num_credits) == 1:
-        min_credits = max_credits = float(num_credits[0])
-      else:
-          min_credits, max_credits = [float(num) for num in num_credits]
+      try:
+        num_credits = credit_ctx.NUMBER().getText().split(':')
+        if len(num_credits) == 1:
+          min_credits = max_credits = float(num_credits[0])
+        else:
+            min_credits, max_credits = [float(num) for num in num_credits]
+      except ValueError as ve:
+        min_credits = max_credits = -1.0  # syntax indicator: the grammar allows '1-2' as a number.
       if credit_ctx.allow_clause():
         allow_credits = credit_ctx.allow_clause().NUMBER().getText().strip()
       else:
