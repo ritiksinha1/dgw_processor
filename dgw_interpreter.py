@@ -91,6 +91,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
     elif period_range == 'current' and row.period_stop != '99999999':
       if verbose:
         print(f'Skipping: not currently offered.')
+      conn.close()
       return (None, None)
     if verbose:
       print(catalog_years(row.period_start, row.period_stop).text)
