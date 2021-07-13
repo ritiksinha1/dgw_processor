@@ -742,8 +742,8 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
     disclaimer = f"""
     <p class="disclaimer">
       <span class="error">
-        {qualifier} this parser was unable to process this Scribe Block, with the following
-        explanation:
+        No Interpretation Available.<br>
+        {qualifier} this parser detected the following problem:
       </span>
         “{explanation}.”
     </p>
