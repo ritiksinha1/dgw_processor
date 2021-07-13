@@ -31,3 +31,4 @@ Logs/
 /testing/test_timeouts
 /out
 /debug
+/err
