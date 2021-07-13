@@ -12,8 +12,11 @@
 
 import os
 import sys
+import csv
 import argparse
+
 from pprint import pprint
+from collections import namedtuple
 
 from course_lookup import lookup_course
 from dgw_interpreter import dgw_interpreter, catalog_years
@@ -33,18 +36,18 @@ college_names = {row.code: row.name for row in cursor.fetchall()}
 conn.close()
 
 # Quarantined blocks
+Row = namedtuple('Row', 'institution requirement_id explanation can_ellucian')
 quarantine_dict = {}
-with open('/Users/vickery/Projects/dgw_processor/testing/quarantine_list') as ql_file:
-  quarantine_list = ql_file.readlines()
-  for line in quarantine_list:
-    if line[0] == '#':
+with open('/Users/vickery/Projects/dgw_processor/quarantine_list.csv') as qfile:
+  reader = csv.reader(qfile)
+  for line in reader:
+    if reader.line_num == 1 or len(line) == 0 or line[0].startswith('#'):
       continue
-    body, ellucian = line.split('::')
-    ellucian = 'y' in ellucian or 'Y' in ellucian
-    college, requirement_id, *explanation = body.split(' ')
-    explanation = ' '.join(explanation).strip()
+    row = Row._make(line)
+    ellucian = row.can_ellucian.lower().startswith('y')
 
-    quarantine_dict[(college, requirement_id)] = (explanation.strip('.'), ellucian)
+    quarantine_dict[(row.institution, row.requirement_id)] = (row.explanation.strip('.'),
+                                                              row.can_ellucian)
 
 
 # list_of_courses()
@@ -318,6 +321,7 @@ def requirement_to_details_element(requirement: dict) -> str:
     max_credits = requirement.pop('max_credits')
   else:
     min_credits = max_credits = None
+
   assert min_credits or min_classes
 
   conjunction = requirement.pop('conjunction')
@@ -442,9 +446,9 @@ def group_to_details_element(info: dict, outer_label: str) -> str:
        html details element. The optional label goes next, followed by nested details elements for
        the true and the optional false branches.
 
-       There are four possibilities for labels: outer, inner, both, or neither (really?). If both,
-       return the parts nested inside a details element with the outer summary
   """
+  if DEBUG:
+    print(f'group_to_details_element({dict.keys()=})', file=sys.stderr)
   return details
 
 
@@ -539,6 +543,7 @@ def dict_to_html_details_element(info: dict) -> str:
       return subset_to_details_element(info['subset'], label)
     elif key == 'group':
       return group_to_details_element(info['group'], label)
+
     # Not special-case
     if label is None:
       summary = f'<summary>{key.replace("_", " ").title()}</summary>'
@@ -593,7 +598,7 @@ def dict_to_html_details_element(info: dict) -> str:
       maxperdisc = info.pop('maxperdisc')
       cr_str += format_maxperdisc(maxperdisc)
       if DEBUG:
-        print(f'    {maxperdisc_str=}', file=sys.stderr)
+        print(f'    {cr_str=}', file=sys.stderr)
     except KeyError as ke:
       pass
 
@@ -735,10 +740,10 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
   if (row.institution, row.requirement_id) in quarantine_dict.keys():
     header_list, body_list = None, None
     explanation, ellucian = quarantine_dict[(row.institution, row.requirement_id)]
-    if ellucian:
-      qualifier = 'Although the Ellucian parser does not report an error,'
+    if ellucian.startswith('Y'):
+      qualifier = 'The Ellucian parser accepts this block, but'
     else:
-      qualifier = 'Neither the Ellucian parser nor'
+      qualifier = 'The Ellucian parser rejects this block, and'
     disclaimer = f"""
     <p class="disclaimer">
       <span class="error">

@@ -7,8 +7,11 @@
 import argparse
 import re
 import sys
+import csv
 
 from pathlib import Path
+from collections import namedtuple
+
 from pgconnection import PgConnection
 
 from dgw_filter import dgw_filter
@@ -27,22 +30,19 @@ if period_stop != '99999999':
        'Only "active" or "99999999" are valid for now.')
 
 # Get quarantine list
+Row = namedtuple('ROW', 'institution requirement_id reason can_ellucian')
 quarantined_blocks = []
 timeout_blocks = []
-with open('./quarantine_list') as ql:
-  for line in ql.readlines():
-    # Ignore comments and blank lines
-    line = re.sub(r'#.*$', '', line).strip()
-    if len(line) < 1:
+with open('../quarantine_list.csv') as qfile:
+  reader = csv.reader(qfile)
+  for line in reader:
+    if reader.line_num == 1 or len(line) == 0 or line[0].startswith('#'):
       continue
-    try:
-      institution, block_id, *_ = line.split()
-      if _ == ['Timeout']:
-        timeout_blocks.append((institution, block_id))
-      else:
-        quarantined_blocks.append((institution, block_id))
-    except ValueError as ve:
-      pass
+    row = Row._make(line)
+    if 'timeout' in row.reason.lower():
+      timeout_blocks.append((row.institution.strip(), row.requirement_id.strip()))
+    else:
+      quarantined_blocks.append((row.institution, row.requirement_id.strip()))
 
 quarantine_dir = Path('./test_data.quarantine')
 if quarantine_dir.is_dir():
@@ -85,6 +85,7 @@ for block_type in block_types:
     text_to_write = dgw_filter(block.requirement_text)
     title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
                                                              '_', block.title)))
+    print(f'{block.institution=} {block.requirement_id=}', file=sys.stderr)
     if (block.institution, block.requirement_id) in quarantined_blocks:
       file = Path(quarantine_dir,
                   f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
