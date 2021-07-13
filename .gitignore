@@ -19,8 +19,12 @@ setup.py
 dist/
 __init.py__
 
+
 test_data/
 Logs/
+
+/extracts/
+
 /testing/.lastwait
 /testing/ReqBlock.g4
 /testing/dgw_filter.py
@@ -29,6 +33,8 @@ Logs/
 /testing/test_data.*/
 /testing/test_results.*/
 /testing/test_timeouts
-/out
+
 /debug
+/debug.html
 /err
+/out
