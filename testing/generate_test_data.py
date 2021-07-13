@@ -85,7 +85,6 @@ for block_type in block_types:
     text_to_write = dgw_filter(block.requirement_text)
     title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
                                                              '_', block.title)))
-    print(f'{block.institution=} {block.requirement_id=}', file=sys.stderr)
     if (block.institution, block.requirement_id) in quarantined_blocks:
       file = Path(quarantine_dir,
                   f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
