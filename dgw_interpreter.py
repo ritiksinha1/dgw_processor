@@ -5,10 +5,12 @@
 """
 import os
 import re
+import csv
 import sys
 import argparse
 import json
 
+from collections import namedtuple
 from pprint import pprint
 
 from ReqBlockLexer import ReqBlockLexer
@@ -30,18 +32,18 @@ DEBUG = os.getenv('DEBUG_INTERPRETER')
 sys.setrecursionlimit(10**6)
 
 # Quarantined blocks
+Row = namedtuple('Row', 'institution requirement_id explanation can_ellucian')
 quarantine_dict = {}
-with open('/Users/vickery/Projects/dgw_processor/testing/quarantine_list') as ql_file:
-  quarantine_list = ql_file.readlines()
-  for line in quarantine_list:
-    if line[0] == '#':
+with open('/Users/vickery/Projects/dgw_processor/quarantine_list.csv') as qfile:
+  reader = csv.reader(qfile)
+  for line in reader:
+    if reader.line_num == 1 or len(line) == 0 or line[0].startswith('#'):
       continue
-    body, ellucian = line.split('::')
-    ellucian = 'y' in ellucian or 'Y' in ellucian
-    college, requirement_id, *explanation = body.split(' ')
-    explanation = ' '.join(explanation).strip()
+    row = Row._make(line)
+    ellucian = row.can_ellucian.lower().startswith('y')
 
-    quarantine_dict[(college, requirement_id)] = (explanation.strip('.'), ellucian)
+    quarantine_dict[(row.institution, row.requirement_id)] = (row.explanation.strip('.'),
+                                                              row.can_ellucian)
 
 
 # dgw_interpreter()
