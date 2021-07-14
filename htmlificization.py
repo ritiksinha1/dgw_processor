@@ -280,8 +280,8 @@ def course_list_details(info: dict) -> str:
     else:
       details_str += f'<p>{key}: {value}</p>'
 
-  if DEBUG:
-    print(f'    returning [{label_str=} {details_str=}]', file=sys.stderr)
+  # if DEBUG:
+  #   print(f'    returning [{label_str=} {details_str=}]', file=sys.stderr)
 
   return (label_str, details_str)
 
@@ -393,8 +393,8 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   except KeyError as ke:
     qualifiers_str = ''
 
-  # List of course requirements
-  try:
+  # Is there a list of course requirements?
+  if 'requirements' in info.keys():
     course_requirements = info.pop('requirements')
     suffix = '' if len(course_requirements) == 1 else 's'
     course_requirements_summary = (f'<summary>{len(course_requirements)} '
@@ -403,15 +403,27 @@ def subset_to_details_element(info: dict, outer_label) -> str:
                                         for course_requirement in course_requirements])
     course_requirements_element = (f'<details>{course_requirements_summary}'
                                    f'{course_requirements_body}</details>')
-  except KeyError as ke:
-    if DEBUG:
-      print(f'{ke=} in subset_to_details_element', file=sys.stderr)
+  else:
     course_requirements_element = ''
+
+  # Are there any group requirements?
+  if 'group' in info.keys():
+    course_requirements_element += group_to_details_element(info)
+    # group_list = info.pop('group')
+    # for group_item_list in group_list:
+    #   num_group_items = len(group_item_list['group_items'])
+    #   num_required = int(group_item_list.pop('num_groups_required'))
+    #   if num_required < 12:
+    #     num_required = ['None', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight',
+    #                     'Nine', 'Ten', 'Eleven', 'Twelve'][num_required]
+    #   body = list_to_html_list_element(group_item_list['group_items'], kind='Group')
+    #   body = body.replace('summary>', f'summary>{num_required} of the following ', 1)
+    #   course_requirements_element += body
 
   if DEBUG:
     print(f'{info.keys()=} in subset_to_details_element', file=sys.stderr)
 
-  # Remaining keys are info to appear before the course_requirements
+  # Remaining keys are info to appear before the course/group requirements
   details_str = ''.join([to_html(info[key]) for key in info.keys()])
 
   requirements_str = f'{remark_str}{qualifiers_str}{details_str}{course_requirements_element}'
@@ -432,24 +444,38 @@ def subset_to_details_element(info: dict, outer_label) -> str:
     summary = 'Unnamed Requirement'
     body = requirements_str
 
-  if DEBUG:
-    print(f'stode: {summary=}', file=sys.stderr)
-    print(f'stode: {body=}', file=sys.stderr)
+  # if DEBUG:
+  #   print(f'stode: {summary=}', file=sys.stderr)
+  #   print(f'stode: {body=}', file=sys.stderr)
 
   return f'<details>{summary}{body}</details>'
 
 
 # group_to_details_element()
 # -------------------------------------------------------------------------------------------------
-def group_to_details_element(info: dict, outer_label: str) -> str:
+def group_to_details_element(info: dict, outer_label=None) -> str:
   """  The dict for a conditional construct must have a condition, which becomes the summary of the
        html details element. The optional label goes next, followed by nested details elements for
        the true and the optional false branches.
 
   """
   if DEBUG:
-    print(f'group_to_details_element({dict.keys()=})', file=sys.stderr)
-  return details
+    print(f'group_to_details_element({info.keys()=})', file=sys.stderr)
+
+  return_str = ''
+  if 'group' in info.keys():
+    group_list = info.pop('group')
+    for group_item_list in group_list:
+      num_group_items = len(group_item_list['group_items'])
+      num_required = int(group_item_list.pop('num_groups_required'))
+      if num_required < 12:
+        num_required = ['None', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight',
+                        'Nine', 'Ten', 'Eleven', 'Twelve'][num_required]
+      body = list_to_html_list_element(group_item_list['group_items'], kind='Group')
+      body = body.replace('summary>', f'summary>{num_required} of the following ', 1)
+      return_str += body
+
+  return return_str
 
 
 # conditional_to_details_element()
@@ -903,6 +929,45 @@ if __name__ == '__main__':
         values_count += 1
         if block_value.isnumeric() or block_value.startswith('MHC'):
           continue
-        if args.progress:
-          print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
-                f'{values_count:3} / {num_values:3} ', end='', file=sys.stderr)
+        conn = PgConnection()
+        cursor = conn.cursor()
+        cursor.execute(f'select requirement_id,'
+                       f'       block_type, block_value, requirement_text, requirement_html'
+                       f'  from requirement_blocks'
+                       f" where institution = '{institution}'"
+                       f"   and block_type = '{block_type}'"
+                       f"   and block_value = '{block_value}'"
+                       f"   and period_stop = '99999999'")
+        assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
+                                      f'for {institution} {requirement_id}')
+        requirement_id, block_type, block_value, requirement_text, requirement_html = cursor.fetchone()
+        conn.close()
+
+        print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
+              file=sys.stderr)
+        with open('./debug.html', 'w') as debug_html:
+          html_head = """<html>
+        <head>
+          <meta charset="utf-8"/>
+          <style>details {border: 1px solid green; padding: 0.2em}</style>
+        </head>
+        """
+          print(f'{html_head}'
+                f'<body>'
+                f'  <h2>{institution} {requirement_id} {block_type} {block_value} {args.period}</h2>'
+                f'  {requirement_html}', file=debug_html)
+
+          header_list, body_list = dgw_interpreter(institution,
+                                                   block_type,
+                                                   block_value,
+                                                   period_range=args.period,
+                                                   update_db=args.update_db)
+          print('HEADER', file=sys.stderr)
+          header_html = to_html(header_list)
+          print('BODY', file=sys.stderr)
+          body_html = to_html(body_list, kind='Requirement')
+          html = (f'<details><summary><strong>HEAD</strong></summary>'
+                  f'{header_html}</details>'
+                  f'<details><summary><strong>BODY</strong></summary>'
+                  f'{body_html}</details><body></html>')
+          print(html, file=debug_html)
