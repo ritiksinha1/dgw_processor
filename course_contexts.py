@@ -2,39 +2,7 @@
 """ Look at course lists and their Scribe contexts.
     How to categorize courses as required, possible, forbidden?
 
-    Observed top-level keys at BKL, LEH, QNS:
-
-      MAJOR ['block']
-      MAJOR ['blocktype']
-      MAJOR ['conditional']
-      MAJOR ['copy_rules']
-      MAJOR ['course_list', 'is_pseudo', 'label', 'remark']
-      MAJOR ['course_list', 'is_pseudo', 'label']
-      MAJOR ['group_items', 'label', 'num_groups_required', 'qualifiers']
-      MAJOR ['noncourse']
-      MAJOR ['remark']
-      MAJOR ['subset']
-
-      MINOR ['conditional']
-      MINOR ['course_list', 'is_pseudo', 'label', 'remark']
-      MINOR ['course_list', 'is_pseudo', 'label']
-      MINOR ['group_items', 'label', 'num_groups_required', 'qualifiers']
-      MINOR ['noncourse']
-      MINOR ['remark']
-      MINOR ['subset']
-
-      CONC ['block']
-      CONC ['blocktype']
-      CONC ['conditional']
-      CONC ['copy_rules']
-      CONC ['course_list', 'is_pseudo', 'label', 'remark']
-      CONC ['course_list', 'is_pseudo', 'label']
-      CONC ['group_items', 'label', 'num_groups_required', 'qualifiers']
-      CONC ['noncourse']
-      CONC ['remark']
-      CONC ['subset']
-
-    We want to extract both the context (the label structure) and the specificity (how many
+    The goal is to extract both the context (the label structure) and the specificity (how many
     alternatives there are) for each course.
 
     Block, blocktype, copy_rules, noncourse, and remarks are all irrelevant for present purposes.
@@ -49,6 +17,7 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_interpreter import dgw_interpreter
+from quarantined_block import quarantine_dict
 
 from pprint import pprint
 from inspect import currentframe, getframeinfo
@@ -57,21 +26,6 @@ DEBUG = os.getenv('DEBUG_CONTEXTS')
 
 Course = namedtuple('Course',
                     'course_id offer_nbr discipline catalog_number title credits restriction')
-
-
-# Quarantined blocks
-quarantine_dict = {}
-with open('/Users/vickery/Projects/dgw_processor/testing/quarantine_list') as ql_file:
-  quarantine_list = ql_file.readlines()
-  for line in quarantine_list:
-    if line[0] == '#':
-      continue
-    body, ellucian = line.split('::')
-    ellucian = 'y' in ellucian or 'Y' in ellucian
-    college, requirement_id, *explanation = body.split(' ')
-    explanation = ' '.join(explanation).strip()
-
-    quarantine_dict[(college, requirement_id)] = (explanation.strip('.'), ellucian)
 
 
 # search_for()

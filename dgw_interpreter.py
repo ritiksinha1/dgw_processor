@@ -23,6 +23,7 @@ from antlr4.error.ErrorListener import ErrorListener
 from pgconnection import PgConnection
 from psycopg2 import Binary
 
+from quarantined_blocks import quarantine_dict
 from dgw_filter import dgw_filter
 from dgw_handlers import dispatch
 from dgw_utils import catalog_years
@@ -30,20 +31,6 @@ from dgw_utils import catalog_years
 DEBUG = os.getenv('DEBUG_INTERPRETER')
 
 sys.setrecursionlimit(10**6)
-
-# Quarantined blocks
-Row = namedtuple('Row', 'institution requirement_id explanation can_ellucian')
-quarantine_dict = {}
-with open('/Users/vickery/Projects/dgw_processor/quarantine_list.csv') as qfile:
-  reader = csv.reader(qfile)
-  for line in reader:
-    if reader.line_num == 1 or len(line) == 0 or line[0].startswith('#'):
-      continue
-    row = Row._make(line)
-    ellucian = row.can_ellucian.lower().startswith('y')
-
-    quarantine_dict[(row.institution, row.requirement_id)] = (row.explanation.strip('.'),
-                                                              row.can_ellucian)
 
 
 # dgw_interpreter()

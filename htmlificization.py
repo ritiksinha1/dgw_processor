@@ -19,8 +19,9 @@ from pprint import pprint
 from collections import namedtuple
 
 from course_lookup import lookup_course
-from dgw_interpreter import dgw_interpreter, catalog_years
 
+from quarantined_blocks import quarantine_dict
+from dgw_interpreter import dgw_interpreter, catalog_years
 from pgconnection import PgConnection
 
 DEBUG = os.getenv('DEBUG_HTML')
@@ -34,20 +35,6 @@ cursor = conn.cursor()
 cursor.execute('select code, name from cuny_institutions')
 college_names = {row.code: row.name for row in cursor.fetchall()}
 conn.close()
-
-# Quarantined blocks
-Row = namedtuple('Row', 'institution requirement_id explanation can_ellucian')
-quarantine_dict = {}
-with open('/Users/vickery/Projects/dgw_processor/quarantine_list.csv') as qfile:
-  reader = csv.reader(qfile)
-  for line in reader:
-    if reader.line_num == 1 or len(line) == 0 or line[0].startswith('#'):
-      continue
-    row = Row._make(line)
-    ellucian = row.can_ellucian.lower().startswith('y')
-
-    quarantine_dict[(row.institution, row.requirement_id)] = (row.explanation.strip('.'),
-                                                              row.can_ellucian)
 
 
 # list_of_courses()
@@ -854,6 +841,9 @@ if __name__ == '__main__':
     if not requirement_id.isdecimal():
       sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
     requirement_id = f'RA{int(requirement_id):06}'
+    if (institution, requirement_id) in quarantine_dict:
+      exit(f'({institution} {requirement_id}) is quarantined.')
+
     # Look up the block type and value
     conn = PgConnection()
     cursor = conn.cursor()
@@ -940,9 +930,12 @@ if __name__ == '__main__':
                        f"   and period_stop = '99999999'")
         assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
                                       f'for {institution} {requirement_id}')
-        requirement_id, block_type, block_value, requirement_text, requirement_html = cursor.fetchone()
+        requirement_id, block_type, block_value, requirement_text, requirement_html = cursor\
+            .fetchone()
         conn.close()
-
+        if (institution, requirement_id) in quarantine_dict:
+          print(f'({institution} {requirement_id}) is quarantined: skipping')
+          continue
         print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
               file=sys.stderr)
         with open('./debug.html', 'w') as debug_html:
