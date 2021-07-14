@@ -962,9 +962,11 @@ if __name__ == '__main__':
                                                    block_value,
                                                    period_range=args.period,
                                                    update_db=args.update_db)
-          print('HEADER', file=sys.stderr)
+          if DEBUG:
+            print('HEADER', file=sys.stderr)
           header_html = to_html(header_list)
-          print('BODY', file=sys.stderr)
+          if DEBUG:
+            print('BODY', file=sys.stderr)
           body_html = to_html(body_list, kind='Requirement')
           html = (f'<details><summary><strong>HEAD</strong></summary>'
                   f'{header_html}</details>'
