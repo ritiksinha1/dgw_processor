@@ -8,6 +8,9 @@
     Block, blocktype, copy_rules, noncourse, and remarks are all irrelevant for present purposes.
     Specificity depends on the structure of the course_list, the group (and area) structure, and
     conditional factors.
+
+    This code is modeled on htmlificization, and assumes that the header and body lists in the
+    database never need to be interpreted unless they are missing.
 """
 
 import os
@@ -17,7 +20,7 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_interpreter import dgw_interpreter
-from quarantined_block import quarantine_dict
+from quarantined_blocks import quarantine_dict
 
 from pprint import pprint
 from inspect import currentframe, getframeinfo
@@ -25,92 +28,7 @@ from inspect import currentframe, getframeinfo
 DEBUG = os.getenv('DEBUG_CONTEXTS')
 
 Course = namedtuple('Course',
-                    'course_id offer_nbr discipline catalog_number title credits restriction')
-
-
-# search_for()
-# -------------------------------------------------------------------------------------------------
-def search_for(where: any, current_path: list, found_list: list) -> None:
-  """ Depth-first recursive search of nested lists/dicts for course_list keys.
-      For each course_list, tell how many are required, and list the active ones found.
-  """
-  current_path_str = ' | '.join(current_path)
-  if isinstance(where, list):
-    print(f'List of {len(where)} items @ {current_path_str}')
-    for index in range(len(where)):
-      search_for(where[index], current_path, found_list)
-    print(f'pop {getframeinfo(currentframe()).lineno}:', current_path.pop())
-
-  elif isinstance(where, dict):
-    # print(f'Dict with {len(where.keys())} keys:', ' : '.join(list(where.keys())))
-    if 'label' in where.keys():
-      current_path.append(where['label'])
-
-    for key, value in where.items():
-      print(f'{key} @ {current_path_str}')
-      if key == 'course_list':
-        # Bingo!
-        # Now to extract the number of classes and/or credits required and:
-        #   for each active course: its course_id:offer_nbr, discipline-catalog_number, title, and
-        #                           min credits
-        #   for each missing course: its discipline-catalog_number
-        requirement_str = []
-        # Suffix handling: value might be missing, float or int, unity, or a range.
-        if (num_classes := where['num_classes']) is not None:
-          try:
-            suffix = '' if float(num_classes) == 1 else 'es'
-          except ValueError as ve:
-            suffix = 'es'
-          requirement_str.append(f'{num_classes} class{suffix}')
-        if (num_credits := where['num_credits']) is not None:
-          try:
-            suffix = '' if float(num_credits) == 1 else 's'
-          except ValueError as ve:
-            suffix = 's'
-          requirement_str.append(f'{num_credits} credit{suffix}')
-        if 'label' in value.keys() and (label := value['label']) is not None:
-          label = value['label']
-          in_clause = f' in {label}'
-        else:
-          label = ''
-          in_clause = ''
-        requirement_str = ' or '.join(requirement_str) + in_clause
-        # Active courses
-        active_courses = [Course._make(c) for c in value['active_courses']]
-        # Missing courses
-        missing_courses = [f'{c[0]} {c[1]}' for c in value['missing_courses']]
-        missing_msg = '' if len(missing_courses) == 0 else (f'Missing from CUNYfirst: '
-                                                            f'{" and ".join(missing_courses)}')
-
-        found_list.append(''.join(f'[{p}]' for p in current_path) + f' {requirement_str}' + ' from '
-                          + ' or '.join([f'{c.course_id:06}:{c.offer_nbr}'
-                                         for c in active_courses]) + missing_msg)
-
-      elif key == 'group':
-        assert isinstance(value, dict) or isinstance(value, list)
-        # Tell how many groups are required and how many groups there are to choose from
-        name_str = 'Unnamed'
-        num_required = 'unknown'
-        num_available = 'unknown'
-        if isinstance(value, dict):
-          for k, v in value.items():
-            if k == 'label':
-              name_str = v
-            if k == 'num_groups_required':
-              num_required = v
-              suffix = '' if len(v) == 1 else 's'
-            if k == 'group_items':
-              num_available = len(v)
-          current_path.append(f'{name_str}: {num_required} group{suffix} out of {num_available}')
-        else:
-          for index in range(len(value)):
-            search_for(value[index], current_path, found_list)
-
-      elif key == 'conditional':
-        print('conditional')
-
-      else:
-        search_for(value, current_path, found_list)
+                    'course_id offer_nbr context_path, num_alternatives')
 
 
 # Context Handlers
@@ -122,7 +40,6 @@ def do_course_list(item: dict) -> str:
   if DEBUG:
     print('*** do_course_list()', file=sys.stderr)
   return_str = ''
-
 
   return return_str
 
@@ -143,6 +60,41 @@ def do_conditional(item: dict) -> str:
   return ''
 
 
+def iter_list(items: list) -> list:
+  """
+  """
+  if DEBUG:
+    print(f'*** iterlist({len(items)=})')
+  return_list = []
+  for value in items:
+    if isinstance(value, list):
+      return_list += iter_list(value)
+    elif isinstance(value, dict):
+      return_list += iter_dict(value)
+    else:
+      print(f'iter_list: Neither list nor dict: {value=} {len(return_list)=}', file=sys.stderr)
+
+  return return_list
+
+
+def iter_dict(item: dict) -> list:
+  """
+  """
+  if DEBUG:
+    print(f'*** iterlist({item.keys()=})')
+  return_list = []
+  for key, value in item.items():
+    if isinstance(value, list):
+      return_list += iter_list(value)
+    elif isinstance(value, dict):
+      return_list += iter_dict(value)
+    else:
+      print(f'iter_dict: Neither list nor dict: {key=} {value=} {len(return_list)=}',
+            file=sys.stderr)
+
+  return return_list
+
+
 # __main__()
 # =================================================================================================
 if __name__ == '__main__':
@@ -150,7 +102,7 @@ if __name__ == '__main__':
   parser.add_argument('-i', '--institutions', nargs='*', default=['qns'])
   parser.add_argument('-t', '--block_types', nargs='*', default=['major'])
   parser.add_argument('-v', '--block_values', nargs='*', default=['csci-ba'])
-  parser.add_argument('-f', '--force', action='store_true')
+  parser.add_argument('-f', '--force', action='store_true', default=False)
   parser.add_argument('-p', '--period', default='current')
   args = parser.parse_args()
   period = args.period.lower()
@@ -194,12 +146,11 @@ if __name__ == '__main__':
               print(f'{institution}, {row.requirement_id} is quarantined')
               continue
             if period == 'current' and row.period_stop != '99999999':
-              print(f'{institution}, {row.requirement_id} is not current')
               continue
-            # print(f'{institution} {block_type} {block_value} {period}: ', end='')
+            print(f'{institution} {block_type} {block_value} {period}: ', end='')
             header_list, body_list = (row.header_list, row.body_list)
-            if (len(header_list) == 0 and len(body_list)) == 0 or args.force:
-              print('reinterpret')
+            if (len(header_list) == 0 and len(body_list) == 0) or args.force:
+              print(f'[{len(header_list)=}] {args.force=} reinterpret')
               header_list, body_list = dgw_interpreter(institution, block_type, block_value,
                                                        period_range=period)
 
@@ -207,21 +158,5 @@ if __name__ == '__main__':
             pprint(body_list, stream=debug)
             print('\n', file=debug)
 
-            # What are the top-level rules(?) in the body?
-            for item in body_list:
-              keys = sorted(list(item.keys()))
-              if 'course_list' in keys:
-                do_course_list(item)
-              elif 'group_items' in keys:
-                do_group_items(item)
-              elif 'conditional' in keys:
-                do_conditional(item)
-              else:
-                pass
-
-            # Find course lists in the body
-            # current_path = [institution[0:3], block_type, block_value]
-            # contexts = []
-            # search_for(body_list, current_path, contexts)
-            # for context in contexts:
-            #   print(context)
+            # Iterate over the body
+            pprint(iter_list(body_list))
