@@ -741,7 +741,8 @@ def subset(ctx, institution, requirement_id):
   if qualifiers := get_qualifiers(ctx, institution, requirement_id):
     return_dict.update(qualifiers)
 
-  return_dict['label'] = get_label(ctx)
+  if label_str := get_label(ctx):
+    return_dict['label'] = label_str
 
   if ctx.remark():
     return_dict['remark'] = ' '.join([s.getText().strip(' "')
