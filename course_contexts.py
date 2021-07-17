@@ -38,7 +38,7 @@ ActiveCourse = namedtuple('ActiveCourse',
 # doesn’t tell whether the requirement itself is required or optional: that depends on its group and
 # conditional contexts, if any.
 Requirement = namedtuple('Requirement',
-                         'title num_credits_courses is_disjunctive active_courses')
+                         'requirement_name num_classes num_courses is_disjunctive active_courses')
 
 
 # Context Handlers
@@ -97,9 +97,10 @@ def iter_dict(item: dict) -> list:
     print(f'*** iter_dict({item.keys()=})', file=sys.stderr)
   return_list = []
 
-  if 'label' in item.keys():
-    return_list.append(item.pop('label'))
-    print(f'Label: {return_list[-1]}', file=sys.stderr)
+  try:
+    requirement_name = item.pop('label')
+  except KeyError as ke:
+    requirement_name = None
 
   if 'course_list' in item.keys():
     # If there is a course_list, there's also info about num classes/credits,as well as whether
@@ -116,7 +117,7 @@ def iter_dict(item: dict) -> list:
       else:
         num_credits = f'{float(min_credits):0.1f}-{float(max_credits):0.1f}'
     else:
-      num_credits = None
+      num_credits = 0
     cr_sfx = '' if num_credits == '1.0' else 's'
 
     if min_classes:
@@ -125,7 +126,7 @@ def iter_dict(item: dict) -> list:
       else:
         num_classes = f'{min_classes}-{max_classes}'
     else:
-      num_classes = None
+      num_classes = 0
     cl_sfx = '' if num_classes == '1' else 'es'
 
     if num_classes and num_credits:
@@ -137,8 +138,6 @@ def iter_dict(item: dict) -> list:
       class_credit_str = f'{num_credits} credit{cr_sfx}'
     else:
       class_credit_str = None
-    if class_credit_str:
-      print(f'{class_credit_str=}', file=sys.stderr)
 
     # Discard course_list['allow_xxx'] entries.
     item.pop('allow_credits')
@@ -151,23 +150,50 @@ def iter_dict(item: dict) -> list:
     except KeyError as ke:
       label_str = None
 
+    # If the list has a name and there is already a requirement name, emit the latter as a
+    # separate part of the context.
+    if requirement_name:
+      if label_str:
+        return_list.append(requirement_name)
+        print(f'Requirement Name: {requirement_name=} with {label_str=}', file=sys.stderr)
+        requirement_name = label_str
+    else:
+      if label_str:
+        requirement_name = label_str
+      else:
+        requirement_name = 'NO NAME'
+
     try:
       list_type = course_list['list_type']
     except KeyError as ke:
       list_type = None
-    print(f'Conjunction: {list_type}', file=sys.stderr)
 
     active_courses = course_list['active_courses']
     assert list_type or len(active_courses) == 1, (f'No list_type for list length '
                                                    f'{len(active_courses)}')
-    requirement = Requirement._make([label_str, class_credit_str, list_type == 'OR', []])
+    # The requirement starts with an empty list of courses ...
+    requirement = Requirement._make([requirement_name, num_classes, num_credits, list_type == 'OR',
+                                    []])
+    # ... and now add in the active courses that can/do satisfy the requirement.
     for active_course in active_courses:
       requirement.active_courses.append(ActiveCourse._make(active_course))
-    print(f'{requirement}', file=sys.stderr)
+    suffix = ' satisfies' if len(requirement.active_courses) == 1 else 's satisfy'
+    print(f'\n{len(requirement.active_courses)} active course{suffix} '
+          f'“{requirement.requirement_name}”\n  {class_credit_str}',
+          file=sys.stderr)
+    if len(requirement.active_courses) > 1:
+      any_all = 'Any' if requirement.is_disjunctive else 'All'
+      print(f'  {any_all} of the following courses:', file=sys.stderr)
+    for active_course in requirement.active_courses:
+      if active_course.qualifiers:
+        qualifiers_str = f' with {active_course.qualifiers}'
+      else:
+        qualifiers_str = ''
+      print(f'  {active_course.course_id}:{active_course.offer_nbr} {active_course.discipline} '
+            f'“{active_course.title}”{qualifiers_str}', file=sys.stderr)
 
   try:
     conditional = item.pop('conditional')
-    print('Condition:', conditional['condition'], file=sys.stderr)
   except KeyError as ke:
     pass
 
@@ -175,12 +201,15 @@ def iter_dict(item: dict) -> list:
     groups = item.pop('group')
     assert len(groups) == 1
     group = groups[0]
+    assert isinstance(group, dict)
     label_str = group['label']
     num_required = group['num_groups_required']
     num_groups = len(group['group_items'])
     suffix = '' if int(num_groups) == 1 else 's'
     group_str = f'{num_required} of {num_groups} group{suffix}'
-    print(f'Group Requirement: {group_str}', file=sys.stderr)
+    print(f'\nGroup Requirement: {group_str}', file=sys.stderr)
+    iter_dict(group)
+
   except KeyError as ke:
     if ke.args[0] != 'group':
       print(f'Group KeyError: {ke=}', file=sys.stderr)
@@ -253,7 +282,7 @@ if __name__ == '__main__':
             print(f'{institution} {block_type} {block_value} {period}')
             header_list, body_list = (row.header_list, row.body_list)
             if (len(header_list) == 0 and len(body_list) == 0) or args.force:
-              print(f'[{len(header_list)=}] {args.force=} reinterpret')
+              print(f'{len(header_list)=}] {args.force=} Reinterpreting')
               header_list, body_list = dgw_interpreter(institution, block_type, block_value,
                                                        period_range=period)
 
