@@ -16,6 +16,8 @@
 import os
 import sys
 
+import csv
+
 from argparse import ArgumentParser
 from collections import namedtuple
 from pgconnection import PgConnection
@@ -23,6 +25,8 @@ from dgw_interpreter import dgw_interpreter
 from quarantined_blocks import quarantine_dict
 
 from pprint import pprint
+from keystruct import key_struct
+
 from inspect import currentframe, getframeinfo
 
 DEBUG = os.getenv('DEBUG_CONTEXTS')
@@ -38,64 +42,90 @@ ActiveCourse = namedtuple('ActiveCourse',
 # doesn’t tell whether the requirement itself is required or optional: that depends on its group and
 # conditional contexts, if any.
 Requirement = namedtuple('Requirement',
-                         'requirement_name num_classes num_courses is_disjunctive active_courses')
+                         'name num_classes num_courses is_disjunctive active_courses')
 
 
-# Context Handlers
-# =================================================================================================
-def do_course_list(item: dict) -> str:
-  """ For a course list, the label gives the requirement name, the length of the list and the
-      conjunction determine how many alternatives there are.
+# emit()
+# -------------------------------------------------------------------------------------------------
+def emit(requirement: Requirement, context: list) -> None:
+  """ During debugging, the emit target is sys.stderr or a spreadsheet, emit_csv. For production
+      the emit target is the database.
   """
   if DEBUG:
-    print('*** do_course_list()', file=sys.stderr)
-  return_str = ''
+    print(f'*** emit({requirement=}, {context=})', file=sys.stderr)
 
-  return return_str
-
-
-def do_group_items(item: dict) -> str:
-  """
-  """
-  if DEBUG:
-    print('*** do_group_items()', file=sys.stderr)
-  return ''
+  print('|'.join(context), requirement.name)
 
 
-def do_conditional(item: dict) -> str:
+# iter_list()
+# -------------------------------------------------------------------------------------------------
+def iter_list(items: list, calling_context: list) -> None:
   """
   """
   if DEBUG:
-    print('*** do_conditional()', file=sys.stderr)
-  return ''
+    print(f'*** iter_list({len(items)=}, {calling_context=})', file=sys.stderr)
 
+  local_context = calling_context + []
 
-def iter_list(items: list) -> list:
-  """
-  """
-  if DEBUG:
-    print(f'*** iter_list({len(items)=})', file=sys.stderr)
-  return_list = []
   for value in items:
     if isinstance(value, list):
-      return_list += iter_list(value)
+      iter_list(value, local_context)
     elif isinstance(value, dict):
-      return_list += iter_dict(value)
+      iter_dict(value, local_context)
     else:
-      print(f'iter_list: Neither list nor dict: {value=} {len(return_list)=}', file=sys.stderr)
+      print(f'iter_list: Neither list nor dict: {value=} {len(local_context)=}', file=sys.stderr)
 
-  return return_list
+  return None
 
 
-def iter_dict(item: dict) -> list:
-  """ If there is just a label, that gets added to the context list. If there is a course_list,
-      that's used to build a new Requirement to be added; groups have to be recognized because they
-      add context. Subsets do not have to be recognized because their label is all that matters,
-      and that will be picked up.
+# iter_dict()
+# -------------------------------------------------------------------------------------------------
+def iter_dict(item: dict, calling_context: list) -> None:
+  """ If there is a course list, emit the context in which it occurs, the nature of the requirement,
+      and the courses.
+      Otherwise, augment the context and process sub-lists and sub-dicts.
   """
   if DEBUG:
-    print(f'*** iter_dict({item.keys()=})', file=sys.stderr)
-  return_list = []
+    print(f'*** iter_dict({item.keys()=}, {calling_context=})', file=sys.stderr)
+
+  local_context = calling_context + []
+
+  # Subsets, Groups, and Conditionals add to the local context
+  try:
+    subset = item.pop('subset')
+    label_str = subset.pop('label')
+    if label_str:
+      local_context += ['label_str']
+      print(f'\nSubset Name: {label_str}', file=sys.stderr)
+    requirements = subset.pop('requirements')
+    print(f'{len(requirements)} Requirements', file=sys.stderr)
+    iter_list(requirements, local_context)
+    assert len(item) == 0
+  except KeyError as ke:
+    assert ke.args[0] == 'subset', f'Subset missing {ke}'
+
+  try:
+    conditional = item.pop('conditional')
+    conditional_str = 'Conditional Not Implemented Yet'
+    iter_dict(conditional, local_context + [conditional_str])
+  except KeyError as ke:
+    pass
+
+  try:
+    groups = item.pop('group')
+    assert len(groups) == 1
+    group = groups[0]
+    assert isinstance(group, dict)
+    label_str = group['label']
+    num_required = group['num_groups_required']
+    num_groups = len(group['group_items'])
+    suffix = '' if int(num_groups) == 1 else 's'
+    group_str = f'{num_required} of {num_groups} group{suffix}'
+    print(f'\nGroup Requirement: {group_str}', file=sys.stderr)
+    iter_dict(group, local_context + [group_str])
+  except KeyError as ke:
+    if ke.args[0] != 'group':
+      print(f'Group KeyError: {ke=}', file=sys.stderr)
 
   try:
     requirement_name = item.pop('label')
@@ -154,7 +184,7 @@ def iter_dict(item: dict) -> list:
     # separate part of the context.
     if requirement_name:
       if label_str:
-        return_list.append(requirement_name)
+        local_context.append(requirement_name)
         print(f'Requirement Name: {requirement_name=} with {label_str=}', file=sys.stderr)
         requirement_name = label_str
     else:
@@ -179,7 +209,7 @@ def iter_dict(item: dict) -> list:
       requirement.active_courses.append(ActiveCourse._make(active_course))
     suffix = ' satisfies' if len(requirement.active_courses) == 1 else 's satisfy'
     print(f'\n{len(requirement.active_courses)} active course{suffix} '
-          f'“{requirement.requirement_name}”\n  {class_credit_str}',
+          f'“{requirement.name}”\n  {class_credit_str}',
           file=sys.stderr)
     if len(requirement.active_courses) > 1:
       any_all = 'Any' if requirement.is_disjunctive else 'All'
@@ -192,39 +222,17 @@ def iter_dict(item: dict) -> list:
       print(f'  {active_course.course_id}:{active_course.offer_nbr} {active_course.discipline} '
             f'“{active_course.title}”{qualifiers_str}', file=sys.stderr)
 
-  try:
-    conditional = item.pop('conditional')
-  except KeyError as ke:
-    pass
-
-  try:
-    groups = item.pop('group')
-    assert len(groups) == 1
-    group = groups[0]
-    assert isinstance(group, dict)
-    label_str = group['label']
-    num_required = group['num_groups_required']
-    num_groups = len(group['group_items'])
-    suffix = '' if int(num_groups) == 1 else 's'
-    group_str = f'{num_required} of {num_groups} group{suffix}'
-    print(f'\nGroup Requirement: {group_str}', file=sys.stderr)
-    iter_dict(group)
-
-  except KeyError as ke:
-    if ke.args[0] != 'group':
-      print(f'Group KeyError: {ke=}', file=sys.stderr)
-
-  # That should be all we‘re intersted in, but double-check:
+  # That should be all we‘re intersted in, but double-check
   for key, value in item.items():
     if isinstance(value, list):
-      return_list += iter_list(value)
+      iter_list(value, local_context)
     elif isinstance(value, dict):
-      return_list += iter_dict(value)
+      iter_dict(value, local_context)
     else:
       print(f'iter_dict: Not label, condition, group, list, or dict: {key=} {value=}',
             file=sys.stderr)
 
-  return return_list
+  return
 
 
 # __main__()
@@ -288,7 +296,8 @@ if __name__ == '__main__':
 
             print(f'*** {institution} {block_type} {block_value} {period}', file=debug)
             pprint(body_list, stream=debug)
+            key_struct(body_list)
             print('\n', file=debug)
 
             # Iterate over the body
-            pprint(iter_list(body_list))
+            iter_list(body_list, [f'{institution} {block_type} {block_value}'])
