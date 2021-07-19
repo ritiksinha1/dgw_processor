@@ -17,6 +17,7 @@ import os
 import sys
 
 import csv
+import json
 
 from argparse import ArgumentParser
 from collections import namedtuple
@@ -26,8 +27,6 @@ from quarantined_blocks import quarantine_dict
 
 from pprint import pprint
 from keystruct import key_struct
-
-from inspect import currentframe, getframeinfo
 
 DEBUG = os.getenv('DEBUG_CONTEXTS')
 
@@ -42,19 +41,79 @@ ActiveCourse = namedtuple('ActiveCourse',
 # doesn’t tell whether the requirement itself is required or optional: that depends on its group and
 # conditional contexts, if any.
 Requirement = namedtuple('Requirement',
-                         'name num_classes num_courses is_disjunctive active_courses')
+                         'institution requirement_id requirement_name '
+                         'num_classes num_credits is_disjunctive active_courses')
 
 
 # emit()
 # -------------------------------------------------------------------------------------------------
 def emit(requirement: Requirement, context: list) -> None:
-  """ During debugging, the emit target is sys.stderr or a spreadsheet, emit_csv. For production
-      the emit target is the database.
+  """ Update the database.
+      -- Program requirements
+      --  The name is the name of the requirement (not the title of the program, which is in the
+      --  requirement_blocks table)
+      --  XXX_required: How many classes/credits are required
+      --  XXX_alternatives: Totals for all the courses that can satisfy this requirement.
+      --  conjunction: classes AND credits versus classes OR credits
+      --  The context is a list of containing requirement names, super-names, super-super-names, ...
+      create table program_requirements (
+      id integer primary key,
+      institution text,
+      requirement_id text,
+      requirement_name text,
+      courses_required integer,
+      course_alternatives integer,
+      conjunction text,
+      credits_required real,
+      credit_alternatives real,
+      context jsonb,
+      foreign key (institution, requirement_id) references requirement_blocks
+      );
+
+      -- Map courses to program requirements.
+      create table course_program_mappings (
+      course_id integer,
+      offer_nbr integer,
+      requirement_id integer references program_requirements(id),
+      qualifiers text,
+      foreign key (course_id, offer_nbr) references cuny_courses,
+      primary key (course_id, offer_nbr, requirement_id)
+      );
   """
   if DEBUG:
     print(f'*** emit({requirement=}, {context=})', file=sys.stderr)
 
-  print('|'.join(context), requirement.name)
+  assert len(context) > 0, f'emit with no context'
+  conn = PgConnection()
+  cursor = conn.cursor()
+  institution, requirement_id, block_type, block_value = context.pop(0).split()
+
+  and_or = 'OR' if requirement.is_disjunctive else 'AND'
+  course_alternatives = len(requirement.active_courses)
+  credit_alternatives = sum([float(course.credits) for course in requirement.active_courses])
+
+  print(institution, requirement_id, requirement.requirement_name, requirement.num_classes,
+        course_alternatives, and_or, requirement.num_credits, credit_alternatives, context)
+  cursor.execute(f"""delete from program_requirements
+                     where institution = '{institution}'
+                       and requirement_id = 'requirement_id'
+                  """)
+  cursor.execute("""insert into program_requirements values
+                      (default, %s, %s, %s, %s, %s, %s, %s, %s, %s) returning id
+                 """, (institution, requirement_id, requirement.requirement_name,
+                       requirement.num_classes, course_alternatives, and_or,
+                       requirement.num_credits, credit_alternatives, json.dumps(context)))
+  assert cursor.rowcount == 1
+  program_requirement_id = int(cursor.fetchone().id)
+  for course in requirement.active_courses:
+    cursor.execute(f"""insert into course_program_mappings values(
+                       {course.course_id},
+                       {course.offer_nbr},
+                       {program_requirement_id},
+                       '{course.qualifiers}')
+                    """)
+    print(cursor.query, file=sys.stderr)
+  conn.commit()
 
 
 # iter_list()
@@ -95,7 +154,7 @@ def iter_dict(item: dict, calling_context: list) -> None:
     subset = item.pop('subset')
     label_str = subset.pop('label')
     if label_str:
-      local_context += ['label_str']
+      local_context += [label_str]
       print(f'\nSubset Name: {label_str}', file=sys.stderr)
     requirements = subset.pop('requirements')
     print(f'{len(requirements)} Requirements', file=sys.stderr)
@@ -202,14 +261,15 @@ def iter_dict(item: dict, calling_context: list) -> None:
     assert list_type or len(active_courses) == 1, (f'No list_type for list length '
                                                    f'{len(active_courses)}')
     # The requirement starts with an empty list of courses ...
-    requirement = Requirement._make([requirement_name, num_classes, num_credits, list_type == 'OR',
-                                    []])
+    institution, requirement_id, *rest = local_context[0].split()
+    requirement = Requirement._make([institution, requirement_id, requirement_name, num_classes,
+                                    num_credits, list_type == 'OR', []])
     # ... and now add in the active courses that can/do satisfy the requirement.
     for active_course in active_courses:
       requirement.active_courses.append(ActiveCourse._make(active_course))
     suffix = ' satisfies' if len(requirement.active_courses) == 1 else 's satisfy'
     print(f'\n{len(requirement.active_courses)} active course{suffix} '
-          f'“{requirement.name}”\n  {class_credit_str}',
+          f'“{requirement.requirement_name}”\n  {class_credit_str}',
           file=sys.stderr)
     if len(requirement.active_courses) > 1:
       any_all = 'Any' if requirement.is_disjunctive else 'All'
@@ -221,7 +281,7 @@ def iter_dict(item: dict, calling_context: list) -> None:
         qualifiers_str = ''
       print(f'  {active_course.course_id}:{active_course.offer_nbr} {active_course.discipline} '
             f'“{active_course.title}”{qualifiers_str}', file=sys.stderr)
-
+    emit(requirement, local_context)
   # That should be all we‘re intersted in, but double-check
   for key, value in item.items():
     if isinstance(value, list):
@@ -296,8 +356,8 @@ if __name__ == '__main__':
 
             print(f'*** {institution} {block_type} {block_value} {period}', file=debug)
             pprint(body_list, stream=debug)
-            key_struct(body_list)
+            # key_struct(body_list)
             print('\n', file=debug)
 
             # Iterate over the body
-            iter_list(body_list, [f'{institution} {block_type} {block_value}'])
+            iter_list(body_list, [f'{institution} {row.requirement_id} {block_type} {block_value}'])

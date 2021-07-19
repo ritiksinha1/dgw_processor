@@ -1,46 +1,34 @@
-create schema if not exists dgw;
 -- What requirements can a course satisfy?
-drop table if exists dgw.active_courses cascade;
-drop table if exists dgw.requirements cascade;
-drop table if exists dgw.mappings cascade;
+drop table if exists program_requirements cascade;
+drop table if exists course_program_mappings cascade;
 
--- One row for each active course that has been found in any list of courses for any requirement.
--- This information is redundant to a subset of the information in cuny_curriculum.cuny_courses.
-create table dgw.active_courses (
-course_id integer,
-offer_nbr integer,
-institution text,
-discipline text,
-catalog_nbr text,
-title text,
-credits text,
-primary key (course_id, offer_nbr));
-
--- One row for each requirement.
---  The type will always be MAJOR, CONC(ENTRATION), or MINOR
---  The value will be the name of the type (PSY-BA, CSCI-BS, etc.)
+-- Program requirements
+--  The name is the name of the requirement (not the title of the program, which is in the
+--  requirement_blocks table)
 --  XXX_required: How many classes/credits are required
 --  XXX_alternatives: Totals for all the courses that can satisfy this requirement.
---  The context is a '|' concatenated list of requirement names, sub-names, sub-sub-names, ...
-create table dgw.requirements (
-id integer primary key,
+--  conjunction: classes AND credits versus classes OR credits
+--  The context is a list of containing requirement names, super-names, super-super-names, ...
+create table program_requirements (
+id serial primary key,
 institution text,
-type text,
-value text,
+requirement_id text,
+requirement_name text,
 courses_required integer,
 course_alternatives integer,
+conjunction text,
 credits_required real,
 credit_alternatives real,
-context text
+context jsonb,
+foreign key (institution, requirement_id) references requirement_blocks
 );
 
--- For each course that satisfies a requirement tell which requirement and whether there is a
--- residency requirement.
-create table dgw.mappings (
+-- Map courses to program requirements.
+create table course_program_mappings (
 course_id integer,
 offer_nbr integer,
-requirement_id integer references dgw.requirements,
-residency_required boolean,
-foreign key (course_id, offer_nbr) references dgw.active_courses,
-primary key (course_id, offer_nbr, requirement_id)
+program_requirement_id integer references program_requirements on delete cascade,
+qualifiers text,
+foreign key (course_id, offer_nbr) references cuny_courses,
+primary key (course_id, offer_nbr, program_requirement_id)
 );
