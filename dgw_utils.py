@@ -651,7 +651,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
 
   # The dict to be returned:
   return_dict = {'scribed_courses': [],
-                 'list_type': '',
+                 'list_type': None,
                  'label': None,
                  'active_courses': [],
                  'inactive_courses': [],
@@ -688,7 +688,13 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     return_dict['list_type'] = None
     list_items = []
 
+  list_type = return_dict['list_type']
+
   scribed_courses += get_scribed_courses(course_item, list_items)
+  if len(scribed_courses) > 1 and list_type is None:
+    # This would be a grammar/parser error. But see the active_course list check at the end of this
+    # function.
+    print(f'{institution} {requirement_id} {list_type=} {len(scribed_courses)=}', file=sys.stderr)
 
   # Sublists
   if ctx.except_list():
@@ -846,6 +852,12 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
     for scribed_course in return_dict['scribed_courses']:
       if (scribed_course[0], scribed_course[1]) not in found_courses:
         missing_courses.append(scribed_course)
+
+  # Check there is a list_type when multiple active courses. This happens when there is just one
+  # scribed course, thus no and_list or or_list, but it expanded to  multiple active courses because
+  # of wildcard(s). It’s an OR list.
+  if len(active_courses) > 1 and list_type is None:
+    return_dict['list_type'] = 'OR'
 
   return {'course_list': return_dict}
 

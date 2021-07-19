@@ -720,7 +720,7 @@ def subset(ctx, institution, requirement_id):
 
   if ctx.copy_rules():
     assert len(ctx.copy_rules()) == 1
-    return_dict['copy_rules'] = copy_rules(ctx.copy_rules()[0], institution, requirement_id)
+    return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
 
   if ctx.course_list():
     return_dict['course_lists'] = [build_course_list(context, institution, requirement_id)

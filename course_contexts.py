@@ -29,6 +29,7 @@ from pprint import pprint
 from keystruct import key_struct
 
 DEBUG = os.getenv('DEBUG_CONTEXTS')
+log_file = open('./course_contexts.log', 'w')
 
 # Information about active courses found in course lists.
 ActiveCourse = namedtuple('ActiveCourse',
@@ -110,10 +111,21 @@ def emit(requirement: Requirement, context: list) -> None:
                        {course.course_id},
                        {course.offer_nbr},
                        {program_requirement_id},
-                       '{course.qualifiers}')
+                       '{course.qualifiers}') on conflict do nothing
                     """)
-    print(cursor.query, file=sys.stderr)
+    if cursor.rowcount == 0:
+      cursor.execute(f"""select qualifiers
+                           from course_program_mappings
+                           where program_requirement_id = {program_requirement_id}
+                             and course_id = {course.course_id}
+                             and offer_nbr = {course.offer_nbr}
+                      """)
+      old_qualifiers = cursor.fetchone().qualifiers
+      new_qualifiers = course.qualifiers
+      print(f'{institution} {requirement_id} {requirement.requirement_name} duplicated: '
+            f'{old_qualifiers=} {new_qualifiers=}', file=log_file)
   conn.commit()
+  conn.close()
 
 
 # iter_list()
@@ -161,7 +173,8 @@ def iter_dict(item: dict, calling_context: list) -> None:
     iter_list(requirements, local_context)
     assert len(item) == 0
   except KeyError as ke:
-    assert ke.args[0] == 'subset', f'Subset missing {ke}'
+    if ke.args[0] != 'subset':
+      local_context += [f'Rule Subset “{ke.args[0]}” Not Implemented Yet']
 
   try:
     conditional = item.pop('conditional')
@@ -194,11 +207,15 @@ def iter_dict(item: dict, calling_context: list) -> None:
   if 'course_list' in item.keys():
     # If there is a course_list, there's also info about num classes/credits,as well as whether
     # the list is disjunctive of conjunctive.
-    min_credits = item.pop('min_credits')
-    max_credits = item.pop('max_credits')
-    min_classes = item.pop('min_classes')
-    max_classes = item.pop('max_classes')
-    conjunction = item.pop('conjunction')  # This is the credit/classes conjunction
+    try:
+      min_credits = item.pop('min_credits')
+      max_credits = item.pop('max_credits')
+      min_classes = item.pop('min_classes')
+      max_classes = item.pop('max_classes')
+      conjunction = item.pop('conjunction')  # This is the credit/classes conjunction
+    except KeyError as ke:
+      exit(f'{local_context=}: {ke=}')
+
     # Build requirement description
     if min_credits:
       if min_credits == max_credits:
@@ -258,8 +275,9 @@ def iter_dict(item: dict, calling_context: list) -> None:
       list_type = None
 
     active_courses = course_list['active_courses']
-    assert list_type or len(active_courses) == 1, (f'No list_type for list length '
-                                                   f'{len(active_courses)}')
+    assert list_type or len(active_courses) < 2, (f'No list_type for list length '
+                                                  f'{len(active_courses)}')
+
     # The requirement starts with an empty list of courses ...
     institution, requirement_id, *rest = local_context[0].split()
     requirement = Requirement._make([institution, requirement_id, requirement_name, num_classes,
@@ -282,6 +300,7 @@ def iter_dict(item: dict, calling_context: list) -> None:
       print(f'  {active_course.course_id}:{active_course.offer_nbr} {active_course.discipline} '
             f'“{active_course.title}”{qualifiers_str}', file=sys.stderr)
     emit(requirement, local_context)
+
   # That should be all we‘re intersted in, but double-check
   for key, value in item.items():
     if isinstance(value, list):
