@@ -108,22 +108,18 @@ def format_minclass(minclass_dict: dict) -> str:
   """
   """
   pprint(minclass_dict, stream=sys.stderr)
-  number = int(minclass_dict['number'])
-  is_are = 'is' if number == 1 else 'are'
-  course_list = minclass_dict['course_list']
-  if len(course_list) > 0:
-    if len(course_list) == 1 and number == 1:
-      course_list_str = f'{course_list[0]} is required.'
-    elif len(course_list) == 2 and number == 1:
-      course_list_str = f'At least one of {course_list[0]} or {course_list[1]} is required.'
-    else:
-      s = ', '.join(course_list)
-      # “or” list with oxford comma
-      s = s[0:s.rindex(',') + 1] + ' or' + s[s.rindex(',') + 1:]
-      course_list_str = f'At least {number} of {s} {is_are} required.'
-    return f'<p>{course_list_str}</p>'
-
-  return f'<p class="error">Error: invalid MinClass {minclass_dict}</>'
+  try:
+    number = int(minclass_dict['number'])
+    if number < 1:
+      raise ValueError('Minclass with minimum less than 1.')
+    suffix = '' if number == 1 else 'es'
+    rule_str = f'<p>At least {number} class{suffix} required.</p>'
+    label_str, course_list = course_list_details(minclass_dict.pop('course_list'))
+    return f'<details><summary>{label_str}</summary>{rule_str}{course_list}</dict>'
+  except ValueError as ve:
+    return f'<p class="error">Invalid MinClass {ve} {minclass_dict=}</>'
+  except KeyError as ke:
+    return f'<p class="error">Invalid MinClass {ke} {minclass_dict=}</>'
 
 
 # class_credit_to_str()
@@ -601,7 +597,6 @@ def dict_to_html_details_element(info: dict) -> str:
 
   else:
     # Case 2
-
     pseudo_msg = ''
     try:
       pseudo = info.pop('is_pseudo')
@@ -649,14 +644,6 @@ def dict_to_html_details_element(info: dict) -> str:
         else:
           value = info.pop(qualifier)
           cr_str += f'<p class="error">Unhandled qualifier: {qualifier}: {value}</p>'
-    # # Maxperdisc?
-    # try:
-    #   maxperdisc = info.pop('maxperdisc')
-    #   cr_str += format_maxperdisc(maxperdisc)
-    #   if DEBUG:
-    #     print(f'    {cr_str=}', file=sys.stderr)
-    # except KeyError as ke:
-    #   pass
 
     # Other min, max, and num items
     numerics = cr_str
