@@ -22,7 +22,7 @@ import json
 from argparse import ArgumentParser
 from collections import namedtuple
 from pgconnection import PgConnection
-from dgw_interpreter import dgw_interpreter
+from dgw_parser import dgw_parser
 from quarantined_blocks import quarantine_dict
 
 from pprint import pprint
@@ -91,7 +91,23 @@ def emit(requirement: Requirement, context: list) -> None:
 
   and_or = 'OR' if requirement.is_disjunctive else 'AND'
   course_alternatives = len(requirement.active_courses)
-  credit_alternatives = sum([float(course.credits) for course in requirement.active_courses])
+
+  # The number of credit alternatives can be a range 'cause of courses where there is a range.
+  min_credit_alternatives = 0
+  max_credit_alternatives = 0
+  for course in requirement.active_courses:
+    if ':' in course.credits:
+      min_credits, max_credits = course.credits.split(':')
+      min_credit_alternatives += float(min_credits)
+      max_credit_alternatives += float(max_credits)
+    else:
+      num_credits = float(course.credits)
+      min_credit_alternatives += num_credits
+      max_credit_alternatives += num_credits
+  if min_credit_alternatives == max_credit_alternatives:
+    credit_alternatives = f'{min_credit_alternatives:0.1f}'
+  else:
+    credit_alternatives = f'{min_credit_alternatives:0.1f} to {max_credit_alternatives:0.1f}'
 
   print(institution, requirement_id, requirement.requirement_name, requirement.num_classes,
         course_alternatives, and_or, requirement.num_credits, credit_alternatives, context)
@@ -126,6 +142,28 @@ def emit(requirement: Requirement, context: list) -> None:
             f'{old_qualifiers=} {new_qualifiers=}', file=log_file)
   conn.commit()
   conn.close()
+
+
+# process_maxperdisc()
+# -------------------------------------------------------------------------------------------------
+def process_maxperdisc(mpd_dict: dict, calling_context) -> None:
+  """
+  """
+  if DEBUG:
+    print(f'*** process_maxperdisc({mpd_dict=}, {calling_context=})')
+  local_context = calling_context + []
+  return None
+
+
+# process_minclass()
+# -------------------------------------------------------------------------------------------------
+def process_minclass(mcl_dict: dict, calling_context) -> None:
+  """
+  """
+  if DEBUG:
+    print(f'*** process_minclass({mcl_dict=}, {calling_context=})')
+  local_context = calling_context + []
+  return None
 
 
 # iter_list()
@@ -227,7 +265,7 @@ def iter_dict(item: dict, calling_context: list) -> None:
       if min_credits == max_credits:
         num_credits = f'{float(min_credits):0.1f}'
       else:
-        num_credits = f'{float(min_credits):0.1f}-{float(max_credits):0.1f}'
+        num_credits = f'{float(min_credits):0.1f}—{float(max_credits):0.1f}'
     else:
       num_credits = 0
     cr_sfx = '' if num_credits == '1.0' else 's'
@@ -249,7 +287,21 @@ def iter_dict(item: dict, calling_context: list) -> None:
     elif num_credits:
       class_credit_str = f'{num_credits} credit{cr_sfx}'
     else:
-      class_credit_str = None
+      class_credit_str = ''
+
+    # The following qualifieres are legal, but we implement only those actually in use.
+    possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
+                           'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+                           'proxy_advice', 'rule_tag', 'samedisc', 'share']
+    handled_qualifiers = {'maxperdisc': process_maxperdisc, 'minclass': process_minclass}
+    qualifiers_str = ''
+    for qualifier in possible_qualifiers:
+      if qualifier in item.keys():
+        if qualifier in handled_qualifiers.keys():
+          handled_qualifiers[qualifier](item.pop(qualifier), local_context)
+        else:
+          value = item.pop(qualifier)
+          print(f'Unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
 
     # Discard course_list['allow_xxx'] entries, if present
     if 'allow_credits' in item.keys():
@@ -367,7 +419,7 @@ if __name__ == '__main__':
           if block_value.startswith('MHC') or block_value.isdigit():
             continue
           cursor.execute(f"""
-        select requirement_id, period_stop, requirement_text, header_list, body_list
+        select requirement_id, period_stop, requirement_text, parse_tree
           from requirement_blocks
          where institution = '{institution}'
            and block_type = '{block_type}'
@@ -380,12 +432,12 @@ if __name__ == '__main__':
             if period == 'current' and row.period_stop != '99999999':
               continue
             print(f'{institution} {block_type} {block_value} {period}')
-            header_list, body_list = (row.header_list, row.body_list)
-            if (len(header_list) == 0 and len(body_list) == 0) or args.force:
-              print(f'{len(header_list)=}] {args.force=} Reinterpreting')
-              header_list, body_list = dgw_interpreter(institution, block_type, block_value,
-                                                       period_range=period)
-
+            parse_tree = (row.parse_tree)
+            if (len(parse_tree.keys()) == 0) or args.force:
+              print(f'{parse_tree=}] {args.force=} Reinterpreting')
+              parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
+            header_list = parse_tree['header_list']  # Ignored by this app
+            body_list = parse_tree['body_list']
             print(f'*** {institution} {block_type} {block_value} {period}', file=debug)
             pprint(body_list, stream=debug)
             # key_struct(body_list)
