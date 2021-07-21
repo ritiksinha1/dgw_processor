@@ -21,7 +21,7 @@ from collections import namedtuple
 from course_lookup import lookup_course
 
 from quarantined_blocks import quarantine_dict
-from dgw_interpreter import dgw_interpreter, catalog_years
+from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection
 
 DEBUG = os.getenv('DEBUG_HTML')
@@ -100,6 +100,30 @@ def format_maxperdisc(maxperdisc_dict: dict) -> str:
             f'{discipline_str}')
 
   return '<span class="error">Error: invalid MaxPerDisc</span>'
+
+
+# format_minclass()
+# -------------------------------------------------------------------------------------------------
+def format_minclass(minclass_dict: dict) -> str:
+  """
+  """
+  pprint(minclass_dict, stream=sys.stderr)
+  number = int(minclass_dict['number'])
+  is_are = 'is' if number == 1 else 'are'
+  course_list = minclass_dict['course_list']
+  if len(course_list) > 0:
+    if len(course_list) == 1 and number == 1:
+      course_list_str = f'{course_list[0]} is required.'
+    elif len(course_list) == 2 and number == 1:
+      course_list_str = f'At least one of {course_list[0]} or {course_list[1]} is required.'
+    else:
+      s = ', '.join(course_list)
+      # “or” list with oxford comma
+      s = s[0:s.rindex(',') + 1] + ' or' + s[s.rindex(',') + 1:]
+      course_list_str = f'At least {number} of {s} {is_are} required.'
+    return f'<p>{course_list_str}</p>'
+
+  return f'<p class="error">Error: invalid MinClass {minclass_dict}</>'
 
 
 # class_credit_to_str()
@@ -276,7 +300,7 @@ def course_list_details(info: dict) -> str:
 # requirement_to_details_element()
 # -------------------------------------------------------------------------------------------------
 def requirement_to_details_element(requirement: dict) -> str:
-  """ This starts as class_credit_body in the grammar; dgw_interpreter has turned it into a list of
+  """ This starts as class_credit_body in the grammar; dgw_parser has turned it into a list of
       dicts. This method interprets one element of that list.
       If there is a label, return a full details element with the label as the summary. Otherwise,
       just return the HTML that will make up the body of an enclosing details element.
@@ -354,7 +378,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
 
       If there is a remark, it goes right after the summary (inner label)
       Then any qualifiers.
-      Then all the other items. Note that dgw_interpreter has renamed class_credit_body as
+      Then all the other items. Note that dgw_parser() has renamed class_credit_body as
       'requirements', which gets listed last as “courses.”
 
        There are four possibilities for labels: outer, inner, both, or neither (really?). If both,
@@ -598,8 +622,9 @@ def dict_to_html_details_element(info: dict) -> str:
     except KeyError as ke:
       display = ''
 
-    # Class/Credit?
+    # Class lists and their qualifiers.
     try:
+      # Determing number of classes and/or credits required
       min_classes = info.pop('min_classes')
       max_classes = info.pop('max_classes')
       min_credits = info.pop('min_credits')
@@ -611,14 +636,27 @@ def dict_to_html_details_element(info: dict) -> str:
     except KeyError as ke:
       cr_str = ''
 
-    # Maxperdisc?
-    try:
-      maxperdisc = info.pop('maxperdisc')
-      cr_str += format_maxperdisc(maxperdisc)
-      if DEBUG:
-        print(f'    {cr_str=}', file=sys.stderr)
-    except KeyError as ke:
-      pass
+    # The following qualifieres are legal, but we implement only those actually in use.
+    possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
+                           'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+                           'proxy_advice', 'rule_tag', 'samedisc', 'share']
+    handled_qualifiers = {'maxperdisc': format_maxperdisc, 'minclass': format_minclass}
+    qualifiers_str = ''
+    for qualifier in possible_qualifiers:
+      if qualifier in info.keys():
+        if qualifier in handled_qualifiers.keys():
+          cr_str += handled_qualifiers[qualifier](info.pop(qualifier))
+        else:
+          value = info.pop(qualifier)
+          cr_str += f'<p class="error">Unhandled qualifier: {qualifier}: {value}</p>'
+    # # Maxperdisc?
+    # try:
+    #   maxperdisc = info.pop('maxperdisc')
+    #   cr_str += format_maxperdisc(maxperdisc)
+    #   if DEBUG:
+    #     print(f'    {cr_str=}', file=sys.stderr)
+    # except KeyError as ke:
+    #   pass
 
     # Other min, max, and num items
     numerics = cr_str
@@ -800,13 +838,14 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
     </div>
     """
     # Interpret the block if it hasn’t been done yet.
-    if len(row.header_list) == 0 and len(row.body_list) == 0:
-      header_list, body_list = dgw_interpreter(row.institution,
-                                               row.block_type,
-                                               row.block_value,
-                                               period_range=period_range)
+    if row.parse_tree == {}:
+      parse_tree = dgw_parser(row.institution,
+                              row.block_type,
+                              row.block_value,
+                              period_range=period_range)
+      header_list, body_list = parse_tree['header_list'], parse_tree['body_list']
     else:
-      header_list, body_list = row.header_list, row.body_list
+      header_list, body_list = row.parse_tree['header_list'], row.parse_tree['body_list']
 
     return disclaimer + f"""
     <h1>{college_name} {row.requirement_id}: <em>{row.title}</em></h1>
@@ -880,11 +919,12 @@ if __name__ == '__main__':
             f'  <h2>{institution} {requirement_id} {block_type} {block_value} {args.period}</h2>'
             f'  {requirement_html}', file=debug_html)
 
-      header_list, body_list = dgw_interpreter(institution,
-                                               block_type,
-                                               block_value,
-                                               period_range=args.period,
-                                               update_db=args.update_db)
+      parse_tree = dgw_interpreter(institution,
+                                   block_type,
+                                   block_value,
+                                   period_range=args.period,
+                                   update_db=args.update_db)
+      header_list, body_list = (parse_tree['header_list'], parse_tree['body_list'])
       html = (f'<details><summary><strong>HEAD</strong></summary>'
               f'{to_html(header_list)}</details>'
               f'<details><summary><strong>BODY</strong></summary>'

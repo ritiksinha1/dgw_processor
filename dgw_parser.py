@@ -1,7 +1,5 @@
 #! /usr/local/bin/python3
-""" This module replaces dgw_processor.py.
-    Instead of walking the parse tree and triggering callbacks, this module explores the tree
-    directly.
+""" Generate parse trees for Scribe Blocks.
 """
 import os
 import re
@@ -28,16 +26,16 @@ from dgw_filter import dgw_filter
 from dgw_handlers import dispatch
 from dgw_utils import catalog_years
 
-DEBUG = os.getenv('DEBUG_INTERPRETER')
+DEBUG = os.getenv('DEBUG_PARSER')
 
 sys.setrecursionlimit(10**6)
 
 
-# dgw_interpreter()
+# dgw_parser()
 # =================================================================================================
-def dgw_interpreter(institution: str, block_type: str, block_value: str,
-                    period_range='current', update_db=True, verbose=False,
-                    do_pprint=False) -> tuple:
+def dgw_parser(institution: str, block_type: str, block_value: str,
+               period_range='current', update_db=True, verbose=False,
+               do_pprint=False) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period_range argument can be 'all', 'current', or 'latest', with the latter two being
@@ -47,7 +45,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
   """
 
   if DEBUG:
-    print(f'*** dgw_interpreter({institution}, {block_type}, {block_value}, {period_range})',
+    print(f'*** dgw_parser({institution}, {block_type}, {block_value}, {period_range})',
           file=sys.stderr)
   conn = PgConnection()
   fetch_cursor = conn.cursor()
@@ -82,8 +80,9 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
         print(f'Skipping: not currently offered.')
       conn.close()
       return (None, None)
+    catalog_years_text = catalog_years(row.period_start, row.period_stop).text
     if verbose:
-      print(catalog_years(row.period_start, row.period_stop).text)
+      print(catalog_years_text)
 
     # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
@@ -120,12 +119,14 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
         if obj != {}:
           body_list.append(obj)
 
-      if update_db:
-        update_cursor.execute(f"""
-  update requirement_blocks set header_list = %s, body_list = %s
+    parse_tree = {'header_list': header_list, 'body_list': body_list}
+
+    if update_db:
+      update_cursor.execute(f"""
+  update requirement_blocks set parse_tree = %s
   where institution = '{row.institution}'
   and requirement_id = '{row.requirement_id}'
-  """, (json.dumps(header_list), json.dumps(body_list)))
+  """, (json.dumps(parse_tree), ))
 
       if DEBUG:
         print('\n*** HEADER LIST ***', file=debug_file)
@@ -138,7 +139,7 @@ def dgw_interpreter(institution: str, block_type: str, block_value: str,
   conn.commit()
   conn.close()
 
-  return (header_list, body_list)
+  return parse_tree
 
 
 # __main__
@@ -181,14 +182,14 @@ if __name__ == '__main__':
     conn.close()
     print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
           file=sys.stderr)
-    header_list, body_list = dgw_interpreter(institution,
-                                             block_type,
-                                             block_value,
-                                             period_range=args.period,
-                                             update_db=args.update_db)
+    parse_tree = dgw_parser(institution,
+                            block_type,
+                            block_value,
+                            period_range=args.period,
+                            update_db=args.update_db)
     if not args.update_db:
-      html = to_html(header_list, is_head=True)
-      html += to_html(body_list, is_body=True)
+      html = to_html(parse_tree['header_list'], is_head=True)
+      html += to_html(parse_tree['body_list'], is_body=True)
       print(html)
     exit()
 
@@ -233,12 +234,12 @@ if __name__ == '__main__':
         if args.progress:
           print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
                 f'{values_count:3} / {num_values:3} ', end='')
-        header_list, body_list = dgw_interpreter(institution,
-                                                 block_type.upper(),
-                                                 block_value,
-                                                 period_range=args.period,
-                                                 update_db=args.update_db,
-                                                 verbose=args.progress,
-                                                 do_pprint=args.pprint)
+        parse_tree = dgw_parser(institution,
+                                block_type.upper(),
+                                block_value,
+                                period_range=args.period,
+                                update_db=args.update_db,
+                                verbose=args.progress,
+                                do_pprint=args.pprint)
         if args.debug:
-          print(f'{header_list=}\n{body_list=}', file=sys.stderr)
+          print(f"{parse_tree['header_list']=}\n{parse_tree['body_list']=}", file=sys.stderr)

@@ -481,7 +481,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
           # ruletag         : RULE_TAG expression;
           # samedisc        : SAME_DISC expression
 
-          elif valid_qualifier in ['proxy_advice', 'ruletag', 'samedisc']:
+          elif valid_qualifier in ['proxy_advice', 'rule_tag', 'samedisc']:
             # These are used for managing the audit process and are ignored here
             pass
 
@@ -719,10 +719,11 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
       list_items = []
     include_courses += get_scribed_courses(course_item, list_items)
 
-  # Qualifiers: course lists don't have them.
-  assert getattr(ctx, 'qualifier', None) is None
-  # qualifiers = get_qualifiers(ctx.qualifier(), institution, requirement_id)
-
+  # Qualifiers:
+  # print(f'\n{ctx.getText()}')
+  # print(dir(ctx))
+  # qualifiers = get_qualifiers(ctx, institution, requirement_id)
+  # print(qualifiers)
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
   all_blanket = True
   all_writing = True

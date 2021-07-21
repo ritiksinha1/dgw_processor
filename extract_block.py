@@ -35,7 +35,7 @@ if __name__ == '__main__':
     conn = PgConnection()
     cursor = conn.cursor()
     cursor.execute(f'select block_type, block_value, requirement_text, requirement_html,'
-                   f'       header_list,body_list'
+                   f'       parse_tree'
                    f'  from requirement_blocks'
                    f" where institution = '{institution}'"
                    f"   and requirement_id = '{requirement_id}'")
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     cursor = conn.cursor()
     cursor.execute(f'select requirement_id, block_type, block_value,'
                    f'       requirement_text, requirement_html,'
-                   f'       header_list, body_list'
+                   f'       parse_tree'
                    f'  from requirement_blocks'
                    f" where institution = '{institution}'"
                    f"   and block_type = '{block_type}'"
@@ -67,6 +67,8 @@ if __name__ == '__main__':
     exit('Missing requirement ID or block value')
 
   base_name = f'{institution}_{requirement_id}_{row.block_type}_{row.block_value}'
+  header_list = row.parse_tree['header_list']
+  body_list = row.parse_tree['body_list']
   print(base_name)
   with open(f'./extracts/{base_name}.html', 'w') as html_file:
     print(row.requirement_html, file=html_file)
@@ -74,8 +76,8 @@ if __name__ == '__main__':
     print(row.requirement_text, file=scribe_block)
   with open(f'./extracts/{base_name}.parsed', 'w') as parsed:
     print('*** HEADER ***', file=parsed)
-    pprint(row.header_list, stream=parsed)
+    pprint(header_list, stream=parsed)
     print('\n*** BODY ***', file=parsed)
-    pprint(row.body_list, stream=parsed)
+    pprint(body_list, stream=parsed)
 
 exit()

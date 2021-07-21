@@ -167,9 +167,11 @@ def iter_dict(item: dict, calling_context: list) -> None:
     label_str = subset.pop('label')
     if label_str:
       local_context += [label_str]
-      print(f'\nSubset Name: {label_str}', file=sys.stderr)
+      if DEBUG:
+        print(f'\nSubset Name: {label_str}', file=sys.stderr)
     requirements = subset.pop('requirements')
-    print(f'{len(requirements)} Requirements', file=sys.stderr)
+    if DEBUG:
+      print(f'{len(requirements)} Requirements', file=sys.stderr)
     iter_list(requirements, local_context)
     assert len(item) == 0
   except KeyError as ke:
@@ -193,7 +195,8 @@ def iter_dict(item: dict, calling_context: list) -> None:
     num_groups = len(group['group_items'])
     suffix = '' if int(num_groups) == 1 else 's'
     group_str = f'{num_required} of {num_groups} group{suffix}'
-    print(f'\nGroup Requirement: {group_str}', file=sys.stderr)
+    if DEBUG:
+      print(f'\nGroup Requirement: {group_str}', file=sys.stderr)
     iter_dict(group, local_context + [group_str])
   except KeyError as ke:
     if ke.args[0] != 'group':
@@ -206,7 +209,10 @@ def iter_dict(item: dict, calling_context: list) -> None:
 
   if 'course_list' in item.keys():
     # If there is a course_list, there's also info about num classes/credits,as well as whether
-    # the list is disjunctive of conjunctive.
+    # the list is disjunctive or conjunctive.
+
+    # Workaround course list qualifiers NOT IMPLEMENTED YET
+    min_credits = min_classes = num_credits = num_classes = None
     try:
       min_credits = item.pop('min_credits')
       max_credits = item.pop('max_credits')
@@ -214,7 +220,7 @@ def iter_dict(item: dict, calling_context: list) -> None:
       max_classes = item.pop('max_classes')
       conjunction = item.pop('conjunction')  # This is the credit/classes conjunction
     except KeyError as ke:
-      exit(f'{local_context=}: {ke=}')
+      print(f'{local_context=}: {ke=}', file=sys.stderr)
 
     # Build requirement description
     if min_credits:
@@ -245,9 +251,11 @@ def iter_dict(item: dict, calling_context: list) -> None:
     else:
       class_credit_str = None
 
-    # Discard course_list['allow_xxx'] entries.
-    item.pop('allow_credits')
-    item.pop('allow_classes')
+    # Discard course_list['allow_xxx'] entries, if present
+    if 'allow_credits' in item.keys():
+      item.pop('allow_credits')
+    if 'allow_classes' in item.keys():
+      item.pop('allow_classes')
 
     # Process the course_list itself
     course_list = item.pop('course_list')
@@ -261,7 +269,8 @@ def iter_dict(item: dict, calling_context: list) -> None:
     if requirement_name:
       if label_str:
         local_context.append(requirement_name)
-        print(f'Requirement Name: {requirement_name=} with {label_str=}', file=sys.stderr)
+        if DEBUG:
+          print(f'Requirement Name: {requirement_name=} with {label_str=}', file=sys.stderr)
         requirement_name = label_str
     else:
       if label_str:
@@ -286,19 +295,22 @@ def iter_dict(item: dict, calling_context: list) -> None:
     for active_course in active_courses:
       requirement.active_courses.append(ActiveCourse._make(active_course))
     suffix = ' satisfies' if len(requirement.active_courses) == 1 else 's satisfy'
-    print(f'\n{len(requirement.active_courses)} active course{suffix} '
-          f'“{requirement.requirement_name}”\n  {class_credit_str}',
-          file=sys.stderr)
+    if DEBUG:
+      print(f'\n{len(requirement.active_courses)} active course{suffix} '
+            f'“{requirement.requirement_name}”\n  {class_credit_str}',
+            file=sys.stderr)
     if len(requirement.active_courses) > 1:
       any_all = 'Any' if requirement.is_disjunctive else 'All'
-      print(f'  {any_all} of the following courses:', file=sys.stderr)
+      if DEBUG:
+        print(f'  {any_all} of the following courses:', file=sys.stderr)
     for active_course in requirement.active_courses:
       if active_course.qualifiers:
         qualifiers_str = f' with {active_course.qualifiers}'
       else:
         qualifiers_str = ''
-      print(f'  {active_course.course_id}:{active_course.offer_nbr} {active_course.discipline} '
-            f'“{active_course.title}”{qualifiers_str}', file=sys.stderr)
+      if DEBUG:
+        print(f'  {active_course.course_id}:{active_course.offer_nbr} {active_course.discipline} '
+              f'“{active_course.title}”{qualifiers_str}', file=sys.stderr)
     emit(requirement, local_context)
 
   # That should be all we‘re intersted in, but double-check
@@ -308,8 +320,9 @@ def iter_dict(item: dict, calling_context: list) -> None:
     elif isinstance(value, dict):
       iter_dict(value, local_context)
     else:
-      print(f'iter_dict: Not label, condition, group, list, or dict: {key=} {value=}',
-            file=sys.stderr)
+      if DEBUG:
+        print(f'iter_dict: Not label, condition, group, list, or dict: {key=} {value=}',
+              file=sys.stderr)
 
   return
 
