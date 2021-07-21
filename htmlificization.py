@@ -383,6 +383,11 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   # Is there a list of course requirements?
   if 'requirements' in info.keys():
     course_requirements = info.pop('requirements')
+    num_requirements = len(course_requirements)
+    # Remarks aren’t requirements, even though we show them
+    for requirement in course_requirements:
+      if 'remark' in requirement.keys():
+        num_requirements -= 1
     suffix = '' if len(course_requirements) == 1 else 's'
     course_requirements_summary = (f'<summary>{len(course_requirements)} '
                                    f'Requirement{suffix}</summary>')
@@ -704,23 +709,29 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
   num = len(info)
   if num == 0:
     return '<p class="error">Empty List</p>'
-  elif num == 1:
-    return to_html(info[0])
+  if num == 1:
+    return to_html(info[0], kind)
+
+  if kind == 'Requirement':
+    # Remarks aren’t requirements, even though we show them
+    for item in info:
+      if isinstance(item, list) and 'remark' in item.keys():
+        num -= 1
+
+  if num <= 12:
+    num_str = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+               'Ten', 'Eleven', 'Twelve'][num]
   else:
-    if num <= 12:
-      num_str = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-                 'Ten', 'Eleven', 'Twelve'][num]
-    else:
-      num_str = f'{num:,}'
-    # Pluralization awkwardness
-    if kind == 'Property':
-      kind = 'Properties'
-    else:
-      kind = kind + 's'
-    return_str = f'<details open="open"/><summary>{num_str} {kind}</summary>'
-    return_str += '\n'.join([f'{to_html(element)}'
-                             for element in info])
-    return return_str + '</details>'
+    num_str = f'{num:,}'
+  # Pluralization awkwardness
+  if kind == 'Property':
+    kind = 'Properties'
+  else:
+    kind = kind + 's'
+  return_str = f'<details open="open"/><summary>{num_str} {kind}</summary>'
+  return_str += '\n'.join([f'{to_html(element)}'
+                           for element in info])
+  return return_str + '</details>'
 
 
 # to_html()
