@@ -1,5 +1,7 @@
 #! /usr/local/bin/python3
 """ Extract a scribe block from the db for examination.
+    If you know the Requirement ID, give that. Otherwise, give the (block type and) value. Only the
+    current block of that type and value will be used
 """
 
 import os
@@ -7,20 +9,24 @@ import sys
 
 import argparse
 from pathlib import Path
+from pprint import pprint
 
 from pgconnection import PgConnection
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Test DGW Parser')
   parser.add_argument('-d', '--debug', action='store_true', default=False)
-  parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
+  parser.add_argument('-i', '--institution', nargs='*', default='QNS01')
   parser.add_argument('-ra', '--requirement_id')
+  parser.add_argument('-t', '--block_type', default='MAJOR')
+  parser.add_argument('-v', '--block_value')
 
   # Parse args
   args = parser.parse_args()
-  if args.requirement_id:
 
-    institution = args.institutions[0].strip('10').upper() + '01'
+  institution = args.institution.strip('10').upper() + '01'
+
+  if args.requirement_id:
     requirement_id = args.requirement_id.strip('AaRr')
     if not requirement_id.isdecimal():
       sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
@@ -28,19 +34,48 @@ if __name__ == '__main__':
     # Look up the block type and value
     conn = PgConnection()
     cursor = conn.cursor()
-    cursor.execute(f'select block_type, block_value, requirement_text, requirement_html'
+    cursor.execute(f'select block_type, block_value, requirement_text, requirement_html,'
+                   f'       header_list,body_list'
                    f'  from requirement_blocks'
                    f" where institution = '{institution}'"
                    f"   and requirement_id = '{requirement_id}'")
-    assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
-                                  f'for {institution} {requirement_id}')
-    block_type, block_value, requirement_text, requirement_html = cursor.fetchone()
+    if cursor.rowcount != 1:
+      exit(f'{cursor.rowcount} blocks for {institution} {requirement_id}')
+    row = cursor.fetchone()
     conn.close()
 
-    base_name = f'{institution}_{requirement_id}_{block_type}_{block_value}'
-    print(base_name)
-    with open(f'./extracts/{base_name}.html', 'w') as html_file:
-      print(requirement_html, file=html_file)
-    with open(f'./extracts/{base_name}.scribe', 'w') as scribe_block:
-      print(requirement_text, file=scribe_block)
+  elif args.block_value:
+    block_type = args.block_type.upper()
+    block_value = args.block_value.upper()
+    # Look up the block type and value
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(f'select requirement_id, block_type, block_value,'
+                   f'       requirement_text, requirement_html,'
+                   f'       header_list, body_list'
+                   f'  from requirement_blocks'
+                   f" where institution = '{institution}'"
+                   f"   and block_type = '{block_type}'"
+                   f"   and block_value = '{block_value}'"
+                   f"   and period_stop = '99999999'")
+    if cursor.rowcount != 1:
+      exit(f'{cursor.rowcount} current blocks for {institution} {block_type} {block_value}')
+    row = cursor.fetchone()
+    requirement_id = row.requirement_id
+    conn.close()
+  else:
+    exit('Missing requirement ID or block value')
+
+  base_name = f'{institution}_{requirement_id}_{row.block_type}_{row.block_value}'
+  print(base_name)
+  with open(f'./extracts/{base_name}.html', 'w') as html_file:
+    print(row.requirement_html, file=html_file)
+  with open(f'./extracts/{base_name}.scribe', 'w') as scribe_block:
+    print(row.requirement_text, file=scribe_block)
+  with open(f'./extracts/{base_name}.parsed', 'w') as parsed:
+    print('*** HEADER ***', file=parsed)
+    pprint(row.header_list, stream=parsed)
+    print('\n*** BODY ***', file=parsed)
+    pprint(row.body_list, stream=parsed)
+
 exit()
