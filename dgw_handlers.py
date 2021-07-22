@@ -205,10 +205,12 @@ def conditional_head(ctx, institution, requirement_id):
   return_dict = dict()
   condition = expression_to_str(ctx.expression())
   return_dict['condition'] = condition
-  if 'conc' in condition.lower():
-    return_dict['concentrations'] = concentration_list(condition,
-                                                       institution,
-                                                       requirement_id)
+
+  # # Concentrations not implemented yet
+  # if 'conc' in condition.lower():
+  #   return_dict['concentrations'] = concentration_list(condition,
+  #                                                      institution,
+  #                                                      requirement_id)
 
   return_dict['label'] = get_label(ctx)
 
@@ -271,10 +273,11 @@ def conditional_body(ctx, institution, requirement_id):
   condition = expression_to_str(ctx.expression())
   return_dict['condition'] = condition
 
-  if 'conc' in condition.lower():
-    return_dict['concentrations'] = concentration_list(condition,
-                                                       institution,
-                                                       requirement_id)
+  # Concentrations not implemented yet
+  # if 'conc' in condition.lower():
+  #   return_dict['concentrations'] = concentration_list(condition,
+  #                                                      institution,
+  #                                                      requirement_id)
 
   return_dict['label'] = get_label(ctx)
 

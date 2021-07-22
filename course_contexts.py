@@ -72,7 +72,7 @@ def emit(requirement: Requirement, context: list) -> None:
       );
 
       -- Map courses to program requirements.
-      create table course_program_mappings (
+      create table course_requirement_mappings (
       course_id integer,
       offer_nbr integer,
       requirement_id integer references program_requirements(id),
@@ -109,37 +109,59 @@ def emit(requirement: Requirement, context: list) -> None:
   else:
     credit_alternatives = f'{min_credit_alternatives:0.1f} to {max_credit_alternatives:0.1f}'
 
-  print(institution, requirement_id, requirement.requirement_name, requirement.num_classes,
-        course_alternatives, and_or, requirement.num_credits, credit_alternatives, context)
-  cursor.execute(f"""delete from program_requirements
-                     where institution = '{institution}'
-                       and requirement_id = 'requirement_id'
-                  """)
-  cursor.execute("""insert into program_requirements values
-                      (default, %s, %s, %s, %s, %s, %s, %s, %s, %s) returning id
-                 """, (institution, requirement_id, requirement.requirement_name,
-                       requirement.num_classes, course_alternatives, and_or,
-                       requirement.num_credits, credit_alternatives, json.dumps(context)))
-  assert cursor.rowcount == 1
+  if DEBUG:
+    print(institution, requirement_id, requirement.requirement_name, requirement.num_classes,
+          course_alternatives, and_or, requirement.num_credits, credit_alternatives, context,
+          file=sys.stderr)
+
+  # See if the requirement already exists
+  cursor.execute(f"""
+  select id
+   from program_requirements
+  where institution = %s
+    and requirement_id = %s
+    and requirement_name = %s
+  """, (institution, requirement_id, requirement.requirement_name))
+  if cursor.rowcount == 0:
+    # Not yet: add it:
+      cursor.execute(f"""insert into program_requirements values
+                          (default, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict do nothing
+                          returning id
+                     """, (institution, requirement_id, requirement.requirement_name,
+                           requirement.num_classes, course_alternatives, and_or,
+                           requirement.num_credits, credit_alternatives, json.dumps(context)))
+      assert cursor.rowcount == 1
+
   program_requirement_id = int(cursor.fetchone().id)
+
   for course in requirement.active_courses:
-    cursor.execute(f"""insert into course_program_mappings values(
-                       {course.course_id},
-                       {course.offer_nbr},
-                       {program_requirement_id},
-                       '{course.qualifiers}') on conflict do nothing
+    # Check if the course mapping already exists
+    cursor.execute(f"""select qualifiers
+                         from course_requirement_mappings
+                         where program_requirement_id = {program_requirement_id}
+                           and course_id = {course.course_id}
+                           and offer_nbr = {course.offer_nbr}
                     """)
-    if cursor.rowcount == 0:
-      cursor.execute(f"""select qualifiers
-                           from course_program_mappings
-                           where program_requirement_id = {program_requirement_id}
-                             and course_id = {course.course_id}
-                             and offer_nbr = {course.offer_nbr}
+    if cursor.rowcount > 0:
+      # Yes, check for anomalies
+      if cursor.rowcount == 1:
+        row = cursor.fetchone()
+        if row.qualifiers != course.qualifiers:
+          print(f'{institution} {requirement_id} {requirement.requirement_name} with different '
+                f'qualifiers: {row.qualifiers=} {course.qualifiers=}', file=log_file)
+      else:
+        print(f'Impossible situation: {cursor.rowcount} rows in course_requirement_keys with'
+              f'same {institution=}, {requirement_id=} {requirement.requirement_name=}',
+              file=sys.stderr)
+    else:
+      # Safe to insert the mapping for this course
+      cursor.execute(f"""insert into course_requirement_mappings values(
+                         {course.course_id},
+                         {course.offer_nbr},
+                         {program_requirement_id},
+                         '{course.qualifiers}') on conflict do nothing
                       """)
-      old_qualifiers = cursor.fetchone().qualifiers
-      new_qualifiers = course.qualifiers
-      print(f'{institution} {requirement_id} {requirement.requirement_name} duplicated: '
-            f'{old_qualifiers=} {new_qualifiers=}', file=log_file)
+      assert cursor.rowcount == 1
   conn.commit()
   conn.close()
 
@@ -150,7 +172,7 @@ def process_maxperdisc(mpd_dict: dict, calling_context) -> None:
   """
   """
   if DEBUG:
-    print(f'*** process_maxperdisc({mpd_dict=}, {calling_context=})')
+    print(f'*** process_maxperdisc({mpd_dict=}, {calling_context=})', file=sys.stderr)
   local_context = calling_context + []
   return None
 
@@ -161,7 +183,7 @@ def process_minclass(mcl_dict: dict, calling_context) -> None:
   """
   """
   if DEBUG:
-    print(f'*** process_minclass({mcl_dict=}, {calling_context=})')
+    print(f'*** process_minclass({mcl_dict=}, {calling_context=})', file=sys.stderr)
   local_context = calling_context + []
   return None
 
@@ -431,6 +453,7 @@ if __name__ == '__main__':
               continue
             if period == 'current' and row.period_stop != '99999999':
               continue
+
             print(f'{institution} {block_type} {block_value} {period}')
             parse_tree = (row.parse_tree)
             if (len(parse_tree.keys()) == 0) or args.force:
@@ -438,10 +461,23 @@ if __name__ == '__main__':
               parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
             header_list = parse_tree['header_list']  # Ignored by this app
             body_list = parse_tree['body_list']
+
             print(f'*** {institution} {block_type} {block_value} {period}', file=debug)
             pprint(body_list, stream=debug)
             # key_struct(body_list)
             print('\n', file=debug)
 
-            # Iterate over the body
+            # Clear out any requirements/mappings for this Scribe block that might be in place.
+            # Deleting a requirement cascades to the mappings that reference it.
+            # (During development, the same block might be processed multiple times.)
+            cursor.execute(f"""delete from program_requirements
+                               where institution = '{institution}'
+                                 and requirement_id = '{row.requirement_id}'
+                            """)
+            conn.commit()
+            # Iterate over the body, emitting db updates as a side effect.
             iter_list(body_list, [f'{institution} {row.requirement_id} {block_type} {block_value}'])
+
+    # Done
+    conn.commit()
+    conn.close()
