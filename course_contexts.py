@@ -87,7 +87,12 @@ def emit(requirement: Requirement, context: list) -> None:
   assert len(context) > 0, f'emit with no context'
   conn = PgConnection()
   cursor = conn.cursor()
-  institution, requirement_id, block_type, block_value = context.pop(0).split()
+
+  try:
+    context_0 = context.pop(0)
+    institution, requirement_id, block_type, block_value = context_0.split()
+  except ValueError as ve:
+    exit(f'{context_0} does not split into 4 parts')
 
   and_or = 'OR' if requirement.is_disjunctive else 'AND'
   course_alternatives = len(requirement.active_courses)
@@ -476,6 +481,8 @@ if __name__ == '__main__':
                             """)
             conn.commit()
             # Iterate over the body, emitting db updates as a side effect.
+            # There are spaces in some block values
+            block_value = block_value.strip().replace(' ', '*')
             iter_list(body_list, [f'{institution} {row.requirement_id} {block_type} {block_value}'])
 
     # Done
