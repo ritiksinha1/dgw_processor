@@ -20,6 +20,7 @@ conjunction text,
 num_credits_required text not null,
 credit_alternatives text not null,
 context jsonb not null,
+qualifiers jsonb not null,
 foreign key (institution, requirement_id) references requirement_blocks,
 unique (institution, requirement_id, requirement_name)
 );
@@ -29,7 +30,7 @@ create table course_requirement_mappings (
 course_id integer,
 offer_nbr integer,
 program_requirement_id integer references program_requirements(id) on delete cascade,
-qualifiers text,
+qualifiers text default '',
 foreign key (course_id, offer_nbr) references cuny_courses,
 primary key (course_id, offer_nbr, program_requirement_id)
 );

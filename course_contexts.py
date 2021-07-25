@@ -43,7 +43,7 @@ ActiveCourse = namedtuple('ActiveCourse',
 # conditional contexts, if any.
 Requirement = namedtuple('Requirement',
                          'institution requirement_id requirement_name '
-                         'num_classes num_credits is_disjunctive active_courses')
+                         'num_classes num_credits is_disjunctive active_courses qualifiers')
 
 
 # emit()
@@ -68,6 +68,7 @@ def emit(requirement: Requirement, context: list) -> None:
       credits_required real,
       credit_alternatives real,
       context jsonb,
+      qualifiers text default '',
       foreign key (institution, requirement_id) references requirement_blocks
       );
 
@@ -76,7 +77,7 @@ def emit(requirement: Requirement, context: list) -> None:
       course_id integer,
       offer_nbr integer,
       requirement_id integer references program_requirements(id),
-      qualifiers text,
+      qualifiers text default '',
       foreign key (course_id, offer_nbr) references cuny_courses,
       primary key (course_id, offer_nbr, requirement_id)
       );
@@ -129,12 +130,15 @@ def emit(requirement: Requirement, context: list) -> None:
   """, (institution, requirement_id, requirement.requirement_name))
   if cursor.rowcount == 0:
     # Not yet: add it:
+    # Note that we are not checking for two different requirements with the same name. To do that
+    # it will be necessary to check against contexts and qualifiers.
       cursor.execute(f"""insert into program_requirements values
-                          (default, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict do nothing
+                          (default, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict do nothing
                           returning id
                      """, (institution, requirement_id, requirement.requirement_name,
                            requirement.num_classes, course_alternatives, and_or,
-                           requirement.num_credits, credit_alternatives, json.dumps(context)))
+                           requirement.num_credits, credit_alternatives, json.dumps(context),
+                           json.dumps(requirement.qualifiers)))
       assert cursor.rowcount == 1
 
   program_requirement_id = int(cursor.fetchone().id)
@@ -173,24 +177,97 @@ def emit(requirement: Requirement, context: list) -> None:
 
 # process_maxperdisc()
 # -------------------------------------------------------------------------------------------------
-def process_maxperdisc(mpd_dict: dict, calling_context) -> None:
+def process_maxperdisc(mpd_dict: dict, calling_context) -> str:
   """
   """
   if DEBUG:
     print(f'*** process_maxperdisc({mpd_dict=}, {calling_context=})', file=sys.stderr)
-  local_context = calling_context + []
-  return None
+  class_credit = mpd_dict['class_credit'].lower()
+  if class_credit == 'class':
+    number = int(mpd_dict['number'])
+    suffix = '' if number == 1 else 's'
+  elif class_credit == 'credit':
+    number = float(mpd_dict['number'])
+    suffix = '' if number == 1.0 else 'es'
+  else:
+    number = float('NaN')
+    suffix = 'x'
+  disciplines = sorted(mpd_dict['disciplines'])
+  return f'No more than {number} {class_credit}{suffix} in ({", ".join(disciplines)})'
 
 
 # process_minclass()
 # -------------------------------------------------------------------------------------------------
-def process_minclass(mcl_dict: dict, calling_context) -> None:
-  """
+def process_minclass(mcl_dict: dict, calling_context) -> str:
+  """ dict_keys(['number', 'course_list'])
   """
   if DEBUG:
     print(f'*** process_minclass({mcl_dict=}, {calling_context=})', file=sys.stderr)
   local_context = calling_context + []
-  return None
+  number = int(mcl_dict['number'])
+  suffix = '' if number == 1 else 'es'
+  scribed_courses_list = mcl_dict['course_list']['scribed_courses']
+  scribed_courses = []
+  for scribed_course in scribed_courses_list:
+    if scribed_course[2]:
+      # There is a with clause
+      scribed_courses.append(f'{scribed_course[0]} {scribed_course[1]} {scribed_course[2]}')
+    else:
+      scribed_courses.append(f'{scribed_course[0]} {scribed_course[1]}')
+  scribed_courses_str = ', '.join(scribed_courses)
+
+  return f'At least  {number} class{suffix} in ({scribed_courses_str})'
+
+
+# process_mingrade()
+# -------------------------------------------------------------------------------------------------
+def process_mingrade(min_grade: str, calling_context) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'*** process_mingrade({min_grade=}, {calling_context=})', file=sys.stderr)
+  local_context = calling_context + []
+
+  # Convert GPA values to letter grades by table lookup.
+  # int(round(3×GPA)) gives the index into the letters table.
+  # Index positions 0 and 1 aren't actually used.
+  """
+          GPA  3×GPA  Index  Letter
+          4.3   12.9     13      A+
+          4.0   12.0     12      A
+          3.7   11.1     11      A-
+          3.3    9.9     10      B+
+          3.0    9.0      9      B
+          2.7    8.1      8      B-
+          2.3    6.9      7      C+
+          2.0    6.0      6      C
+          1.7    5.1      5      C-
+          1.3    3.9      4      D+
+          1.0    3.0      3      D
+          0.7    2.1      2      D-
+    """
+  letters = ['F', 'F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+']
+
+  number = float(min_grade)
+  if number < 1.0:
+    number = 0.7
+  # Lots of values greater than 4.0 have been used to mean "no upper limit."
+  if number > 4.0:
+    number = 4.0
+  letter = letters[int(round(number * 3))]
+  return f'Minimum grade of {letter} required'
+
+
+# process_mingpa()
+# -------------------------------------------------------------------------------------------------
+def process_mingpa(mgp_dict: dict, calling_context) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'*** process_mingpa({mgp_dict=}, {calling_context=})', file=sys.stderr)
+  local_context = calling_context + []
+  number = float(mgp_dict['number'])
+  return f'Minimum GPA of {number:0.1f} {mgp_dict.keys()=}'
 
 
 # iter_list()
@@ -320,15 +397,20 @@ def iter_dict(item: dict, calling_context: list) -> None:
     possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                            'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                            'proxy_advice', 'rule_tag', 'samedisc', 'share']
-    handled_qualifiers = {'maxperdisc': process_maxperdisc, 'minclass': process_minclass}
-    qualifiers_str = ''
+    ignored_qualifiers = ['proxy_advice', 'rule_tag', 'share']
+    handled_qualifiers = {'maxperdisc': process_maxperdisc, 'minclass': process_minclass,
+                          'mingrade': process_mingrade, 'mingpa': process_mingpa}
+    qualifiers_list = []
     for qualifier in possible_qualifiers:
       if qualifier in item.keys():
+        if qualifier in ignored_qualifiers:
+          break
         if qualifier in handled_qualifiers.keys():
-          handled_qualifiers[qualifier](item.pop(qualifier), local_context)
+          qualifiers_list.append(handled_qualifiers[qualifier](item.pop(qualifier), local_context))
         else:
           value = item.pop(qualifier)
           print(f'Unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
+        break
 
     # Discard course_list['allow_xxx'] entries, if present
     if 'allow_credits' in item.keys():
@@ -343,7 +425,7 @@ def iter_dict(item: dict, calling_context: list) -> None:
     except KeyError as ke:
       label_str = None
 
-    # If the list has a name and there is already a requirement name, emit the latter as a
+    # If the list has a label and there is already a requirement name, emit the latter as a
     # separate part of the context.
     if requirement_name:
       if label_str:
@@ -355,7 +437,13 @@ def iter_dict(item: dict, calling_context: list) -> None:
       if label_str:
         requirement_name = label_str
       else:
-        requirement_name = 'NO NAME'
+        # There is no label and no requirement name. If the local context has anything other
+        # than element 0, use the last item in local context as the requirement name
+        if len(local_context) > 1:
+          requirement_name = local_context.pop()
+        else:
+          # This looks like a bad Scribe block to me.
+          requirement_name = 'NO NAME'
 
     try:
       list_type = course_list['list_type']
@@ -369,7 +457,8 @@ def iter_dict(item: dict, calling_context: list) -> None:
     # The requirement starts with an empty list of courses ...
     institution, requirement_id, *rest = local_context[0].split()
     requirement = Requirement._make([institution, requirement_id, requirement_name, num_classes,
-                                    num_credits, list_type == 'OR', []])
+                                    num_credits, list_type == 'OR', [], qualifiers_list])
+
     # ... and now add in the active courses that can/do satisfy the requirement.
     for active_course in active_courses:
       requirement.active_courses.append(ActiveCourse._make(active_course))
@@ -389,7 +478,7 @@ def iter_dict(item: dict, calling_context: list) -> None:
         qualifiers_str = ''
       if DEBUG:
         print(f'  {active_course.course_id}:{active_course.offer_nbr} {active_course.discipline} '
-              f'“{active_course.title}”{qualifiers_str}', file=sys.stderr)
+              f'“{active_course.title}”{qualifiers_list}', file=sys.stderr)
     emit(requirement, local_context)
 
   # That should be all we‘re intersted in, but double-check
