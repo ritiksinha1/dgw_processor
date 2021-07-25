@@ -23,6 +23,7 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_parser import dgw_parser
+from qualifier_handlers import dispatch
 from quarantined_blocks import quarantine_dict
 
 from pprint import pprint
@@ -175,101 +176,6 @@ def emit(requirement: Requirement, context: list) -> None:
   conn.close()
 
 
-# process_maxperdisc()
-# -------------------------------------------------------------------------------------------------
-def process_maxperdisc(mpd_dict: dict, calling_context) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'*** process_maxperdisc({mpd_dict=}, {calling_context=})', file=sys.stderr)
-  class_credit = mpd_dict['class_credit'].lower()
-  if class_credit == 'class':
-    number = int(mpd_dict['number'])
-    suffix = '' if number == 1 else 's'
-  elif class_credit == 'credit':
-    number = float(mpd_dict['number'])
-    suffix = '' if number == 1.0 else 'es'
-  else:
-    number = float('NaN')
-    suffix = 'x'
-  disciplines = sorted(mpd_dict['disciplines'])
-  return f'No more than {number} {class_credit}{suffix} in ({", ".join(disciplines)})'
-
-
-# process_minclass()
-# -------------------------------------------------------------------------------------------------
-def process_minclass(mcl_dict: dict, calling_context) -> str:
-  """ dict_keys(['number', 'course_list'])
-  """
-  if DEBUG:
-    print(f'*** process_minclass({mcl_dict=}, {calling_context=})', file=sys.stderr)
-  local_context = calling_context + []
-  number = int(mcl_dict['number'])
-  suffix = '' if number == 1 else 'es'
-  scribed_courses_list = mcl_dict['course_list']['scribed_courses']
-  scribed_courses = []
-  for scribed_course in scribed_courses_list:
-    if scribed_course[2]:
-      # There is a with clause
-      scribed_courses.append(f'{scribed_course[0]} {scribed_course[1]} {scribed_course[2]}')
-    else:
-      scribed_courses.append(f'{scribed_course[0]} {scribed_course[1]}')
-  scribed_courses_str = ', '.join(scribed_courses)
-
-  return f'At least  {number} class{suffix} in ({scribed_courses_str})'
-
-
-# process_mingrade()
-# -------------------------------------------------------------------------------------------------
-def process_mingrade(min_grade: str, calling_context) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'*** process_mingrade({min_grade=}, {calling_context=})', file=sys.stderr)
-  local_context = calling_context + []
-
-  # Convert GPA values to letter grades by table lookup.
-  # int(round(3×GPA)) gives the index into the letters table.
-  # Index positions 0 and 1 aren't actually used.
-  """
-          GPA  3×GPA  Index  Letter
-          4.3   12.9     13      A+
-          4.0   12.0     12      A
-          3.7   11.1     11      A-
-          3.3    9.9     10      B+
-          3.0    9.0      9      B
-          2.7    8.1      8      B-
-          2.3    6.9      7      C+
-          2.0    6.0      6      C
-          1.7    5.1      5      C-
-          1.3    3.9      4      D+
-          1.0    3.0      3      D
-          0.7    2.1      2      D-
-    """
-  letters = ['F', 'F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+']
-
-  number = float(min_grade)
-  if number < 1.0:
-    number = 0.7
-  # Lots of values greater than 4.0 have been used to mean "no upper limit."
-  if number > 4.0:
-    number = 4.0
-  letter = letters[int(round(number * 3))]
-  return f'Minimum grade of {letter} required'
-
-
-# process_mingpa()
-# -------------------------------------------------------------------------------------------------
-def process_mingpa(mgp_dict: dict, calling_context) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'*** process_mingpa({mgp_dict=}, {calling_context=})', file=sys.stderr)
-  local_context = calling_context + []
-  number = float(mgp_dict['number'])
-  return f'Minimum GPA of {number:0.1f} {mgp_dict.keys()=}'
-
-
 # iter_list()
 # -------------------------------------------------------------------------------------------------
 def iter_list(items: list, calling_context: list) -> None:
@@ -398,18 +304,20 @@ def iter_dict(item: dict, calling_context: list) -> None:
                            'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                            'proxy_advice', 'rule_tag', 'samedisc', 'share']
     ignored_qualifiers = ['proxy_advice', 'rule_tag', 'share']
-    handled_qualifiers = {'maxperdisc': process_maxperdisc, 'minclass': process_minclass,
-                          'mingrade': process_mingrade, 'mingpa': process_mingpa}
+    handled_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
+                          'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+                          'samedisc']
     qualifiers_list = []
     for qualifier in possible_qualifiers:
       if qualifier in item.keys():
         if qualifier in ignored_qualifiers:
           break
-        if qualifier in handled_qualifiers.keys():
-          qualifiers_list.append(handled_qualifiers[qualifier](item.pop(qualifier), local_context))
+        if qualifier in handled_qualifiers:
+          qualifier_info = item.pop(qualifier)
+          qualifiers_list.append(dispatch(qualifier, qualifier_info))
         else:
           value = item.pop(qualifier)
-          print(f'Unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
+          print(f'Error: unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
         break
 
     # Discard course_list['allow_xxx'] entries, if present
