@@ -27,7 +27,6 @@ from qualifier_handlers import dispatch
 from quarantined_blocks import quarantine_dict
 
 from pprint import pprint
-from keystruct import key_struct
 
 DEBUG = os.getenv('DEBUG_CONTEXTS')
 log_file = open('./course_contexts.log', 'w')
@@ -100,8 +99,8 @@ def emit(requirement: Requirement, context: list) -> None:
   course_alternatives = len(requirement.active_courses)
 
   # The number of credit alternatives can be a range 'cause of courses where there is a range.
-  min_credit_alternatives = 0
-  max_credit_alternatives = 0
+  min_credit_alternatives = 0.0
+  max_credit_alternatives = 0.0
   for course in requirement.active_courses:
     if ':' in course.credits:
       min_credits, max_credits = course.credits.split(':')
@@ -112,9 +111,9 @@ def emit(requirement: Requirement, context: list) -> None:
       min_credit_alternatives += num_credits
       max_credit_alternatives += num_credits
   if min_credit_alternatives == max_credit_alternatives:
-    credit_alternatives = f'{min_credit_alternatives:0.1f}'
+    credit_alternatives = f'{min_credit_alternatives:0,.1f}'
   else:
-    credit_alternatives = f'{min_credit_alternatives:0.1f} to {max_credit_alternatives:0.1f}'
+    credit_alternatives = f'{min_credit_alternatives:0,.1f} to {max_credit_alternatives:0,.1f}'
 
   if DEBUG:
     print(institution, requirement_id, requirement.requirement_name, requirement.num_classes,
@@ -311,14 +310,13 @@ def iter_dict(item: dict, calling_context: list) -> None:
     for qualifier in possible_qualifiers:
       if qualifier in item.keys():
         if qualifier in ignored_qualifiers:
-          break
+          continue
         if qualifier in handled_qualifiers:
           qualifier_info = item.pop(qualifier)
           qualifiers_list.append(dispatch(qualifier, qualifier_info))
         else:
           value = item.pop(qualifier)
           print(f'Error: unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
-        break
 
     # Discard course_list['allow_xxx'] entries, if present
     if 'allow_credits' in item.keys():
@@ -466,8 +464,6 @@ if __name__ == '__main__':
 
             print(f'*** {institution} {block_type} {block_value} {period}', file=debug)
             pprint(body_list, stream=debug)
-            # key_struct(body_list)
-            print('\n', file=debug)
 
             # Clear out any requirements/mappings for this Scribe block that might be in place.
             # Deleting a requirement cascades to the mappings that reference it.

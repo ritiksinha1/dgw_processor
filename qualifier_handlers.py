@@ -7,7 +7,7 @@ import sys
 
 import Any
 
-DEBUG = os.getenv('DEBUG_QULIFIERS')
+DEBUG = os.getenv('DEBUG_QUALIFIERS')
 
 
 # Qualifier Handlers
@@ -30,7 +30,7 @@ def process_maxperdisc(mpd_dict: dict) -> str:
   """
   """
   if DEBUG:
-    print(f'*** process_maxperdisc({mpd_dict=}, {calling_context=})', file=sys.stderr)
+    print(f'*** process_maxperdisc({mpd_dict=})', file=sys.stderr)
   class_credit = mpd_dict['class_credit'].lower()
   if class_credit == 'class':
     number = int(mpd_dict['number'])
@@ -51,9 +51,11 @@ def process_maxspread(maxspread_info: dict) -> str:
   """
   """
   if DEBUG:
-    print(f'process_maxspread({maxspread_info}', file=sys.stderr)
+    print(f'*** process_maxspread({maxspread_info})', file=sys.stderr)
 
-  return f'maxspread: not implemented yet'
+  number = int(maxspread_info)
+
+  return f'maxspread: not implemented yet {number=}'
 
 
 # process_maxtransfer()
@@ -84,8 +86,7 @@ def process_minclass(mcl_dict: dict) -> str:
   """ dict_keys(['number', 'course_list'])
   """
   if DEBUG:
-    print(f'*** process_minclass({mcl_dict=}, {calling_context=})', file=sys.stderr)
-  local_context = calling_context + []
+    print(f'*** process_minclass({mcl_dict=})', file=sys.stderr)
   number = int(mcl_dict['number'])
   suffix = '' if number == 1 else 'es'
   scribed_courses_list = mcl_dict['course_list']['scribed_courses']
@@ -109,8 +110,9 @@ def process_mincredit(mincredit_info: dict) -> str:
   if DEBUG:
     print(f'process_mincredit({mincredit_info}', file=sys.stderr)
 
-  print(mincredit_info.keys())
-  return f'mincredit: not implemented yet'
+  number = float(mincredit_info.pop('number'))
+  course_list = mincredit_info.pop('course_list')
+  return f'mincredit: not implemented yet {number=} {course_list=}'
 
 
 # process_mingpa()
@@ -119,8 +121,7 @@ def process_mingpa(mgp_dict: dict) -> str:
   """
   """
   if DEBUG:
-    print(f'*** process_mingpa({mgp_dict=}, {calling_context=})', file=sys.stderr)
-  local_context = calling_context + []
+    print(f'*** process_mingpa({mgp_dict=})', file=sys.stderr)
   number = float(mgp_dict['number'])
   return f'Minimum GPA of {number:0.1f} {mgp_dict.keys()=}'
 
@@ -131,8 +132,7 @@ def process_mingrade(min_grade: str) -> str:
   """
   """
   if DEBUG:
-    print(f'*** process_mingrade({min_grade=}, {calling_context=})', file=sys.stderr)
-  local_context = calling_context + []
+    print(f'*** process_mingrade({min_grade=})', file=sys.stderr)
 
   # Convert GPA values to letter grades by table lookup.
   # int(round(3×GPA)) gives the index into the letters table.
@@ -218,6 +218,6 @@ def dispatch(qualifier: str, qualifier_info: Any) -> str:
   """
   """
   if DEBUG:
-    print(f'*** dispatch({qualifier}, {qualifier_info=}', file=sys.stderr)
+    print(f'*** dispatch({qualifier}, {qualifier_info=})', file=sys.stderr)
 
   return dispatch_table[qualifier](qualifier_info)
