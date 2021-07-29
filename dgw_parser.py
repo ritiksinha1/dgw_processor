@@ -79,7 +79,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
       if verbose:
         print(f'Skipping: not currently offered.')
       conn.close()
-      return (None, None)
+      return {'header_list': [], 'body_list': []}
     catalog_years_text = catalog_years(row.period_start, row.period_stop).text
     if verbose:
       print(catalog_years_text)

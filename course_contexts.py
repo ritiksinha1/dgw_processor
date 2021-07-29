@@ -461,7 +461,6 @@ if __name__ == '__main__':
               parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
             header_list = parse_tree['header_list']  # Ignored by this app
             body_list = parse_tree['body_list']
-
             print(f'*** {institution} {block_type} {block_value} {period}', file=debug)
             pprint(body_list, stream=debug)
 
