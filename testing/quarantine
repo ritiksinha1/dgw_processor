@@ -10,14 +10,14 @@ import csv
 
 from collections import namedtuple
 
-Row = namedtuple('Row', 'institution, requirement_id, reason, can_ellucian')
+Row = namedtuple('Row', 'institution requirement_id block_type reason can_ellucian')
 
 TEST_DATA = os.getenv('TEST_DATA')
 if TEST_DATA is None:
   sys.exit('TEST_DATA not set')
 
 try:
-  institution, requirement_id, *_ = TEST_DATA.split('/')[1].split('_')
+  institution, requirement_id, block_type, *_ = TEST_DATA.split('/')[1].split('_')
 except ValueError:
   sys.exit(f'{TEST_DATA} is not a valid block string')
 
@@ -39,6 +39,6 @@ can_ellucian = 'Yes' if can_ellucian.lower().startswith('y') else 'No'
 
 with open('../quarantine_list.csv', 'a') as wfile:
   writer = csv.writer(wfile)
-  writer.writerow([institution, requirement_id, reason, can_ellucian])
-print(f'Added: {institution} {requirement_id} {reason}')
+  writer.writerow([institution, requirement_id, block_type, reason, can_ellucian])
+print(f'Added: {institution} {requirement_id} {block_type} {reason}')
 os.system('./sort_quar')

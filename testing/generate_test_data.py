@@ -30,7 +30,7 @@ if period_stop != '99999999':
        'Only "active" or "99999999" are valid for now.')
 
 # Get quarantine list
-Row = namedtuple('ROW', 'institution requirement_id reason can_ellucian')
+Row = namedtuple('ROW', 'institution requirement_id block_type reason can_ellucian')
 quarantined_blocks = []
 timeout_blocks = []
 with open('../quarantine_list.csv') as qfile:
@@ -81,20 +81,23 @@ for block_type in block_types:
   print(f'{cursor.rowcount} {block_type}s found')
 
   for block in cursor.fetchall():
+    institution = block.institution
+    requirement_id = block.requirement_id
+    block_type = block.block_type.lower()
     # Check for quarantined status
     text_to_write = dgw_filter(block.requirement_text)
     title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
                                                              '_', block.title)))
     if (block.institution, block.requirement_id) in quarantined_blocks:
       file = Path(quarantine_dir,
-                  f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
-      print(f'{block.institution} {block.requirement_id} {block.block_type} is quarantined')
+                  f'{institution}_{requirement_id}_{block_type}_{title_str}'.strip('_'))
+      print(f'{institution} {requirement_id} {block_type} is quarantined')
     # Check for timeout status
-    elif (block.institution, block.requirement_id) in timeout_blocks:
+    elif (institution, requirement_id) in timeout_blocks:
       file = Path(timeout_dir,
-                  f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
-      print(f'{block.institution} {block.requirement_id} {block.block_type} is timeouted')
+                  f'{institution}_{requirement_id}_{block_type}_{title_str}'.strip('_'))
+      print(f'{institution} {requirement_id} {block_type} is timeouted')
     else:
       file = Path(directory,
-                  f'{block.institution}_{block.requirement_id}_{title_str}'.strip('_'))
+                  f'{institution}_{requirement_id}_{block_type}_{title_str}'.strip('_'))
     file.write_text(text_to_write)

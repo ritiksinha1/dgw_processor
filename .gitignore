@@ -39,3 +39,4 @@ Logs/
 /err
 /out
 /only_one_course.csv
+/testing/run_tests.out/

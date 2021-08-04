@@ -18,10 +18,10 @@ if os.getenv('DEBUG'):
   logfile = sys.stderr
 else:
   time_stamp = str(datetime.now()).replace(' ', '_').rstrip('0123456789').rstrip('.')
-  logfile = open(f'count_results_{time_stamp}.txt', 'w')
+  logfile = open(f'./count_results.out/count_results_{time_stamp}.txt', 'w')
 
 # Find the latest csv file to process
-potentials = Path('.').glob('run_tests-*')
+potentials = Path('./run_tests.out/').glob('run_tests-*')
 actual = None
 for potential in potentials:
   if actual is None:

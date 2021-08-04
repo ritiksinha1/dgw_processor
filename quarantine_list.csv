@@ -1,17 +1,17 @@
-College,Requirement_ID,Reason,Can Ellucian
-BAR01,RA000625,Empty block (all comments),No
-BCC01,RA000597,Invalid credit range (1-2) on line 85,Yes
-BKL01,RA003399,Missing comma in course list on line 99,Yes
-BMC01,RA000291,Missing BeginIf/EndIf in multiple places,Yes
-BMC01,RA000321,Missing BeginIf/EndIf in multiple places,Yes
-BMC01,RA000335,Missing BeginIf/EndIf in multiple places,Yes
-CSI01,RA000365,“18 Credits in  10 @@” on line 32,Yes
-CSI01,RA000465,“26 Credits in  10 @@” on line 30,Yes
-CSI01,RA000575,“20 Credits in  10 @@” on line 54,Yes
-CSI01,RA000594,“20 Credits in  10 @@” on line 54,Yes
-CSI01,RA000606,“18 Credits in  10 @@” on line 32,Yes
-CSI01,RA000611,“26 Credits in  10 @@” on line 29,Yes
-NYT01,RA000679,Misplaced semicolon on line 96,No
-NYT01,RA000680,Misplaced semicolon on line 100,No
-NYT01,RA000681,Misplaced semicolon on line 92,No
-NYT01,RA000682,Misplaced semicolon on line 107,No
+College,Requirement ID,Block Type,Reason,Can Ellucian
+BAR01,RA000625,MAJOR,Empty block (all comments),No
+BCC01,RA000597,MAJOR,Invalid credit range (1-2) on line 85,Yes
+BKL01,RA003399,MAJOR,Missing comma in course list on line 99,Yes
+BMC01,RA000291,OTHER,Missing BeginIf/EndIf in multiple places,Yes
+BMC01,RA000321,OTHER,Missing BeginIf/EndIf in multiple places,Yes
+BMC01,RA000335,OTHER,Missing BeginIf/EndIf in multiple places,Yes
+CSI01,RA000365,MAJOR,“18 Credits in  10 @@” on line 32,Yes
+CSI01,RA000465,MAJOR,“26 Credits in  10 @@” on line 30,Yes
+CSI01,RA000575,MAJOR,“20 Credits in  10 @@” on line 54,Yes
+CSI01,RA000594,MAJOR,“20 Credits in  10 @@” on line 54,Yes
+CSI01,RA000606,MAJOR,“18 Credits in  10 @@” on line 32,Yes
+CSI01,RA000611,MAJOR,“26 Credits in  10 @@” on line 29,Yes
+NYT01,RA000679,MAJOR,Misplaced semicolon on line 96,No
+NYT01,RA000680,MAJOR,Misplaced semicolon on line 100,No
+NYT01,RA000681,MAJOR,Misplaced semicolon on line 92,No
+NYT01,RA000682,MAJOR,Misplaced semicolon on line 107,No

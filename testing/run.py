@@ -27,11 +27,16 @@ size = file.stat().st_size
 lines = file.read_text()
 lines = dgw_filter(lines)
 num_lines = lines.count('\n')
-lines = lines.encode('utf-8')   # Need bytes-like object for input art to subprocess.run()
+lines = lines.encode('utf-8')   # Need bytes-like object for input arg to subprocess.run()
+
+cp = './classes:/usr/local/lib/antlr-4.9.2-complete.jar'
 
 try:
   t0 = time.time()
-  completed = subprocess.run(['grun', 'ReqBlock', 'req_block'],
+  completed = subprocess.run(['java', '-cp', cp,
+                              'org.antlr.v4.gui.TestRig',
+                              'ReqBlock',
+                              'req_block'],
                              timeout=timelimit,
                              # stdin=file.open(),
                              input=lines,
