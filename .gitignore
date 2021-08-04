@@ -40,3 +40,4 @@ Logs/
 /out
 /only_one_course.csv
 /testing/run_tests.out/
+/testing/run_timeouts.out/
