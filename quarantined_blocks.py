@@ -22,4 +22,4 @@ with open('/Users/vickery/Projects/dgw_processor/quarantine_list.csv') as qfile:
                                                                row.can_ellucian)
 
 if __name__ == '__main__':
-  pprint(quarantine_dict)
+  pprint(quarantined_dict)
