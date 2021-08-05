@@ -7,7 +7,7 @@ from pprint import pprint
 
 quarantine_dict = dict()
 
-Row = namedtuple('Row', 'institution requirement_id explanation can_ellucian')
+Row = namedtuple('Row', 'institution requirement_id block_type explanation can_ellucian')
 quarantine_dict = {}
 with open('/Users/vickery/Projects/dgw_processor/quarantine_list.csv') as qfile:
   reader = csv.reader(qfile)
