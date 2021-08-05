@@ -24,7 +24,7 @@ from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_parser import dgw_parser
 from qualifier_handlers import dispatch
-from quarantined_blocks import quarantine_dict
+from quarantined_blocks import quarantined_dict
 
 from pprint import pprint
 
@@ -448,7 +448,7 @@ if __name__ == '__main__':
            and block_value ~* '^{block_value}$'
     """)
           for row in cursor.fetchall():
-            if (institution, row.requirement_id) in quarantine_dict:
+            if (institution, row.requirement_id) in quarantined_dict:
               print(f'{institution}, {row.requirement_id} is quarantined')
               continue
             if period == 'current' and row.period_stop != '99999999':

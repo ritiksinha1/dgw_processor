@@ -8,7 +8,7 @@ from pprint import pprint
 quarantine_dict = dict()
 
 Row = namedtuple('Row', 'institution requirement_id block_type explanation can_ellucian')
-quarantine_dict = {}
+quarantined_dict = {}
 with open('/Users/vickery/Projects/dgw_processor/quarantine_list.csv') as qfile:
   reader = csv.reader(qfile)
   for line in reader:
@@ -17,8 +17,9 @@ with open('/Users/vickery/Projects/dgw_processor/quarantine_list.csv') as qfile:
     row = Row._make(line)
     ellucian = row.can_ellucian.lower().startswith('y')
 
-    quarantine_dict[(row.institution, row.requirement_id)] = (row.explanation.strip('.'),
-                                                              row.can_ellucian)
+    quarantined_dict[(row.institution, row.requirement_id)] = (row.block_type,
+                                                               row.explanation.strip('.'),
+                                                               row.can_ellucian)
 
 if __name__ == '__main__':
   pprint(quarantine_dict)

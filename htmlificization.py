@@ -20,7 +20,7 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
-from quarantined_blocks import quarantine_dict
+from quarantined_blocks import quarantined_dict
 from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection
 
@@ -786,9 +786,9 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
     return ('<h1 class="error">This scribe block is not available.</h1>'
             '<p><em>Should not occur.</em></p>')
 
-  if (row.institution, row.requirement_id) in quarantine_dict.keys():
+  if (row.institution, row.requirement_id) in quarantined_dict.keys():
     header_list, body_list = None, None
-    explanation, ellucian = quarantine_dict[(row.institution, row.requirement_id)]
+    block_type, explanation, ellucian = quarantined_dict[(row.institution, row.requirement_id)]
     if ellucian.startswith('Y'):
       qualifier = 'The Ellucian parser accepts this block, but'
     else:
@@ -878,7 +878,7 @@ if __name__ == '__main__':
     if not requirement_id.isdecimal():
       sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
     requirement_id = f'RA{int(requirement_id):06}'
-    if (institution, requirement_id) in quarantine_dict:
+    if (institution, requirement_id) in quarantined_dict:
       exit(f'({institution} {requirement_id}) is quarantined.')
 
     # Look up the block type and value
@@ -971,7 +971,7 @@ if __name__ == '__main__':
         requirement_id, block_type, block_value, requirement_text, requirement_html = cursor\
             .fetchone()
         conn.close()
-        if (institution, requirement_id) in quarantine_dict:
+        if (institution, requirement_id) in quarantined_dict:
           print(f'({institution} {requirement_id}) is quarantined: skipping')
           continue
         print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
