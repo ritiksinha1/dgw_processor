@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import time
+
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -24,16 +25,16 @@ test_dir = Path(f'./test_data.{args.block_type}')
 
 file = Path(test_dir, args.requirement_block)
 size = file.stat().st_size
-lines = file.read_text()
+lines = file.read_text(encoding='utf-8')
 lines = dgw_filter(lines)
 num_lines = lines.count('\n')
-lines = lines.encode('utf-8')   # Need bytes-like object for input arg to subprocess.run()
+# lines = lines.encode('utf-8')   # Need bytes-like object for input arg to subprocess.run()
 
-cp = './classes:/usr/local/lib/antlr-4.9.2-complete.jar'
+classpath = './classes:/usr/local/lib/antlr-4.9.2-complete.jar'
 
 try:
   t0 = time.time()
-  completed = subprocess.run(['java', '-cp', cp,
+  completed = subprocess.run(['java', '-cp', classpath,
                               'org.antlr.v4.gui.TestRig',
                               'ReqBlock',
                               'req_block'],

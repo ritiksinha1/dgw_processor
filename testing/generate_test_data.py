@@ -83,21 +83,21 @@ for block_type in block_types:
   for block in cursor.fetchall():
     institution = block.institution
     requirement_id = block.requirement_id
-    block_type = block.block_type.lower()
+    block_type = block.block_type.upper()
+
     # Check for quarantined status
     text_to_write = dgw_filter(block.requirement_text)
-    title_str = re.sub(r'\_$', '', re.sub(r'_+', '_', re.sub(r'[\][\(\):/\&\t ]',
-                                                             '_', block.title)))
     if (block.institution, block.requirement_id) in quarantined_blocks:
       file = Path(quarantine_dir,
-                  f'{institution}_{requirement_id}_{block_type}_{title_str}'.strip('_'))
+                  f'{institution}_{requirement_id}_{block_type}'.strip('_'))
       print(f'{institution} {requirement_id} {block_type} is quarantined')
+
     # Check for timeout status
     elif (institution, requirement_id) in timeout_blocks:
       file = Path(timeout_dir,
-                  f'{institution}_{requirement_id}_{block_type}_{title_str}'.strip('_'))
+                  f'{institution}_{requirement_id}_{block_type}'.strip('_'))
       print(f'{institution} {requirement_id} {block_type} is timeouted')
     else:
       file = Path(directory,
-                  f'{institution}_{requirement_id}_{block_type}_{title_str}'.strip('_'))
+                  f'{institution}_{requirement_id}_{block_type}'.strip('_'))
     file.write_text(text_to_write)

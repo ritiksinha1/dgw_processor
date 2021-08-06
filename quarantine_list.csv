@@ -1,4 +1,5 @@
-College,Requirement ID,Block Type,Reason,Can Ellucian
+Institution,Requirement ID,Block Type,Explanation,Can Ellucian
+BAR01,RA000185,MAJOR,to see what happens,Yes
 BAR01,RA000625,MAJOR,Empty block (all comments),No
 BCC01,RA000597,MAJOR,Invalid credit range (1-2) on line 85,Yes
 BKL01,RA003399,MAJOR,Missing comma in course list on line 99,Yes
