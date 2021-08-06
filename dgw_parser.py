@@ -24,7 +24,7 @@ from psycopg2 import Binary
 from quarantined_blocks import quarantined_dict
 from dgw_filter import dgw_filter
 from dgw_handlers import dispatch
-from dgw_utils import catalog_years
+from catalogyears import catalog_years
 
 DEBUG = os.getenv('DEBUG_PARSER')
 
