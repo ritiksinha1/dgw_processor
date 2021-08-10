@@ -20,7 +20,7 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
-from quarantined_blocks import quarantined_dict
+from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection
 
@@ -35,6 +35,9 @@ cursor = conn.cursor()
 cursor.execute('select code, name from cuny_institutions')
 college_names = {row.code: row.name for row in cursor.fetchall()}
 conn.close()
+
+# Dict of quarantined requirement_blocks
+quarantined_dict = QuarantineManager()
 
 
 # list_of_courses()
@@ -786,18 +789,21 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
     return ('<h1 class="error">This scribe block is not available.</h1>'
             '<p><em>Should not occur.</em></p>')
 
-  if (row.institution, row.requirement_id) in quarantined_dict.keys():
+  if quarantined_dict.is_quarantined((row.institution, row.requirement_id)):
     header_list, body_list = None, None
-    block_type, explanation, ellucian = quarantined_dict[(row.institution, row.requirement_id)]
-    if ellucian.startswith('Y'):
-      qualifier = 'The Ellucian parser accepts this block, but'
+    block_type, catalog, year, explanation, ellucian = quarantined_dict[(row.institution,
+                                                                         row.requirement_id)]
+    if ellucian.upper().startswith('Y'):
+      qualifier = 'The Ellucian parser accepts this block, but this'
+    elif ellucian.upper().startswith('N'):
+      qualifier = 'The Ellucian parser rejects this block, and this'
     else:
-      qualifier = 'The Ellucian parser rejects this block, and'
+      qualifier = 'This'
     disclaimer = f"""
     <p class="disclaimer">
       <span class="error">
         No Interpretation Available.<br>
-        {qualifier} this parser detected the following problem:
+        {qualifier} parser detected the following problem:
       </span>
         “{explanation}.”
     </p>
@@ -878,7 +884,7 @@ if __name__ == '__main__':
     if not requirement_id.isdecimal():
       sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
     requirement_id = f'RA{int(requirement_id):06}'
-    if (institution, requirement_id) in quarantined_dict:
+    if quarantined_dict.is_quarantined((institution, requirement_id)):
       exit(f'({institution} {requirement_id}) is quarantined.')
 
     # Look up the block type and value
@@ -971,7 +977,7 @@ if __name__ == '__main__':
         requirement_id, block_type, block_value, requirement_text, requirement_html = cursor\
             .fetchone()
         conn.close()
-        if (institution, requirement_id) in quarantined_dict:
+        if quarantined_dict.is_quarantined((institution, requirement_id)):
           print(f'({institution} {requirement_id}) is quarantined: skipping')
           continue
         print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',

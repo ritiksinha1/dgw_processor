@@ -21,7 +21,7 @@ from antlr4.error.ErrorListener import ErrorListener
 from pgconnection import PgConnection
 from psycopg2 import Binary
 
-from quarantined_blocks import quarantined_dict
+from quarantine_manager import QuarantineManager
 from dgw_filter import dgw_filter
 from dgw_handlers import dispatch
 from catalogyears import catalog_years
@@ -29,6 +29,8 @@ from catalogyears import catalog_years
 DEBUG = os.getenv('DEBUG_PARSER')
 
 sys.setrecursionlimit(10**6)
+
+quarantined_dict = QuarantineManager()
 
 
 # dgw_parser()
@@ -71,7 +73,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     body_list = None
     if verbose:
       print(f'{institution} {row.requirement_id} {block_type} {block_value} ', end='')
-    if (institution, row.requirement_id) in quarantined_dict.keys():
+    if quarantined_dict.is_quarantined((institution, row.requirement_id)):
       if verbose:
         print('Skipping: quarantined.')
       continue

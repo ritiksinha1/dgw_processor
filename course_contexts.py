@@ -24,12 +24,14 @@ from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_parser import dgw_parser
 from qualifier_handlers import dispatch
-from quarantined_blocks import quarantined_dict
+from quarantine_manager import QuarantineManager
 
 from pprint import pprint
 
 DEBUG = os.getenv('DEBUG_CONTEXTS')
 log_file = open('./course_contexts.log', 'w')
+
+quarantined_dict = QuarantineManager()
 
 # Information about active courses found in course lists.
 ActiveCourse = namedtuple('ActiveCourse',
@@ -448,7 +450,7 @@ if __name__ == '__main__':
            and block_value ~* '^{block_value}$'
     """)
           for row in cursor.fetchall():
-            if (institution, row.requirement_id) in quarantined_dict:
+            if quarantined_dict.is_quarantined((institution, row.requirement_id)):
               print(f'{institution}, {row.requirement_id} is quarantined')
               continue
             if period == 'current' and row.period_stop != '99999999':
