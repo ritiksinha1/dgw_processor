@@ -55,7 +55,7 @@ class QuarantineManager(dict):
       writer.writerow(_columns)
       keys = sorted(_quarantined_dict.keys())
       for key in keys:
-        writer.writerow([key.institution, key.requirement_id] + _quarantined_dict[key])
+        writer.writerow([key[0], key[1]] + _quarantined_dict[key])
 
   def __setitem__(self, k: _Key, v: list) -> dict:
     """ Given the explanation and can_ellucian strings, fill in the remainder of the quarantined

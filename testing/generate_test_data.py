@@ -13,7 +13,7 @@ from pathlib import Path
 from collections import namedtuple
 
 from pgconnection import PgConnection
-
+from quarantine_manager import QuarantineManager
 from dgw_filter import dgw_filter
 
 # Parse args
@@ -30,19 +30,19 @@ if period_stop != '99999999':
        'Only "active" or "99999999" are valid for now.')
 
 # Get quarantine list
-Row = namedtuple('ROW', 'institution requirement_id block_type reason can_ellucian')
-quarantined_blocks = []
-timeout_blocks = []
-with open('../quarantine_list.csv') as qfile:
-  reader = csv.reader(qfile)
-  for line in reader:
-    if reader.line_num == 1 or len(line) == 0 or line[0].startswith('#'):
-      continue
-    row = Row._make(line)
-    if 'timeout' in row.reason.lower():
-      timeout_blocks.append((row.institution.strip(), row.requirement_id.strip()))
-    else:
-      quarantined_blocks.append((row.institution, row.requirement_id.strip()))
+# Row = namedtuple('ROW', 'institution requirement_id block_type reason can_ellucian')
+# quarantined_blocks = []
+# with open('../quarantine_list.csv') as qfile:
+#   reader = csv.reader(qfile)
+#   for line in reader:
+#     if reader.line_num == 1 or len(line) == 0 or line[0].startswith('#'):
+#       continue
+#     row = Row._make(line)
+#     if 'timeout' in row.reason.lower():
+#       timeout_blocks.append((row.institution.strip(), row.requirement_id.strip()))
+#     else:
+#       quarantined_blocks.append((row.institution, row.requirement_id.strip()))
+quarantined_dict = QuarantineManager()
 
 quarantine_dir = Path('./test_data.quarantine')
 if quarantine_dir.is_dir():
@@ -51,6 +51,7 @@ if quarantine_dir.is_dir():
 else:
   quarantine_dir.mkdir(exist_ok=True)
 
+timeout_blocks = []
 timeout_dir = Path('./test_data.timeout')
 if timeout_dir.is_dir():
   for file in timeout_dir.iterdir():
@@ -87,7 +88,7 @@ for block_type in block_types:
 
     # Check for quarantined status
     text_to_write = dgw_filter(block.requirement_text)
-    if (block.institution, block.requirement_id) in quarantined_blocks:
+    if quarantined_dict.is_quarantined((block.institution, block.requirement_id)):
       file = Path(quarantine_dir,
                   f'{institution}_{requirement_id}_{block_type}'.strip('_'))
       print(f'{institution} {requirement_id} {block_type} is quarantined')
