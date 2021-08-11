@@ -8,10 +8,10 @@
 # The report_progress function sends email to the operations director to let them know what's
 # happening.
 OPERATIONS_DIRECTOR='Christopher.Vickery@qc.cuny.edu'
+
 function report_progress
 {
   echo $1 > .mesg_$$
-  cat .mesg_$$
   # sendemail must be in the PATH as a (hard) link to sendemail.py in transfer-app.
   /Users/vickery/bin/sendemail -s "Update Blocks: $1" -t .mesg_$$ "$OPERATIONS_DIRECTOR"
   rm -f .mesg_*
@@ -21,7 +21,7 @@ function report_progress
 #    This step makes copies of all the requirement_blocks as files, distributing them into test_data
 #    folders with suffixes according to their block types. The ../quarantine_list.csv file is used
 #    to partition previously-quarantined blocks into the test_data.quarantine folder.
-report_progress "`date` Start update_blocks.sh on $HOST"
+report_progress "`date` Start update_blocks.sh on $HOSTNAME"
 rm -f .err_*
 ./generate_test_data.py 2> .err_$$
 [[ $? != 0 ]] && report_progress "Exiting: generate_test_data.py failed: `cat .err_$$`" \
@@ -40,8 +40,8 @@ rm -f .err_*
 # Run Tests
 #    Parse all blocks in the test_data.{block_type} folders. Any new parsing errors will be found in
 #    test_results.{block_type}.
-./run_tests.py 2> .err_$$
-[[ $? != 0 ]] && report_progress "Exiting: run_tests.py failed: `cat .err_$$`" \
+./run_tests.sh 2> .err_$$
+[[ $? != 0 ]] && report_progress "Exiting: run_tests.sh failed: `cat .err_$$`" \
               && rm -f .err_$$ \
               && exit 1
 
@@ -55,9 +55,23 @@ rm -f .err_*
               && rm -f .err_$$ \
               && exit 1
 
+
 # All Done
 #    Report all parsing and timeout errors for manual review. The quarantine.sh script can be run to
 #    add blocks to ../quarantine_list.csv along with an explanation of why the block failed.
+need_to_check=False
+for block_type in major minor conc degree other
+do
+  total=`ls -l test_results.$block_type|ack total|cut 7-`
+  if [[ $total != 0 ]]
+  then
+    for file in test_results.block_type
+    do
+      echo "ERROR: $file failed to parse" >> .err_$$
+      need_to_check=True
+    done
+  fi
+done
 
 # Developer’s Guide
 #   I use the following variables, aliases, and function, defined in my ~/.aliases_du_jour, to
@@ -92,5 +106,7 @@ rm -f .err_*
 #       use major
 
 
-report_progress "Everything is Perfect!\n ... except maybe for things I didn’t check yet ..."
+msg="Requirement block checks complete."
+[[ need_to_check ]] && msg="$msg Manual intervention required."
+report_progress $msg
 exit 0
