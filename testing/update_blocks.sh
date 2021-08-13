@@ -86,7 +86,7 @@ report_progress "Starting on $HOSTNAME"
 #    This step makes copies of all the requirement_blocks as files, distributing them into test_data
 #    folders with suffixes according to their block types. The ../quarantine_list.csv file is used
 #    to partition previously-quarantined blocks into the test_data.quarantine folder.
-echo -e "\n*** GENERATE TEST DATA ***"
+echo -e "\n*** GENERATE TEST DATA ***" | tee -a .mesg_$$
 ./generate_test_data.py >> .mesg_$$ 2>&1
 [[ $? != 0 ]] && report_progress "Exiting: generate_test_data.py failed." \
               && rm -f .mesg_$$ \
@@ -96,7 +96,7 @@ echo -e "\n*** GENERATE TEST DATA ***"
 #    Here, we try to parse the previously-quarantined blocks. Any blocks that now parse correctly
 #    are removed from ../quarantine_list.csv and the files are moved from test_data.quarantine into
 #    the appropriate test_data.{block_type} folder.
-echo -e "\n*** CHECK QUARANTINED BLOCKS ***"
+echo -e "\n*** CHECK QUARANTINED BLOCKS ***" | tee -a .mesg_$$
 ./check_quarantined_blocks.py >> .mesg_$$ 2>&1
 [[ $? != 0 ]] && report_progress "Exiting: check_quarantined_blocks.py failed." \
               && rm -f .mesg_$$ \
@@ -105,7 +105,7 @@ echo -e "\n*** CHECK QUARANTINED BLOCKS ***"
 # Run Tests
 #    Parse all blocks in the test_data.{block_type} folders. Any new parsing errors will be found in
 #    test_results.{block_type}.
-echo -e "\n*** RUN TESTS ***"
+echo -e "\n*** RUN TESTS ***" | tee -a .mesg_$$
 ./run_tests.sh 2>> .mesg_$$
 [[ $? != 0 ]] && report_progress "Exiting: run_tests.sh failed." \
               && rm -f .mesg_$$ \
@@ -125,7 +125,7 @@ echo -e "\n*** RUN TIMEOUTS ***"
 # All Done
 #    Report all parsing and timeout errors for manual review. The quarantine.sh script can be run to
 #    add blocks to ../quarantine_list.csv along with an explanation of why the block failed.
-echo -e "\n*** CHECK RESULTS ***"
+echo -e "\n*** CHECK RESULTS ***" | tee -a .mesg_$$
 unset need_to_check
 for block_type in major minor conc degree other
 do
