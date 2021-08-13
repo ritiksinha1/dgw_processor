@@ -126,7 +126,7 @@ echo -e "\n*** RUN TIMEOUTS ***"
 #    Report all parsing and timeout errors for manual review. The quarantine.sh script can be run to
 #    add blocks to ../quarantine_list.csv along with an explanation of why the block failed.
 echo -e "\n*** CHECK RESULTS ***"
-need_to_check=False
+unset need_to_check
 for block_type in major minor conc degree other
 do
   total=`ls -l test_results.${block_type} | ack '_' | wc -l`
@@ -148,7 +148,7 @@ do
 done
 
 msg="completed after $SECONDS sec."
-[[ need_to_check ]] && msg="$msg Manual intervention required!"
+[[ $need_to_check ]] && msg="$msg Manual intervention required!"
 report_progress "$msg"
 
 exit 0
