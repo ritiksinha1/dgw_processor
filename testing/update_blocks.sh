@@ -106,7 +106,7 @@ echo -e "\n*** CHECK QUARANTINED BLOCKS ***"
 #    Parse all blocks in the test_data.{block_type} folders. Any new parsing errors will be found in
 #    test_results.{block_type}.
 echo -e "\n*** RUN TESTS ***"
-./run_tests.sh >> .mesg_$$ 2>&1
+./run_tests.sh 2>> .mesg_$$
 [[ $? != 0 ]] && report_progress "Exiting: run_tests.sh failed." \
               && rm -f .mesg_$$ \
               && exit 1
@@ -134,21 +134,21 @@ do
   then
     if [[ $total == 1 ]]
     then
-      echo One $block_type error >> .mesg_$$
+      echo "One $block_type error" >> .mesg_$$
     else
-      echo $total $block_type error$suffix >> .mesg_$$
+      echo "$total $block_type errors" >> .mesg_$$
     fi
     need_to_check=True
     for file in test_results.${block_type}/*
     do
-      echo ${file##*/} failed to parse >> .mesg_$$
+      echo "${file##*/} failed to parse" >> .mesg_$$
     done
-  else echo No $block_type errors >> .mesg_$$
+  else echo "No $block_type errors" >> .mesg_$$
   fi
 done
 
-msg="completed after $SECONDS seclsl."
-[[ need_to_check ]] && msg="$msg Manual intervention required."
+msg="completed after $SECONDS sec."
+[[ need_to_check ]] && msg="$msg Manual intervention required!"
 report_progress "$msg"
 
 exit 0
