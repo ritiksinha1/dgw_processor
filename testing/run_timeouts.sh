@@ -44,6 +44,7 @@ do
     fi
   fi
 done
+echo
 
 let $((mins = total/60))
 let $((secs = total - (mins * 60) ))
