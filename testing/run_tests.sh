@@ -42,7 +42,7 @@ do
   #      echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > ${csv_file}
   # fi
   csv_file=./run_tests.out/`date -I`_${dir}.csv
-  echo -e 'Type\tBlock\tLines\tMessages\tSeconds' > ${csv_file}
+  echo -e 'Type,Block,Lines,Messages,Seconds' > ${csv_file}
 
   block_str=`echo $block_type|tr a-z A-Z`
   rm -fr test_results.$block_type
@@ -52,10 +52,9 @@ do
   let count=0
   for file in test_data.$block_type/*
   do
-    [[ $DEBUG ]] && echo  -e "$count/$num_files\t$file"
     let $((count = count + 1))
     ./run.py $block_type ${file#*/} --timelimit ${TIMELIMIT} >> ${csv_file} 2>>./timeouts.log
-    echo -en "               \r$count/$num_files\r"
+    echo -en "               \r$count/$num_files ${file#*/}\r"
   done
   num_errors=`ls test_results.$block_type|wc -l`
   echo -e "\n$block_str completed after $SECONDS seconds with $num_errors errors."

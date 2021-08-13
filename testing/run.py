@@ -14,6 +14,8 @@ from pathlib import Path
 
 from dgw_filter import dgw_filter
 
+DEBUG = os.getenv('DEBUG_RUN')
+
 parser = ArgumentParser('run grun')
 parser.add_argument('block_type')
 parser.add_argument('requirement_block')
@@ -29,7 +31,8 @@ lines = file.read_text()
 lines = dgw_filter(lines)
 num_lines = lines.count('\n')
 lines = lines.encode('utf-8')   # Need bytes-like object for input arg to subprocess.run()
-print(f'{test_dir.name}/{file.name} has {size} bytes; {num_lines} lines.')
+if DEBUG:
+  print(f'{test_dir.name}/{file.name} has {size} bytes; {num_lines} lines. {timelimit=}')
 
 classpath = './classes:/usr/local/lib/antlr-4.9.2-complete.jar'
 
@@ -52,7 +55,6 @@ try:
 except subprocess.TimeoutExpired:
   output = 'timeout'
   elapsed = timelimit + 1
-  print(f'{args.block_type}\t{args.requirement_block}\t{num_lines}\t{output}\t{elapsed:0.1f}',
+  print(f'{args.block_type},{args.requirement_block},{num_lines},{output},{elapsed:0.1f}',
         file=sys.stderr)
-
-print(f'{args.block_type}\t{args.requirement_block}\t{num_lines}\t{output}\t{elapsed:0.1f}')
+print(f'{args.block_type},{args.requirement_block},{num_lines},{output},{elapsed:0.1f}')
