@@ -229,8 +229,15 @@ def iter_dict(item: dict, calling_context: list) -> None:
 
   try:
     conditional = item.pop('conditional')
-    conditional_str = 'Conditional Not Implemented Yet'
-    iter_dict(conditional, local_context + [conditional_str])
+    condition_label = []
+    condition = conditional['condition']
+    label = conditional['label']
+    if label:
+      condition_label.append(label)
+    if_true = conditional['if_true']
+    iter_list(if_true, local_context + condition_label + [f'{condition} is true'])
+    if_false = conditional['if_false']
+    iter_list(if_false, local_context + condition_label + [f'{condition} is not true'])
   except KeyError as ke:
     pass
 
@@ -459,7 +466,7 @@ if __name__ == '__main__':
             print(f'{institution} {block_type} {block_value} {period}')
             parse_tree = (row.parse_tree)
             if (len(parse_tree.keys()) == 0) or args.force:
-              print(f'{parse_tree=}] {args.force=} Reinterpreting')
+              print(f'{parse_tree=} {args.force=} Reinterpreting')
               parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
             header_list = parse_tree['header_list']  # Ignored by this app
             body_list = parse_tree['body_list']
