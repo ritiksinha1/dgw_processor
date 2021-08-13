@@ -64,30 +64,32 @@
 #     The default block_type
 #       use major
 
-# The report_progress function sends email to the operations director to let them know what
-# happened.
+# The report_progress function sends email to the operations director to let them know what’s
+# happening. Pass the subject as an argument string; ./.mesg_$$ will be the message body.
 OPERATIONS_DIRECTOR='Christopher.Vickery@qc.cuny.edu'
 
 function report_progress
 {
-  echo $1 > .mesg_$$
   # sendemail must be in the PATH as a (hard) link to sendemail.py in transfer-app.
   /Users/vickery/bin/sendemail -s "Update Blocks: $1" -t .mesg_$$ "$OPERATIONS_DIRECTOR"
   rm -f .mesg_*
 }
 
 # =================================================================================================
-report_progress "`date` Starting update_blocks.sh on $HOSTNAME"
-rm -f .err_*
+
+rm -f .mesg_*
+SECONDS=0
+date > .mesg_$$
+report_progress "Starting on $HOSTNAME"
 
 # Generate Test Data
 #    This step makes copies of all the requirement_blocks as files, distributing them into test_data
 #    folders with suffixes according to their block types. The ../quarantine_list.csv file is used
 #    to partition previously-quarantined blocks into the test_data.quarantine folder.
 echo -e "\n*** GENERATE TEST DATA ***"
-./generate_test_data.py 2> .err_$$
-[[ $? != 0 ]] && report_progress "Exiting: generate_test_data.py failed: `cat .err_$$`" \
-              && rm -f .err_$$ \
+./generate_test_data.py >> .mesg_$$ 2>&1
+[[ $? != 0 ]] && report_progress "Exiting: generate_test_data.py failed." \
+              && rm -f .mesg_$$ \
               && exit 1
 
 # Check Quarantined Blocks
@@ -95,18 +97,18 @@ echo -e "\n*** GENERATE TEST DATA ***"
 #    are removed from ../quarantine_list.csv and the files are moved from test_data.quarantine into
 #    the appropriate test_data.{block_type} folder.
 echo -e "\n*** CHECK QUARANTINED BLOCKS ***"
-./check_quarantined_blocks.py 2> .err_$$
-[[ $? != 0 ]] && report_progress "Exiting: check_quarantined_blocks.py failed: `cat .err_$$`" \
-              && rm -f .err_$$ \
+./check_quarantined_blocks.py >> .mesg_$$ 2>&1
+[[ $? != 0 ]] && report_progress "Exiting: check_quarantined_blocks.py failed." \
+              && rm -f .mesg_$$ \
               && exit 1
 
 # Run Tests
 #    Parse all blocks in the test_data.{block_type} folders. Any new parsing errors will be found in
 #    test_results.{block_type}.
 echo -e "\n*** RUN TESTS ***"
-./run_tests.sh 2> .err_$$
-[[ $? != 0 ]] && report_progress "Exiting: run_tests.sh failed: `cat .err_$$`" \
-              && rm -f .err_$$ \
+./run_tests.sh >> .mesg_$$ 2>&1
+[[ $? != 0 ]] && report_progress "Exiting: run_tests.sh failed." \
+              && rm -f .mesg_$$ \
               && exit 1
 
 # Investigate Timeouts
@@ -115,9 +117,9 @@ echo -e "\n*** RUN TESTS ***"
 #    that fail to parse within a certain time limit (3 minutes by default) were identified, and this
 #    step tries just those blocks again with a longer time limit (10 minutes by default).
 echo -e "\n*** RUN TIMEOUTS ***"
-./run_timeouts.sh 2> .err_$$
-[[ $? != 0 ]] && report_progress "Exiting: run_timeouts.sh failed: `cat .err_$$`" \
-              && rm -f .err_$$ \
+./run_timeouts.sh >> .mesg_$$ 2>&1
+[[ $? != 0 ]] && report_progress "Exiting: run_timeouts.sh failed." \
+              && rm -f .mesg_$$ \
               && exit 1
 
 # All Done
@@ -127,21 +129,26 @@ echo -e "\n*** CHECK RESULTS ***"
 need_to_check=False
 for block_type in major minor conc degree other
 do
-  total=`ls -l test_results.${block_type}|ack total|cut -c 7-`
+  total=`ls -l test_results.${block_type} | ack '_' | wc -l`
   if [[ $total != 0 ]]
   then
-    echo $total $block_type errors >> .err_$$
+    if [[ $total == 1 ]]
+    then
+      echo One $block_type error >> .mesg_$$
+    else
+      echo $total $block_type error$suffix >> .mesg_$$
+    fi
     need_to_check=True
     for file in test_results.${block_type}/*
     do
-      echo ${file##*/} failed to parse >> .err_$$
+      echo ${file##*/} failed to parse >> .mesg_$$
     done
-  else echo No $block_type errors >> .err_$$
+  else echo No $block_type errors >> .mesg_$$
   fi
 done
 
-msg="Requirement block checks complete."
+msg="completed after $SECONDS seclsl."
 [[ need_to_check ]] && msg="$msg Manual intervention required."
-report_progress $msg
+report_progress "$msg"
 
 exit 0
