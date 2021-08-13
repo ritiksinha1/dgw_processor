@@ -84,7 +84,7 @@ rm -f .err_*
 #    This step makes copies of all the requirement_blocks as files, distributing them into test_data
 #    folders with suffixes according to their block types. The ../quarantine_list.csv file is used
 #    to partition previously-quarantined blocks into the test_data.quarantine folder.
-echo "*** GENERATE TEST DATA ***"
+echo -e "\n*** GENERATE TEST DATA ***"
 ./generate_test_data.py 2> .err_$$
 [[ $? != 0 ]] && report_progress "Exiting: generate_test_data.py failed: `cat .err_$$`" \
               && rm -f .err_$$ \
@@ -94,7 +94,7 @@ echo "*** GENERATE TEST DATA ***"
 #    Here, we try to parse the previously-quarantined blocks. Any blocks that now parse correctly
 #    are removed from ../quarantine_list.csv and the files are moved from test_data.quarantine into
 #    the appropriate test_data.{block_type} folder.
-echo "*** CHECK QUARANTINED BLOCKS ***"
+echo -e "\n*** CHECK QUARANTINED BLOCKS ***"
 ./check_quarantined_blocks.py 2> .err_$$
 [[ $? != 0 ]] && report_progress "Exiting: check_quarantined_blocks.py failed: `cat .err_$$`" \
               && rm -f .err_$$ \
@@ -103,7 +103,7 @@ echo "*** CHECK QUARANTINED BLOCKS ***"
 # Run Tests
 #    Parse all blocks in the test_data.{block_type} folders. Any new parsing errors will be found in
 #    test_results.{block_type}.
-echo "*** RUN TESTS ***"
+echo -e "\n*** RUN TESTS ***"
 ./run_tests.sh 2> .err_$$
 [[ $? != 0 ]] && report_progress "Exiting: run_tests.sh failed: `cat .err_$$`" \
               && rm -f .err_$$ \
@@ -114,7 +114,7 @@ echo "*** RUN TESTS ***"
 #    is really complex or that there is an error in the grammar. During the Run Tests stage, blocks
 #    that fail to parse within a certain time limit (3 minutes by default) were identified, and this
 #    step tries just those blocks again with a longer time limit (10 minutes by default).
-echo "*** RUN TIMEOUTS ***"
+echo -e "\n*** RUN TIMEOUTS ***"
 ./run_timeouts.sh 2> .err_$$
 [[ $? != 0 ]] && report_progress "Exiting: run_timeouts.sh failed: `cat .err_$$`" \
               && rm -f .err_$$ \
@@ -123,7 +123,7 @@ echo "*** RUN TIMEOUTS ***"
 # All Done
 #    Report all parsing and timeout errors for manual review. The quarantine.sh script can be run to
 #    add blocks to ../quarantine_list.csv along with an explanation of why the block failed.
-echo "*** CHECK RESULTS ***"
+echo -e "\n*** CHECK RESULTS ***"
 need_to_check=False
 for block_type in major minor conc degree other
 do
