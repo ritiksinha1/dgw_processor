@@ -76,7 +76,8 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     if quarantined_dict.is_quarantined((institution, row.requirement_id)):
       if verbose:
         print('Skipping: quarantined.')
-      continue
+      conn.close()
+      return {'header_list': [], 'body_list': []}
     elif period_range == 'current' and row.period_stop != '99999999':
       if verbose:
         print(f'Skipping: not currently offered.')
