@@ -458,9 +458,10 @@ if __name__ == '__main__':
     """)
           for row in cursor.fetchall():
             if quarantined_dict.is_quarantined((institution, row.requirement_id)):
-              print(f'{institution}, {row.requirement_id} is quarantined')
+              print(f'{institution}, {row.requirement_id} is quarantined.')
               continue
             if period == 'current' and row.period_stop != '99999999':
+              print(f'{institution}, {row.requirement_id} is not currently offered.')
               continue
 
             print(f'{institution} {block_type} {block_value} {period}')
@@ -468,10 +469,9 @@ if __name__ == '__main__':
             if (len(parse_tree.keys()) == 0) or args.force:
               print(f'{parse_tree=} {args.force=} Reinterpreting')
               parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
-            header_list = parse_tree['header_list']  # Ignored by this app
+            header_list = parse_tree['header_list']
             body_list = parse_tree['body_list']
             print(f'*** {institution} {block_type} {block_value} {period}', file=debug)
-            pprint(body_list, stream=debug)
 
             # Clear out any requirements/mappings for this Scribe block that might be in place.
             # Deleting a requirement cascades to the mappings that reference it.
