@@ -429,6 +429,9 @@ if __name__ == '__main__':
     conn = PgConnection()
     cursor = conn.cursor()
     institutions = [inst.upper().strip('01') for inst in args.institutions]
+    if 'ALL' in institutions:
+      cursor.execute('select code from cuny_institutions')
+      institutions = [row.code.upper().strip('01') for row in cursor.fetchall()]
     for institution in institutions:
       institution = institution + '01'
       block_types = [arg.upper() for arg in args.block_types]
