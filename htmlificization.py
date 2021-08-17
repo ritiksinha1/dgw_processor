@@ -20,6 +20,7 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
+from qualifier_handlers import format_qualifiers
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection
@@ -75,54 +76,6 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       return_str += '</li>'
   return_str += '</ul>\n</details>'
   return return_str
-
-
-# format_maxperdisc()
-# -------------------------------------------------------------------------------------------------
-def format_maxperdisc(maxperdisc_dict: dict) -> str:
-  """
-  """
-  limit = float(maxperdisc_dict['number'])
-  class_credit = maxperdisc_dict['class_credit']
-  disciplines = maxperdisc_dict['disciplines']
-  discipline_str = ', '.join(disciplines)
-  if len(disciplines) == 1:
-    suffix = ''
-    anyof = ''
-  else:
-    suffix = 's'
-    anyof = ' any of '
-
-  if class_credit == 'class':
-    class_str = 'class' if limit == 1 else 'classes'
-    return (f'No more than {int(limit)} {class_str} in {anyof}the following discipline{suffix}: '
-            f'{discipline_str}')
-  elif class_credit == 'credit':
-    credit_str = 'credit' if limit == 1 else 'credits'
-    return (f'No more than {limit:0.1f} {credit_str} in {anyof}the following discipline{suffix}: '
-            f'{discipline_str}')
-
-  return '<span class="error">Error: invalid MaxPerDisc</span>'
-
-
-# format_minclass()
-# -------------------------------------------------------------------------------------------------
-def format_minclass(minclass_dict: dict) -> str:
-  """
-  """
-  pprint(minclass_dict, stream=sys.stderr)
-  try:
-    number = int(minclass_dict['number'])
-    if number < 1:
-      raise ValueError('Minclass with minimum less than 1.')
-    suffix = '' if number == 1 else 'es'
-    rule_str = f'<p>At least {number} class{suffix} required.</p>'
-    label_str, course_list = course_list_details(minclass_dict.pop('course_list'))
-    return f'<details><summary>{label_str}</summary>{rule_str}{course_list}</dict>'
-  except ValueError as ve:
-    return f'<p class="error">Invalid MinClass {ve} {minclass_dict=}</>'
-  except KeyError as ke:
-    return f'<p class="error">Invalid MinClass {ke} {minclass_dict=}</>'
 
 
 # class_credit_to_str()
@@ -634,19 +587,23 @@ def dict_to_html_details_element(info: dict) -> str:
     except KeyError as ke:
       cr_str = ''
 
-    # The following qualifieres are legal, but we implement only those actually in use.
-    possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-                           'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
-                           'proxy_advice', 'rule_tag', 'samedisc', 'share']
-    handled_qualifiers = {'maxperdisc': format_maxperdisc, 'minclass': format_minclass}
-    qualifiers_str = ''
-    for qualifier in possible_qualifiers:
-      if qualifier in info.keys():
-        if qualifier in handled_qualifiers.keys():
-          cr_str += handled_qualifiers[qualifier](info.pop(qualifier))
-        else:
-          value = info.pop(qualifier)
-          cr_str += f'<p class="error">Unhandled qualifier: {qualifier}: {value}</p>'
+    # # The following qualifieres are legal, but we implement only those actually in use.
+    # possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
+    #                        'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+    #                        'proxy_advice', 'rule_tag', 'samedisc', 'share']
+    # handled_qualifiers = {'maxperdisc': format_maxperdisc, 'minclass': format_minclass}
+    # qualifiers_str = ''
+    # for qualifier in possible_qualifiers:
+    #   if qualifier in info.keys():
+    #     if qualifier in handled_qualifiers.keys():
+    #       cr_str += handled_qualifiers[qualifier](info.pop(qualifier))
+    #     else:
+    #       value = info.pop(qualifier)
+    #       cr_str += f'<p class="error">Unhandled qualifier: {qualifier}: {value}</p>'
+    qualifier_strings = format_qualifiers(info)
+    for qualifier_string in qualifier_strings:
+      class_attribute = ' class="error"' if 'Error:' in qualifier_string else ''
+      cr_str += f'<p{class_attribute}>{qualifier_string}</p>'
 
     # Other min, max, and num items
     numerics = cr_str

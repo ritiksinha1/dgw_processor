@@ -23,7 +23,7 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_parser import dgw_parser
-from qualifier_handlers import dispatch
+from qualifier_handlers import format_qualifiers
 from quarantine_manager import QuarantineManager
 
 from pprint import pprint
@@ -95,7 +95,7 @@ def emit(requirement: Requirement, context: list) -> None:
     context_0 = context.pop(0)
     institution, requirement_id, block_type, block_value = context_0.split()
   except ValueError as ve:
-    exit(f'{context_0} does not split into 4 parts')
+    exit(f'“{context_0}” does not split into 4 parts')
 
   and_or = 'OR' if requirement.is_disjunctive else 'AND'
   course_alternatives = len(requirement.active_courses)
@@ -132,16 +132,17 @@ def emit(requirement: Requirement, context: list) -> None:
   """, (institution, requirement_id, requirement.requirement_name))
   if cursor.rowcount == 0:
     # Not yet: add it:
-    # Note that we are not checking for two different requirements with the same name. To do that
-    # it will be necessary to check against contexts and qualifiers.
-      cursor.execute(f"""insert into program_requirements values
-                          (default, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict do nothing
-                          returning id
-                     """, (institution, requirement_id, requirement.requirement_name,
-                           requirement.num_classes, course_alternatives, and_or,
-                           requirement.num_credits, credit_alternatives, json.dumps(context),
-                           json.dumps(requirement.qualifiers)))
-      assert cursor.rowcount == 1
+    # Note that we are not checking if two different requirements have the same name (label), which
+    # should not occur. To check for that, it would be necessary to check against contexts and
+    # qualifiers.
+    cursor.execute(f"""insert into program_requirements values
+                        (default, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict do nothing
+                        returning id
+                   """, (institution, requirement_id, requirement.requirement_name,
+                         requirement.num_classes, course_alternatives, and_or,
+                         requirement.num_credits, credit_alternatives, json.dumps(context),
+                         json.dumps(requirement.qualifiers)))
+    assert cursor.rowcount == 1
 
   program_requirement_id = int(cursor.fetchone().id)
 
@@ -307,25 +308,27 @@ def iter_dict(item: dict, calling_context: list) -> None:
     else:
       class_credit_str = ''
 
-    # The following qualifieres are legal, but we implement only those actually in use.
-    possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-                           'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
-                           'proxy_advice', 'rule_tag', 'samedisc', 'share']
-    ignored_qualifiers = ['proxy_advice', 'rule_tag', 'share']
-    handled_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-                          'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
-                          'samedisc']
-    qualifiers_list = []
-    for qualifier in possible_qualifiers:
-      if qualifier in item.keys():
-        if qualifier in ignored_qualifiers:
-          continue
-        if qualifier in handled_qualifiers:
-          qualifier_info = item.pop(qualifier)
-          qualifiers_list.append(dispatch(qualifier, qualifier_info))
-        else:
-          value = item.pop(qualifier)
-          print(f'Error: unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
+    # # The following qualifieres are legal, but we ignore ones that we don’t need.
+    # possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
+    #                        'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+    #                        'proxy_advice', 'rule_tag', 'samedisc', 'share']
+    # ignored_qualifiers = ['proxy_advice', 'rule_tag', 'share']
+    # handled_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
+    #                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+    #                       'samedisc']
+
+    qualifiers_list = format_qualifiers(item)
+
+    # for qualifier in possible_qualifiers:
+    #   if qualifier in item.keys():
+    #     if qualifier in ignored_qualifiers:
+    #       continue
+    #     if qualifier in handled_qualifiers:
+    #       qualifier_info = item.pop(qualifier)
+    #       qualifiers_list.append(dispatch_qualifier(qualifier, qualifier_info))
+    #     else:
+    #       value = item.pop(qualifier)
+    #       print(f'Error: unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
 
     # Discard course_list['allow_xxx'] entries, if present
     if 'allow_credits' in item.keys():
@@ -415,15 +418,40 @@ def iter_dict(item: dict, calling_context: list) -> None:
 if __name__ == '__main__':
   parser = ArgumentParser('Look up course list contexts')
   parser.add_argument('-i', '--institutions', nargs='*', default=['qns'])
-  parser.add_argument('-t', '--block_types', nargs='*', default=['major'])
-  parser.add_argument('-v', '--block_values', nargs='*', default=['csci-ba'])
   parser.add_argument('-f', '--force', action='store_true', default=False)
   parser.add_argument('-p', '--period', default='current')
+  parser.add_argument('-ra', '--requirement_id')
+  parser.add_argument('-t', '--block_types', nargs='*', default=['major'])
+  parser.add_argument('-v', '--block_values', nargs='*', default=['csci-ba'])
   args = parser.parse_args()
   period = args.period.lower()
 
   # Allowable values for period
   assert period in ['all', 'current']
+
+  # Specifiy block to process
+  if args.requirement_id:
+    institution = args.institutions[0].strip('10').upper() + '01'
+    requirement_id = args.requirement_id.strip('AaRr')
+    if not requirement_id.isdecimal():
+      sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
+    requirement_id = f'RA{int(requirement_id):06}'
+    # Look up the block type and value
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(f'select block_type, block_value, parse_tree from requirement_blocks'
+                   f"  where institution = '{institution}'"
+                   f"    and requirement_id = '{requirement_id}'")
+    assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
+                                  f'for {institution} {requirement_id}')
+    block_type, block_value, parse_tree = cursor.fetchone()
+    conn.close()
+    # Iterate over the body, emitting db updates as a side effect.
+    # There are spaces in some block values
+    block_value = block_value.strip().replace(' ', '*')
+    iter_list(parse_tree['body_list'],
+              [f'{institution} {requirement_id} {block_type} {block_value}'])
+    exit()
 
   with open('./debug', 'w') as debug:
     conn = PgConnection()
