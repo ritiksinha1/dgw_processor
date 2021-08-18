@@ -6,19 +6,24 @@ __pycache__/
 *.class
 *.interp
 *.tokens
+*.out
+*.html
 *.txt
-*.egg-info/
 *.log
+*.csv
+*.egg-info/
 
 tokens
 tree
+out
+err
+debug
 
 .bumpversion.cfg
 MANIFEST.in
 setup.py
 dist/
 __init.py__
-
 
 test_data/
 Logs/
@@ -33,11 +38,3 @@ Logs/
 /testing/test_data.*/
 /testing/test_results.*/
 /testing/test_timeouts
-
-/debug
-/debug.html
-/err
-/out
-/only_one_course.csv
-/testing/run_tests.out/
-/testing/run_timeouts.out/
