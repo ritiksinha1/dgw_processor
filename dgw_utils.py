@@ -421,7 +421,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
           # mingrade        : MINGRADE NUMBER
           # minspread       : MINSPREAD NUMBER
           elif valid_qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
-            qualifier_dict[valid_qualifier] = qualifier_ctx.NUMBER().getText()
+            qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText()}
 
           # minclass        : MINCLASS NUMBER course_list tag? display* label?;
           # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;

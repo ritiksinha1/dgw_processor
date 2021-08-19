@@ -168,6 +168,7 @@ def course_list_details(info: dict) -> str:
       details_str += to_html(qualifiers)
   except KeyError as ke:
     pass
+
   try:
     active_courses = info.pop('active_courses')
     assert isinstance(active_courses, list)
@@ -243,8 +244,8 @@ def course_list_details(info: dict) -> str:
     else:
       details_str += f'<p>{key}: {value}</p>'
 
-  # if DEBUG:
-  #   print(f'    returning [{label_str=} {details_str=}]', file=sys.stderr)
+  if DEBUG:
+    print(f'    returning [{label_str=} {details_str=}]', file=sys.stderr)
 
   return (label_str, details_str)
 
@@ -796,7 +797,6 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
       header_list, body_list = parse_tree['header_list'], parse_tree['body_list']
     else:
       header_list, body_list = row.parse_tree['header_list'], row.parse_tree['body_list']
-
     return disclaimer + f"""
     <h1>{college_name} {row.requirement_id}: <em>{row.title}</em></h1>
     <p>Requirements for {catalog_type} Catalog Years {catalog_years_text}</p>

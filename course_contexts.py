@@ -316,7 +316,6 @@ def iter_dict(item: dict, calling_context: list) -> None:
     # handled_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
     #                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
     #                       'samedisc']
-
     qualifiers_list = format_qualifiers(item)
 
     # for qualifier in possible_qualifiers:
@@ -449,6 +448,7 @@ if __name__ == '__main__':
     # Iterate over the body, emitting db updates as a side effect.
     # There are spaces in some block values
     block_value = block_value.strip().replace(' ', '*')
+    print(block_type, block_value, parse_tree.keys())
     iter_list(parse_tree['body_list'],
               [f'{institution} {requirement_id} {block_type} {block_value}'])
     exit()

@@ -13,186 +13,180 @@ DEBUG = os.getenv('DEBUG_QUALIFIERS')
 # Qualifier Handlers
 # =================================================================================================
 
+# format_maxpassfail()
+# -------------------------------------------------------------------------------------------------
+def format_maxpassfail(maxpassfail_dict: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'format_maxpassfail({maxpassfail_dict}', file=sys.stderr)
+
+  try:
+    number = float(maxpassfail_dict.pop('number'))
+    class_credit = maxpassfail_dict.pop('class_credit')
+    if class_credit == 'credit':
+      if number == 0:
+        return 'No credits may be taken pass/fail'
+      suffix = '' if number == 1 else 's'
+      return f'A maximum of {number:0.1f} credit{suffix} may be taken pass/fail'
+    else:
+      if number == 0:
+        return 'No classes may be taken pass/fail'
+      suffix = '' if number == 1 else 'es'
+    return f'A maximum of {number:0} {class_credit}{suffix} may be taken pass/fail'
+  except KeyError as ke:
+    return f'Error: invalid MaxPassFail {ke} {maxperdisc_dict}'
+  except ValueError as ve:
+    return f'Error: invalid MaxPassFail {ve} {maxperdisc_dict}'
+
+
 # format_maxperdisc()
 # -------------------------------------------------------------------------------------------------
 def format_maxperdisc(maxperdisc_dict: dict) -> str:
+  """ {'number': qualifier_ctx.NUMBER().getText(),
+       'class_credit': class_credit,
+       'disciplines': disciplines}
   """
+  if DEBUG:
+    print(f'*** format_maxperdisc({maxperdisc_dict=})', file=sys.stderr)
+  try:
+    class_credit = maxperdisc_dict.pop('class_credit').lower()
+    number = maxperdisc_dict.pop('number')
+    if class_credit == 'class':
+      number = int(number)
+      suffix = '' if number == 1 else 's'
+    elif class_credit == 'credit':
+      number = float(number)
+      suffix = '' if number == 1.0 else 'es'
+    else:
+      number = float('NaN')
+      suffix = 'x'
+    disciplines = sorted(maxperdisc_dict.pop('disciplines'))
+    return f'No more than {number} {class_credit}{suffix} in ({", ".join(disciplines)})'
+  except KeyError as ke:
+    return f'Error: invalid MaxPerDisc {ke} {maxperdisc_dict}'
+  except ValueError as ve:
+    return f'Error: invalid MaxPerDisc {ve} {maxperdisc_dict}'
+
+
+# format_maxspread()
+# -------------------------------------------------------------------------------------------------
+def format_maxspread(maxspread_dict: dict) -> str:
+  """ {'number': qualifier_ctx.NUMBER().getText()}
   """
-  limit = float(maxperdisc_dict['number'])
-  class_credit = maxperdisc_dict['class_credit']
-  disciplines = maxperdisc_dict['disciplines']
-  discipline_str = ', '.join(disciplines)
-  if len(disciplines) == 1:
-    suffix = ''
-    anyof = ''
-  else:
-    suffix = 's'
-    anyof = ' any of '
+  if DEBUG:
+    print(f'*** format_maxspread({maxspread_dict})', file=sys.stderr)
+  print(maxspread_dict.keys())
+  number = int(maxspread_dict['number'])
 
-  if class_credit == 'class':
-    class_str = 'class' if limit == 1 else 'classes'
-    return (f'No more than {int(limit)} {class_str} in {anyof}the following discipline{suffix}: '
-            f'{discipline_str}')
-  elif class_credit == 'credit':
-    credit_str = 'credit' if limit == 1 else 'credits'
-    return (f'No more than {limit:0.1f} {credit_str} in {anyof}the following discipline{suffix}: '
-            f'{discipline_str}')
+  return f'No more than {number} disciplines allowed'
 
-  return '<span class="error">Error: invalid MaxPerDisc</span>'
+
+# format_maxtransfer()
+# -------------------------------------------------------------------------------------------------
+def format_maxtransfer(maxtransfer_dict: dict) -> str:
+  """ {'number': qualifier_ctx.NUMBER().getText(),
+       'class_credit': class_credit,
+       'disciplines': disciplines}
+  """
+  if DEBUG:
+    print(f'format_maxtransfer({maxtransfer_dict}', file=sys.stderr)
+
+  number = float(maxtransfer_dict.pop('number'))
+  class_credit = maxtransfer_dict.pop('class_credit').lower()
+  suffix = ''
+  if number != 1:
+    suffix = 's' if class_credit == 'credit' else 'es'
+
+  number_str = f'{number:0.1f}' if class_credit == 'credit' else f'{int(number)}'
+
+  discipline_str = ''
+  try:
+    disciplines = maxtransfer_dict.pop('disciplines')
+    if len(disciplines) > 0:
+      discipline_str = ' in ' + ', '.join(disciplines)
+  except KeyError as ke:
+    pass
+
+  return f'No more than {number_str} transfer {class_credit}{suffix}{discipline_str} allowed'
+
+
+# format_minarea()
+# -------------------------------------------------------------------------------------------------
+def format_minarea(minarea_dict: dict) -> str:
+  """ {'number': qualifier_ctx.NUMBER().getText()}
+  """
+  if DEBUG:
+    print(f'format_minarea({minarea_dict}', file=sys.stderr)
+
+  try:
+    number = int(minarea_dict.pop('number'))
+    suffix = '' if number == 1 else 'es'
+    return f'At least  {number} area{suffix} required'
+  except KeyError as ke:
+    return f'Error: Missing minimum number of areas'
+  except ValueError as ve:
+    return f'Error: Invalid minimum number of areas ({number})'
 
 
 # format_minclass()
 # -------------------------------------------------------------------------------------------------
 def format_minclass(minclass_dict: dict) -> str:
-  """
-  """
-  pprint(minclass_dict, stream=sys.stderr)
-  try:
-    number = int(minclass_dict['number'])
-    if number < 1:
-      raise ValueError('Minclass with minimum less than 1.')
-    suffix = '' if number == 1 else 'es'
-    rule_str = f'<p>At least {number} class{suffix} required.</p>'
-    label_str, course_list = course_list_details(minclass_dict.pop('course_list'))
-    return f'<details><summary>{label_str}</summary>{rule_str}{course_list}</dict>'
-  except ValueError as ve:
-    return f'<p class="error">Invalid MinClass {ve} {minclass_dict=}</>'
-  except KeyError as ke:
-    return f'<p class="error">Invalid MinClass {ke} {minclass_dict=}</>'
-
-
-# format_maxpassfail()
-# -------------------------------------------------------------------------------------------------
-def format_maxpassfail(maxpassfail_info: dict) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'format_maxpassfail({maxpassfail_info}', file=sys.stderr)
-
-  number = float(maxpassfail_info['number'])
-  class_credit = maxpassfail_info['class_credit']
-  if class_credit == 'credit':
-    if number == 0:
-      return 'No credits may be taken pass/fail'
-    suffix = '' if number == 1 else 's'
-    return f'A maximum of {number:0.1f} credit{suffix} may be taken pass/fail'
-  else:
-    if number == 0:
-      return 'No courses may be taken pass/fail'
-    suffix = '' if number == 1 else 'es'
-    return f'A maximum of {number:0} class{suffix} may be taken pass/fail'
-  return f'maxpassfail: not implemented yet'
-
-
-# format_maxperdisc()
-# -------------------------------------------------------------------------------------------------
-def format_maxperdisc(mpd_dict: dict) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'*** format_maxperdisc({mpd_dict=})', file=sys.stderr)
-  class_credit = mpd_dict['class_credit'].lower()
-  if class_credit == 'class':
-    number = int(mpd_dict['number'])
-    suffix = '' if number == 1 else 's'
-  elif class_credit == 'credit':
-    number = float(mpd_dict['number'])
-    suffix = '' if number == 1.0 else 'es'
-  else:
-    number = float('NaN')
-    suffix = 'x'
-  disciplines = sorted(mpd_dict['disciplines'])
-  return f'No more than {number} {class_credit}{suffix} in ({", ".join(disciplines)})'
-
-
-# format_maxspread()
-# -------------------------------------------------------------------------------------------------
-def format_maxspread(maxspread_info: dict) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'*** format_maxspread({maxspread_info})', file=sys.stderr)
-
-  number = int(maxspread_info)
-
-  return f'maxspread: not implemented yet {number=}'
-
-
-# format_maxtransfer()
-# -------------------------------------------------------------------------------------------------
-def format_maxtransfer(transfer_info: dict) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'format_maxtransfer({transfer_info}', file=sys.stderr)
-
-  return f'maxtransfer: not implemented yet'
-
-
-# format_minarea()
-# -------------------------------------------------------------------------------------------------
-def format_minarea(minarea_info: dict) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'format_minarea({minarea_info}', file=sys.stderr)
-
-  return f'minarea: not implemented yet'
-
-
-# format_minclass()
-# -------------------------------------------------------------------------------------------------
-def format_minclass(mcl_dict: dict) -> str:
   """ dict_keys(['number', 'course_list'])
   """
   if DEBUG:
-    print(f'*** format_minclass({mcl_dict=})', file=sys.stderr)
-  number = int(mcl_dict['number'])
-  suffix = '' if number == 1 else 'es'
-  scribed_courses_list = mcl_dict['course_list']['scribed_courses']
-  scribed_courses = []
-  for scribed_course in scribed_courses_list:
-    if scribed_course[2]:
-      # There is a with clause
-      scribed_courses.append(f'{scribed_course[0]} {scribed_course[1]} {scribed_course[2]}')
-    else:
-      scribed_courses.append(f'{scribed_course[0]} {scribed_course[1]}')
-  scribed_courses_str = ', '.join(scribed_courses)
+    print(f'*** format_minclass({minclass_dict=})', file=sys.stderr)
 
-  return f'At least  {number} class{suffix} in ({scribed_courses_str})'
+  try:
+    number = int(minclass_dict.pop('number'))
+    if number < 1:
+      raise ValueError('MinClass with minimum less than 1.')
+    suffix = '' if number == 1 else 'es'
+    return f'At least  {number} class{suffix} required'
+  except ValueError as ve:
+    return f'Error: Invalid MinClass {ve} {minclass_dict=}'
+  except KeyError as ke:
+    return f'Error: Invalid MinClass {ke} {minclass_dict=}'
 
 
 # format_mincredit()
 # -------------------------------------------------------------------------------------------------
-def format_mincredit(mincredit_info: dict) -> str:
-  """
+def format_mincredit(mincredit_dict: dict) -> str:
+  """ dict_keys(['number', 'course_list'])
+      We don't show the course_list here; that will or won't happen depending on the application.
   """
   if DEBUG:
-    print(f'format_mincredit({mincredit_info}', file=sys.stderr)
+    print(f'format_mincredit({mincredit_dict}', file=sys.stderr)
 
-  number = float(mincredit_info.pop('number'))
-  course_list = mincredit_info.pop('course_list')
-  return f'mincredit: not implemented yet {number=} {course_list=}'
+  number = float(mincredit_dict.pop('number'))
+  suffix = '' if number == 1.0 else 's'
+  return f'At least {number:0.1f} credit{suffix} required'
 
 
 # format_mingpa()
 # -------------------------------------------------------------------------------------------------
-def format_mingpa(mgp_dict: dict) -> str:
-  """
+def format_mingpa(mingpa_dict: dict) -> str:
+  """ MINGPA NUMBER (course_list | expression)? tag? display* label?
+      We don't show a course_list here; that will or won't happen depending on the application.
   """
   if DEBUG:
-    print(f'*** format_mingpa({mgp_dict=})', file=sys.stderr)
-  number = float(mgp_dict['number'])
-  return f'Minimum GPA of {number:0.1f} {mgp_dict.keys()=}'
+    print(f'*** format_mingpa({mingpa_dict=})', file=sys.stderr)
+  number = float(mingpa_dict.pop('number'))
+  # But if there is an expression, do embed that in the response string.
+  try:
+    expression = f' {mingpa_dict.pop("expression").strip()} '
+  except KeyError as ke:
+    expression = ' '
+  return f'Minimum GPA of {number:0.1f}{expression}required'
 
 
 # format_mingrade()
 # -------------------------------------------------------------------------------------------------
-def format_mingrade(min_grade: str) -> str:
-  """
+def format_mingrade(mingrade_dict: dict) -> str:
+  """ {'number': qualifier_ctx.NUMBER().getText()}
   """
   if DEBUG:
-    print(f'*** format_mingrade({min_grade=})', file=sys.stderr)
+    print(f'*** format_mingrade({mingrade_dict=})', file=sys.stderr)
 
   # Convert GPA values to letter grades by table lookup.
   # int(round(3×GPA)) gives the index into the letters table.
@@ -214,7 +208,7 @@ def format_mingrade(min_grade: str) -> str:
     """
   letters = ['F', 'F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+']
 
-  number = float(min_grade)
+  number = float(mingrade_dict.pop('number'))
   if number < 1.0:
     number = 0.7
   # Lots of values greater than 4.0 have been used to mean "no upper limit."
@@ -226,35 +220,44 @@ def format_mingrade(min_grade: str) -> str:
 
 # format_minperdisc()
 # -------------------------------------------------------------------------------------------------
-def format_minperdisc(minperdisc_info: dict) -> str:
-  """
+def format_minperdisc(minperdisc_dict: dict) -> str:
+  """ {'number': qualifier_ctx.NUMBER().getText(),
+       'class_credit': class_credit,
+       'disciplines': disciplines}
   """
   if DEBUG:
-    print(f'format_minperdisc({minperdisc_info}', file=sys.stderr)
+    print(f'format_minperdisc({minperdisc_dict}', file=sys.stderr)
 
-  return f'minperdisc: not implemented yet'
+  number = float(minperdisc_dict.pop('number'))
+  class_credit = minperdisc_dict.pop('class_credit').lower()
+  suffix = ''
+  if number != 1:
+    suffix = 's' if class_credit == 'credit' else 'es'
+
+  number_str = f'{number:0.1f}' if class_credit == 'credit' else f'{int(number)}'
+
+  discipline_str = ''
+  try:
+    disciplines = minperdisc_dict.pop('disciplines')
+    if len(disciplines) > 0:
+      discipline_str = ' in ' + ', '.join(disciplines)
+  except KeyError as ke:
+    pass
+
+  return f'No more than {number_str} {class_credit}{suffix}{discipline_str} allowed'
 
 
 # format_minspread()
 # -------------------------------------------------------------------------------------------------
-def format_minspread(minspread_info: dict) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'format_minspread({minspread_info}', file=sys.stderr)
-
-  return f'minspread: not implemented yet'
-
-
-# format_samedisc()
-# -------------------------------------------------------------------------------------------------
-def format_samedisc(samedisc_info: dict) -> str:
-  """
+def format_minspread(minspread_dict: dict) -> str:
+  """ {'number': qualifier_ctx.NUMBER().getText()}
   """
   if DEBUG:
-    print(f'format_samedisc({samedisc_info}', file=sys.stderr)
+    print(f'format_minspread({minspread_dict}', file=sys.stderr)
 
-  return f'samedisc: not implemented yet'
+  number = int(minspread_dict.pop('number'))
+  suffix = '' if number == 1 else 's'
+  return f'At least {number} discipline{suffix} required'
 
 
 # dispatch()
@@ -270,7 +273,6 @@ dispatch_table = {'maxpassfail': format_maxpassfail,
                   'mingrade': format_mingrade,
                   'minperdisc': format_minperdisc,
                   'minspread': format_minspread,
-                  'samedisc': format_samedisc
                   }
 
 
@@ -281,8 +283,7 @@ def dispatch_qualifier(qualifier: str, qualifier_info: Any) -> str:
       format_xxx function to format the value into an English string.
   """
   if DEBUG:
-    print(f'*** dispatch({qualifier}, {qualifier_info=})', file=sys.stderr)
-
+    print(f'*** dispatch_qualifier({qualifier}, {qualifier_info=})', file=sys.stderr)
   return dispatch_table[qualifier](qualifier_info)
 
 
@@ -293,13 +294,14 @@ def format_qualifiers(node: dict) -> list:
       node, and return a list of formatted strings representing the qualifiers found.
   """
   # The following qualifieres are legal, but we ignore ones that we don’t need.
+  if DEBUG:
+    print(f'*** format_qualifiers({node.keys()=}', file=sys.stderr)
   possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                          'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                          'proxy_advice', 'rule_tag', 'samedisc', 'share']
-  ignored_qualifiers = ['proxy_advice', 'rule_tag', 'share']
+  ignored_qualifiers = ['proxy_advice', 'rule_tag', 'samedisc', 'share']
   handled_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-                        'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
-                        'samedisc']
+                        'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread']
   qualifier_strings = []
   for qualifier in possible_qualifiers:
     if qualifier in node.keys():
@@ -312,4 +314,5 @@ def format_qualifiers(node: dict) -> list:
         value = item.pop(qualifier)
         print(f'Error: unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
         qualifier_strings.append(f'Error: unhandled qualifier: {qualifier}: {value}')
-    return qualifier_strings
+
+  return qualifier_strings

@@ -555,7 +555,7 @@ def mingpa(ctx, institution, requirement_id):
   if ctx.label():
     return_dict['label'] = get_label(ctx)
 
-  return {'min_gpa': return_dict}
+  return {'mingpa': return_dict}
 
 
 # mingrade()
