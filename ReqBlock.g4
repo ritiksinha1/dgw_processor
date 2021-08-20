@@ -236,9 +236,9 @@ body_rule       : conditional_body
                 | subset
                 ;
 
-//  Groups
+//  Group Requirement
 //  -----------------------------------------------------------------------------------------------
-/*  Body Only
+/*  Body Only: n of m group items required
  */
 group           : NUMBER GROUP group_list qualifier* label? ;
 group_list      : group_item (logical_op group_item)*; // But only OR should occur
