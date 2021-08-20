@@ -39,7 +39,7 @@ def block(ctx, institution, requirement_id):
       The expression will be a {block-type, block-value} pair enclosed in parens and separated by
       an equal sign.
   """
-  return_dict = {'num_blocks': ctx.NUMBER().getText()}
+  return_dict = {'number': ctx.NUMBER().getText()}
 
   for context in ctx.expression().getChildren():
     if class_name(context) == 'Expression':
@@ -348,7 +348,7 @@ group_item      : LP
   MaxPassFail, MaxPerDisc, MaxTransfer, MinGrade, MinPerDisc, NotGPA, ProxyAdvice, SameDisc,
   ShareWith, MinClass, MinCredit, RuleTag.
   """
-  return_dict = {'num_groups_required': ctx.NUMBER().getText().strip()}
+  return_dict = {'number': ctx.NUMBER().getText()}
 
   if ctx.qualifier():
     return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
@@ -358,7 +358,7 @@ group_item      : LP
   if ctx.label():
     return_dict['label'] = get_label(ctx)
 
-  return return_dict
+  return {'group': return_dict}
 
 
 # header_tag()
@@ -366,7 +366,19 @@ group_item      : LP
 def header_tag(ctx, institution, requirement_id):
   """ header_tag  : (HEADER_TAG nv_pair)+;
   """
-  return {'header_tag': 'Name-Value Pair not implemented'}
+  if isinstance(ctx, list):
+    header_tags = ctx
+  else:
+    header_tags = [ctx]
+
+  tag_list = []
+  for header_tag in header_tags:
+    for pair in header_tag.nv_pair():
+      name = pair.SYMBOL()[0].getText()
+      value = pair.STRING().getText() if len(pair.SYMBOL()) == 1 else pair.SYMBOL()[1].getText()
+      tag_list.append({'name': name, 'value': value})
+
+  return {'headertag': tag_list}
 
 
 # rule_tag()
@@ -381,15 +393,14 @@ def rule_tag(ctx, institution, requirement_id):
   else:
     rule_tags = [ctx]
 
-  return_dict = dict()
   tag_list = []
   for rule_tag in rule_tags:
     for pair in rule_tag.nv_pair():
       name = pair.SYMBOL()[0].getText()
       value = pair.STRING().getText() if len(pair.SYMBOL()) == 1 else pair.SYMBOL()[1].getText()
-      tag_list.append({'rule_tag': {'name': name, 'value': value}})
-    return_dict['name_value'] = tag_list
-  return {'rule_tag_list': return_dict}
+      tag_list.append({'name': name, 'value': value})
+
+  return {'ruletag': tag_list}
 
 
 # lastres()
@@ -403,7 +414,7 @@ def lastres(ctx, institution, requirement_id):
   return_dict = {'class_or_credit': class_or_credit(ctx.class_or_credit())}
 
   numbers = ctx.NUMBER()
-  return_dict['min_number'] = numbers.pop().getText().strip()
+  return_dict['number'] = numbers.pop().getText().strip()
   if len(numbers) > 0:
     return_dict['of_number'] = numbers.pop().getText().strip()
 
@@ -417,7 +428,7 @@ def lastres(ctx, institution, requirement_id):
 
   return_dict['label'] = get_label(ctx)
 
-  return {'last_res': return_dict}
+  return {'lastres': return_dict}
 
 
 # maxclass()
@@ -426,9 +437,9 @@ def maxclass(ctx, institution, requirement_id):
   """
       maxclass        : MAXCLASS NUMBER course_list? tag?;
   """
-  return_dict = {'max_classes_allowed': ctx.NUMBER().getText().strip()}
+  return_dict = {'number': ctx.NUMBER().getText().strip()}
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
-  return {'max_class': return_dict}
+  return {'maxclass': return_dict}
 
 
 # maxcredit()
@@ -437,10 +448,10 @@ def maxcredit(ctx, institution, requirement_id):
   """
       maxcredit       : MAXCREDIT NUMBER course_list? tag?;
   """
-  return_dict = {'max_credits_allowed': ctx.NUMBER().getText().strip()}
+  return_dict = {'number': ctx.NUMBER().getText().strip()}
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  return {'max_credit': return_dict}
+  return {'maxcredit': return_dict}
 
 
 # maxpassfail()
@@ -449,9 +460,9 @@ def maxpassfail(ctx, institution, requirement_id):
   """
       maxpassfail     : MAXPASSFAIL NUMBER class_or_credit tag?;
   """
-  return_dict = {'max_passfail_allowed': ctx.NUMBER().getText(),
+  return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
-  return {'max_pass_fail': return_dict}
+  return {'maxpassfail': return_dict}
 
 
 # maxperdisc()
@@ -462,11 +473,12 @@ def maxperdisc(ctx, institution, requirement_id):
   """
   if DEBUG:
     print(f'*** maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}', file=sys.stderr)
+
   return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
 
-  return {'max_per_disc': return_dict}
+  return {'maxperdisc': return_dict}
 
 
 # maxterm()
@@ -475,11 +487,11 @@ def maxterm(ctx, institution, requirement_id):
   """
       maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
   """
-  return_dict = {'max_number': ctx.NUMBER().getText(),
+  return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  return {'max_term': return_dict}
+  return {'maxterm': return_dict}
 
 
 # maxtransfer()
@@ -488,13 +500,13 @@ def maxtransfer(ctx, institution, requirement_id):
   """
       maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
   """
-  return_dict = {'max_number': ctx.NUMBER().getText(),
+  return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   if ctx.SYMBOL():
     symbol_contexts = ctx.SYMBOL()
     return_dict['transfer_types'] = [symbol.getText() for symbol in symbol_contexts]
 
-  return {'max_transfer': return_dict}
+  return {'maxtransfer': return_dict}
 
 
 # minclass()
@@ -503,7 +515,7 @@ def minclass(ctx, institution, requirement_id):
   """
       minclass        : MINCLASS NUMBER course_list tag? display* label?;
   """
-  return_dict = {'min_number': ctx.NUMBER().getText(),
+  return_dict = {'number': ctx.NUMBER().getText(),
                  'courses': build_course_list(ctx.course_list(), institution, requirement_id)}
 
   if ctx.display():
@@ -511,7 +523,7 @@ def minclass(ctx, institution, requirement_id):
 
   return_dict['label'] = get_label(ctx)
 
-  return {'min_class': return_dict}
+  return {'minclass': return_dict}
 
 
 # mincredit()
@@ -520,7 +532,7 @@ def mincredit(ctx, institution, requirement_id):
   """
       mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
   """
-  return_dict = {'min_number': ctx.NUMBER().getText()}
+  return_dict = {'number': ctx.NUMBER().getText()}
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
   if ctx.display():
@@ -528,7 +540,7 @@ def mincredit(ctx, institution, requirement_id):
 
   return_dict['label'] = get_label(ctx)
 
-  return {'min_credit': return_dict}
+  return {'mincredit': return_dict}
 
 
 # mingpa()
@@ -564,7 +576,7 @@ def mingrade(ctx, institution, requirement_id):
   """
       mingrade        : MINGRADE NUMBER;
   """
-  return {'min_grade': {'min_number': ctx.NUMBER().getText()}}
+  return {'mingrade': {'number': ctx.NUMBER().getText()}}
 
 
 # minperdisc()
@@ -573,11 +585,11 @@ def minperdisc(ctx, institution, requirement_id):
   """
       minperdisc  : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
   """
-  return_dict = {'min_number': ctx.NUMBER().getText(),
+  return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['discipline'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
 
-  return {'min_per_disc': return_dict}
+  return {'minperdisc': return_dict}
 
 
 # minres()
@@ -592,7 +604,7 @@ def minres(ctx, institution, requirement_id):
 
   return_dict['label'] = get_label(ctx)
 
-  return {'min_res': return_dict}
+  return {'minres': return_dict}
 
 
 # noncourse()
@@ -729,8 +741,9 @@ def subset(ctx, institution, requirement_id):
     return_dict['course_lists'] = [build_course_list(context, institution, requirement_id)
                                    for context in ctx.course_list()]
 
-  if ctx.group():
-    return_dict['group'] = [group(context, institution, requirement_id) for context in ctx.group()]
+  if group_contexts := ctx.group():
+    groups = [group(ctx, institution, requirement_id)for ctx in group_contexts]
+    return_dict['groups'] = groups
 
   if ctx.noncourse():
     return_dict['noncourse'] = [noncourse(context, institution, requirement_id)

@@ -295,36 +295,41 @@ def get_scribed_courses(course_item, list_items: list) -> list:
 # get_group_items()
 # -------------------------------------------------------------------------------------------------
 def get_group_items(ctx: list, institution: str, requirement_id: str) -> list:
-  """ group_list      : group_item (logical_op group_item)*; // logical_op is always OR
+  """ Given the ctx of a group_list, return a list of group_items
+      group           : NUMBER GROUP group_list qualifier* label? ;
+      group_list      : group_item (logical_op group_item)*; // But only OR should occur
       group_item      : LP
-                        (  block
+                        (block
                          | blocktype
                          | course_list
                          | class_credit_body
                          | group
                          | noncourse
-                         | rule_complete
-                        )
-                        requirement* label?
+                         | rule_complete)
+                        qualifier* label?
                         RP
+                      ;
   """
   return_list = []
   for group_item_context in ctx.group_item():
     children = group_item_context.getChildren()
 
     for child in children:
-      item_class = class_name(child)
 
       # Ignore LP | RP
+      item_class = class_name(child)
       if item_class.lower() == 'terminalnodeimpl':
         continue
+
       return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
 
-    if group_item_context.qualifier():
-      return_list[-1].update({'group item requirement': 'Not yet'})
+    return_dict = {'group_items': return_list}
+
+    if qualifier_ctx := group_item_context.qualifier():
+      return_dict.update(get_qualifiers(qualifier_ctx), institution, requirement_id)
 
     if group_item_context.label():
-      return_list[-1].update({'group item label': 'Not yet'})
+      return_dict['label'] = get_label(group_item_context)
 
   return return_list
 

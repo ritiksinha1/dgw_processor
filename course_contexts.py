@@ -52,37 +52,6 @@ Requirement = namedtuple('Requirement',
 # -------------------------------------------------------------------------------------------------
 def emit(requirement: Requirement, context: list) -> None:
   """ Update the database.
-      -- Program requirements
-      --  The name is the name of the requirement (not the title of the program, which is in the
-      --  requirement_blocks table)
-      --  XXX_required: How many classes/credits are required
-      --  XXX_alternatives: Totals for all the courses that can satisfy this requirement.
-      --  conjunction: classes AND credits versus classes OR credits
-      --  The context is a list of containing requirement names, super-names, super-super-names, ...
-      create table program_requirements (
-      id integer primary key,
-      institution text,
-      requirement_id text,
-      requirement_name text,
-      courses_required integer,
-      course_alternatives integer,
-      conjunction text,
-      credits_required real,
-      credit_alternatives real,
-      context jsonb,
-      qualifiers text default '',
-      foreign key (institution, requirement_id) references requirement_blocks
-      );
-
-      -- Map courses to program requirements.
-      create table course_requirement_mappings (
-      course_id integer,
-      offer_nbr integer,
-      requirement_id integer references program_requirements(id),
-      qualifiers text default '',
-      foreign key (course_id, offer_nbr) references cuny_courses,
-      primary key (course_id, offer_nbr, requirement_id)
-      );
   """
   if DEBUG:
     print(f'*** emit({requirement=}, {context=})', file=sys.stderr)
@@ -91,6 +60,7 @@ def emit(requirement: Requirement, context: list) -> None:
   conn = PgConnection()
   cursor = conn.cursor()
 
+  # The first item in the context list is the name of the requirement.
   try:
     context_0 = context.pop(0)
     institution, requirement_id, block_type, block_value = context_0.split()

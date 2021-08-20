@@ -1,14 +1,16 @@
 -- What requirements can a course satisfy?
 drop table if exists program_requirements cascade;
-drop table if exists course_requirement_mappings cascade;
+drop table if exists course_requirement_mappings;
 
 -- Program requirements
---  The name is the name of the requirement (not the title of the program, which is in the
---  requirement_blocks table)
---  XXX_required: How many classes/credits are required
---  XXX_alternatives: Totals for all the courses that can satisfy this requirement.
---  conjunction: classes AND credits versus classes OR credits
---  The context is a list of containing requirement names, super-names, super-super-names, ...
+--  name:               the Scribe label that identifies the requirement
+--  XXX_required:       how many classes/credits are required
+--  conjunction:        classes AND credits versus classes OR credits
+--  XXX_alternatives:   total credits/courses for all the courses that can satisfy this requirement
+--  context:            when requirements are nested, this is a list of enclosing context labels
+--  block_qualifiers:   a list of qualifiers that apply to the entire Scribe block.
+--  course_qualifiers:  a list of qualifiers that apply to all courses specified for that
+--  requirement.
 create table program_requirements (
 id serial primary key,
 institution text not null,
@@ -20,17 +22,19 @@ conjunction text,
 num_credits_required text not null,
 credit_alternatives text not null,
 context jsonb not null,
-qualifiers jsonb not null,
+block_qualifiers jsonb not null,
+course_qualifiers jsonb not null,
 foreign key (institution, requirement_id) references requirement_blocks,
 unique (institution, requirement_id, requirement_name)
 );
 
 -- Map courses to program requirements.
+-- The with_qualifiers list is for ”with” clauses within a course list.
 create table course_requirement_mappings (
 course_id integer,
 offer_nbr integer,
 program_requirement_id integer references program_requirements(id) on delete cascade,
-qualifiers text default '',
+with_qualifiers jsonb not null,
 foreign key (course_id, offer_nbr) references cuny_courses,
 primary key (course_id, offer_nbr, program_requirement_id)
 );
