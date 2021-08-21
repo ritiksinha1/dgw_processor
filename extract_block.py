@@ -8,6 +8,8 @@ import os
 import sys
 
 import argparse
+import json
+
 from pathlib import Path
 from pprint import pprint
 
@@ -30,6 +32,7 @@ if __name__ == '__main__':
     requirement_id = args.requirement_id.strip('AaRr')
     if not requirement_id.isdecimal():
       sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
+
     requirement_id = f'RA{int(requirement_id):06}'
     # Look up the block type and value
     conn = PgConnection()
@@ -67,17 +70,27 @@ if __name__ == '__main__':
     exit('Missing requirement ID or block value')
 
   base_name = f'{institution}_{requirement_id}_{row.block_type}_{row.block_value}'
-  header_list = row.parse_tree['header_list']
-  body_list = row.parse_tree['body_list']
   print(base_name)
+
+  parse_tree = row.parse_tree
+
+  header_list = parse_tree['header_list']
+  body_list = parse_tree['body_list']
+
   with open(f'./extracts/{base_name}.html', 'w') as html_file:
     print(row.requirement_html, file=html_file)
+
   with open(f'./extracts/{base_name}.scribe', 'w') as scribe_block:
     print(row.requirement_text, file=scribe_block)
-  with open(f'./extracts/{base_name}.parsed', 'w') as parsed:
-    print('*** HEADER ***', file=parsed)
+
+  with open(f'./extracts/{base_name}.json', 'w') as json_file:
+    print(json.dumps(parse_tree), file=json_file)
+
+  with open(f'./extracts/{base_name}.py', 'w') as parsed:
+    print('HEADER = (', file=parsed)
     pprint(header_list, stream=parsed)
-    print('\n*** BODY ***', file=parsed)
+    print(')\nBODY = (', file=parsed)
     pprint(body_list, stream=parsed)
+    print(')', file=parsed)
 
 exit()
