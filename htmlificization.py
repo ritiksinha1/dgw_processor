@@ -260,12 +260,12 @@ def requirement_to_details_element(requirement: dict) -> str:
       dicts. This method interprets one element of that list.
       If there is a label, return a full details element with the label as the summary. Otherwise,
       just return the HTML that will make up the body of an enclosing details element.
-      Keys: allow_classes, allow_credits, conjunction, COURSE_LIST, is_pseudo, label, num_classes,
+      Keys: allow_classes, allow_credits, conjunction, course_list, is_pseudo, label, num_classes,
             num_credits.
       Ignoring allow_classes and allow_credits: they are audit controls.
   """
   if DEBUG:
-    print(f'*** requirement_to_details_element({requirement.keys()=})', file=sys.stderr)
+    print(f'*** requirement_to_details_element({list(requirement.keys())})', file=sys.stderr)
   try:
     label = requirement.pop('label')
     if not label:
@@ -705,12 +705,24 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
     return to_html(info[0], kind)
 
   # The list has more than one element
-  if kind == 'Requirement':
-    # Remarks aren’t requirements, even though we show them
-    for item in info:
-      if isinstance(item, list) and 'remark' in item.keys():
-        num -= 1
+  # If any items are dicts with a remark key, extract them and show them before the details element
+  # for the list.
+  opening_remarks = ''
+  remarkable_items = [item for item in info if isinstance(item, dict) and 'remark' in item.keys()]
+  for remarkable_item in remarkable_items:
+    if len(remarkable_item.keys()) == 1:
+      index = info.index(remarkable_item)
+      remark = remarkable_item.pop('remark')
+      opening_remarks += f'<p><strong>{remark}</strong></p>'
+      info.pop(index)
 
+  num = len(info)
+  if num == 0:
+    # The list consisted only of remarks
+    return f'{opening_remarks}'
+
+  # for unremarkable_item in info:
+  #   if instance(unremarkable_item, dict)
   if num <= len(number_names):
     num_str = number_names[num].title()
   else:
@@ -720,7 +732,7 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
     kind = 'Properties'
   else:
     kind = kind + 's'
-  return_str = f'<details open="open"/><summary>{num_str} {kind}</summary>'
+  return_str = f'{opening_remarks}<details open="open"/><summary>{num_str} {kind}</summary>'
   return_str += '\n'.join([f'{to_html(element)}'
                            for element in info])
   return return_str + '</details>'
