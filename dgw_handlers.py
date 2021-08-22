@@ -15,7 +15,7 @@ from dgw_utils import class_name,\
     context_path,\
     expression_to_str,\
     get_display,\
-    get_group_items,\
+    get_groups,\
     get_label,\
     get_rules,\
     get_qualifiers,\
@@ -323,18 +323,18 @@ def copy_rules(ctx, institution, requirement_id):
   return {'copy_rules': return_dict}
 
 
-# group()
+# group_requirement()
 # -------------------------------------------------------------------------------------------------
-def group(ctx, institution, requirement_id):
+def group_requirement(ctx, institution, requirement_id):
   """
-group           : NUMBER GROUP group_list qualifier* label? ;
-group_list      : group_item (logical_op group_item)*; // But only OR should occur
-group_item      : LP
+group_requirement : NUMBER GROUP groups qualifier* label? ;
+groups            : group (logical_op group)*; // But only OR should occur
+group             : LP
                   (block
                    | blocktype
                    | course_list
                    | class_credit_body
-                   | group
+                   | group_requirement
                    | noncourse
                    | rule_complete)
                   qualifier* label?
@@ -350,15 +350,15 @@ group_item      : LP
   """
   return_dict = {'number': ctx.NUMBER().getText()}
 
-  if ctx.qualifier():
-    return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
-
-  return_dict['group_items'] = get_group_items(ctx.group_list(), institution, requirement_id)
+  return_dict['groups'] = get_groups(ctx.groups(), institution, requirement_id)
 
   if ctx.label():
     return_dict['label'] = get_label(ctx)
 
-  return {'group': return_dict}
+  if ctx.qualifier():
+    return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
+
+  return return_dict
 
 
 # header_tag()
@@ -708,7 +708,7 @@ def subset(ctx, institution, requirement_id):
                           | class_credit_body
                           | copy_rules
                           | course_list
-                          | group
+                          | group_requirement
                           | noncourse
                           | rule_complete
                         )+
@@ -741,9 +741,9 @@ def subset(ctx, institution, requirement_id):
     return_dict['course_lists'] = [build_course_list(context, institution, requirement_id)
                                    for context in ctx.course_list()]
 
-  if group_contexts := ctx.group():
-    groups = [group(ctx, institution, requirement_id)for ctx in group_contexts]
-    return_dict['groups'] = groups
+  if ctx.group_requirement():
+    return_dict['group_requirements'] = [group_requirement(context, institution, requirement_id)
+                                         for context in ctx.group_requirement()]
 
   if ctx.noncourse():
     return_dict['noncourse'] = [noncourse(context, institution, requirement_id)
@@ -820,7 +820,7 @@ dispatch_body = {
     'blocktype': blocktype,
     'class_credit_body': class_credit_body,
     'copy_rules': copy_rules,
-    'group': group,
+    'group_requirement': group_requirement,
     'conditional_body': conditional_body,
     'maxperdisc': maxperdisc,
     'noncourse': noncourse,

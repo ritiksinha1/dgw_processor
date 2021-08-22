@@ -379,8 +379,8 @@ def subset_to_details_element(info: dict, outer_label) -> str:
     course_requirements_element = ''
 
   # Are there any group requirements?
-  if 'groups' in info.keys():
-    course_requirements_element += groups_to_details_element(info)
+  if 'group_requirements' in info.keys():
+    course_requirements_element += group_requirements_to_details_elements(info)
     # group_list = info.pop('group')
     # for group_item_list in group_list:
     #   num_group_items = len(group_item_list['group_items'])
@@ -423,44 +423,59 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   return f'<details>{summary}{body}</details>'
 
 
-# groups_to_details_element()
+# group_requirements_to_details_elements()
 # -------------------------------------------------------------------------------------------------
-def groups_to_details_element(info: dict, outer_label=None) -> str:
-  """ Here's an example of a dict with a 'groups' key:
-        {'groups': [{'group': {'group_items': [{'allow_classes': None, ... ]
-                     'label': 'CALCULUS REQUIREMENT',
-                     'number': '1 '}}]
-      So, here we return the html for a sequence of details elements, one element for each group.
+def group_requirements_to_details_elements(info: dict, outer_label=None) -> str:
+  """
+      Returns a details element for each dict in the info list.
       The summary for each group is the label; the body starts with a paragraph that tells how many
       group items are required, and how many group items there are, followed by the html for each
       group item.
   """
   if DEBUG:
     print(f'*** groups_to_details_element({list(info.keys())})', file=sys.stderr)
+  assert isinstance(info, dict)
 
   return_str = ''
-  for group in info.pop('groups'):
-    group_dict = group['group']
-    label_str = group_dict['label'].title()
-    summary = f'<summary>{label_str}</summary>'
-    num_required = int(group_dict['number'])
+  for group_requirement in info.pop('group_requirements'):
+    num_required = int(group_requirement['number'])
     if num_required < len(number_names):
-      num_required = number_names[num_required].title()
-    group_items = group_dict['group_items']
-    num_available = len(group_items)
-    available_suffix = '' if num_available == 1 else 's'
-    if num_available < len(number_names):
-      num_available = number_names[num_available]
-    description = f'<p>{num_required} of the following {num_available} group{available_suffix}</p>'
-    body = ''
-    for group_item in group_items:
-      if isinstance(group_item, list):
-        body += list_to_html_list_element(group)
-      elif isinstance(group_item, dict):
-        body += dict_to_html_details_element(group)
+      num_required = number_names[num_required]
+    groups = group_requirement['groups']
+    num_groups = len(groups)
+    if num_groups < len(number_names):
+      num_groups = number_names[num_groups]
+    if num_required == 'one' and num_groups == 'two':
+      requirement_str = '<p>Either of the following two groups'
+    else:
+      requirement_str = f'<p>Any {num_required} of the following {num_groups} groups'
+    label_str = group_requirement['label'].title()
+
+    try:
+      qualifiers = ''.join(f'<p>{q}</p>' for q in group_requirement['qualifiers'])
+    except KeyError as ke:
+      qualifiers = ''
+
+    summary = f'<summary>{label_str}</summary>'
+    body = requirement_str + qualifiers
+    # Each group gets its own details element telling which group it is
+    group_number = 0
+    for group in groups:
+      group_number += 1
+      if isinstance(group, list):
+        group_body = list_to_html_list_element(group)
+      elif isinstance(group, dict):
+        group_body = dict_to_html_details_element(group)
       else:
-        body += f'<div>{group_item}</div>'
-    return_str += f'<details open="open">{summary}{description}{body}</details>'
+        group_body = f'<div class="error">Error: {group} is neither a list nor a dict</div>'
+      index = number_names[group_number] if group_number < len(number_names) else group_number
+      body += f"""
+      <details>
+        <summary>Group {index} of {num_groups} groups</summary>
+        {group_body}
+      </details>
+      """
+    return_str += f'<details open="open">{summary}{body}</details>'
   return return_str
 
 
@@ -705,8 +720,8 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
     return to_html(info[0], kind)
 
   # The list has more than one element
-  # If any items are dicts with a remark key, extract them and show them before the details element
-  # for the list.
+  # If any items are dicts with only a remark key, extract them and show them before the details
+  # element for the list.
   opening_remarks = ''
   remarkable_items = [item for item in info if isinstance(item, dict) and 'remark' in item.keys()]
   for remarkable_item in remarkable_items:
@@ -722,7 +737,6 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
     return f'{opening_remarks}'
 
   # for unremarkable_item in info:
-  #   if instance(unremarkable_item, dict)
   if num <= len(number_names):
     num_str = number_names[num].title()
   else:
@@ -733,8 +747,7 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
   else:
     kind = kind + 's'
   return_str = f'{opening_remarks}<details open="open"/><summary>{num_str} {kind}</summary>'
-  return_str += '\n'.join([f'{to_html(element)}'
-                           for element in info])
+  return_str += '\n'.join([f'{to_html(element)}'for element in info])
   return return_str + '</details>'
 
 

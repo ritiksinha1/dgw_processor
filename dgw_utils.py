@@ -292,18 +292,18 @@ def get_scribed_courses(course_item, list_items: list) -> list:
   return scribed_courses
 
 
-# get_group_items()
+# get_groups()
 # -------------------------------------------------------------------------------------------------
-def get_group_items(ctx: list, institution: str, requirement_id: str) -> list:
-  """ Given the ctx of a group_list, return a list of group_items
-      group           : NUMBER GROUP group_list qualifier* label? ;
-      group_list      : group_item (logical_op group_item)*; // But only OR should occur
-      group_item      : LP
+def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
+  """ Given a groups ctx, return a list of groups.
+      group_requirement : NUMBER GROUP groups qualifier* label? ;
+      groups            : group (logical_op group)*; // But only OR should occur
+      group             : LP
                         (block
                          | blocktype
                          | course_list
                          | class_credit_body
-                         | group
+                         | group_requirement
                          | noncourse
                          | rule_complete)
                         qualifier* label?
@@ -311,8 +311,8 @@ def get_group_items(ctx: list, institution: str, requirement_id: str) -> list:
                       ;
   """
   return_list = []
-  for group_item_context in ctx.group_item():
-    children = group_item_context.getChildren()
+  for group_context in ctx.group():
+    children = group_context.getChildren()
 
     for child in children:
 
@@ -323,13 +323,13 @@ def get_group_items(ctx: list, institution: str, requirement_id: str) -> list:
 
       return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
 
-    return_dict = {'group_items': return_list}
+    return_dict = {'groups': return_list}
 
-    if qualifier_ctx := group_item_context.qualifier():
+    if qualifier_ctx := group_context.qualifier():
       return_dict.update(get_qualifiers(qualifier_ctx), institution, requirement_id)
 
-    if group_item_context.label():
-      return_dict['label'] = get_label(group_item_context)
+    if group_context.label():
+      return_dict['label'] = get_label(group_context)
 
   return return_list
 
