@@ -72,7 +72,7 @@ body        :
             | class_credit_body
             | conditional_body
             | copy_rules
-            | group
+            | group_requirement
             | label
             | noncourse
             | proxy_advice
@@ -220,7 +220,7 @@ body_rule       : conditional_body
                 | blocktype
                 | class_credit_body
                 | copy_rules
-                | group
+                | group_requirement
                 | lastres
                 | maxcredit
                 | maxtransfer
@@ -238,16 +238,16 @@ body_rule       : conditional_body
 
 //  Group Requirement
 //  -----------------------------------------------------------------------------------------------
-/*  Body Only: n of m group items required
+/*  Body Only: n of m groups required
  */
-group           : NUMBER GROUP group_list qualifier* label? ;
-group_list      : group_item (logical_op group_item)*; // But only OR should occur
-group_item      : LP
+group_requirement : NUMBER GROUP groups qualifier* label? ;
+groups            : group (logical_op group)*; // But only OR should occur
+group             : LP
                   (block
                    | blocktype
                    | course_list
                    | class_credit_body
-                   | group
+                   | group_requirement
                    | noncourse
                    | rule_complete)
                   qualifier* label?
@@ -263,7 +263,7 @@ subset            : BEGINSUB
                     | class_credit_body
                     | copy_rules
                     | course_list
-                    | group
+                    | group_requirement
                     | noncourse
                     | rule_complete
                   )+

@@ -233,30 +233,30 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#group_requirement.
+    def enterGroup_requirement(self, ctx:ReqBlockParser.Group_requirementContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#group_requirement.
+    def exitGroup_requirement(self, ctx:ReqBlockParser.Group_requirementContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#groups.
+    def enterGroups(self, ctx:ReqBlockParser.GroupsContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#groups.
+    def exitGroups(self, ctx:ReqBlockParser.GroupsContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#group.
     def enterGroup(self, ctx:ReqBlockParser.GroupContext):
         pass
 
     # Exit a parse tree produced by ReqBlockParser#group.
     def exitGroup(self, ctx:ReqBlockParser.GroupContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#group_list.
-    def enterGroup_list(self, ctx:ReqBlockParser.Group_listContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#group_list.
-    def exitGroup_list(self, ctx:ReqBlockParser.Group_listContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#group_item.
-    def enterGroup_item(self, ctx:ReqBlockParser.Group_itemContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#group_item.
-    def exitGroup_item(self, ctx:ReqBlockParser.Group_itemContext):
         pass
 
 

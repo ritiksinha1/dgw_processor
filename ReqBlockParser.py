@@ -653,9 +653,9 @@ class ReqBlockParser ( Parser ):
     RULE_else_body = 22
     RULE_body_rule_group = 23
     RULE_body_rule = 24
-    RULE_group = 25
-    RULE_group_list = 26
-    RULE_group_item = 27
+    RULE_group_requirement = 25
+    RULE_groups = 26
+    RULE_group = 27
     RULE_subset = 28
     RULE_block = 29
     RULE_blocktype = 30
@@ -717,7 +717,7 @@ class ReqBlockParser ( Parser ):
                    "course_list_body", "qualifier", "begin_if", "end_if", 
                    "conditional_head", "else_head", "head_rule_group", "head_rule", 
                    "conditional_body", "else_body", "body_rule_group", "body_rule", 
-                   "group", "group_list", "group_item", "subset", "block", 
+                   "group_requirement", "groups", "group", "subset", "block", 
                    "blocktype", "allow_clause", "class_credit_head", "class_credit_body", 
                    "allow", "area_end", "area_start", "class_or_credit", 
                    "copy_rules", "display", "header_tag", "label", "lastres", 
@@ -1281,11 +1281,11 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContext(ReqBlockParser.Copy_rulesContext,i)
 
 
-        def group(self, i:int=None):
+        def group_requirement(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.GroupContext)
+                return self.getTypedRuleContexts(ReqBlockParser.Group_requirementContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.GroupContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.Group_requirementContext,i)
 
 
         def label(self, i:int=None):
@@ -1391,7 +1391,7 @@ class ReqBlockParser ( Parser ):
 
                 elif la_ == 6:
                     self.state = 216
-                    self.group()
+                    self.group_requirement()
                     pass
 
                 elif la_ == 7:
@@ -3647,8 +3647,8 @@ class ReqBlockParser ( Parser ):
             return self.getTypedRuleContext(ReqBlockParser.Copy_rulesContext,0)
 
 
-        def group(self):
-            return self.getTypedRuleContext(ReqBlockParser.GroupContext,0)
+        def group_requirement(self):
+            return self.getTypedRuleContext(ReqBlockParser.Group_requirementContext,0)
 
 
         def lastres(self):
@@ -3764,7 +3764,7 @@ class ReqBlockParser ( Parser ):
             elif la_ == 6:
                 self.enterOuterAlt(localctx, 6)
                 self.state = 464
-                self.group()
+                self.group_requirement()
                 pass
 
             elif la_ == 7:
@@ -3855,7 +3855,7 @@ class ReqBlockParser ( Parser ):
         return localctx
 
 
-    class GroupContext(ParserRuleContext):
+    class Group_requirementContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3868,8 +3868,191 @@ class ReqBlockParser ( Parser ):
         def GROUP(self):
             return self.getToken(ReqBlockParser.GROUP, 0)
 
-        def group_list(self):
-            return self.getTypedRuleContext(ReqBlockParser.Group_listContext,0)
+        def groups(self):
+            return self.getTypedRuleContext(ReqBlockParser.GroupsContext,0)
+
+
+        def qualifier(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ReqBlockParser.QualifierContext)
+            else:
+                return self.getTypedRuleContext(ReqBlockParser.QualifierContext,i)
+
+
+        def label(self):
+            return self.getTypedRuleContext(ReqBlockParser.LabelContext,0)
+
+
+        def getRuleIndex(self):
+            return ReqBlockParser.RULE_group_requirement
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGroup_requirement" ):
+                listener.enterGroup_requirement(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGroup_requirement" ):
+                listener.exitGroup_requirement(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGroup_requirement" ):
+                return visitor.visitGroup_requirement(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+
+
+    def group_requirement(self):
+
+        localctx = ReqBlockParser.Group_requirementContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 50, self.RULE_group_requirement)
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 480
+            self.match(ReqBlockParser.NUMBER)
+            self.state = 481
+            self.match(ReqBlockParser.GROUP)
+            self.state = 482
+            self.groups()
+            self.state = 486
+            self._errHandler.sync(self)
+            _alt = self._interp.adaptivePredict(self._input,48,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
+                    self.state = 483
+                    self.qualifier() 
+                self.state = 488
+                self._errHandler.sync(self)
+                _alt = self._interp.adaptivePredict(self._input,48,self._ctx)
+
+            self.state = 490
+            self._errHandler.sync(self)
+            la_ = self._interp.adaptivePredict(self._input,49,self._ctx)
+            if la_ == 1:
+                self.state = 489
+                self.label()
+
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+
+    class GroupsContext(ParserRuleContext):
+        __slots__ = 'parser'
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def group(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ReqBlockParser.GroupContext)
+            else:
+                return self.getTypedRuleContext(ReqBlockParser.GroupContext,i)
+
+
+        def logical_op(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ReqBlockParser.Logical_opContext)
+            else:
+                return self.getTypedRuleContext(ReqBlockParser.Logical_opContext,i)
+
+
+        def getRuleIndex(self):
+            return ReqBlockParser.RULE_groups
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterGroups" ):
+                listener.enterGroups(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitGroups" ):
+                listener.exitGroups(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitGroups" ):
+                return visitor.visitGroups(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+
+
+    def groups(self):
+
+        localctx = ReqBlockParser.GroupsContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 52, self.RULE_groups)
+        self._la = 0 # Token type
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 492
+            self.group()
+            self.state = 498
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            while _la==ReqBlockParser.AND or _la==ReqBlockParser.OR:
+                self.state = 493
+                self.logical_op()
+                self.state = 494
+                self.group()
+                self.state = 500
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+
+    class GroupContext(ParserRuleContext):
+        __slots__ = 'parser'
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def LP(self):
+            return self.getToken(ReqBlockParser.LP, 0)
+
+        def RP(self):
+            return self.getToken(ReqBlockParser.RP, 0)
+
+        def block(self):
+            return self.getTypedRuleContext(ReqBlockParser.BlockContext,0)
+
+
+        def blocktype(self):
+            return self.getTypedRuleContext(ReqBlockParser.BlocktypeContext,0)
+
+
+        def course_list(self):
+            return self.getTypedRuleContext(ReqBlockParser.Course_listContext,0)
+
+
+        def class_credit_body(self):
+            return self.getTypedRuleContext(ReqBlockParser.Class_credit_bodyContext,0)
+
+
+        def group_requirement(self):
+            return self.getTypedRuleContext(ReqBlockParser.Group_requirementContext,0)
+
+
+        def noncourse(self):
+            return self.getTypedRuleContext(ReqBlockParser.NoncourseContext,0)
+
+
+        def rule_complete(self):
+            return self.getTypedRuleContext(ReqBlockParser.Rule_completeContext,0)
 
 
         def qualifier(self, i:int=None):
@@ -3906,190 +4089,7 @@ class ReqBlockParser ( Parser ):
     def group(self):
 
         localctx = ReqBlockParser.GroupContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 50, self.RULE_group)
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 480
-            self.match(ReqBlockParser.NUMBER)
-            self.state = 481
-            self.match(ReqBlockParser.GROUP)
-            self.state = 482
-            self.group_list()
-            self.state = 486
-            self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,48,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
-                    self.state = 483
-                    self.qualifier() 
-                self.state = 488
-                self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,48,self._ctx)
-
-            self.state = 490
-            self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,49,self._ctx)
-            if la_ == 1:
-                self.state = 489
-                self.label()
-
-
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
-
-
-    class Group_listContext(ParserRuleContext):
-        __slots__ = 'parser'
-
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
-            super().__init__(parent, invokingState)
-            self.parser = parser
-
-        def group_item(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.Group_itemContext)
-            else:
-                return self.getTypedRuleContext(ReqBlockParser.Group_itemContext,i)
-
-
-        def logical_op(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.Logical_opContext)
-            else:
-                return self.getTypedRuleContext(ReqBlockParser.Logical_opContext,i)
-
-
-        def getRuleIndex(self):
-            return ReqBlockParser.RULE_group_list
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGroup_list" ):
-                listener.enterGroup_list(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGroup_list" ):
-                listener.exitGroup_list(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGroup_list" ):
-                return visitor.visitGroup_list(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-
-
-    def group_list(self):
-
-        localctx = ReqBlockParser.Group_listContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 52, self.RULE_group_list)
-        self._la = 0 # Token type
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 492
-            self.group_item()
-            self.state = 498
-            self._errHandler.sync(self)
-            _la = self._input.LA(1)
-            while _la==ReqBlockParser.AND or _la==ReqBlockParser.OR:
-                self.state = 493
-                self.logical_op()
-                self.state = 494
-                self.group_item()
-                self.state = 500
-                self._errHandler.sync(self)
-                _la = self._input.LA(1)
-
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
-
-
-    class Group_itemContext(ParserRuleContext):
-        __slots__ = 'parser'
-
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
-            super().__init__(parent, invokingState)
-            self.parser = parser
-
-        def LP(self):
-            return self.getToken(ReqBlockParser.LP, 0)
-
-        def RP(self):
-            return self.getToken(ReqBlockParser.RP, 0)
-
-        def block(self):
-            return self.getTypedRuleContext(ReqBlockParser.BlockContext,0)
-
-
-        def blocktype(self):
-            return self.getTypedRuleContext(ReqBlockParser.BlocktypeContext,0)
-
-
-        def course_list(self):
-            return self.getTypedRuleContext(ReqBlockParser.Course_listContext,0)
-
-
-        def class_credit_body(self):
-            return self.getTypedRuleContext(ReqBlockParser.Class_credit_bodyContext,0)
-
-
-        def group(self):
-            return self.getTypedRuleContext(ReqBlockParser.GroupContext,0)
-
-
-        def noncourse(self):
-            return self.getTypedRuleContext(ReqBlockParser.NoncourseContext,0)
-
-
-        def rule_complete(self):
-            return self.getTypedRuleContext(ReqBlockParser.Rule_completeContext,0)
-
-
-        def qualifier(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.QualifierContext)
-            else:
-                return self.getTypedRuleContext(ReqBlockParser.QualifierContext,i)
-
-
-        def label(self):
-            return self.getTypedRuleContext(ReqBlockParser.LabelContext,0)
-
-
-        def getRuleIndex(self):
-            return ReqBlockParser.RULE_group_item
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGroup_item" ):
-                listener.enterGroup_item(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGroup_item" ):
-                listener.exitGroup_item(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGroup_item" ):
-                return visitor.visitGroup_item(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-
-
-    def group_item(self):
-
-        localctx = ReqBlockParser.Group_itemContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 54, self.RULE_group_item)
+        self.enterRule(localctx, 54, self.RULE_group)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -4120,7 +4120,7 @@ class ReqBlockParser ( Parser ):
 
             elif la_ == 5:
                 self.state = 506
-                self.group()
+                self.group_requirement()
                 pass
 
             elif la_ == 6:
@@ -4218,11 +4218,11 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContext(ReqBlockParser.Course_listContext,i)
 
 
-        def group(self, i:int=None):
+        def group_requirement(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.GroupContext)
+                return self.getTypedRuleContexts(ReqBlockParser.Group_requirementContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.GroupContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.Group_requirementContext,i)
 
 
         def noncourse(self, i:int=None):
@@ -4328,7 +4328,7 @@ class ReqBlockParser ( Parser ):
 
                 elif la_ == 7:
                     self.state = 529
-                    self.group()
+                    self.group_requirement()
                     pass
 
                 elif la_ == 8:

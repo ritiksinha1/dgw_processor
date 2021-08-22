@@ -134,18 +134,18 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#group_requirement.
+    def visitGroup_requirement(self, ctx:ReqBlockParser.Group_requirementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#groups.
+    def visitGroups(self, ctx:ReqBlockParser.GroupsContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#group.
     def visitGroup(self, ctx:ReqBlockParser.GroupContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#group_list.
-    def visitGroup_list(self, ctx:ReqBlockParser.Group_listContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#group_item.
-    def visitGroup_item(self, ctx:ReqBlockParser.Group_itemContext):
         return self.visitChildren(ctx)
 
 
