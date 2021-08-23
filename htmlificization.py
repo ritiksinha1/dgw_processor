@@ -139,7 +139,7 @@ def course_list_details(info: dict) -> str:
     label = info.pop('label')
     if label is None:
       raise KeyError
-    label_str = label.title()
+    label_str = label
   except KeyError as ke:
     label_str = ''
 
@@ -270,7 +270,7 @@ def requirement_to_details_element(requirement: dict) -> str:
     label = requirement.pop('label')
     if not label:
       raise KeyError
-    outer_label_str = f'{label.title()}'
+    outer_label_str = label
   except KeyError as ke:
     outer_label_str = ''
 
@@ -343,6 +343,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   if DEBUG:
     print(f'*** subset_to_details_element({info.keys()=})', file=sys.stderr)
 
+  print(info.keys())
   try:
     inner_label = info.pop('label')
   except KeyError as ke:
@@ -381,16 +382,6 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   # Are there any group requirements?
   if 'group_requirements' in info.keys():
     course_requirements_element += group_requirements_to_details_elements(info)
-    # group_list = info.pop('group')
-    # for group_item_list in group_list:
-    #   num_group_items = len(group_item_list['group_items'])
-    #   num_required = int(group_item_list.pop('num_groups_required'))
-    #   if num_required < 12:
-    #     num_required = ['None', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight',
-    #                     'Nine', 'Ten', 'Eleven', 'Twelve'][num_required]
-    #   body = list_to_html_list_element(group_item_list['group_items'], kind='Group')
-    #   body = body.replace('summary>', f'summary>{num_required} of the following ', 1)
-    #   course_requirements_element += body
 
   if DEBUG:
     print(f'{info.keys()=} in subset_to_details_element', file=sys.stderr)
@@ -405,12 +396,12 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   # Here we deal with the four inner/outer label possibilities
   if outer_label and inner_label:
     summary = f'<summary>{outer_label}</summary'
-    body = f'<details><summary>{inner_label.title()}</summary>{requirements_str}</details>'
+    body = f'<details><summary>{inner_label}</summary>{requirements_str}</details>'
   elif outer_label and not inner_label:
-    summary = f'<summary>{outer_label.title()}</summary>'
+    summary = f'<summary>{outer_label}</summary>'
     body = requirements_str
   elif not outer_label and inner_label:
-    summary = f'<summary>{inner_label.title()}</summary>'
+    summary = f'<summary>{inner_label}</summary>'
     body = requirements_str
   else:
     summary = 'Unnamed Requirement'
@@ -420,7 +411,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   #   print(f'stode: {summary=}', file=sys.stderr)
   #   print(f'stode: {body=}', file=sys.stderr)
 
-  return f'<details>{summary}{body}</details>'
+  return f'<details>{summary}{qualifiers_str}{body}</details>'
 
 
 # group_requirements_to_details_elements()
@@ -705,7 +696,7 @@ def dict_to_html_details_element(info: dict) -> str:
     if label is None:
       return return_str
     else:
-      return f'<details><summary>{label.title()}</summary>{return_str}</details>'
+      return f'<details><summary>{label}</summary>{return_str}</details>'
 
 
 # list_to_html_list_element()

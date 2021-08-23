@@ -345,12 +345,6 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
       The ctx can be either a single context of a list of them. But within a list, we don't expect
       the same qualifier to be repeated.
 
-      And Ignore the next paragraph.
-
-      The ctx parameter might be for a list of grammar-rules or for a single grammar-rule. In the
-      latter case, get a list of all the siblings of this ctx (i.e., the children of this rule's
-      parents in the parse tree). If this seems confusing, it's because it is.
-
   The list of qualifiers recognized here:
   qualifier       : maxpassfail
                   | maxperdisc
@@ -375,101 +369,101 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
 
   if DEBUG:
     print(f'*** get_qualifiers({class_name(ctx)=})', file=sys.stderr)
-
   if isinstance(ctx, list):
     contexts = ctx
   else:
     contexts = [ctx]
   qualifier_dict = dict()
   for context in contexts:
-
-    # See which qualifiers, if any, are part of this context
-    for valid_qualifier in valid_qualifiers:
-      class_credit = None
-      if qualifier_func := getattr(context, valid_qualifier, None):
-        if qualifier_ctx := qualifier_func():
-          if getattr(qualifier_ctx, 'class_or_credit', None):
-            # Class or credit is an attribute of several qualifiers. Extract it here.
-            if coc_ctx := qualifier_ctx.class_or_credit():
-              class_str = qualifier_ctx.class_or_credit().CLASS()
-              credit_str = qualifier_ctx.class_or_credit().CREDIT()
-              if class_str:
-                class_credit = 'class'
-              elif credit_str:
-                class_credit = 'credit'
-              else:
-                print(f'*** Error: neither {class_str=} nor {credit_str=} in get_qualifiers',
+    print(f'    {class_name(context.parentCtx)=} {class_name(context)}')
+    if class_name(context) == 'Qualifier':
+      # See which qualifiers, if any, are part of this context
+      for valid_qualifier in valid_qualifiers:
+        class_credit = None
+        if qualifier_func := getattr(context, valid_qualifier, None):
+          if qualifier_ctx := qualifier_func():
+            if getattr(qualifier_ctx, 'class_or_credit', None):
+              # Class or credit is an attribute of several qualifiers. Extract it here.
+              if coc_ctx := qualifier_ctx.class_or_credit():
+                class_str = qualifier_ctx.class_or_credit().CLASS()
+                credit_str = qualifier_ctx.class_or_credit().CREDIT()
+                if class_str:
+                  class_credit = 'class'
+                elif credit_str:
+                  class_credit = 'credit'
+                else:
+                  print(f'*** Error: neither {class_str=} nor {credit_str=} in get_qualifiers',
+                        file=sys.stderr)
+              if DEBUG:
+                print(f'    get_qualifiers got {valid_qualifier=} with {class_credit=}',
                       file=sys.stderr)
-            if DEBUG:
-              print(f'    get_qualifiers got {valid_qualifier=} with {class_credit=}',
-                    file=sys.stderr)
 
-          # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
-          if valid_qualifier == 'maxpassfail':
-            qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
-                                               'class_credit': class_credit}
+            # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
+            if valid_qualifier == 'maxpassfail':
+              qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
+                                                 'class_credit': class_credit}
 
-          # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
-          # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
-          # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
-          elif valid_qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
-            disciplines = qualifier_ctx.SYMBOL()
-            if isinstance(disciplines, list):
-              disciplines = [d.getText() for d in disciplines]
+            # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
+            # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
+            # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
+            elif valid_qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
+              disciplines = qualifier_ctx.SYMBOL()
+              if isinstance(disciplines, list):
+                disciplines = [d.getText() for d in disciplines]
 
-            qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
-                                               'class_credit': class_credit,
-                                               'disciplines': disciplines}
+              qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
+                                                 'class_credit': class_credit,
+                                                 'disciplines': disciplines}
 
-          # maxspread       : MAXSPREAD NUMBER
-          # minarea         : MINAREA NUMBER
-          # mingrade        : MINGRADE NUMBER
-          # minspread       : MINSPREAD NUMBER
-          elif valid_qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
-            qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText()}
+            # maxspread       : MAXSPREAD NUMBER
+            # minarea         : MINAREA NUMBER
+            # mingrade        : MINGRADE NUMBER
+            # minspread       : MINSPREAD NUMBER
+            elif valid_qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
+              qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText()}
 
-          # minclass        : MINCLASS NUMBER course_list tag? display* label?;
-          # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
-          elif valid_qualifier in ['minclass', 'mincredit']:
-            # build_course_list returns its own dict, with "course_list" as the key, so we start
-            # with that, and add the number, display, and label elements to that.
-            qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list(),
-                                                                institution, requirement_id)
-            qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
-            if qualifier_ctx.display():
-              qualifier_dict[valid_qualifier]['display'] = get_display(qualifier_ctx)
-
-          # mingpa : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice? label?;
-          elif valid_qualifier == 'mingpa':
-            qualifier_dict.update(dgw_handlers.mingpa(qualifier_ctx, institution, requirement_id))
-
-          # proxy_advice    : (PROXY_ADVICE STRING)+;
-          # ruletag         : RULE_TAG expression;
-          # samedisc        : SAME_DISC expression
-
-          elif valid_qualifier in ['proxy_advice', 'rule_tag', 'samedisc']:
-            # These are used for managing the audit process and are ignored here
-            pass
-
-          # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
-          elif valid_qualifier == 'share':
-            if qualifier_ctx.DONT_SHARE():
-              valid_qualifier = 'dont_share'
-            qualifier_dict[valid_qualifier] = dict()
-
-            if qualifier_ctx.NUMBER():
+            # minclass        : MINCLASS NUMBER course_list tag? display* label?;
+            # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
+            elif valid_qualifier in ['minclass', 'mincredit']:
+              # build_course_list returns its own dict, with "course_list" as the key, so we start
+              # with that, and add the number, display, and label elements to that.
+              qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list(),
+                                                                  institution, requirement_id)
               qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
-              qualifier_dict[valid_qualifier]['class_credit'] = class_credit
+              if qualifier_ctx.display():
+                qualifier_dict[valid_qualifier]['display'] = get_display(qualifier_ctx)
 
-            if qualifier_ctx.expression():
-              expression = qualifier_func().expression()
-              if expression:
-                qualifier_dict[valid_qualifier]['expression'] = expression.getText()
+            # mingpa : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice? label?;
+            elif valid_qualifier == 'mingpa':
+              qualifier_dict.update(dgw_handlers.mingpa(qualifier_ctx, institution, requirement_id))
 
-          else:
-            print(f'Unexpected qualifier: {valid_qualifier} in {requirement_id} for {institution}',
-                  file=sys.stderr)
+            # proxy_advice    : (PROXY_ADVICE STRING)+;
+            # ruletag         : RULE_TAG expression;
+            # samedisc        : SAME_DISC expression
 
+            elif valid_qualifier in ['proxy_advice', 'rule_tag', 'samedisc']:
+              # These are used for managing the audit process and are ignored here
+              pass
+
+            # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
+            elif valid_qualifier == 'share':
+              if qualifier_ctx.DONT_SHARE():
+                valid_qualifier = 'dont_share'
+              qualifier_dict[valid_qualifier] = dict()
+
+              if qualifier_ctx.NUMBER():
+                qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
+                qualifier_dict[valid_qualifier]['class_credit'] = class_credit
+
+              if qualifier_ctx.expression():
+                expression = qualifier_func().expression()
+                if expression:
+                  qualifier_dict[valid_qualifier]['expression'] = expression.getText()
+
+            else:
+              print(f'Unexpected qualifier: {valid_qualifier} in {requirement_id} for {institution}',
+                    file=sys.stderr)
+  print(qualifier_dict)
   return qualifier_dict
 
 
@@ -641,6 +635,11 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   # Pick up the label, if there is one
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
+
+  if qualifiers := get_qualifiers(ctx, institution, requirement_id):
+    if DEBUG:
+      print(f'*** qualifiers in build_course_list: {qualifiers}', file=sys.stderr)
+    return_dict['qualifiers'] = qualifiers
 
   # The Scribe context in which the list appeared
   course_item = ctx.course_item()
