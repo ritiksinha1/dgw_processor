@@ -130,11 +130,10 @@ course_list_head_qualifier : maxspread
                            | share
                            ;
 
-course_list_body           : course_list (qualifier tag?
-                                          | proxy_advice
-                                          )*;
+course_list_body           : course_list (qualifier tag? | proxy_advice )*;
+
 /* The following set of qualifiers has been subsumed into a single "qualifier" Antlr rule. Althogh
- * not all qualifiers are allowed in each context (rule, subset, concitional), we use a union of
+ * not all qualifiers are allowed in each context (rule, subset, conditional), we use a union of
  * them all in order to simplfy the code that interprets a particular req_block. We don't have to
  * worry about the semantics because we need to interpret only req_blocks that also are deemed
  * correct by the Ellucian auditer.
@@ -205,7 +204,6 @@ head_rule         : conditional_head
                   | remark
                   | rule_complete
                   | share
-                  | subset
                   ;
 
 
