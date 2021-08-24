@@ -18,7 +18,7 @@ from pgconnection import PgConnection
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Test DGW Parser')
   parser.add_argument('-d', '--debug', action='store_true', default=False)
-  parser.add_argument('-i', '--institution', nargs='*', default='QNS01')
+  parser.add_argument('-i', '--institution', nargs='*', default=['QNS01'])
   parser.add_argument('-ra', '--requirement_id')
   parser.add_argument('-t', '--block_type', default='MAJOR')
   parser.add_argument('-v', '--block_value')
@@ -26,9 +26,10 @@ if __name__ == '__main__':
   # Parse args
   args = parser.parse_args()
 
-  institution = args.institution.strip('10').upper() + '01'
+  institutions = [institution.strip('10').upper() + '01' for institution in args.institution]
 
   if args.requirement_id:
+    institution = institutions[0]
     requirement_id = args.requirement_id.strip('AaRr')
     if not requirement_id.isdecimal():
       sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
