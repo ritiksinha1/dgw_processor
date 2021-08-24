@@ -311,7 +311,7 @@ def format_body_qualifiers(node: dict) -> list:
         qualifier_info = node.pop(qualifier)
         qualifier_strings.append(_dispatch_qualifier(qualifier, qualifier_info))
       else:
-        value = item.pop(qualifier)
+        value = node.pop(qualifier)
         print(f'Error: unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
         qualifier_strings.append(f'Error: unhandled qualifier: {qualifier}: {value}')
 
