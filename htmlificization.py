@@ -20,7 +20,7 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
-from qualifier_handlers import format_qualifiers
+from body_qualifier_handlers import format_body_qualifiers
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection
@@ -343,7 +343,6 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   if DEBUG:
     print(f'*** subset_to_details_element({info.keys()=})', file=sys.stderr)
 
-  print(info.keys())
   try:
     inner_label = info.pop('label')
   except KeyError as ke:
@@ -355,7 +354,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   except KeyError as ke:
     remark_str = ''
 
-  qualifier_strings = format_qualifiers(info)
+  qualifier_strings = format_body_qualifiers(info)
   qualifiers_str = ''
   for qualifier_string in qualifier_strings:
     class_attribute = ' class="error"' if 'Error:' in qualifier_string else ''
@@ -411,7 +410,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   #   print(f'stode: {summary=}', file=sys.stderr)
   #   print(f'stode: {body=}', file=sys.stderr)
 
-  return f'<details>{summary}{qualifiers_str}{body}</details>'
+  return f'<details>{summary}{body}</details>'
 
 
 # group_requirements_to_details_elements()
@@ -613,7 +612,7 @@ def dict_to_html_details_element(info: dict) -> str:
     except KeyError as ke:
       cr_str = ''
 
-    qualifier_strings = format_qualifiers(info)
+    qualifier_strings = format_body_qualifiers(info)
     for qualifier_string in qualifier_strings:
       class_attribute = ' class="error"' if 'Error:' in qualifier_string else ''
       cr_str += f'<p{class_attribute}>{qualifier_string}</p>'

@@ -23,7 +23,8 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_parser import dgw_parser
-from qualifier_handlers import format_qualifiers
+from body_qualifier_handlers import format_body_qualifiers
+from header_qualifier_handlers import format_header_qualifiers
 from quarantine_manager import QuarantineManager
 
 from pprint import pprint
@@ -482,6 +483,12 @@ if __name__ == '__main__':
                                  and requirement_id = '{row.requirement_id}'
                             """)
             conn.commit()
+            # Get block-level qualifiers from the header
+            header_qualifiers = []
+            for item in header_list:
+              if isinstance(item, dict):
+                header_qualifiers.append(format_header_qualifiers(item))
+            exit(header_qualifiers)
             # Iterate over the body, emitting db updates as a side effect.
             # There are spaces in some block values
             block_value = block_value.strip().replace(' ', '*')

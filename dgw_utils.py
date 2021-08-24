@@ -16,7 +16,6 @@ from Any import ANY
 from pgconnection import PgConnection
 
 import dgw_handlers
-# from course_list_qualifier import CourseListQualifier
 
 DEBUG = os.getenv('DEBUG_UTILS')
 
@@ -375,7 +374,6 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
     contexts = [ctx]
   qualifier_dict = dict()
   for context in contexts:
-    print(f'    {class_name(context.parentCtx)=} {class_name(context)}')
     if class_name(context) == 'Qualifier':
       # See which qualifiers, if any, are part of this context
       for valid_qualifier in valid_qualifiers:
@@ -463,7 +461,6 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
             else:
               print(f'Unexpected qualifier: {valid_qualifier} in {requirement_id} for {institution}',
                     file=sys.stderr)
-  print(qualifier_dict)
   return qualifier_dict
 
 
