@@ -20,7 +20,7 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
-from body_qualifier_handlers import format_body_qualifiers
+from body_qualifiers import format_body_qualifiers
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection

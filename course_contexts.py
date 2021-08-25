@@ -23,8 +23,8 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_parser import dgw_parser
-from body_qualifier_handlers import format_body_qualifiers
-from header_qualifier_handlers import format_header_qualifiers
+from body_qualifiers import format_body_qualifiers
+from header_qualifiers import format_header_qualifiers
 from quarantine_manager import QuarantineManager
 
 from pprint import pprint
@@ -51,7 +51,7 @@ Requirement = namedtuple('Requirement',
 
 # emit()
 # -------------------------------------------------------------------------------------------------
-def emit(requirement: Requirement, context: list) -> None:
+def emit(requirement: Requirement, header_qualifiers: str, context: list) -> None:
   """ Update the database.
   """
   if DEBUG:
@@ -151,20 +151,21 @@ def emit(requirement: Requirement, context: list) -> None:
 
 # iter_list()
 # -------------------------------------------------------------------------------------------------
-def iter_list(items: list, calling_context: list) -> None:
+def iter_list(items: list, header_qualifiers: str, calling_context: list) -> None:
   """
   """
   if DEBUG:
-    print(f'*** iter_list({len(items)=}, {calling_context=})', file=sys.stderr)
+    print(f'*** iter_list({len(items)=}, {header_qualifiers}, {calling_context=})', file=sys.stderr)
 
   local_context = calling_context + []
 
   for value in items:
     if isinstance(value, list):
-      iter_list(value, local_context)
+      iter_list(value, header_qualifiers_str. local_context)
     elif isinstance(value, dict):
-      iter_dict(value, local_context)
+      iter_dict(value, header_qualifiers_str. local_context)
     else:
+      # Mebbe itsa remark?
       print(f'iter_list: Neither list nor dict: {value=} {len(local_context)=}', file=sys.stderr)
 
   return None
@@ -172,13 +173,14 @@ def iter_list(items: list, calling_context: list) -> None:
 
 # iter_dict()
 # -------------------------------------------------------------------------------------------------
-def iter_dict(item: dict, calling_context: list) -> None:
+def iter_dict(item: dict, header_qualifiers: str, calling_context: list) -> None:
   """ If there is a course list, emit the context in which it occurs, the nature of the requirement,
       and the courses.
       Otherwise, augment the context and process sub-lists and sub-dicts.
   """
   if DEBUG:
-    print(f'*** iter_dict({item.keys()=}, {calling_context=})', file=sys.stderr)
+    print(f'*** iter_dict({item.keys()=}, {header_qualifiers=}, {calling_context=})',
+          file=sys.stderr)
 
   local_context = calling_context + []
 
@@ -278,27 +280,6 @@ def iter_dict(item: dict, calling_context: list) -> None:
       class_credit_str = f'{num_credits} credit{cr_sfx}'
     else:
       class_credit_str = ''
-
-    # # The following qualifieres are legal, but we ignore ones that we don’t need.
-    # possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-    #                        'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
-    #                        'proxy_advice', 'rule_tag', 'samedisc', 'share']
-    # ignored_qualifiers = ['proxy_advice', 'rule_tag', 'share']
-    # handled_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-    #                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
-    #                       'samedisc']
-    qualifiers_list = format_qualifiers(item)
-
-    # for qualifier in possible_qualifiers:
-    #   if qualifier in item.keys():
-    #     if qualifier in ignored_qualifiers:
-    #       continue
-    #     if qualifier in handled_qualifiers:
-    #       qualifier_info = item.pop(qualifier)
-    #       qualifiers_list.append(dispatch_qualifier(qualifier, qualifier_info))
-    #     else:
-    #       value = item.pop(qualifier)
-    #       print(f'Error: unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
 
     # Discard course_list['allow_xxx'] entries, if present
     if 'allow_credits' in item.keys():
@@ -436,6 +417,7 @@ if __name__ == '__main__':
       block_types = [arg.upper() for arg in args.block_types]
       for block_type in block_types:
         assert block_type in ['MAJOR', 'CONC', 'MINOR']
+        program_type = 'concentration' if block_type == 'CONC' else block_type.lower()
         block_values = [value.upper() for value in args.block_values]
         if 'ALL' in block_values:
           cursor.execute(f"""
@@ -487,8 +469,10 @@ if __name__ == '__main__':
             header_qualifiers = []
             for item in header_list:
               if isinstance(item, dict):
-                header_qualifiers.append(format_header_qualifiers(item))
-            exit(header_qualifiers)
+                header_qualifiers += format_header_qualifiers(item)
+            exit(f'For this {program_type}: {header_qualifiers}')
+            header
+
             # Iterate over the body, emitting db updates as a side effect.
             # There are spaces in some block values
             block_value = block_value.strip().replace(' ', '*')

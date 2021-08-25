@@ -1,8 +1,7 @@
 #! /usr/local/bin/python3
 """ Format block_level qualifiers. Return a formatted string for each type of rule that can appear
     in the header section of a block.
-    The items marked with an asterisk are the "qualifiers" handled here. Those marked with a
-    question mark may need to be added later.
+
     Note that each qualifier gets only a one-line string value here, suitable for adding to the
     program_requirements table.
 
@@ -29,6 +28,19 @@ head : ( class_credit_head',
        | under
        )*
 
+  These are the ones currently handled: others may need to be added in the future
+        maxclass
+        maxcredit
+        maxpassfail
+        maxperdisc
+        maxtransfer
+        minclass
+        mincredit
+        mingrade
+        mingpa
+        minperdisc
+        minres
+        remark
 """
 
 import os
@@ -39,8 +51,44 @@ import Any
 DEBUG = os.getenv('DEBUG_HEADER')
 
 
-# Qualifier Handlers
+# Header Qualifier Handlers
 # =================================================================================================
+
+# _format_maxclass()
+# -------------------------------------------------------------------------------------------------
+def _format_maxclass(maxclass_dict: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'_format_maxclass({maxpassfail_dict}', file=sys.stderr)
+
+  num_class = int(maxclass_dict.pop('number'))
+  class_suffix = '' if num_class == 1 else 'es'
+  course_list = maxclass_dict.pop('course_list')
+  num_active = len(course_list['active_courses'])
+  active_suffix = '' if num_active == 1 else 's'
+  return (f'No more than {num_class} credit{class_suffix} from a set of {num_active} '
+          f'active course{active_suffix} allowed')
+
+
+# _format_maxcredit()
+# -------------------------------------------------------------------------------------------------
+def _format_maxcredit(maxcredit_dict: dict) -> str:
+  """ When the number is zero, it means "none of" the courses in the list, but when > zero, it
+      really is a maximum. In either case the course list can be very long. We list the number of
+      active courses here.
+  """
+  if DEBUG:
+    print(f'_format_maxcredit({maxcredit_dict}', file=sys.stderr)
+
+  num_credit = float(maxcredit_dict.pop('number'))
+  credit_suffix = '' if num_credit == 1.0 else 's'
+  course_list = maxcredit_dict.pop('course_list')
+  num_active = len(course_list['active_courses'])
+  active_suffix = '' if num_active == 1 else 's'
+  return (f'No more than {num_credit:0.1f} credit{credit_suffix} from a set of {num_active} '
+          f'active course{active_suffix} allowed')
+
 
 # _format_maxpassfail()
 # -------------------------------------------------------------------------------------------------
@@ -52,7 +100,8 @@ def _format_maxpassfail(maxpassfail_dict: dict) -> str:
 
   try:
     number = float(maxpassfail_dict.pop('number'))
-    class_credit = maxpassfail_dict.pop('class_credit')
+    class_credit = maxpassfail_dict.pop('class_or_credit')
+    print(number, class_credit)
     if class_credit == 'credit':
       if number == 0:
         return 'No credits may be taken pass/fail'
@@ -64,9 +113,9 @@ def _format_maxpassfail(maxpassfail_dict: dict) -> str:
       suffix = '' if number == 1 else 'es'
     return f'A maximum of {number:0} {class_credit}{suffix} may be taken pass/fail'
   except KeyError as ke:
-    return f'Error: invalid MaxPassFail {ke} {maxperdisc_dict}'
+    return f'Error: invalid MaxPassFail {ke} {maxpassfail_dict}'
   except ValueError as ve:
-    return f'Error: invalid MaxPassFail {ve} {maxperdisc_dict}'
+    return f'Error: invalid MaxPassFail {ve} {maxpassfail_dict}'
 
 
 # _format_maxperdisc()
@@ -98,19 +147,6 @@ def _format_maxperdisc(maxperdisc_dict: dict) -> str:
     return f'Error: invalid MaxPerDisc {ve} {maxperdisc_dict}'
 
 
-# _format_maxspread()
-# -------------------------------------------------------------------------------------------------
-def _format_maxspread(maxspread_dict: dict) -> str:
-  """ {'number': qualifier_ctx.NUMBER().getText()}
-  """
-  if DEBUG:
-    print(f'*** _format_maxspread({maxspread_dict})', file=sys.stderr)
-  print(maxspread_dict.keys())
-  number = int(maxspread_dict['number'])
-
-  return f'No more than {number} disciplines allowed'
-
-
 # _format_maxtransfer()
 # -------------------------------------------------------------------------------------------------
 def _format_maxtransfer(maxtransfer_dict: dict) -> str:
@@ -138,24 +174,6 @@ def _format_maxtransfer(maxtransfer_dict: dict) -> str:
     pass
 
   return f'No more than {number_str} transfer {class_credit}{suffix}{discipline_str} allowed'
-
-
-# _format_minarea()
-# -------------------------------------------------------------------------------------------------
-def _format_minarea(minarea_dict: dict) -> str:
-  """ {'number': qualifier_ctx.NUMBER().getText()}
-  """
-  if DEBUG:
-    print(f'_format_minarea({minarea_dict}', file=sys.stderr)
-
-  try:
-    number = int(minarea_dict.pop('number'))
-    suffix = '' if number == 1 else 'es'
-    return f'At least  {number} area{suffix} required'
-  except KeyError as ke:
-    return f'Error: Missing minimum number of areas'
-  except ValueError as ve:
-    return f'Error: Invalid minimum number of areas ({number})'
 
 
 # _format_minclass()
@@ -243,7 +261,7 @@ def _format_mingrade(mingrade_dict: dict) -> str:
   # Lots of values greater than 4.0 have been used to mean "no upper limit."
   if number > 4.0:
     number = 4.0
-  letter = letters[int(round(number, 3))]
+  letter = letters[int(round(3 * number))]
   return f'Minimum grade of {letter} required'
 
 
@@ -276,17 +294,66 @@ def _format_minperdisc(minperdisc_dict: dict) -> str:
   return f'No more than {number_str} {class_credit}{suffix}{discipline_str} allowed'
 
 
-# _format_minspread()
+# _format_minres()
 # -------------------------------------------------------------------------------------------------
-def _format_minspread(minspread_dict: dict) -> str:
-  """ {'number': qualifier_ctx.NUMBER().getText()}
+def _format_minres(minres_dict: dict) -> str:
+  """  {'minres': {'allow_classes': None,
+                   'allow_credits': None,
+                   'conjunction': None,
+                   'label': None,
+                   'max_classes': None,
+                   'max_credits': 41.0,
+                   'min_classes': None,
+                   'min_credits': 41.0}},
   """
   if DEBUG:
-    print(f'_format_minspread({minspread_dict}', file=sys.stderr)
+    print(f'_format_minres({minres_dict}', file=sys.stderr)
 
-  number = int(minspread_dict.pop('number'))
-  suffix = '' if number == 1 else 's'
-  return f'At least {number} discipline{suffix} required'
+  conjunction = minres_dict.pop('conjunction')
+  label = minres_dict.pop('label')
+  if label is not None:
+    label_str = f'{label}: '
+  else:
+    label_str = ''
+  min_classes = minres_dict.pop('min_classes')
+  max_classes = minres_dict.pop('max_classes')
+  min_credits = minres_dict.pop('min_credits')
+  max_credits = minres_dict.pop('max_credits')
+
+  if min_classes is not None:
+    if min_classes == max_classes:
+      num_classes = min_classes
+    else:
+      num_classes = f'between {min_classes} and {max_classes}'
+  else:
+    num_classes = None
+  if min_credits is not None:
+    if min_credits == max_credits:
+      num_credits = min_credits
+    else:
+      num_credits = f'between {min_credits} and {max_credits}'
+  else:
+    num_credits = None
+
+  if num_classes is not None and num_credits is not None:
+    return (f'{label_str}At least {num_classes} classes {conjunction} {num_credits} must be '
+            f'taken in residence')
+  if num_classes:
+    return f'{label_str}At least {num_classes} classes must be taken in residence'
+  if num_credits:
+    return f'{label_str}At least {num_credits} credits must be taken in residence'
+  return 'Error: MinRes with neither classes nor credits specified.'
+
+
+# _format_remark()
+# -------------------------------------------------------------------------------------------------
+def _format_remark(remark_str: str) -> str:
+  """ The value of a remark key is just the string.
+  """
+  if DEBUG:
+    print(f'_format_remark({remark_str}', file=sys.stderr)
+
+  return f'Message: {remark_str}'
 
 
 # dispatch()
@@ -313,7 +380,8 @@ def _dispatch_qualifier(qualifier: str, qualifier_info: Any) -> str:
       _format_xxx function to format the value into an English string.
   """
   if DEBUG:
-    print(f'*** _dispatch_qualifier({qualifier}, {qualifier_info=})', file=sys.stderr)
+    print(f'*** _dispatch_qualifier({qualifier}, {qualifier_info=})',
+          file=sys.stderr)
   return dispatch_table[qualifier](qualifier_info)
 
 
@@ -331,11 +399,11 @@ def format_header_qualifiers(node: dict) -> list:
                         'remark']
   qualifier_strings = []
   for qualifier in handled_qualifiers:
-    qualifier_info = node.pop(qualifier)
-    qualifier_strings.append(_dispatch_qualifier(qualifier, qualifier_info))
-  else:
-    value = item.pop(qualifier)
-    print(f'Error: unhandled qualifier: {qualifier}: {value}', file=sys.stderr)
-    qualifier_strings.append(f'Error: unhandled qualifier: {qualifier}: {value}')
+    try:
+      qualifier_info = node.pop(qualifier)
+      qualifier_strings.append(_dispatch_qualifier(qualifier, qualifier_info))
+    except KeyError as ke:
+      # Ignore anything not in the dispatch table.
+      pass
 
   return qualifier_strings
