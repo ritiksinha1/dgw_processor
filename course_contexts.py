@@ -36,7 +36,8 @@ quarantined_dict = QuarantineManager()
 
 # Information about active courses found in course lists.
 ActiveCourse = namedtuple('ActiveCourse',
-                          'course_id offer_nbr discipline catalog_number title credits qualifiers')
+                          'course_id offer_nbr discipline catalog_number title credits '
+                          'course_qualifiers')
 
 # A Requirement’s context is a list of labels, conditions, and group info; active_courses is a list
 # of ActiveCourse tuples. If the Requirement is disjunctive (OR), the length of the active_courses
@@ -46,13 +47,35 @@ ActiveCourse = namedtuple('ActiveCourse',
 # conditional contexts, if any.
 Requirement = namedtuple('Requirement',
                          'institution requirement_id requirement_name '
-                         'num_classes num_credits is_disjunctive active_courses qualifiers')
+                         'num_classes num_credits is_disjunctive active_courses '
+                         'program_qualifiers requirement_qualifiers')
 
 
 # emit()
 # -------------------------------------------------------------------------------------------------
-def emit(requirement: Requirement, header_qualifiers: str, context: list) -> None:
+def emit(requirement: Requirement, program_qualifiers: list, context: list) -> None:
   """ Update the database.
+
+      CREATE TABLE program_requirements (
+        id serial primary key,
+        institution text not null,
+        requirement_id text not null,
+        requirement_name text not null,
+        num_courses_required text not null,
+        course_alternatives text not null,
+        conjunction text,
+        num_credits_required text not null,
+        credit_alternatives text not null,
+        context jsonb not null,
+        program_qualifiers jsonb not null,
+        requirement_qualifiers jsonb not null, ...
+
+        CREATE TABLE course_requirement_mappings (
+        course_id integer,
+        offer_nbr integer,
+        program_requirement_id integer references program_requirements(id) on delete cascade,
+        course_qualifiers jsonb not null, ...
+
   """
   if DEBUG:
     print(f'*** emit({requirement=}, {context=})', file=sys.stderr)
@@ -107,19 +130,27 @@ def emit(requirement: Requirement, header_qualifiers: str, context: list) -> Non
     # should not occur. To check for that, it would be necessary to check against contexts and
     # qualifiers.
     cursor.execute(f"""insert into program_requirements values
-                        (default, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict do nothing
+                        (default, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict do nothing
                         returning id
                    """, (institution, requirement_id, requirement.requirement_name,
                          requirement.num_classes, course_alternatives, and_or,
                          requirement.num_credits, credit_alternatives, json.dumps(context),
-                         json.dumps(requirement.qualifiers)))
+                         json.dumps(requirement.program_qualifiers),
+                         json.dumps(requirement.requirement_qualifiers)))
     assert cursor.rowcount == 1
 
   program_requirement_id = int(cursor.fetchone().id)
 
   for course in requirement.active_courses:
+
+    # Convert the with-clause expression string into a list
+    if course.course_qualifiers is None:
+      course_qualifiers = []
+    else:
+      course_qualifiers = course.course_qualifiers.split(',')
+
     # Check if the course mapping already exists
-    cursor.execute(f"""select qualifiers
+    cursor.execute(f"""select course_qualifiers
                          from course_requirement_mappings
                          where program_requirement_id = {program_requirement_id}
                            and course_id = {course.course_id}
@@ -129,9 +160,9 @@ def emit(requirement: Requirement, header_qualifiers: str, context: list) -> Non
       # Yes, check for anomalies
       if cursor.rowcount == 1:
         row = cursor.fetchone()
-        if row.qualifiers != course.qualifiers:
+        if row.course_qualifiers != course_qualifiers:
           print(f'{institution} {requirement_id} {requirement.requirement_name} with different '
-                f'qualifiers: {row.qualifiers=} {course.qualifiers=}', file=log_file)
+                f'qualifiers: {row.course_qualifiers=} {course_qualifiers=}', file=log_file)
       else:
         print(f'Impossible situation: {cursor.rowcount} rows in course_requirement_keys with'
               f'same {institution=}, {requirement_id=} {requirement.requirement_name=}',
@@ -142,8 +173,8 @@ def emit(requirement: Requirement, header_qualifiers: str, context: list) -> Non
                          {course.course_id},
                          {course.offer_nbr},
                          {program_requirement_id},
-                         '{course.qualifiers}') on conflict do nothing
-                      """)
+                         %s) on conflict do nothing
+                      """, (json.dumps(course_qualifiers), ))
       assert cursor.rowcount == 1
   conn.commit()
   conn.close()
@@ -151,19 +182,24 @@ def emit(requirement: Requirement, header_qualifiers: str, context: list) -> Non
 
 # iter_list()
 # -------------------------------------------------------------------------------------------------
-def iter_list(items: list, header_qualifiers: str, calling_context: list) -> None:
+def iter_list(items: list,
+              program_qualifiers: list,
+              requirement_qualifiers: list,
+              calling_context: list) -> None:
   """
   """
   if DEBUG:
-    print(f'*** iter_list({len(items)=}, {header_qualifiers}, {calling_context=})', file=sys.stderr)
+    print(f'*** iter_list({len(items)=}, {program_qualifiers}, {requirement_qualifiers=}, '
+          f'{calling_context=})',
+          file=sys.stderr)
 
   local_context = calling_context + []
 
   for value in items:
     if isinstance(value, list):
-      iter_list(value, header_qualifiers_str. local_context)
+      iter_list(value, program_qualifiers, requirement_qualifiers, local_context)
     elif isinstance(value, dict):
-      iter_dict(value, header_qualifiers_str. local_context)
+      iter_dict(value, program_qualifiers, requirement_qualifiers, local_context)
     else:
       # Mebbe itsa remark?
       print(f'iter_list: Neither list nor dict: {value=} {len(local_context)=}', file=sys.stderr)
@@ -173,194 +209,209 @@ def iter_list(items: list, header_qualifiers: str, calling_context: list) -> Non
 
 # iter_dict()
 # -------------------------------------------------------------------------------------------------
-def iter_dict(item: dict, header_qualifiers: str, calling_context: list) -> None:
+def iter_dict(item: dict,
+              program_qualifiers: list,
+              requirement_qualifiers: list,
+              calling_context: list) -> None:
   """ If there is a course list, emit the context in which it occurs, the nature of the requirement,
-      and the courses.
+      and the courses. The context is a list of labels (no remarks), augmented with information
+      for conditionals (condition, if-true, if-false) and groups (m of n groups required; this is
+      group # i of n)
       Otherwise, augment the context and process sub-lists and sub-dicts.
   """
   if DEBUG:
-    print(f'*** iter_dict({item.keys()=}, {header_qualifiers=}, {calling_context=})',
+    print(f'*** iter_dict({item.keys()=}, {program_qualifiers=}, {requirement_qualifiers=}, '
+          f'{calling_context=})',
           file=sys.stderr)
 
+  local_qualifiers = requirement_qualifiers + format_body_qualifiers(item)
   local_context = calling_context + []
-
-  # Subsets, Groups, and Conditionals add to the local context
-  try:
-    subset = item.pop('subset')
-    label_str = subset.pop('label')
-    if label_str:
-      local_context += [label_str]
-      if DEBUG:
-        print(f'\nSubset Name: {label_str}', file=sys.stderr)
-    requirements = subset.pop('requirements')
-    if DEBUG:
-      print(f'{len(requirements)} Requirements', file=sys.stderr)
-    iter_list(requirements, local_context)
-    assert len(item) == 0
-  except KeyError as ke:
-    if ke.args[0] != 'subset':
-      local_context += [f'Rule Subset “{ke.args[0]}” Not Implemented Yet']
-
-  try:
-    conditional = item.pop('conditional')
-    condition_label = []
-    condition = conditional['condition']
-    label = conditional['label']
-    if label:
-      condition_label.append(label)
-    if_true = conditional['if_true']
-    iter_list(if_true, local_context + condition_label + [f'{condition} is true'])
-    if_false = conditional['if_false']
-    iter_list(if_false, local_context + condition_label + [f'{condition} is not true'])
-  except KeyError as ke:
-    pass
-
-  try:
-    groups = item.pop('group')
-    assert len(groups) == 1
-    group = groups[0]
-    assert isinstance(group, dict)
-    label_str = group['label']
-    num_required = group['num_groups_required']
-    num_groups = len(group['group_items'])
-    suffix = '' if int(num_groups) == 1 else 's'
-    group_str = f'{num_required} of {num_groups} group{suffix}'
-    if DEBUG:
-      print(f'\nGroup Requirement: {group_str}', file=sys.stderr)
-    iter_dict(group, local_context + [group_str])
-  except KeyError as ke:
-    if ke.args[0] != 'group':
-      print(f'Group KeyError: {ke=}', file=sys.stderr)
-
-  try:
+  if 'label' in item.keys():
     requirement_name = item.pop('label')
-  except KeyError as ke:
+  else:
     requirement_name = None
 
-  if 'course_list' in item.keys():
-    # If there is a course_list, there's also info about num classes/credits,as well as whether
-    # the list is disjunctive or conjunctive.
+  ignored_keys = ['allow_credits', 'allow_classes', 'blocktype', 'copy_rules', 'remark']
+  for key in item.keys():
+    if key in ignored_keys:
+      continue
 
-    # Workaround course list qualifiers NOT IMPLEMENTED YET
-    min_credits = min_classes = num_credits = num_classes = None
-    try:
-      min_credits = item.pop('min_credits')
-      max_credits = item.pop('max_credits')
-      min_classes = item.pop('min_classes')
-      max_classes = item.pop('max_classes')
-      conjunction = item.pop('conjunction')  # This is the credit/classes conjunction
-    except KeyError as ke:
-      print(f'{local_context=}: {ke=}', file=sys.stderr)
+    # Subsets, Groups, and Conditionals
+    if key == 'subset':
+      """ subset            : BEGINSUB
+                  ( conditional_body    => conditional
+                    | block             => ignore
+                    | blocktype         => ignore
+                    | class_credit_body => requirements
+                    | copy_rules        => ignore
+                    | course_list
+                    | group_requirement => group_requirements
+                    | noncourse         => ignore
+                    | rule_complete     => ignore
+                  )+
+                  ENDSUB qualifier* (remark | label)*;
+      """
+      subset = item['subset']
 
-    # Build requirement description
-    if min_credits:
-      if min_credits == max_credits:
-        num_credits = f'{float(min_credits):0.1f}'
-      else:
-        num_credits = f'{float(min_credits):0.1f}—{float(max_credits):0.1f}'
-    else:
-      num_credits = 0
-    cr_sfx = '' if num_credits == '1.0' else 's'
+      # There should be a non-empty label naming the subset requirement.
+      subset_context = []
+      if 'label' in subset.keys():
+        label_str = subset.pop('label')
+        if label_str:
+          subset_context = [label_str]
+      if len(subset_context) == 0:
+        print(f'Subset with no label {calling_context}', file=sys.stderr)
 
-    if min_classes:
-      if min_classes == max_classes:
-        num_classes = f'{min_classes}'
-      else:
-        num_classes = f'{min_classes}-{max_classes}'
-    else:
-      num_classes = 0
-    cl_sfx = '' if num_classes == '1' else 'es'
+      # There might be qualifiers: format will pop them
+      subset_qualifiers = format_body_qualifiers(subset)
+      # Now see what else is there
+      for subset_key, subset_value in subset.items():
+        if subset_key in ['conditional', 'course_list', 'group_requirements', 'requirements']:
+          if isinstance(subset_value, dict):
+            iter_dict(subset_value,
+                      program_qualifiers,
+                      local_qualifiers + subset_qualifiers,
+                      local_context + subset_context)
+          elif isinstance(subset_value, list):
+            iter_list(subset_value,
+                      program_qualifiers,
+                      local_qualifiers + subset_qualifiers,
+                      local_context + subset_context)
+          else:
+            print(f'{subset_key} is neither list nor dict in {local_context + subset_context}',
+                  file=sys.stderr)
 
-    if num_classes and num_credits:
-      assert conjunction, f'classes and credits with no conjunction'
-      class_credit_str = f'{num_classes} class{cl_sfx} {conjunction} {num_credits} credit{cr_sfx}'
-    elif num_classes:
-      class_credit_str = f'{num_classes} class{cl_sfx}'
-    elif num_credits:
-      class_credit_str = f'{num_credits} credit{cr_sfx}'
-    else:
-      class_credit_str = ''
+    if key == 'conditional':
+      conditional = item['conditional']
+      condition_label = []
+      condition = conditional['condition']
+      label = conditional['label']
+      if label:
+        condition_label.append(label)
+      if_true = conditional['if_true']
+      iter_list(if_true,
+                program_qualifiers,
+                local_qualifiers,
+                local_context + condition_label + [f'{condition} is true'])
+      # Else clause is optional
+      if 'if_false' in conditional.keys():
+        if_false = conditional['if_false']
+        iter_list(if_false,
+                  program_qualifiers,
+                  local_qualifiers,
+                  local_context + condition_label + [f'{condition} is not true'])
 
-    # Discard course_list['allow_xxx'] entries, if present
-    if 'allow_credits' in item.keys():
-      item.pop('allow_credits')
-    if 'allow_classes' in item.keys():
-      item.pop('allow_classes')
+    if key == 'group_requirements':
+      group_requirements = item['group_requirements']
+      # Each group requirement provides its own context
+      for group_requirement in group_requirements:
+        group_context = []
+        if 'label' in group_requirement.keys():
+          group_context.append(group_requirement['label'])
+        num_required = group_requirement['number']
+        if num_required < len(number_names):
+          num_required = number_names[num_required]
+        num_groups = len(group_requirement['groups'])
+        if num_groups < len(number_names):
+          num_groups = number_names[num_groups]
+        group_context.append(f'Any {num_required} of {num_groups} groupa')
+        for group in groups:
+          iter_dict(group, local_context + [group_context])
 
-    # Process the course_list itself
-    course_list = item.pop('course_list')
-    try:
-      label_str = course_list['label']
-    except KeyError as ke:
-      label_str = None
+    if key == 'course_list':
+      # If there is a course_list, there's also info about num classes/credits,as well as whether
+      # the list is disjunctive or conjunctive.
 
-    # If the list has a label and there is already a requirement name, emit the latter as a
-    # separate part of the context.
-    if requirement_name:
-      if label_str:
-        local_context.append(requirement_name)
-        if DEBUG:
-          print(f'Requirement Name: {requirement_name=} with {label_str=}', file=sys.stderr)
-        requirement_name = label_str
-    else:
-      if label_str:
-        requirement_name = label_str
-      else:
-        # There is no label and no requirement name. If the local context has anything other
-        # than element 0, use the last item in local context as the requirement name
-        if len(local_context) > 1:
-          requirement_name = local_context.pop()
+      # Class/Credit string
+      min_credits = min_classes = num_credits = num_classes = None
+      try:
+        min_credits = item['min_credits']
+        max_credits = item['max_credits']
+        min_classes = item['min_classes']
+        max_classes = item['max_classes']
+        conjunction = item['conjunction']  # This is the credit/classes conjunction
+      except KeyError as ke:
+        print(f'{local_context=}: {ke=}', file=sys.stderr)
+
+      # Build requirement description
+      if min_credits:
+        if min_credits == max_credits:
+          num_credits = f'{float(min_credits):0.1f}'
         else:
-          # This looks like a bad Scribe block to me.
-          requirement_name = 'NO NAME'
-
-    try:
-      list_type = course_list['list_type']
-    except KeyError as ke:
-      list_type = None
-
-    active_courses = course_list['active_courses']
-    assert list_type or len(active_courses) < 2, (f'No list_type for list length '
-                                                  f'{len(active_courses)}')
-
-    # The requirement starts with an empty list of courses ...
-    institution, requirement_id, *rest = local_context[0].split()
-    requirement = Requirement._make([institution, requirement_id, requirement_name, num_classes,
-                                    num_credits, list_type == 'OR', [], qualifiers_list])
-
-    # ... and now add in the active courses that can/do satisfy the requirement.
-    for active_course in active_courses:
-      requirement.active_courses.append(ActiveCourse._make(active_course))
-    suffix = ' satisfies' if len(requirement.active_courses) == 1 else 's satisfy'
-    if DEBUG:
-      print(f'\n{len(requirement.active_courses)} active course{suffix} '
-            f'“{requirement.requirement_name}”\n  {class_credit_str}',
-            file=sys.stderr)
-    if len(requirement.active_courses) > 1:
-      any_all = 'Any' if requirement.is_disjunctive else 'All'
-      if DEBUG:
-        print(f'  {any_all} of the following courses:', file=sys.stderr)
-    for active_course in requirement.active_courses:
-      if active_course.qualifiers:
-        qualifiers_str = f' with {active_course.qualifiers}'
+          num_credits = f'{float(min_credits):0.1f}—{float(max_credits):0.1f}'
       else:
-        qualifiers_str = ''
-      if DEBUG:
-        print(f'  {active_course.course_id}:{active_course.offer_nbr} {active_course.discipline} '
-              f'“{active_course.title}”{qualifiers_list}', file=sys.stderr)
-    emit(requirement, local_context)
+        num_credits = 0
+      cr_sfx = '' if num_credits == '1.0' else 's'
 
-  # That should be all we‘re intersted in, but double-check
-  for key, value in item.items():
-    if isinstance(value, list):
-      iter_list(value, local_context)
-    elif isinstance(value, dict):
-      iter_dict(value, local_context)
-    else:
-      if DEBUG:
-        print(f'iter_dict: Not label, condition, group, list, or dict: {key=} {value=}',
-              file=sys.stderr)
+      if min_classes:
+        if min_classes == max_classes:
+          num_classes = f'{min_classes}'
+        else:
+          num_classes = f'{min_classes}-{max_classes}'
+      else:
+        num_classes = 0
+      cl_sfx = '' if num_classes == '1' else 'es'
 
+      if num_classes and num_credits:
+        assert conjunction, f'classes and credits with no conjunction'
+        class_credit_str = f'{num_classes} class{cl_sfx} {conjunction} {num_credits} credit{cr_sfx}'
+      elif num_classes:
+        class_credit_str = f'{num_classes} class{cl_sfx}'
+      elif num_credits:
+        class_credit_str = f'{num_credits} credit{cr_sfx}'
+      else:
+        class_credit_str = ''
+
+      # Process the course_list itself
+      course_list = item['course_list']
+      try:
+        label_str = course_list['label']
+      except KeyError as ke:
+        label_str = None
+
+      # If the course_list has a label and there is already a requirement name, emit the latter as a
+      # separate part of the context.
+      if requirement_name:
+        if label_str:
+          local_context.append(requirement_name)
+          if DEBUG:
+            print(f'Requirement Name: {requirement_name=} with {label_str=}', file=sys.stderr)
+          requirement_name = label_str
+      else:
+        if label_str:
+          requirement_name = label_str
+        else:
+          # There is no label and no requirement name. If the local context has anything other
+          # than element 0, use the last item in local context as the requirement name
+          if len(local_context) > 1:
+            requirement_name = local_context.pop()
+          else:
+            # This looks like a bad Scribe block to me.
+            requirement_name = 'NO NAME'
+
+      try:
+        list_type = course_list['list_type']
+      except KeyError as ke:
+        list_type = None
+
+      active_courses = course_list['active_courses']
+      assert list_type or len(active_courses) < 2, (f'No list_type for list length '
+                                                    f'{len(active_courses)}')
+
+      # The requirement starts with an empty list of courses ...
+      if 'qualifiers' in course_list.keys():
+        requirement_qualifiers = requirement_qualifiers + course_list['qualifiers']
+      institution, requirement_id, *rest = local_context[0].split()
+      requirement = Requirement._make([institution, requirement_id, requirement_name, num_classes,
+                                      num_credits, list_type == 'OR', [],
+                                      program_qualifiers, requirement_qualifiers])
+
+      # ... and now add in the active courses that can/do satisfy the requirement.
+      for active_course in active_courses:
+        requirement.active_courses.append(ActiveCourse._make(active_course))
+
+      # Add info for this requirement to the db
+      emit(requirement, program_qualifiers, local_context)
   return
 
 
@@ -466,17 +517,18 @@ if __name__ == '__main__':
                             """)
             conn.commit()
             # Get block-level qualifiers from the header
-            header_qualifiers = []
+            program_qualifiers = []
+            requirement_qualifiers = []
             for item in header_list:
               if isinstance(item, dict):
-                header_qualifiers += format_header_qualifiers(item)
-            exit(f'For this {program_type}: {header_qualifiers}')
-            header
+                program_qualifiers += format_header_qualifiers(item)
 
             # Iterate over the body, emitting db updates as a side effect.
             # There are spaces in some block values
             block_value = block_value.strip().replace(' ', '*')
-            iter_list(body_list, [f'{institution} {row.requirement_id} {block_type} {block_value}'])
+            iter_list(body_list,
+                      program_qualifiers, requirement_qualifiers,
+                      [f'{institution} {row.requirement_id} {block_type} {block_value}'])
 
     # Done
     conn.commit()

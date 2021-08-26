@@ -101,7 +101,7 @@ def _format_maxpassfail(maxpassfail_dict: dict) -> str:
   try:
     number = float(maxpassfail_dict.pop('number'))
     class_credit = maxpassfail_dict.pop('class_or_credit')
-    print(number, class_credit)
+
     if class_credit == 'credit':
       if number == 0:
         return 'No credits may be taken pass/fail'
