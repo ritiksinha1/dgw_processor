@@ -456,79 +456,77 @@ if __name__ == '__main__':
               [f'{institution} {requirement_id} {block_type} {block_value}'])
     exit()
 
-  with open('./debug', 'w') as debug:
-    conn = PgConnection()
-    cursor = conn.cursor()
-    institutions = [inst.upper().strip('01') for inst in args.institutions]
-    if 'ALL' in institutions:
-      cursor.execute('select code from cuny_institutions')
-      institutions = [row.code.upper().strip('01') for row in cursor.fetchall()]
-    for institution in institutions:
-      institution = institution + '01'
-      block_types = [arg.upper() for arg in args.block_types]
-      for block_type in block_types:
-        assert block_type in ['MAJOR', 'CONC', 'MINOR']
-        program_type = 'concentration' if block_type == 'CONC' else block_type.lower()
-        block_values = [value.upper() for value in args.block_values]
-        if 'ALL' in block_values:
-          cursor.execute(f"""
-        select distinct block_value
-          from requirement_blocks
-         where institution = '{institution}'
-           and block_type = '{block_type}'
-        order by block_value
-    """)
-          block_values = [row.block_value.upper() for row in cursor.fetchall()
-                          if not row.block_value.isdigit()
-                          and '?' not in row.block_value]
-        for block_value in block_values:
-          if block_value.startswith('MHC') or block_value.isdigit():
+  conn = PgConnection()
+  cursor = conn.cursor()
+  institutions = [inst.upper().strip('01') for inst in args.institutions]
+  if 'ALL' in institutions:
+    cursor.execute('select code from cuny_institutions')
+    institutions = [row.code.upper().strip('01') for row in cursor.fetchall()]
+  for institution in institutions:
+    institution = institution + '01'
+    block_types = [arg.upper() for arg in args.block_types]
+    for block_type in block_types:
+      assert block_type in ['MAJOR', 'CONC', 'MINOR']
+      program_type = 'concentration' if block_type == 'CONC' else block_type.lower()
+      block_values = [value.upper() for value in args.block_values]
+      if 'ALL' in block_values:
+        cursor.execute(f"""
+      select distinct block_value
+        from requirement_blocks
+       where institution = '{institution}'
+         and block_type = '{block_type}'
+      order by block_value
+  """)
+        block_values = [row.block_value.upper() for row in cursor.fetchall()
+                        if not row.block_value.isdigit()
+                        and '?' not in row.block_value]
+      for block_value in block_values:
+        if block_value.startswith('MHC') or block_value.isdigit():
+          continue
+        cursor.execute(f"""
+      select requirement_id, period_stop, requirement_text, parse_tree
+        from requirement_blocks
+       where institution = '{institution}'
+         and block_type = '{block_type}'
+         and block_value ~* '^{block_value}$'
+  """)
+        for row in cursor.fetchall():
+          if quarantined_dict.is_quarantined((institution, row.requirement_id)):
+            print(f'{institution} {row.requirement_id} is quarantined.')
             continue
-          cursor.execute(f"""
-        select requirement_id, period_stop, requirement_text, parse_tree
-          from requirement_blocks
-         where institution = '{institution}'
-           and block_type = '{block_type}'
-           and block_value ~* '^{block_value}$'
-    """)
-          for row in cursor.fetchall():
-            if quarantined_dict.is_quarantined((institution, row.requirement_id)):
-              print(f'{institution}, {row.requirement_id} is quarantined.')
-              continue
-            if period == 'current' and row.period_stop != '99999999':
-              print(f'{institution}, {row.requirement_id} is not currently offered.')
-              continue
+          if period == 'current' and row.period_stop != '99999999':
+            print(f'{institution} {row.requirement_id} is not currently offered.')
+            continue
 
-            print(f'{institution} {block_type} {block_value} {period}')
-            parse_tree = (row.parse_tree)
-            if (len(parse_tree.keys()) == 0) or args.force:
-              print(f'{parse_tree=} {args.force=} Reinterpreting')
-              parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
-            header_list = parse_tree['header_list']
-            body_list = parse_tree['body_list']
-            print(f'*** {institution} {block_type} {block_value} {period}', file=debug)
+          print(f'{institution} {row.requirement_id} {block_type} {block_value} {period}')
+          parse_tree = (row.parse_tree)
+          if (len(parse_tree.keys()) == 0) or args.force:
+            print(f'{institution} {row.requirement_id} Reinterpreting')
+            parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
+          header_list = parse_tree['header_list']
+          body_list = parse_tree['body_list']
 
-            # Clear out any requirements/mappings for this Scribe block that might be in place.
-            # Deleting a requirement cascades to the mappings that reference it.
-            # (During development, the same block might be processed multiple times.)
-            cursor.execute(f"""delete from program_requirements
-                               where institution = '{institution}'
-                                 and requirement_id = '{row.requirement_id}'
-                            """)
-            conn.commit()
-            # Get block-level qualifiers from the header
-            program_qualifiers = []
-            requirement_qualifiers = []
-            for item in header_list:
-              if isinstance(item, dict):
-                program_qualifiers += format_header_qualifiers(item)
+          # Clear out any requirements/mappings for this Scribe block that might be in place.
+          # Deleting a requirement cascades to the mappings that reference it.
+          # (During development, the same block might be processed multiple times.)
+          cursor.execute(f"""delete from program_requirements
+                             where institution = '{institution}'
+                               and requirement_id = '{row.requirement_id}'
+                          """)
+          conn.commit()
+          # Get block-level qualifiers from the header
+          program_qualifiers = []
+          requirement_qualifiers = []
+          for item in header_list:
+            if isinstance(item, dict):
+              program_qualifiers += format_header_qualifiers(item)
 
-            # Iterate over the body, emitting db updates as a side effect.
-            # There are spaces in some block values
-            block_value = block_value.strip().replace(' ', '*')
-            iter_list(body_list,
-                      program_qualifiers, requirement_qualifiers,
-                      [f'{institution} {row.requirement_id} {block_type} {block_value}'])
+          # Iterate over the body, emitting db updates as a side effect.
+          # There are spaces in some block values
+          block_value = block_value.strip().replace(' ', '*')
+          iter_list(body_list,
+                    program_qualifiers, requirement_qualifiers,
+                    [f'{institution} {row.requirement_id} {block_type} {block_value}'])
 
     # Done
     conn.commit()
