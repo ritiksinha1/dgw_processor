@@ -47,7 +47,8 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
   """
 
   if DEBUG:
-    print(f'*** dgw_parser({institution}, {block_type}, {block_value}, {period_range})',
+    print(f'*** dgw_parser({institution=}, {block_type=}, {block_value=}, {period_range=},'
+          f'{update_db=}, {verbose=}, {do_pprint=})',
           file=sys.stderr)
   conn = PgConnection()
   fetch_cursor = conn.cursor()
@@ -58,6 +59,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     where institution = %s
       and block_type = %s
       and block_value = %s
+      and period_stop ~* '^\\d'
     order by period_stop desc
   """
   fetch_cursor.execute(query, (institution, block_type, block_value))
@@ -157,16 +159,17 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Test DGW Parser')
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
-  parser.add_argument('-np', '--progress', action='store_false')
   parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='current')
   parser.add_argument('-pp', '--pprint', action='store_true')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
   parser.add_argument('-ra', '--requirement_id')
   parser.add_argument('-nu', '--update_db', action='store_false')
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
+  parser.add_argument('-ve', '--verbose', action='store_true')
 
   # Parse args
   args = parser.parse_args()
+  verbose = args.verbose
   if args.requirement_id:
     institution = args.institutions[0].strip('10').upper() + '01'
     requirement_id = args.requirement_id.strip('AaRr')
@@ -189,6 +192,7 @@ if __name__ == '__main__':
                             block_type,
                             block_value,
                             period_range=args.period,
+                            verbose=verbose,
                             update_db=args.update_db)
     if not args.update_db:
       html = to_html(parse_tree['header_list'], is_head=True)
@@ -242,7 +246,7 @@ if __name__ == '__main__':
                                 block_value,
                                 period_range=args.period,
                                 update_db=args.update_db,
-                                verbose=args.progress,
+                                verbose=verbose,
                                 do_pprint=args.pprint)
         if args.debug:
           print(f"{parse_tree['header_list']=}\n{parse_tree['body_list']=}", file=sys.stderr)
