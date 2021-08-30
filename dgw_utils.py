@@ -236,7 +236,7 @@ def get_scribed_courses(course_item, list_items: list) -> list:
   # The list of (discipline: str, catalog_number: str, with_clause: str) tuples to return.
   scribed_courses = []
 
-  # The course_item at the start of the list has to have with both a discipline and catalog number,
+  # The course_item at the start of the list has to start with both a discipline and catalog number,
   # but sometimes just a wildcard is given.
   discipline, catalog_number, with_clause = (None, None, None)
 
