@@ -32,6 +32,9 @@ atn: ReqBlock.g4
 
 parser: ./classes/ReqBlockParser.class
 
+ReqBlock.g4: ../ReqBlock.g4
+	cp ../ReqBlock.g4 .
+
 ./classes/ReqBlockParser.class: ReqBlock.g4 Makefile
 	$(antlr4) $(build_args) ReqBlock.g4
 	javac *.java -d classes
