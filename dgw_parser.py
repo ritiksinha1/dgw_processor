@@ -32,12 +32,33 @@ sys.setrecursionlimit(10**6)
 
 quarantined_dict = QuarantineManager()
 
+empty_parse_tree = {'header_list': [], 'body_list': []}
+
+
+class DGW_Error(Exception):
+  pass
+
+
+class DGW_ErrorListener(ErrorListener):
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        raise DGW_Error(f'Syntax Error on line {line}, column {column}')
+
+    def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
+        pass  # print(f'Ambiguity between {startIndex} and {stopIndex}')
+
+    def reportAttemptingFullContext(self, recognizer, dfa, startIndex, stopIndex, conflictingAlts,
+                                    configs):
+        pass  # print(f'AttemptingFullContext between {startIndex} and {stopIndex}')
+
+    def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
+        pass  # print(f'ContextSensitivity between {startIndex} and {stopIndex}')
+
 
 # dgw_parser()
 # =================================================================================================
 def dgw_parser(institution: str, block_type: str, block_value: str,
-               period_range='current', update_db=True, verbose=False,
-               do_pprint=False) -> tuple:
+               period_range='current', update_db=True, progress=False,
+               do_pprint=False, do_quarantined=False) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period_range argument can be 'all', 'current', or 'latest', with the latter two being
@@ -48,7 +69,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
 
   if DEBUG:
     print(f'*** dgw_parser({institution=}, {block_type=}, {block_value=}, {period_range=},'
-          f'{update_db=}, {verbose=}, {do_pprint=})',
+          f'{update_db=}, {progress=}, {do_pprint=})',
           file=sys.stderr)
   conn = PgConnection()
   fetch_cursor = conn.cursor()
@@ -63,31 +84,35 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     order by period_stop desc
   """
   fetch_cursor.execute(query, (institution, block_type, block_value))
+
   # Sanity Check
   if fetch_cursor.rowcount < 1:
     print(f'No Requirements Found\n{fetch_cursor.query}', file=sys.stderr)
-    return (None, None)
+    return None
 
-  num_rows = fetch_cursor.rowcount
-  num_updates = 0
   for row in fetch_cursor.fetchall():
-    header_list = None
-    body_list = None
-    if verbose:
-      print(f'{institution} {row.requirement_id} {block_type} {block_value} ', end='')
-    if quarantined_dict.is_quarantined((institution, row.requirement_id)):
-      if verbose:
-        print('Skipping: quarantined.')
-      conn.close()
-      return {'header_list': [], 'body_list': []}
+    parse_tree = empty_parse_tree.copy()
+    is_quarantined = False
+    # header_list = None
+    # body_list = None
+
+    # if progress:
+    #   print(f'{institution} {row.requirement_id} {block_type} {block_value}', end='')
+
+    if quarantined_dict.is_quarantined((institution, row.requirement_id)) and not do_quarantined:
+      if progress:
+        print(' Skipping: quarantined.')
+        is_quarantined = True
+      continue
+
     elif period_range == 'current' and row.period_stop != '99999999':
-      if verbose:
-        print(f'Skipping: not currently offered.')
-      conn.close()
-      return {'header_list': [], 'body_list': []}
+      if progress:
+        print(f' Skipping: not currently offered.')
+      break
+
     catalog_years_text = catalog_years(row.period_start, row.period_stop).text
-    if verbose:
-      print(catalog_years_text)
+    if progress:
+      print(f' ({catalog_years_text})', end='')
 
     # Filter out everything after END, plus hide-related tokens (but not hidden content).
     text_to_parse = dgw_filter(row.requirement_text)
@@ -100,31 +125,49 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     lexer = ReqBlockLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
     parser = ReqBlockParser(token_stream)
-    parse_tree = parser.req_block()
+    parser.removeErrorListeners()
+    parser.addErrorListener(DGW_ErrorListener())
+    try:
+      parse_tree = parser.req_block()
+    except DGW_Error as de:
+      if progress:
+        print(f': {de}')
+      parse_tree['error'] = str(de)
+      if update_db:
+        update_cursor.execute(f"""
+        update requirement_blocks set parse_tree = %s
+        where institution = '{row.institution}'
+        and requirement_id = '{row.requirement_id}'
+        """, (json.dumps(parse_tree), ))
+      if period_range == 'current' or period_range == 'latest':
+        break
+    if progress:
+      print('.')
 
     # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
-    header_list = []
-    if DEBUG:
-      print('\n*** PARSE HEAD ***', file=debug_file)
+    if not is_quarantined:
+      header_list = []
+      if DEBUG:
+        print('\n*** PARSE HEAD ***', file=debug_file)
 
-    head_ctx = parse_tree.head()
-    if head_ctx:
-      for child in head_ctx.getChildren():
-        obj = dispatch(child, institution, row.requirement_id)
-        if obj != {}:
-          header_list.append(obj)
+      head_ctx = parse_tree.head()
+      if head_ctx:
+        for child in head_ctx.getChildren():
+          obj = dispatch(child, institution, row.requirement_id)
+          if obj != {}:
+            header_list.append(obj)
 
-    body_list = []
-    if DEBUG:
-      print('\n*** PARSE BODY ***', file=debug_file)
-    body_ctx = parse_tree.body()
-    if body_ctx:
-      for child in body_ctx.getChildren():
-        obj = dispatch(child, institution, row.requirement_id)
-        if obj != {}:
-          body_list.append(obj)
+      body_list = []
+      if DEBUG:
+        print('\n*** PARSE BODY ***', file=debug_file)
+      body_ctx = parse_tree.body()
+      if body_ctx:
+        for child in body_ctx.getChildren():
+          obj = dispatch(child, institution, row.requirement_id)
+          if obj != {}:
+            body_list.append(obj)
 
-    parse_tree = {'header_list': header_list, 'body_list': body_list}
+      parse_tree = {'header_list': header_list, 'body_list': body_list}
 
     if update_db:
       update_cursor.execute(f"""
@@ -157,19 +200,19 @@ if __name__ == '__main__':
   """
   # Command line args
   parser = argparse.ArgumentParser(description='Test DGW Parser')
+  parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
+  parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
+  parser.add_argument('-np', '--progress', action='store_false')
   parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='current')
   parser.add_argument('-pp', '--pprint', action='store_true')
-  parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
+  parser.add_argument('-q', '--quarantined', action='store_true')
   parser.add_argument('-ra', '--requirement_id')
   parser.add_argument('-nu', '--update_db', action='store_false')
-  parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
-  parser.add_argument('-ve', '--verbose', action='store_true')
 
   # Parse args
   args = parser.parse_args()
-  verbose = args.verbose
   if args.requirement_id:
     institution = args.institutions[0].strip('10').upper() + '01'
     requirement_id = args.requirement_id.strip('AaRr')
@@ -186,14 +229,15 @@ if __name__ == '__main__':
                                   f'for {institution} {requirement_id}')
     block_type, block_value = cursor.fetchone()
     conn.close()
-    print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
-          file=sys.stderr)
+    if args.progress:
+      print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}', end='')
     parse_tree = dgw_parser(institution,
                             block_type,
                             block_value,
                             period_range=args.period,
-                            verbose=verbose,
-                            update_db=args.update_db)
+                            progress=args.progress,
+                            update_db=args.update_db,
+                            do_quarantined=args.quarantined)
     if not args.update_db:
       html = to_html(parse_tree['header_list'], is_head=True)
       html += to_html(parse_tree['body_list'], is_body=True)
@@ -232,21 +276,31 @@ if __name__ == '__main__':
       else:
         block_values = [value.upper() for value in args.block_values]
 
+      conn = PgConnection()
+      cursor = conn.cursor()
       num_values = len(block_values)
       values_count = 0
       for block_value in block_values:
+        cursor.execute(f"""
+        select requirement_id
+          from requirement_blocks
+         where institution = %s
+           and block_type = %s
+           and block_value = %s""", (institution, block_type, block_value))
+        requirement_id = cursor.fetchone().requirement_id
         values_count += 1
         if block_value.isnumeric() or block_value.startswith('MHC'):
+          print(f'Ignoring {institution} {requirement_id} {block_type} {block_value}')
           continue
         if args.progress:
           print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
-                f'{values_count:3} / {num_values:3} ', end='')
+                f'{values_count:3} / {num_values:3} {institution} {requirement_id} {block_type} '
+                f'{block_value} {args.period}', end='')
         parse_tree = dgw_parser(institution,
                                 block_type.upper(),
                                 block_value,
                                 period_range=args.period,
                                 update_db=args.update_db,
-                                verbose=verbose,
-                                do_pprint=args.pprint)
-        if args.debug:
-          print(f"{parse_tree['header_list']=}\n{parse_tree['body_list']=}", file=sys.stderr)
+                                progress=args.progress,
+                                do_pprint=args.pprint,
+                                do_quarantined=args.quarantined)
