@@ -58,7 +58,7 @@ class DGW_ErrorListener(ErrorListener):
 # =================================================================================================
 def dgw_parser(institution: str, block_type: str, block_value: str,
                period_range='current', update_db=True, progress=False,
-               do_pprint=False, do_quarantined=False) -> tuple:
+               do_pprint=False, do_quarantined=False, requirement_id=None) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period_range argument can be 'all', 'current', or 'latest', with the latter two being
@@ -71,19 +71,29 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     print(f'*** dgw_parser({institution=}, {block_type=}, {block_value=}, {period_range=},'
           f'{update_db=}, {progress=}, {do_pprint=})',
           file=sys.stderr)
+
   conn = PgConnection()
   fetch_cursor = conn.cursor()
   update_cursor = conn.cursor()
-  query = """
+
+  if requirement_id is not None:
+    fetch_cursor.execute("""
     select institution, requirement_id, title, period_start, period_stop, requirement_text
-    from requirement_blocks
-    where institution = %s
-      and block_type = %s
-      and block_value = %s
-      and period_stop ~* '^\\d'
-    order by period_stop desc
-  """
-  fetch_cursor.execute(query, (institution, block_type, block_value))
+      from requirement_blocks
+     where institution = %s
+       and requirement_id = %s
+    """, (institution, requirement_id))
+  else:
+    query = """
+      select institution, requirement_id, title, period_start, period_stop, requirement_text
+      from requirement_blocks
+      where institution = %s
+        and block_type = %s
+        and block_value = %s
+        and period_stop ~* '^\\d'
+      order by period_stop desc
+    """
+    fetch_cursor.execute(query, (institution, block_type, block_value))
 
   # Sanity Check
   if fetch_cursor.rowcount < 1:
@@ -219,25 +229,17 @@ if __name__ == '__main__':
     if not requirement_id.isdecimal():
       sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
     requirement_id = f'RA{int(requirement_id):06}'
-    # Look up the block type and value
-    conn = PgConnection()
-    cursor = conn.cursor()
-    cursor.execute(f'select block_type, block_value from requirement_blocks'
-                   f"  where institution = '{institution}'"
-                   f"    and requirement_id = '{requirement_id}'")
-    assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
-                                  f'for {institution} {requirement_id}')
-    block_type, block_value = cursor.fetchone()
-    conn.close()
+
     if args.progress:
-      print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}', end='')
+      print(f'{institution} {requirement_id} {args.period}', end='')
     parse_tree = dgw_parser(institution,
-                            block_type,
-                            block_value,
+                            'block_type',   # Not used with requirement_id
+                            'block_value',  # Not used with requirement_id
                             period_range=args.period,
                             progress=args.progress,
                             update_db=args.update_db,
-                            do_quarantined=args.quarantined)
+                            do_quarantined=args.quarantined,
+                            requirement_id=requirement_id)
     if not args.update_db:
       html = to_html(parse_tree['header_list'], is_head=True)
       html += to_html(parse_tree['body_list'], is_body=True)
@@ -278,29 +280,38 @@ if __name__ == '__main__':
 
       conn = PgConnection()
       cursor = conn.cursor()
-      num_values = len(block_values)
-      values_count = 0
       for block_value in block_values:
+        values_count = 0
         cursor.execute(f"""
-        select requirement_id
+        select requirement_id, period_stop
           from requirement_blocks
          where institution = %s
            and block_type = %s
-           and block_value = %s""", (institution, block_type, block_value))
-        requirement_id = cursor.fetchone().requirement_id
-        values_count += 1
-        if block_value.isnumeric() or block_value.startswith('MHC'):
-          print(f'Ignoring {institution} {requirement_id} {block_type} {block_value}')
-          continue
-        if args.progress:
-          print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
-                f'{values_count:3} / {num_values:3} {institution} {requirement_id} {block_type} '
-                f'{block_value} {args.period}', end='')
-        parse_tree = dgw_parser(institution,
-                                block_type.upper(),
-                                block_value,
-                                period_range=args.period,
-                                update_db=args.update_db,
-                                progress=args.progress,
-                                do_pprint=args.pprint,
-                                do_quarantined=args.quarantined)
+           and block_value = %s
+        order by period_stop desc
+        """, (institution, block_type, block_value))
+        num_values = cursor.rowcount
+        for row in cursor.fetchall():
+          requirement_id = row.requirement_id
+          period_stop = row.period_stop
+          if args.period.lower() == 'current' and period_stop != '99999999':
+            break
+          if args.period.lower() == 'latest' and values_count == 1:
+            break
+          values_count += 1
+          if block_value.isnumeric() or block_value.startswith('MHC'):
+            print(f'Ignoring {institution} {requirement_id} {block_type} {block_value}')
+            continue
+          if args.progress:
+            print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
+                  f'{values_count:3} / {num_values:3} {institution} {requirement_id} {block_type} '
+                  f'{block_value} {args.period}', end='')
+          parse_tree = dgw_parser(institution,
+                                  block_type.upper(),
+                                  block_value,
+                                  period_range=args.period,
+                                  update_db=args.update_db,
+                                  progress=args.progress,
+                                  do_pprint=args.pprint,
+                                  do_quarantined=args.quarantined,
+                                  requirement_id=requirement_id)
