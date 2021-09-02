@@ -405,7 +405,7 @@ def lastres(ctx, institution, requirement_id):
   """
       lastres         : LASTRES NUMBER (OF NUMBER)?
                         class_or_credit
-                        course_list? tag? display* label?;
+                        course_list? tag? display* proxy_advice?;
   """
   return_dict = {'class_or_credit': class_or_credit(ctx.class_or_credit())}
 
@@ -422,7 +422,7 @@ def lastres(ctx, institution, requirement_id):
   if ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  return_dict['label'] = get_label(ctx)
+  # return_dict['label'] = get_label(ctx)
 
   return {'lastres': return_dict}
 
@@ -517,7 +517,7 @@ def minclass(ctx, institution, requirement_id):
   if ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  return_dict['label'] = get_label(ctx)
+  # return_dict['label'] = get_label(ctx)
 
   return {'minclass': return_dict}
 
@@ -534,7 +534,7 @@ def mincredit(ctx, institution, requirement_id):
   if ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  return_dict['label'] = get_label(ctx)
+  # return_dict['label'] = get_label(ctx)
 
   return {'mincredit': return_dict}
 
@@ -560,8 +560,8 @@ def mingpa(ctx, institution, requirement_id):
   if ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  if ctx.label():
-    return_dict['label'] = get_label(ctx)
+  # if ctx.label():
+  #   return_dict['label'] = get_label(ctx)
 
   return {'mingpa': return_dict}
 
@@ -598,7 +598,7 @@ def minres(ctx, institution, requirement_id):
   if ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  return_dict['label'] = get_label(ctx)
+  # return_dict['label'] = get_label(ctx)
 
   return {'minres': return_dict}
 
@@ -773,6 +773,9 @@ def subset(ctx, institution, requirement_id):
 def under(ctx, institution, requirement_id):
   """
       under           : UNDER NUMBER class_or_credit course_list display* label;
+
+      This seems to be the only item in the header that can have a label. But, also, it is normally
+      used in Award blocks, not Degree, major, minor, concentrations.
   """
   return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}

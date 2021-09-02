@@ -451,7 +451,6 @@ if __name__ == '__main__':
     # Iterate over the body, emitting db updates as a side effect.
     # There are spaces in some block values
     block_value = block_value.strip().replace(' ', '*')
-    print(block_type, block_value, parse_tree.keys())
     iter_list(parse_tree['body_list'],
               [f'{institution} {requirement_id} {block_type} {block_value}'])
     exit()
@@ -528,6 +527,6 @@ if __name__ == '__main__':
                     program_qualifiers, requirement_qualifiers,
                     [f'{institution} {row.requirement_id} {block_type} {block_value}'])
 
-    # Done
-    conn.commit()
-    conn.close()
+  # Done
+  conn.commit()
+  conn.close()

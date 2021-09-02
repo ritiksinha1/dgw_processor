@@ -28,8 +28,8 @@
 #         if [[ -f $TEST_DIR/$target_filename ]]
 #         then
 #           export saved_t=$TEST_DIR/$target_filename
-#           cp $saved_t ./t
-#           export TEST_DATA=./t
+#           cp $saved_t ./t.txt
+#           export TEST_DATA=./t.txt
 #           alias fromt='export TEST_DATA=$saved_t'
 #           alias vr='m $RESULT_DIR/$target_filename'
 #           alias rmt='rm -i $RESULT_DIR/$target_filename'
@@ -39,7 +39,7 @@
 #         fi
 #       }
 #
-#     Edit the block residing in the file ./t to locate the problem. (subl is an alias for the
+#     Edit the block residing in the file ./t.txt to locate the problem. (subl is an alias for the
 #     programming editor that I use. I delete parts of the Scribe block until I locate what line(s)
 #     caused the problem.)
 #       alias sublt='subl t'

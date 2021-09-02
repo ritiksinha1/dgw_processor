@@ -76,7 +76,6 @@ def _format_maxspread(maxspread_dict: dict) -> str:
   """
   if DEBUG:
     print(f'*** _format_maxspread({maxspread_dict})', file=sys.stderr)
-  print(maxspread_dict.keys())
   number = int(maxspread_dict['number'])
 
   return f'No more than {number} disciplines allowed'
