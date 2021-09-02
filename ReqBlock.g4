@@ -48,20 +48,20 @@ head        :
             | lastres
             | maxclass
             | maxcredit
-            | maxpassfail
-            | maxperdisc
+            | maxpassfail_head
+            | maxperdisc_head
             | maxterm
-            | maxtransfer
+            | maxtransfer_head
             | mingrade
-            | minclass
-            | mincredit
+            | minclass_head
+            | mincredit_head
             | mingpa
-            | minperdisc
+            | minperdisc_head
             | minres
             | optional
             | proxy_advice
             | remark
-            | share
+            | share_head
             | standalone
             | under
             )*
@@ -189,21 +189,21 @@ head_rule         : conditional_head
                   | copy_rules
                   | lastres
                   | maxcredit
-                  | maxpassfail
+                  | maxpassfail_head
                   | maxterm
-                  | maxtransfer
-                  | minclass
-                  | mincredit
+                  | maxtransfer_head
+                  | minclass_head
+                  | mincredit_head
                   | mingpa
                   | mingrade
-                  | minperdisc
+                  | minperdisc_head
                   | minres
                   | minterm
                   | noncourse
                   | proxy_advice
                   | remark
                   | rule_complete
-                  | share
+                  | share_head
                   ;
 
 
@@ -267,26 +267,6 @@ subset            : BEGINSUB
                   )+
                   ENDSUB qualifier* (remark | label)*;
 
-/*  Allowable rule (subset) qualifiers:
- *  DontShare, HighPriority, LowPriority, LowestPriority, MaxPerDisc, MaxPassFail, MaxTransfer,
- *  MaxSpread, MinGrade, MinPerDisc, MinSpread, ShareWith, NotGPA, ProxyAdvice, SameDisc
- *  But some of the above are skipped because they are student-specific. The following are
- *  the alowed subset qualifiers have been folded into our generic qualifiers Antlr rule.
-
-subset_qualifier  : maxpassfail
-                  | maxperdisc
-                  | maxspread
-                  | maxtransfer
-                  | mingpa
-                  | mingrade
-                  | minperdisc
-                  | minspread
-                  | proxy_advice
-                  | rule_tag
-                  | share
-                  ;
- */
-
 // Blocks
 // ------------------------------------------------------------------------------------------------
 /* The Block rule pulls another requirements block into audit.
@@ -317,6 +297,18 @@ class_credit_body   : (num_classes | num_credits)
                        | tag
                       )*;
 
+// Header-only productions: same as rule qualifiers, but these allow a label.
+// ------------------------------------------------------------------------------------------------
+maxpassfail_head  : maxpassfail label?;
+maxperdisc_head   : maxperdisc label? ;
+maxtransfer_head  : maxtransfer label?;
+minclass_head     : minclass label?;
+mincredit_head    : mincredit label?;
+minperdisc_head   : minperdisc label?;
+share_head        : share label?;
+
+// Other parser productions
+// ------------------------------------------------------------------------------------------------
 allow           : (ALLOW | ACCEPT);
 area_end        : R_SQB;
 area_start      : L_SQB;
@@ -339,12 +331,12 @@ maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
 maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS NUMBER course_list tag? display* proxy_advice? label?;
-mincredit       : MINCREDIT NUMBER course_list tag? display* proxy_advice? label?;
+minclass        : MINCLASS NUMBER course_list tag? display* proxy_advice?;
+mincredit       : MINCREDIT NUMBER course_list tag? display* proxy_advice?;
 mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice? label?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
-minres          : MINRES (num_classes | num_credits) display* proxy_advice? label? tag?;
+minres          : MINRES (num_classes | num_credits) display* proxy_advice? tag? label?;
 minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 
