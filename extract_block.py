@@ -70,13 +70,20 @@ if __name__ == '__main__':
     exit('Missing requirement ID or block value')
 
   base_name = f'{institution}_{requirement_id}_{row.block_type}_{row.block_value}'
-  print(base_name)
 
   parse_tree = row.parse_tree
 
-  header_list = parse_tree['header_list']
-  body_list = parse_tree['body_list']
+  try:
+    header_list = parse_tree['header_list']
+    body_list = parse_tree['body_list']
+  except KeyError as ke:
+    if 'error' in parse_tree.keys():
+      error_value = parse_tree['error']
+    else:
+      error_value = ''
+    exit(f'{base_name} has not been parsed. {error_value}')
 
+  print(base_name)
   with open(f'./extracts/{base_name}.html', 'w') as html_file:
     print(row.requirement_html, file=html_file)
 
