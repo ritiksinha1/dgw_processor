@@ -179,6 +179,41 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#maxpassfail_head.
+    def visitMaxpassfail_head(self, ctx:ReqBlockParser.Maxpassfail_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#maxperdisc_head.
+    def visitMaxperdisc_head(self, ctx:ReqBlockParser.Maxperdisc_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#maxtransfer_head.
+    def visitMaxtransfer_head(self, ctx:ReqBlockParser.Maxtransfer_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#minclass_head.
+    def visitMinclass_head(self, ctx:ReqBlockParser.Minclass_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#mincredit_head.
+    def visitMincredit_head(self, ctx:ReqBlockParser.Mincredit_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#minperdisc_head.
+    def visitMinperdisc_head(self, ctx:ReqBlockParser.Minperdisc_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#share_head.
+    def visitShare_head(self, ctx:ReqBlockParser.Share_headContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#allow.
     def visitAllow(self, ctx:ReqBlockParser.AllowContext):
         return self.visitChildren(ctx)
