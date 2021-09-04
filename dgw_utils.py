@@ -325,7 +325,7 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
     return_dict = {'groups': return_list}
 
     if qualifier_ctx := group_context.qualifier():
-      return_dict.update(get_qualifiers(qualifier_ctx), institution, requirement_id)
+      return_dict.update(get_qualifiers(qualifier_ctx, institution, requirement_id))
 
     if group_context.label():
       return_dict['label'] = get_label(group_context)
