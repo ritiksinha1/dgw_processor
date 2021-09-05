@@ -7,7 +7,9 @@ import csv
 import sys
 import argparse
 import json
+import signal
 
+from contextlib import contextmanager
 from collections import namedtuple
 from pprint import pprint
 
@@ -35,13 +37,20 @@ quarantined_dict = QuarantineManager()
 empty_parse_tree = {'header_list': [], 'body_list': []}
 
 
-class DGW_Error(Exception):
+# Parser Exceptions: syntax errors and timeouts
+# -------------------------------------------------------------------------------------------------
+class SyntaxError(Exception):
   pass
 
 
+class TimeoutError(Exception):
+  pass
+
+
+# Replacement for ANTLR Error listener
 class DGW_ErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise DGW_Error(f'Syntax Error on line {line}, column {column}')
+        raise SyntaxError(f'Syntax Error on line {line}, column {column}')
 
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
         pass  # print(f'Ambiguity between {startIndex} and {stopIndex}')
@@ -54,11 +63,30 @@ class DGW_ErrorListener(ErrorListener):
         pass  # print(f'ContextSensitivity between {startIndex} and {stopIndex}')
 
 
+# Timeout manager
+@contextmanager
+def timeout_manager(seconds):
+  def alarm_handler(signum, frame):
+    suffix = '' if seconds == 1 else 's'
+    raise TimeoutError(f'Timeout after {seconds} second{suffix}')
+  signal.signal(signal.SIGALRM, alarm_handler)
+  signal.alarm(seconds)
+
+  # Generator for with statement
+  try:
+    yield
+  finally:
+    signal.alarm(0)
+
+  """ Support for with clause to place a timelimit on how long a function can run
+  """
+
+
 # dgw_parser()
 # =================================================================================================
 def dgw_parser(institution: str, block_type: str, block_value: str,
                period_range='current', update_db=True, progress=False,
-               do_pprint=False, do_quarantined=False, requirement_id=None) -> tuple:
+               do_pprint=False, do_quarantined=False, requirement_id=None, timelimit=30) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period_range argument can be 'all', 'current', or 'latest', with the latter two being
@@ -138,17 +166,18 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     parser.removeErrorListeners()
     parser.addErrorListener(DGW_ErrorListener())
     try:
-      parse_tree = parser.req_block()
-    except DGW_Error as de:
+      with timeout_manager(timelimit):
+        parse_tree = parser.req_block()
+    except (SyntaxError, TimeoutError) as err:
       if progress:
-        print(f': {de}')
-      parse_tree['error'] = str(de)
+        print(f': {err}')
+      parse_tree['error'] = str(err)
       if update_db:
         update_cursor.execute(f"""
         update requirement_blocks set parse_tree = %s
         where institution = '{row.institution}'
         and requirement_id = '{row.requirement_id}'
-        """, (json.dumps(parse_tree), ))
+        """, (json.dumps({'error': str(err), 'header_list': [], 'body_list': []}), ))
       if period_range == 'current' or period_range == 'latest':
         break
     if progress:
@@ -219,6 +248,7 @@ if __name__ == '__main__':
   parser.add_argument('-pp', '--pprint', action='store_true')
   parser.add_argument('-q', '--quarantined', action='store_true')
   parser.add_argument('-ra', '--requirement_id')
+  parser.add_argument('-ti', '--timelimit', type=int, default=30)
   parser.add_argument('-nu', '--update_db', action='store_false')
 
   # Parse args
@@ -239,7 +269,8 @@ if __name__ == '__main__':
                             progress=args.progress,
                             update_db=args.update_db,
                             do_quarantined=args.quarantined,
-                            requirement_id=requirement_id)
+                            requirement_id=requirement_id,
+                            timelimit=args.timelimit)
     if not args.update_db:
       html = to_html(parse_tree['header_list'], is_head=True)
       html += to_html(parse_tree['body_list'], is_body=True)
@@ -314,4 +345,5 @@ if __name__ == '__main__':
                                   progress=args.progress,
                                   do_pprint=args.pprint,
                                   do_quarantined=args.quarantined,
-                                  requirement_id=requirement_id)
+                                  requirement_id=requirement_id,
+                                  timelimit=args.timelimit)
