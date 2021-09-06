@@ -21,7 +21,7 @@ from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
 
 from pgconnection import PgConnection
-from psycopg2 import Binary
+from psycopg2 import Binary, errors
 
 from quarantine_manager import QuarantineManager
 from dgw_filter import dgw_filter
@@ -39,18 +39,14 @@ empty_parse_tree = {'header_list': [], 'body_list': []}
 
 # Parser Exceptions: syntax errors and timeouts
 # -------------------------------------------------------------------------------------------------
-class SyntaxError(Exception):
-  pass
-
-
-class TimeoutError(Exception):
+class DGWError(Exception):
   pass
 
 
 # Replacement for ANTLR Error listener
 class DGW_ErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise SyntaxError(f'Syntax Error on line {line}, column {column}')
+        raise DGWError(f'Syntax Error on line {line}, column {column}')
 
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
         pass  # print(f'Ambiguity between {startIndex} and {stopIndex}')
@@ -68,7 +64,7 @@ class DGW_ErrorListener(ErrorListener):
 def timeout_manager(seconds):
   def alarm_handler(signum, frame):
     suffix = '' if seconds == 1 else 's'
-    raise TimeoutError(f'Timeout after {seconds} second{suffix}')
+    raise DGWError(f'Timeout after {seconds} second{suffix}')
   signal.signal(signal.SIGALRM, alarm_handler)
   signal.alarm(seconds)
 
@@ -168,7 +164,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     try:
       with timeout_manager(timelimit):
         parse_tree = parser.req_block()
-    except (SyntaxError, TimeoutError) as err:
+    except DGWError as err:
       if progress:
         print(f': {err}')
       parse_tree['error'] = str(err)
@@ -180,8 +176,6 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
         """, (json.dumps({'error': str(err), 'header_list': [], 'body_list': []}), ))
       if period_range == 'current' or period_range == 'latest':
         break
-    if progress:
-      print('.')
 
     # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
     if not is_quarantined:
@@ -209,20 +203,40 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
       parse_tree = {'header_list': header_list, 'body_list': body_list}
 
     if update_db:
-      update_cursor.execute(f"""
-  update requirement_blocks set parse_tree = %s
-  where institution = '{row.institution}'
-  and requirement_id = '{row.requirement_id}'
-  """, (json.dumps(parse_tree), ))
+      try:
+        update_cursor.execute(f"""
+    update requirement_blocks set parse_tree = %s
+    where institution = '{row.institution}'
+    and requirement_id = '{row.requirement_id}'
+    """, (json.dumps(parse_tree), ))
+      # Deal with giant parse trees that exceed Postgres limit for jsonb data
+      except Exception as err:
+        if error.pgcode == '54000':
+          err_msg = 'Parse tree too large for database'
+        else:
+          err_msg = f'Database error: {err.pgerror}'
+        if progress:
+          print(f': {err_msg}')
+        error_tree = {'error': err_msg, 'header_list': [], 'body_list': []}
+        update_cursor.execute(f"""
+        update requirement_blocks set parse_tree = %s
+        where institution = '{row.institution}'
+        and requirement_id = '{row.requirement_id}'
+        """, (json.dumps(error_tree), ))
 
-      if DEBUG:
-        print('\n*** HEADER LIST ***', file=debug_file)
-        pprint(header_list, stream=debug_file)
-        print('\n*** BODY LIST ***', file=debug_file)
-        pprint(body_list, stream=debug_file)
+    if progress:
+      # End the progress line
+      print('.')
+
+    if DEBUG:
+      print('\n*** HEADER LIST ***', file=debug_file)
+      pprint(header_list, stream=debug_file)
+      print('\n*** BODY LIST ***', file=debug_file)
+      pprint(body_list, stream=debug_file)
 
     if period_range == 'current' or period_range == 'latest':
       break
+
   conn.commit()
   conn.close()
 
