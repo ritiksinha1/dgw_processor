@@ -34,7 +34,8 @@ sys.setrecursionlimit(10**6)
 
 quarantined_dict = QuarantineManager()
 
-empty_parse_tree = {'header_list': [], 'body_list': []}
+# If there is an error, dict with an error key and empty header/body lists will be returned.
+error_tree = {'error': '', 'header_list': [], 'body_list': []}
 
 
 # Parser Exceptions: syntax errors and timeouts
@@ -74,9 +75,6 @@ def timeout_manager(seconds):
   finally:
     signal.alarm(0)
 
-  """ Support for with clause to place a timelimit on how long a function can run
-  """
-
 
 # dgw_parser()
 # =================================================================================================
@@ -93,8 +91,8 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
 
   if DEBUG:
     print(f'*** dgw_parser({institution=}, {block_type=}, {block_value=}, {period_range=},'
-          f'{update_db=}, {progress=}, {do_pprint=})',
-          file=sys.stderr)
+          f'{update_db=}, {progress=}, {do_pprint=}, {do_quarantined=}), {requirement_id=},'
+          f'{timelimit=}', file=sys.stderr)
 
   conn = PgConnection()
   fetch_cursor = conn.cursor()
@@ -125,114 +123,117 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     return None
 
   for row in fetch_cursor.fetchall():
-    parse_tree = empty_parse_tree.copy()
+    augmented_tree = error_tree.copy()
+
     is_quarantined = False
-    # header_list = None
-    # body_list = None
-
-    # if progress:
-    #   print(f'{institution} {row.requirement_id} {block_type} {block_value}', end='')
-
     if quarantined_dict.is_quarantined((institution, row.requirement_id)) and not do_quarantined:
       if progress:
         print(' Skipping: quarantined.')
         is_quarantined = True
+      augmented_tree['error'] = 'Quarantined'
+      # There may be non-quarantined blocks that match the requested period range
       continue
 
-    elif period_range == 'current' and row.period_stop != '99999999':
+    if period_range == 'current' and row.period_stop != '99999999':
       if progress:
         print(f' Skipping: not currently offered.')
+      # If the first block returned does not match the period range, no other ones will
+      autmented_tree['error'] = 'Skipped: not current'
       break
 
     catalog_years_text = catalog_years(row.period_start, row.period_stop).text
     if progress:
       print(f' ({catalog_years_text})', end='')
 
-    # Filter out everything after END, plus hide-related tokens (but not hidden content).
-    text_to_parse = dgw_filter(row.requirement_text)
-    if DEBUG:
-      debug_file = open('./debug', 'w')
-      print(f'*** SCRIBE BLOCK ***\n{text_to_parse}', file=debug_file)
-
-    # Generate the parse tree from the Antlr4 parser generator.
-    input_stream = InputStream(text_to_parse)
-    lexer = ReqBlockLexer(input_stream)
-    token_stream = CommonTokenStream(lexer)
-    parser = ReqBlockParser(token_stream)
-    parser.removeErrorListeners()
-    parser.addErrorListener(DGW_ErrorListener())
-    try:
-      with timeout_manager(timelimit):
-        parse_tree = parser.req_block()
-    except DGWError as err:
-      if progress:
-        print(f': {err}')
-      parse_tree['error'] = str(err)
-      if update_db:
-        update_cursor.execute(f"""
-        update requirement_blocks set parse_tree = %s
-        where institution = '{row.institution}'
-        and requirement_id = '{row.requirement_id}'
-        """, (json.dumps({'error': str(err), 'header_list': [], 'body_list': []}), ))
-      if period_range == 'current' or period_range == 'latest':
-        break
-
-    # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
-    if not is_quarantined:
-      header_list = []
-      if DEBUG:
-        print('\n*** PARSE HEAD ***', file=debug_file)
-
-      head_ctx = parse_tree.head()
-      if head_ctx:
-        for child in head_ctx.getChildren():
-          obj = dispatch(child, institution, row.requirement_id)
-          if obj != {}:
-            header_list.append(obj)
-
-      body_list = []
-      if DEBUG:
-        print('\n*** PARSE BODY ***', file=debug_file)
-      body_ctx = parse_tree.body()
-      if body_ctx:
-        for child in body_ctx.getChildren():
-          obj = dispatch(child, institution, row.requirement_id)
-          if obj != {}:
-            body_list.append(obj)
-
-      parse_tree = {'header_list': header_list, 'body_list': body_list}
-
-    if update_db:
+    # All processing for a requirement_block must complete within timelimit seconds, or an
+    # error_tree will be generated.
+    with timeout_manager(timelimit):
       try:
-        update_cursor.execute(f"""
-    update requirement_blocks set parse_tree = %s
-    where institution = '{row.institution}'
-    and requirement_id = '{row.requirement_id}'
-    """, (json.dumps(parse_tree), ))
-      # Deal with giant parse trees that exceed Postgres limit for jsonb data
-      except Exception as err:
-        if error.pgcode == '54000':
-          err_msg = 'Parse tree too large for database'
-        else:
-          err_msg = f'Database error: {err.pgerror}'
+        # Filter out everything after END, plus hide-related tokens (but not hidden content).
+        text_to_parse = dgw_filter(row.requirement_text)
+        if DEBUG:
+          debug_file = open('./debug', 'w')
+          print(f'*** SCRIBE BLOCK ***\n{text_to_parse}', file=debug_file)
+        # Generate the parse tree from the Antlr4 parser generator.
+        input_stream = InputStream(text_to_parse)
+        lexer = ReqBlockLexer(input_stream)
+        token_stream = CommonTokenStream(lexer)
+        parser = ReqBlockParser(token_stream)
+        parser.removeErrorListeners()
+        parser.addErrorListener(DGW_ErrorListener())
+        parse_tree = parser.req_block()
+
+        # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
+        header_list = []
+        if DEBUG:
+          print('\n*** PARSE HEAD ***', file=debug_file)
+
+        head_ctx = parse_tree.head()
+        if head_ctx:
+          for child in head_ctx.getChildren():
+            obj = dispatch(child, institution, row.requirement_id)
+            if obj != {}:
+              header_list.append(obj)
+
+        body_list = []
+        if DEBUG:
+          print('\n*** PARSE BODY ***', file=debug_file)
+        body_ctx = parse_tree.body()
+        if body_ctx:
+          for child in body_ctx.getChildren():
+            obj = dispatch(child, institution, row.requirement_id)
+            if obj != {}:
+              body_list.append(obj)
+
+        augmented_tree = {'header_list': header_list, 'body_list': body_list}
+
+        if update_db:
+          try:
+            update_cursor.execute(f"""
+            update requirement_blocks set parse_tree = %s
+            where institution = '{row.institution}'
+            and requirement_id = '{row.requirement_id}'
+            """, (json.dumps(augmented_tree), ))
+          # Deal with giant parse trees that exceed Postgres limit for jsonb data
+          except Exception as err:
+            if err.pgcode == '54000':
+              err_msg = 'Parse tree too large for database'
+            else:
+              err_msg = f'Database error: {err.pgerror}'
+            if progress:
+              print(f': {err_msg}.')
+            error_tree['error'] = err_msg
+            augmented_tree = error_tree.copy()
+            update_cursor.execute(f"""
+            rollback;
+            update requirement_blocks set parse_tree = %s
+            where institution = '{row.institution}'
+            and requirement_id = '{row.requirement_id}'
+            """, (json.dumps(error_tree), ))
+            continue
+
         if progress:
-          print(f': {err_msg}')
-        error_tree = {'error': err_msg, 'header_list': [], 'body_list': []}
-        update_cursor.execute(f"""
-        update requirement_blocks set parse_tree = %s
-        where institution = '{row.institution}'
-        and requirement_id = '{row.requirement_id}'
-        """, (json.dumps(error_tree), ))
+          # End the progress line
+          print('.')
 
-    if progress:
-      # End the progress line
-      print('.')
+        if DEBUG:
+          print('\n*** HEADER LIST ***', file=debug_file)
+          pprint(header_list, stream=debug_file)
+          print('\n*** BODY LIST ***', file=debug_file)
+          pprint(body_list, stream=debug_file)
 
-    if DEBUG:
-      print('\n*** HEADER LIST ***', file=debug_file)
-      pprint(header_list, stream=debug_file)
-      print('\n*** BODY LIST ***', file=debug_file)
-      pprint(body_list, stream=debug_file)
+      except Exception as err:
+        if progress:
+          print(f': {err}.')
+        error_tree['error'] = str(err)
+        augmented_tree = error_tree.copy()
+        if update_db:
+          update_cursor.execute(f"""
+          update requirement_blocks set parse_tree = %s
+          where institution = '{row.institution}'
+          and requirement_id = '{row.requirement_id}'
+          """, (json.dumps(error_tree), ))
+          continue
 
     if period_range == 'current' or period_range == 'latest':
       break
@@ -240,7 +241,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
   conn.commit()
   conn.close()
 
-  return parse_tree
+  return augmented_tree
 
 
 # __main__
