@@ -1,16 +1,16 @@
 #! /usr/local/bin/python3
-""" Look at course lists and their Scribe contexts.
-    How to categorize courses as required, possible, forbidden?
-
-    The goal is to extract both the context (the label structure) and the specificity (how many
-    alternatives there are) for each course.
+""" Extract both the context (the label structure) and the specificity (how many alternatives there
+    are) for each course.
 
     Block, blocktype, copy_rules, noncourse, and remarks are all irrelevant for present purposes.
     Specificity depends on the structure of the course_list, the group (and area) structure, and
     conditional factors.
 
-    This code is modeled on htmlificization, and assumes that the header and body lists in the
-    database never need to be interpreted unless they are missing.
+    This code is modeled on htmlificization.
+
+    Assumes that the parse_tree dict from the database is up to date. Trees with an 'error' key are
+    ignored. The --force argument determines whether to force parsing if the dict is empty, or to
+    ignore those, too.
 """
 
 import os
@@ -419,12 +419,13 @@ def iter_dict(item: dict,
 # =================================================================================================
 if __name__ == '__main__':
   parser = ArgumentParser('Look up course list contexts')
-  parser.add_argument('-i', '--institutions', nargs='*', default=['qns'])
   parser.add_argument('-f', '--force', action='store_true', default=False)
+  parser.add_argument('-i', '--institutions', nargs='*', default=['qns'])
   parser.add_argument('-p', '--period', default='current')
   parser.add_argument('-ra', '--requirement_id')
   parser.add_argument('-t', '--block_types', nargs='*', default=['major'])
   parser.add_argument('-v', '--block_values', nargs='*', default=['csci-ba'])
+  parser.add_argument('-ve', '--verbose', action='store_true', default=False)
   args = parser.parse_args()
   period = args.period.lower()
 
@@ -490,18 +491,32 @@ if __name__ == '__main__':
          and block_value ~* '^{block_value}$'
   """)
         for row in cursor.fetchall():
+          # Skip miscreants and indifferents
           if quarantined_dict.is_quarantined((institution, row.requirement_id)):
-            print(f'{institution} {row.requirement_id} is quarantined.')
+            if args.verbose:
+              print(f'{institution} {row.requirement_id} is quarantined.')
             continue
           if period == 'current' and row.period_stop != '99999999':
-            print(f'{institution} {row.requirement_id} is not currently offered.')
+            if args.verbose:
+              print(f'{institution} {row.requirement_id} is not currently offered.')
             continue
 
-          print(f'{institution} {row.requirement_id} {block_type} {block_value} {period}')
           parse_tree = (row.parse_tree)
-          if (len(parse_tree.keys()) == 0) or args.force:
-            print(f'{institution} {row.requirement_id} Reinterpreting')
-            parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
+          if (len(parse_tree.keys()) == 0):
+            if args.force:
+              print(f'{institution} {row.requirement_id} Reinterpreting')
+              parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
+            else:
+              print(f'{institution} {row.requirement_id} has not been parsed and --force is False.')
+              continue
+          if 'error' in parse_tree.keys():
+            err_msg = parse_tree['error']
+            # Next stage: make this subject to args.verbose
+            print(f'{institution} {row.requirement_id} failed to parse: {err_msg}')
+            continue
+
+          # Non-miscreant handler
+          print(f'{institution} {row.requirement_id} {block_type} {block_value} {period}')
           header_list = parse_tree['header_list']
           body_list = parse_tree['body_list']
 
