@@ -129,7 +129,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     is_quarantined = False
     if quarantined_dict.is_quarantined((institution, row.requirement_id)) and not do_quarantined:
       if progress:
-        print(' Skipping: quarantined.')
+        print(': Quarantined.')
         is_quarantined = True
       augmented_tree['error'] = 'Quarantined'
       # There may be non-quarantined blocks that match the requested period range
@@ -139,7 +139,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
       if progress:
         print(f' Skipping: not currently offered.')
       # If the first block returned does not match the period range, no other ones will
-      autmented_tree['error'] = 'Skipped: not current'
+      augmented_tree['error'] = ': Not current.'
       break
 
     catalog_years_text = catalog_years(row.period_start, row.period_stop).text
