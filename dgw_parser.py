@@ -5,9 +5,9 @@ import os
 import re
 import csv
 import sys
-import argparse
 import json
 import signal
+import argparse
 
 from contextlib import contextmanager
 from collections import namedtuple
@@ -119,7 +119,8 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
 
   # Sanity Check
   if fetch_cursor.rowcount < 1:
-    print(f'No Requirements Found\n{fetch_cursor.query}', file=sys.stderr)
+    print(f'Error: No Requirements Found\n{fetch_cursor.query}', file=sys.stderr)
+    conn.close()
     return None
 
   for row in fetch_cursor.fetchall():
@@ -144,9 +145,10 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
     catalog_years_text = catalog_years(row.period_start, row.period_stop).text
     if progress:
       print(f' ({catalog_years_text})', end='')
+      sys.stdout.flush()
 
-    # All processing for a requirement_block must complete within timelimit seconds, or an
-    # error_tree will be generated.
+    # All processing for a requirement_block must complete within timelimit seconds. If not, the
+    # returned augmented tree will contain an 'error' key and empty header/body lists.
     with timeout_manager(timelimit):
       try:
         # Filter out everything after END, plus hide-related tokens (but not hidden content).
@@ -277,6 +279,7 @@ if __name__ == '__main__':
 
     if args.progress:
       print(f'{institution} {requirement_id} {args.period}', end='')
+      sys.stdout.flush()
     parse_tree = dgw_parser(institution,
                             'block_type',   # Not used with requirement_id
                             'block_value',  # Not used with requirement_id
@@ -286,8 +289,14 @@ if __name__ == '__main__':
                             do_quarantined=args.quarantined,
                             requirement_id=requirement_id,
                             timelimit=args.timelimit)
+    # When not updating the db (i.e., during debugging), display the result as a web page.
     if not args.update_db:
-      html = to_html(parse_tree['header_list'], is_head=True)
+      if 'error' in parse_tree.keys():
+        err_msg = parse_tree['error']
+        html = f'<h1 class="error">Error: {err_msg}</h1>'
+      else:
+        html = ''
+      html += to_html(parse_tree['header_list'], is_head=True)
       html += to_html(parse_tree['body_list'], is_body=True)
       print(html)
     exit()
@@ -352,6 +361,7 @@ if __name__ == '__main__':
             print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
                   f'{values_count:3} / {num_values:3} {institution} {requirement_id} {block_type} '
                   f'{block_value} {args.period}', end='')
+            sys.stdout.flush()
           parse_tree = dgw_parser(institution,
                                   block_type.upper(),
                                   block_value,
