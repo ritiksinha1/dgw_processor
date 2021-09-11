@@ -34,6 +34,24 @@ log_file = open('./course_contexts.log', 'w')
 
 quarantined_dict = QuarantineManager()
 
+# Create list of active programs
+active_programs = []
+conn = PgConnection()
+cursor = conn.cursor()
+cursor.execute("""
+    select institution, academic_plan, plan_type from cuny_programs where program_status = 'A'
+    """)
+for row in cursor.fetchall():
+  plan_type = ('MAJOR' if row.plan_type == 'MAJ'
+               else 'MINOR' if row.plan_type == 'MIN' else 'row.plan_type')
+  active_programs.append((row.institution, plan_type, row.academic_plan))
+
+cursor.execute("select institution, subplan, subplan_type from cuny_subplans where status = 'A'")
+for row in cursor.fetchall():
+  subplan_type = 'CONC' if row.subplan_type in ['MIN', 'OPT', 'SPC', 'TRK'] else row.subplan_type
+  active_programs.append((row.institution, subplan_type, row.subplan))
+conn.close()
+
 # Information about active courses found in course lists.
 ActiveCourse = namedtuple('ActiveCourse',
                           'course_id offer_nbr discipline catalog_number title credits '
@@ -500,6 +518,15 @@ if __name__ == '__main__':
             if args.verbose:
               print(f'{institution} {row.requirement_id} is not currently offered.')
             continue
+
+          if period == 'current':
+            # Check if program or subprogram is active in CUNYfirst
+            if (institution, block_type, block_value) in active_programs:
+              pass
+            else:
+              if args.verbose:
+                print(f'{institution} {block_type} {block_value} is not currently active.')
+              continue
 
           parse_tree = (row.parse_tree)
           if (len(parse_tree.keys()) == 0):
