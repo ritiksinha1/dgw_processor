@@ -525,7 +525,8 @@ if __name__ == '__main__':
               pass
             else:
               if args.verbose:
-                print(f'{institution} {block_type} {block_value} is not currently active.')
+                print(f'{institution} {row.requirement_id} {block_type} {block_value} is not '
+                      f'currently active in CUNYfirst.')
               continue
 
           parse_tree = (row.parse_tree)
