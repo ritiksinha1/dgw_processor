@@ -131,27 +131,39 @@ if __name__ == '__main__':
   test_key = _Key._make(('BAR01', 'RA000185'))
   choice = 'd'
   try:
-    while choice.lower()[0] in ['d', 't']:
+    while choice.lower()[0] in ['d', 'f', 'r', 't']:
+      if choice.lower().startswith('f'):
+        # Display the file
+        print('File:')
+        with open(_csv_file) as f:
+          print(f.read())
 
-      if choice.lower().startswith('t'):
+      elif choice.lower().startswith('d'):
+        # Display the dict
+        print('Dict:')
+        for key, value in quarantined_dict.items():
+          print(f'{key.institution}, {key.requirement_id}: '
+                f'{quarantined_dict.explanation((key.institution, key.requirement_id))}')
+
+      elif choice.lower().startswith('r'):
+        # Emit commands for re-parsing all quarantined blocks
+        for key in quarantined_dict.keys():
+          print(f'dgw_parser.py -i {key[0]} -ra {key[1]} -q')
+
+      elif choice.lower().startswith('t'):
+        # Toggle the quarantinedness of the sample block
         if quarantined_dict.is_quarantined(test_key):
           del quarantined_dict[test_key]
         else:
           quarantined_dict[test_key] = ['Because I said so', 'Unknown']
 
-      elif choice.lower().startswith('d'):
-        print('File:')
-        with open(_csv_file) as f:
-          print(f.read())
-        print('Dict:')
-        for key, value in quarantined_dict.items():
-          print(f'({key.institution}, {key.requirement_id}): ', value[_explanation_index])
+      # show the status of the test block
       if quarantined_dict.is_quarantined(test_key):
         print(f'---\n({test_key.institution}, {test_key.requirement_id}) IS quarantined:',
               quarantined_dict[test_key])
       else:
         print(f'---\n({test_key.institution}, {test_key.requirement_id}) is NOT quarantined')
-      print('toggle, dump, Quit: ', end='')
+      print('dict | file | redo | toggle | Quit: ', end='')
       choice = input()
   except IndexError as ie:
     exit()
