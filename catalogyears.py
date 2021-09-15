@@ -13,6 +13,7 @@ def catalog_years(period_start: str, period_stop: str) -> str:
       of '99999999' for period_end indicating the current catalog year.
       The earliest observed valid catalog year was 1960-1964, but note that it isn't a single
       academic year.
+      Update: treat any string beginning with '9' as 'Now'
   """
   is_undergraduate = 'U' in period_start
   is_graduate = 'G' in period_start
@@ -30,7 +31,7 @@ def catalog_years(period_start: str, period_stop: str) -> str:
   except ValueError:
     first = 'Unknown-Start-Year'
 
-  if period_stop == '99999999':
+  if period_stop.startswith('9'):
     last = 'Now'
   else:
     try:
