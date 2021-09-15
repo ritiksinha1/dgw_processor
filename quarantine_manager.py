@@ -22,6 +22,7 @@ from pgconnection import PgConnection
 _quarantined_dict = None
 _columns = ['Institution', 'Requirement ID', 'Block Type', 'Catalog', 'Year', 'Explanation',
             'Can Ellucian']
+_explanation_index = _columns.index('Explanation') - 2
 _fieldnames = [col.lower().replace(' ', '_') for col in _columns]
 _Row = namedtuple('_Row', _fieldnames)
 _Key = namedtuple('_Key', 'institution requirement_id')
@@ -44,8 +45,7 @@ class QuarantineManager(dict):
           else:
             row = _Row._make(line)
             key = _Key._make([row.institution, row.requirement_id])
-            value = [row.block_type, row.catalog, row.year, row.explanation, row.can_ellucian]
-            _quarantined_dict[key] = value
+            _quarantined_dict[key] = list(row._asdict().values())[2:]
 
   def __update_file__(self):
     """ Write the dict to the file. Column names are capitalized; keys are not.
@@ -108,6 +108,12 @@ class QuarantineManager(dict):
   def items(self):
     return sorted(_quarantined_dict.items())
 
+  def explanation(self, key):
+    try:
+      return _quarantined_dict[key][_explanation_index]
+    except KeyError as ke:
+      return f'{ke}: Not quarantined'
+
   def __str__(self):
     return pformat(_quarantined_dict)
 
@@ -115,31 +121,37 @@ class QuarantineManager(dict):
 # Testing
 # -------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
+  """ View the dict, with command to toggle whether a test block (Baruch 185) is quarantined or not.
+  """
   quarantined_dict = QuarantineManager()
+  if len(sys.argv) > 1:
+    print(quarantined_dict.explanation((sys.argv[1], sys.argv[2])))
+    exit()
   # (BAR01, RA000185) is used for testing.
   test_key = _Key._make(('BAR01', 'RA000185'))
-  do_continue = True
-  while do_continue:
-    if quarantined_dict.is_quarantined(test_key):
-      print(f'({test_key.institution}, {test_key.requirement_id}) IS quarantined')
-    else:
-      print(f'({test_key.institution}, {test_key.requirement_id}) is NOT quarantined')
-    print('toggle, dump, Exit: ', end='')
-    choice = input()
+  choice = 'd'
+  try:
+    while choice.lower()[0] in ['d', 't']:
 
-    if choice.lower().startswith('t'):
+      if choice.lower().startswith('t'):
+        if quarantined_dict.is_quarantined(test_key):
+          del quarantined_dict[test_key]
+        else:
+          quarantined_dict[test_key] = ['Because I said so', 'Unknown']
+
+      elif choice.lower().startswith('d'):
+        print('File:')
+        with open(_csv_file) as f:
+          print(f.read())
+        print('Dict:')
+        for key, value in quarantined_dict.items():
+          print(f'({key.institution}, {key.requirement_id}): ', value[_explanation_index])
       if quarantined_dict.is_quarantined(test_key):
-        del quarantined_dict[test_key]
-      else:
-        quarantined_dict[test_key] = ['Because I said so', 'Unknown']
-        print(f'({test_key.institution}, {test_key.requirement_id}) is now ',
+        print(f'---\n({test_key.institution}, {test_key.requirement_id}) IS quarantined:',
               quarantined_dict[test_key])
-
-    elif choice.lower().startswith('d'):
-      with open(_csv_file) as f:
-        print(f.read())
-      for key, value in quarantined_dict.items():
-        print(f'({key.institution}, {key.requirement_id}): ', value)
-
-    else:
-      do_continue = False
+      else:
+        print(f'---\n({test_key.institution}, {test_key.requirement_id}) is NOT quarantined')
+      print('toggle, dump, Quit: ', end='')
+      choice = input()
+  except IndexError as ie:
+    exit()
