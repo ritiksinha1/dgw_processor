@@ -34,9 +34,6 @@ sys.setrecursionlimit(10**6)
 
 quarantined_dict = QuarantineManager()
 
-# If there is an error, dict with an error key and empty header/body lists will be returned.
-error_tree = {'error': '', 'header_list': [], 'body_list': []}
-
 
 # Parser Exceptions: syntax errors and timeouts
 # -------------------------------------------------------------------------------------------------
@@ -80,7 +77,7 @@ def timeout_manager(seconds):
 # =================================================================================================
 def dgw_parser(institution: str, block_type: str, block_value: str,
                period_range='current', update_db=True, progress=False,
-               do_pprint=False, do_quarantined=False, requirement_id=None, timelimit=30) -> tuple:
+               do_pprint=False, requirement_id=None, do_quarantined=False, timelimit=30) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
 
        The period_range argument can be 'all', 'current', or 'latest', with the latter two being
@@ -91,8 +88,8 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
 
   if DEBUG:
     print(f'*** dgw_parser({institution=}, {block_type=}, {block_value=}, {period_range=},'
-          f'{update_db=}, {progress=}, {do_pprint=}, {do_quarantined=}), {requirement_id=},'
-          f'{timelimit=}', file=sys.stderr)
+          f'{update_db=}, {progress=}, {do_pprint=}, {requirement_id=}, {do_quarantined=}, '
+          f'{timelimit=})', file=sys.stderr)
 
   conn = PgConnection()
   fetch_cursor = conn.cursor()
@@ -119,27 +116,34 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
 
   # Sanity Check
   if fetch_cursor.rowcount < 1:
-    print(f'Error: No Requirements Found\n{fetch_cursor.query}', file=sys.stderr)
     conn.close()
-    return None
+    raise ValueError(f'Error: No Requirements Found\n{fetch_cursor.query}')
 
   for row in fetch_cursor.fetchall():
-    augmented_tree = error_tree.copy()
+    augmented_tree = {'header_list': [], 'body_list': []}
 
+    # Manage quarantined blocks
     is_quarantined = False
-    if quarantined_dict.is_quarantined((institution, row.requirement_id)) and not do_quarantined:
-      if progress:
-        print(': Quarantined.')
+    if quarantined_dict.is_quarantined((institution, row.requirement_id)):
+      if do_quarantined:
         is_quarantined = True
-      augmented_tree['error'] = 'Quarantined'
-      # There may be non-quarantined blocks that match the requested period range
-      continue
+      else:
+        if progress:
+          print(': Quarantined.')
+        msg = f'Quarantined: {quarantined_dict.explanation((institution, row.requirement_id))}'
+        augmented_tree['error'] = msg
+        update_cursor.execute(f"""
+        update requirement_blocks set parse_tree = %s
+        where institution = '{row.institution}'
+        and requirement_id = '{row.requirement_id}'
+        """, (json.dumps(augmented_tree), ))
+        # There may be non-quarantined blocks that match the requested period range
+        continue
 
-    if period_range == 'current' and row.period_stop != '99999999':
+    if period_range == 'current' and not row.period_stop.startswith('9'):
       if progress:
-        print(f' Skipping: not currently offered.')
+        print(f' Skipping: not current.')
       # If the first block returned does not match the period range, no other ones will
-      augmented_tree['error'] = ': Not current.'
       break
 
     catalog_years_text = catalog_years(row.period_start, row.period_stop).text
@@ -187,8 +191,6 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
             if obj != {}:
               body_list.append(obj)
 
-        augmented_tree = {'header_list': header_list, 'body_list': body_list}
-
         if update_db:
           try:
             update_cursor.execute(f"""
@@ -204,16 +206,18 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
               err_msg = f'Database error: {err.pgerror}'
             if progress:
               print(f': {err_msg}.')
-            error_tree['error'] = err_msg
-            augmented_tree = error_tree.copy()
+            augmented_tree = {'error': err_msg, 'header_list': [], 'bocy_list': []}
             update_cursor.execute(f"""
             rollback;
             update requirement_blocks set parse_tree = %s
             where institution = '{row.institution}'
             and requirement_id = '{row.requirement_id}'
-            """, (json.dumps(error_tree), ))
+            """, (json.dumps(augmented_tree), ))
             continue
 
+        if is_quarantined:
+          # Quarantined block now parses without error
+          del quarantined_dict[(row.institution, row.requirement_id)]
         if progress:
           # End the progress line
           print('.')
@@ -227,14 +231,17 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
       except Exception as err:
         if progress:
           print(f': {err}.')
-        error_tree['error'] = str(err)
-        augmented_tree = error_tree.copy()
+        if is_quarantined:
+          explanation = quarantined_dict.explanation((row.institution, row.requirement_id))
+          augmented_tree['error'] = f'Quarantined: {explanation}'
+        else:
+          augmented_tree['error'] = str(err)
         if update_db:
           update_cursor.execute(f"""
           update requirement_blocks set parse_tree = %s
           where institution = '{row.institution}'
           and requirement_id = '{row.requirement_id}'
-          """, (json.dumps(error_tree), ))
+          """, (json.dumps(augmented_tree), ))
           continue
 
     if period_range == 'current' or period_range == 'latest':
@@ -242,7 +249,6 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
 
   conn.commit()
   conn.close()
-
   return augmented_tree
 
 
@@ -262,8 +268,7 @@ if __name__ == '__main__':
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
   parser.add_argument('-np', '--progress', action='store_false')
   parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='current')
-  parser.add_argument('-pp', '--pprint', action='store_true')
-  parser.add_argument('-q', '--quarantined', action='store_true')
+  parser.add_argument('-q', '--do_quarantined', action='store_true')
   parser.add_argument('-ra', '--requirement_id')
   parser.add_argument('-ti', '--timelimit', type=int, default=30)
   parser.add_argument('-nu', '--update_db', action='store_false')
@@ -286,8 +291,8 @@ if __name__ == '__main__':
                             period_range=args.period,
                             progress=args.progress,
                             update_db=args.update_db,
-                            do_quarantined=args.quarantined,
                             requirement_id=requirement_id,
+                            do_quarantined=args.do_quarantined,
                             timelimit=args.timelimit)
     # When not updating the db (i.e., during debugging), display the result as a web page.
     if not args.update_db:
@@ -349,7 +354,7 @@ if __name__ == '__main__':
         for row in cursor.fetchall():
           requirement_id = row.requirement_id
           period_stop = row.period_stop
-          if args.period.lower() == 'current' and period_stop != '99999999':
+          if args.period.lower() == 'current' and not period_stop.startswith('9'):
             break
           if args.period.lower() == 'latest' and values_count == 1:
             break
@@ -369,6 +374,6 @@ if __name__ == '__main__':
                                   update_db=args.update_db,
                                   progress=args.progress,
                                   do_pprint=args.pprint,
-                                  do_quarantined=args.quarantined,
                                   requirement_id=requirement_id,
+                                  do_quarantined=args.do_quarantined,
                                   timelimit=args.timelimit)
