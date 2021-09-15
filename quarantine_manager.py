@@ -163,7 +163,8 @@ if __name__ == '__main__':
               quarantined_dict[test_key])
       else:
         print(f'---\n({test_key.institution}, {test_key.requirement_id}) is NOT quarantined')
-      print('dict | file | redo | toggle | Quit: ', end='')
-      choice = input()
+
+      choice = input('dict | file | redo | toggle: ')
+
   except IndexError as ie:
     exit()
