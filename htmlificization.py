@@ -768,223 +768,81 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
     return ('<h1 class="error">This scribe block is not available.</h1>'
             '<p><em>Should not occur.</em></p>')
 
-  if quarantined_dict.is_quarantined((row.institution, row.requirement_id)):
-    header_list, body_list = None, None
-    block_type, catalog, year, explanation, ellucian = quarantined_dict[(row.institution,
-                                                                         row.requirement_id)]
-    if ellucian.upper().startswith('Y'):
-      qualifier = 'The Ellucian parser accepts this block, but this'
-    elif ellucian.upper().startswith('N'):
-      qualifier = 'The Ellucian parser rejects this block, and this'
-    else:
-      qualifier = 'This'
-    disclaimer = f"""
-    <p class="disclaimer">
-      <span class="error">
-        No Interpretation Available.<br>
-        {qualifier} parser detected the following problem:
-      </span>
-        “{explanation}.”
-    </p>
-    """
-    return row.requirement_html + disclaimer
+  # if quarantined_dict.is_quarantined((row.institution, row.requirement_id)):
+  #   header_list, body_list = None, None
+  #   block_type, catalog, year, explanation, ellucian = quarantined_dict[(row.institution,
+  #                                                                        row.requirement_id)]
+  #   if ellucian.upper().startswith('Y'):
+  #     qualifier = 'The Ellucian parser accepts this block, but this'
+  #   elif ellucian.upper().startswith('N'):
+  #     qualifier = 'The Ellucian parser rejects this block, and this'
+  #   else:
+  #     qualifier = 'This'
+  #   disclaimer = f"""
+  #   <p class="disclaimer">
+  #     <span class="error">
+  #       No Interpretation Available.<br>
+  #       {qualifier} parser detected the following problem:
+  #     </span>
+  #       “{explanation}.”
+  #   </p>
+  #   """
+  #   return row.requirement_html + disclaimer
 
+  # else:
+  catalog_type, first_year, last_year, catalog_years_text = catalog_years(row.period_start,
+                                                                          row.period_stop)
+  college_name = college_names[row.institution]
+  disclaimer = """
+  <div class="disclaimer">
+    <p class="warning">
+      This is project is in the “beta” stage. That means that the display below
+      <em>should</em> be an an accurate representation of the requirements for this block,
+      omitting elements that would depend an individual student’s academic record, such as Proxy
+      Advice. But there may be errors and omissions. If you see such anomalies, I would
+      appreciate hearing about them. (<em>Click on my name for an email link.</em>)
+    </p>
+    <p>
+      <em>Thanks</em>,<br>
+      <a href="mailto:cvickery@qc.cuny.edu?subject=DGW Report"
+         class="signature">Christopher Vickery</a>
+    </p>
+  </div>
+  """
+  # Interpret the block if it hasn’t been done yet.
+  if row.parse_tree == {}:
+    parse_tree = dgw_parser(row.institution,
+                            row.block_type,
+                            row.block_value,
+                            period_range=period_range)
   else:
-    catalog_type, first_year, last_year, catalog_years_text = catalog_years(row.period_start,
-                                                                            row.period_stop)
-    college_name = college_names[row.institution]
-    disclaimer = """
-    <div class="disclaimer">
-      <p class="warning">
-        This is project is in the “beta” stage. That means that the display below
-        <em>should</em> be an an accurate representation of the requirements for this block,
-        omitting elements that would depend an individual student’s academic record, such as Proxy
-        Advice. But there may be errors and omissions. If you see such anomalies, I would
-        appreciate hearing about them. (<em>Click on my name for an email link.</em>)
-      </p>
-      <p>
-        <em>Thanks</em>,<br>
-        <a href="mailto:cvickery@qc.cuny.edu?subject=DGW Report"
-           class="signature">Christopher Vickery</a>
-      </p>
-    </div>
+    parse_tree = row.parse_tree
+
+  if 'error' in parse_tree.keys():
+    err_msg = parse_tree['error']
+    parse_results = f'<section><h2 class="error">Parsing failed</h2><p>{err_msg}</p></section'
+  else:
+    header_list, body_list = parse_tree['header_list'], parse_tree['body_list']
+    parse_results = f"""
+  <section>
+  <details><summary>Header</summary>
+    {to_html(header_list)}
+  </details>
+  <details><summary>Body</summary>
+    {to_html(body_list, kind='Requirement')}
+  </details
+</section>
     """
-    # Interpret the block if it hasn’t been done yet.
-    if row.parse_tree == {}:
-      parse_tree = dgw_parser(row.institution,
-                              row.block_type,
-                              row.block_value,
-                              period_range=period_range)
-      header_list, body_list = parse_tree['header_list'], parse_tree['body_list']
-    else:
-      header_list, body_list = row.parse_tree['header_list'], row.parse_tree['body_list']
-    return disclaimer + f"""
-    <h1>{college_name} {row.requirement_id}: <em>{row.title}</em></h1>
-    <p>Requirements for {catalog_type} Catalog Years {catalog_years_text}</p>
-    <section>{row.requirement_html}</section>
-    <section>
-      <details><summary>Header</summary>
-        {to_html(header_list)}
-      </details>
-      <details><summary>Body</summary>
-        {to_html(body_list, kind='Requirement')}
-      </details
-    </section>
-    """
+
+  return disclaimer + f"""
+  <h1>{college_name} {row.requirement_id}: <em>{row.title}</em></h1>
+  <p>Requirements for {catalog_type} Catalog Years {catalog_years_text}</p>
+  <section>{row.requirement_html}</section>
+  {parse_results}
+  """
 
 
 # __main__
 # =================================================================================================
-# Select Scribe Blocks for parsing
 if __name__ == '__main__':
-  """ You can select blocks by institutions, block_types, block_values, and period from here.
-      By default, the requirement_blocks table's head_objects and body_objects fields are updated
-      for each block parsed.
-  """
-  # Command line args
-  parser = argparse.ArgumentParser(description='Test DGW Parser')
-  parser.add_argument('-d', '--debug', action='store_true', default=False)
-  parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
-  parser.add_argument('-np', '--progress', action='store_false')
-  parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='latest')
-  parser.add_argument('-pp', '--pprint', action='store_true')
-  parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
-  parser.add_argument('-ra', '--requirement_id')
-  parser.add_argument('-nu', '--update_db', action='store_false')
-  parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
-
-  # Parse args
-  args = parser.parse_args()
-  if args.requirement_id:
-    # During development, the use of the ra option generates a web page for debugging.
-    institution = args.institutions[0].strip('10').upper() + '01'
-    requirement_id = args.requirement_id.strip('AaRr')
-    if not requirement_id.isdecimal():
-      sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
-    requirement_id = f'RA{int(requirement_id):06}'
-    if quarantined_dict.is_quarantined((institution, requirement_id)):
-      exit(f'({institution} {requirement_id}) is quarantined.')
-
-    # Look up the block type and value
-    conn = PgConnection()
-    cursor = conn.cursor()
-    cursor.execute(f'select block_type, block_value, requirement_text, requirement_html'
-                   f'  from requirement_blocks'
-                   f" where institution = '{institution}'"
-                   f"   and requirement_id = '{requirement_id}'")
-    assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
-                                  f'for {institution} {requirement_id}')
-    block_type, block_value, requirement_text, requirement_html = cursor.fetchone()
-    conn.close()
-    print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
-          file=sys.stderr)
-    with open('./debug.html', 'w') as debug_html:
-      html_head = """<html>
-    <head>
-      <meta charset="utf-8"/>
-      <style>details {border: 1px solid green; padding: 0.2em}</style>
-    </head>
-    """
-      print(f'{html_head}'
-            f'<body>'
-            f'  <h2>{institution} {requirement_id} {block_type} {block_value} {args.period}</h2>'
-            f'  {requirement_html}', file=debug_html)
-
-      parse_tree = dgw_interpreter(institution,
-                                   block_type,
-                                   block_value,
-                                   period_range=args.period,
-                                   update_db=args.update_db)
-      header_list, body_list = (parse_tree['header_list'], parse_tree['body_list'])
-      html = (f'<details><summary><strong>HEAD</strong></summary>'
-              f'{to_html(header_list)}</details>'
-              f'<details><summary><strong>BODY</strong></summary>'
-              f'{to_html(body_list, kind="Requirement")}</details><body></html>')
-      print(html, file=debug_html)
-    exit()
-
-  if args.institutions[0] == 'all':
-    conn = PgConnection()
-    cursor = conn.cursor()
-    cursor.execute('select code from cuny_institutions')
-    institutions = [row.code for row in cursor.fetchall()]
-    conn.close()
-  else:
-    institutions = args.institutions
-
-  num_institutions = len(institutions)
-  institution_count = 0
-  for institution in institutions:
-    institution_count += 1
-    institution = institution.upper() + ('01' * (len(institution) == 3))
-    if args.block_types[0] == 'all':
-      args.block_types = ['DEGREE', 'MAJOR', 'MINOR', 'CONC', 'OTHER']
-    types_count = 0
-    num_types = len(args.block_types)
-    for block_type in args.block_types:
-      block_type = block_type.upper()
-      types_count += 1
-      if args.block_values[0].lower() == 'all':
-        conn = PgConnection()
-        cursor = conn.cursor()
-        cursor.execute('select distinct block_value from requirement_blocks '
-                       'where institution = %s and block_type = %s'
-                       'order by block_value', (institution, block_type))
-        block_values = [row.block_value for row in cursor.fetchall()]
-        conn.close()
-      else:
-        block_values = [value.upper() for value in args.block_values]
-
-      num_values = len(block_values)
-      values_count = 0
-      for block_value in block_values:
-        values_count += 1
-        if block_value.isnumeric() or block_value.startswith('MHC'):
-          continue
-        conn = PgConnection()
-        cursor = conn.cursor()
-        cursor.execute(f'select requirement_id,'
-                       f'       block_type, block_value, requirement_text, requirement_html'
-                       f'  from requirement_blocks'
-                       f" where institution = '{institution}'"
-                       f"   and block_type = '{block_type}'"
-                       f"   and block_value = '{block_value}'"
-                       f"   and period_stop = '99999999'")
-        assert cursor.rowcount == 1, (f'Found {cursor.rowcount} block_type/block_value pairs '
-                                      f'for {institution} {requirement_id}')
-        requirement_id, block_type, block_value, requirement_text, requirement_html = cursor\
-            .fetchone()
-        conn.close()
-        if quarantined_dict.is_quarantined((institution, requirement_id)):
-          print(f'({institution} {requirement_id}) is quarantined: skipping')
-          continue
-        print(f'{institution} {requirement_id} {block_type} {block_value} {args.period}',
-              file=sys.stderr)
-        with open('./debug.html', 'w') as debug_html:
-          html_head = """<html>
-        <head>
-          <meta charset="utf-8"/>
-          <style>details {border: 1px solid green; padding: 0.2em}</style>
-        </head>
-        """
-          print(f'{html_head}'
-                f'<body>'
-                f'  <h2>{institution} {requirement_id} {block_type} {block_value} {args.period}</h2>'
-                f'  {requirement_html}', file=debug_html)
-
-          header_list, body_list = dgw_interpreter(institution,
-                                                   block_type,
-                                                   block_value,
-                                                   period_range=args.period,
-                                                   update_db=args.update_db)
-          if DEBUG:
-            print('HEADER', file=sys.stderr)
-          header_html = to_html(header_list)
-          if DEBUG:
-            print('BODY', file=sys.stderr)
-          body_html = to_html(body_list, kind='Requirement')
-          html = (f'<details><summary><strong>HEAD</strong></summary>'
-                  f'{header_html}</details>'
-                  f'<details><summary><strong>BODY</strong></summary>'
-                  f'{body_html}</details><body></html>')
-          print(html, file=debug_html)
+  print('Command line access not supported.')
