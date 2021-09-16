@@ -87,7 +87,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
   """
 
   if DEBUG:
-    print(f'*** dgw_parser({institution=}, {block_type=}, {block_value=}, {period_range=},'
+    print(f'*** dgw_parser({institution=}, {block_type=}, {block_value=}, {period_range=}, '
           f'{update_db=}, {progress=}, {do_pprint=}, {requirement_id=}, {do_quarantined=}, '
           f'{timelimit=})', file=sys.stderr)
 
@@ -373,7 +373,6 @@ if __name__ == '__main__':
                                   period_range=args.period,
                                   update_db=args.update_db,
                                   progress=args.progress,
-                                  do_pprint=args.pprint,
                                   requirement_id=requirement_id,
                                   do_quarantined=args.do_quarantined,
                                   timelimit=args.timelimit)
