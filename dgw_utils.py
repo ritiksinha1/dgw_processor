@@ -309,9 +309,11 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
                         RP
                       ;
   """
+  print(f'\n*** getgroups({class_name(ctx)})')
+  print(f'{len(ctx.group())=}')
   return_list = []
-  for group_context in ctx.group():
-    children = group_context.getChildren()
+  for group_ctx in ctx.group():
+    children = group_ctx.getChildren()
 
     for child in children:
 
@@ -320,17 +322,23 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
       if item_class.lower() == 'terminalnodeimpl':
         continue
 
-      return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
+      if 'Course_list' == class_name(child):
+        debug = build_course_list(child, institution, requirement_id)
+        print(debug)
+      else:
+        return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
 
     return_dict = {'groups': return_list}
 
-    if qualifier_ctx := group_context.qualifier():
+    if qualifier_ctx := group_ctx.qualifier():
       return_dict.update(get_qualifiers(qualifier_ctx, institution, requirement_id))
 
-    if group_context.label():
-      return_dict['label'] = get_label(group_context)
+    if group_ctx.label():
+      return_dict['label'] = get_label(group_ctx)
 
-  return return_list
+  print(f'*** {len(return_list)=}')
+  print(f'*** {return_dict.keys()=}')
+  return return_dict
 
 
 # get_qualifiers()
@@ -401,9 +409,9 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
               qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
                                                  'class_credit': class_credit}
 
-            # maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
-            # maxtransfer     : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
-            # minperdisc      : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
+            # maxperdisc  : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
+            # maxtransfer : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
+            # minperdisc  : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
             elif valid_qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
               disciplines = qualifier_ctx.SYMBOL()
               if isinstance(disciplines, list):
