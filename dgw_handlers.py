@@ -461,6 +461,23 @@ def maxpassfail(ctx, institution, requirement_id):
   return {'maxpassfail': return_dict}
 
 
+# maxpassfail_head()
+# --------------------------------------------------------------------------------------------------
+def maxpassfail_head(ctx, institution, requirement_id):
+  """
+      maxpassfail_head  : maxpassfail label?;
+  """
+  maxpassfail_ctx = ctx.maxpassfail()
+  return_dict = {'number': maxpassfail_ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(maxpassfail_ctx.class_or_credit())}
+
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
+
+  return {'maxpassfail': return_dict}
+
+
 # maxperdisc()
 # -------------------------------------------------------------------------------------------------
 def maxperdisc(ctx, institution, requirement_id):
@@ -473,6 +490,27 @@ def maxperdisc(ctx, institution, requirement_id):
   return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
+
+  return {'maxperdisc': return_dict}
+
+
+# maxperdisc_head()
+# -------------------------------------------------------------------------------------------------
+def maxperdisc_head(ctx, institution, requirement_id):
+  """
+      maxperdisc_head   : maxperdisc label? ;
+  """
+  if DEBUG:
+    print(f'*** maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}', file=sys.stderr)
+
+  maxperdisc_ctx = ctx.maxperdisc()
+  return_dict = {'number': maxperdisc_ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  return_dict['disciplines'] = [discp.getText().upper() for discp in maxperdisc_ctx.SYMBOL()]
+
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
 
   return {'maxperdisc': return_dict}
 
@@ -505,6 +543,26 @@ def maxtransfer(ctx, institution, requirement_id):
   return {'maxtransfer': return_dict}
 
 
+# maxtransfer_head()
+# -------------------------------------------------------------------------------------------------
+def maxtransfer_head(ctx, institution, requirement_id):
+  """
+      maxtransfer_head  : maxtransfer label?;
+  """
+  maxtransfer_ctx = ctx.maxtransfer()
+  return_dict = {'number': maxtransfer_ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(maxtransfer_ctx.class_or_credit())}
+  if maxtransfer_ctx.SYMBOL():
+    symbol_contexts = maxtransfer_ctx.SYMBOL()
+    return_dict['transfer_types'] = [symbol.getText() for symbol in symbol_contexts]
+
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
+
+  return {'maxtransfer': return_dict}
+
+
 # minclass()
 # --------------------------------------------------------------------------------------------------
 def minclass(ctx, institution, requirement_id):
@@ -522,6 +580,28 @@ def minclass(ctx, institution, requirement_id):
   return {'minclass': return_dict}
 
 
+# minclass_head()
+# --------------------------------------------------------------------------------------------------
+def minclass_head(ctx, institution, requirement_id):
+  """
+      minclass_head     : minclass label?;
+  """
+  minclass_ctx = ctx.minclass()
+  return_dict = {'number': minclass_ctx.NUMBER().getText(),
+                 'courses': build_course_list(minclass_ctx.course_list(),
+                                              institution,
+                                              requirement_id)}
+
+  if minclass_ctx.display():
+    return_dict['display'] = get_display(ctx)
+
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
+
+  return {'minclass': return_dict}
+
+
 # mincredit()
 # --------------------------------------------------------------------------------------------------
 def mincredit(ctx, institution, requirement_id):
@@ -535,6 +615,26 @@ def mincredit(ctx, institution, requirement_id):
     return_dict['display'] = get_display(ctx)
 
   # return_dict['label'] = get_label(ctx)
+
+  return {'mincredit': return_dict}
+
+
+# mincredit_head()
+# --------------------------------------------------------------------------------------------------
+def mincredit_head(ctx, institution, requirement_id):
+  """
+      mincredit_head     : mincredit label?;
+  """
+  mincredit_ctx = ctx.mincredit()
+  return_dict = {'number': mincredit_ctx.NUMBER().getText()}
+  return_dict.update(build_course_list(mincredit_ctx.course_list(), institution, requirement_id))
+
+  if mincredit_ctx.display():
+    return_dict['display'] = get_display(mincredit_ctx)
+
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
 
   return {'mincredit': return_dict}
 
@@ -584,6 +684,24 @@ def minperdisc(ctx, institution, requirement_id):
   return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['discipline'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
+
+  return {'minperdisc': return_dict}
+
+
+# minperdisc_head()
+# -------------------------------------------------------------------------------------------------
+def minperdisc_head(ctx, institution, requirement_id):
+  """
+      minperdisc_head   : minperdisc label?;
+  """
+  minperdisc_ctx = ctx.minperdisc()
+  return_dict = {'number': minperdisc_ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(minperdisc_ctx.class_or_credit())}
+  return_dict['discipline'] = [discp.getText().upper() for discp in minperdisc_ctx.SYMBOL()]
+
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
 
   return {'minperdisc': return_dict}
 
@@ -651,7 +769,7 @@ def rule_complete(ctx, institution, requirement_id):
   """ rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) (proxy_advice | rule_tag | label)*;
   """
   return_dict = dict()
-  return_dict['is_complete?'] = True if ctx.RULE_COMPLETE() else False
+  return_dict['is_complete'] = True if ctx.RULE_COMPLETE() else False
 
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
@@ -680,6 +798,33 @@ def share(ctx, institution, requirement_id):
     return_dict['class_or_credit'] = class_or_credit(ctx.class_or_credit())
   if ctx.expression():
     return_dict['expression'] = ctx.expression().getText()
+
+  return {'share': return_dict}
+
+
+# share_head()
+# -------------------------------------------------------------------------------------------------
+def share_head(ctx, institution, requirement_id):
+  """
+      share_head        : share label?;
+  """
+  share_ctx = ctx.share()
+  return_dict = dict()
+
+  if share_ctx.SHARE():
+    return_dict['share_type'] = 'allow sharing'
+  else:
+    return_dict['share_type'] = 'exclusive'
+
+  if share_ctx.NUMBER():
+    return_dict['number'] = share_ctx.NUMBER().getText().strip()
+    return_dict['class_or_credit'] = class_or_credit(share_ctx.class_or_credit())
+  if share_ctx.expression():
+    return_dict['expression'] = share_ctx.expression().getText()
+
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
 
   return {'share': return_dict}
 
@@ -800,20 +945,20 @@ dispatch_header = {
     'lastres': lastres,
     'maxclass': maxclass,
     'maxcredit': maxcredit,
-    'maxpassfail': maxpassfail,
-    'maxperdisc': maxperdisc,
+    'maxpassfail_head': maxpassfail_head,
+    'maxperdisc_head': maxperdisc_head,
     'maxterm': maxterm,
-    'maxtransfer': maxtransfer,
-    'minclass': minclass,
-    'mincredit': mincredit,
+    'maxtransfer_head': maxtransfer_head,
+    'minclass_head': minclass_head,
+    'mincredit_head': mincredit_head,
     'mingpa': mingpa,
     'mingrade': mingrade,
-    'minperdisc': minperdisc,
+    'minperdisc_head': minperdisc_head,
     'minres': minres,
     'optional': optional,
     'proxy_advice': proxy_advice,
     'remark': remark,
-    'share': share,
+    'share_head': share_head,
     'standalone': standalone,
     'under': under
 }
@@ -850,11 +995,11 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
   except KeyError as key_error:
     key_error = str(key_error).strip('\'')
     nested = f' while processing “{key}”' if key != key_error else ''
-    # print_stack(file=sys.stderr)
+    # Missing handler: report it and recover ever so gracefully
+    print(f'No dispatch method for “{key_error}”{nested}: '
+          f'{institution=}; {requirement_id=}; {which_part=}', file=sys.stderr)
     if DEBUG:
-      # Missing handler: report it and recover ever so gracefully
-      print(f'No dispatch method for “{key_error}”{nested}: '
-            f'{institution=}; {requirement_id=}; {which_part=}', file=sys.stderr)
+      print_stack(file=sys.stderr)
     return {'Dispatch_Error':
             {'method': f'“{key_error}”{nested}',
              'institution': institution,
