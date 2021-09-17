@@ -29,8 +29,8 @@ from quarantine_manager import QuarantineManager
 
 from pprint import pprint
 
-DEBUG = os.getenv('DEBUG_CONTEXTS')
-log_file = open('./course_contexts.log', 'w')
+DEBUG = os.getenv('DEBUG_REQUIREMENT_MAPPINGS')
+log_file = open('./course_requirement_mappings.log', 'w')
 
 quarantined_dict = QuarantineManager()
 
@@ -179,8 +179,8 @@ def emit(requirement: Requirement, program_qualifiers: list, context: list) -> N
       if cursor.rowcount == 1:
         row = cursor.fetchone()
         if row.course_qualifiers != course_qualifiers:
-          print(f'{institution} {requirement_id} {requirement.requirement_name} with different '
-                f'qualifiers: {row.course_qualifiers=} {course_qualifiers=}', file=log_file)
+          print(f'{institution} {requirement_id} “{requirement.requirement_name}” '
+                f'{row.course_qualifiers=} <> {course_qualifiers=}', file=log_file)
       else:
         print(f'Impossible situation: {cursor.rowcount} rows in course_requirement_keys with'
               f'same {institution=}, {requirement_id=} {requirement.requirement_name=}',
@@ -219,7 +219,7 @@ def iter_list(items: list,
     elif isinstance(value, dict):
       iter_dict(value, program_qualifiers, requirement_qualifiers, local_context)
     else:
-      # Mebbe itsa remark?
+      # Mebbe its a remark?
       print(f'iter_list: Neither list nor dict: {value=} {len(local_context)=}', file=sys.stderr)
 
   return None
