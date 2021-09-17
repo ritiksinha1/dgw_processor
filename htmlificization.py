@@ -364,7 +364,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   if 'requirements' in info.keys():
     course_requirements = info.pop('requirements')
     num_requirements = len(course_requirements)
-    # Remarks aren’t requirements, even though we show them
+    # Remarks aren’t requirements, but we show them anyway to provide context.
     for requirement in course_requirements:
       if 'remark' in requirement.keys():
         num_requirements -= 1
@@ -424,7 +424,7 @@ def group_requirements_to_details_elements(info: dict, outer_label=None) -> str:
   """
   if DEBUG:
     print(f'*** groups_to_details_element({list(info.keys())})', file=sys.stderr)
-  assert isinstance(info, dict)
+  assert isinstance(info, dict), f'{info} is not a dict'
 
   return_str = ''
   for group_requirement in info.pop('group_requirements'):
@@ -494,6 +494,7 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
 
   try:
     true_value = to_html(info['if_true'])
+    print('xxxx', info['if_true'])
     if_true_part = (f'<details open="open"><summary>if ({condition}) is true</summary>'
                     f'{true_value}</details>')
   except KeyError as ke:
@@ -560,8 +561,8 @@ def dict_to_html_details_element(info: dict) -> str:
       return conditional_to_details_element(info['conditional'], label)
     elif key == 'subset':
       return subset_to_details_element(info['subset'], label)
-    elif key == 'groups':
-      return groups_to_details_element(info['groups'], label)
+    elif key == 'group_requirements':
+      return group_requirements_to_details_elements(info['group_requirements'], label)
 
     # Not special-case
     if label is None:
@@ -597,6 +598,19 @@ def dict_to_html_details_element(info: dict) -> str:
       display = f'<p><em>{display}</em></p>'
     except KeyError as ke:
       display = ''
+
+    try:
+      rule_complete_dict = info.pop('rule_complete')
+      rule_complete_value = 'complete' if rule_complete_dict['is_complete'] else 'not complete'
+      if 'label' in rule_complete_dict.keys():
+        label_str = rule_complete['label']
+      else:
+        label_str = ''
+      rule_complete = f'<p>{label_str}: Rule is {rule_complete_value}</p>'
+
+      display = f'<p><em>{display}</em></p>'
+    except KeyError as ke:
+      rule_complete = ''
 
     # Class lists and their qualifiers.
     try:
@@ -642,7 +656,8 @@ def dict_to_html_details_element(info: dict) -> str:
       except KeyError as ke:
         pass
 
-    return_str = f'{pseudo_msg}{context_path}{remark}{display}{numerics}{course_list}'
+    return_str = (f'{pseudo_msg}{context_path}{remark}{display}{numerics}{course_list}'
+                  f'{rule_complete}')
 
     # Key-value pairs not specific to course lists
     # --------------------------------------------
@@ -845,4 +860,49 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
 # __main__
 # =================================================================================================
 if __name__ == '__main__':
-  print('Command line access not supported.')
+  parser = argparse.ArgumentParser(description='Test DGW Parser')
+  parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
+  parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
+  parser.add_argument('-d', '--debug', action='store_true', default=False)
+  parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
+  parser.add_argument('-np', '--progress', action='store_false')
+  parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='current')
+  parser.add_argument('-q', '--do_quarantined', action='store_true')
+  parser.add_argument('-ra', '--requirement_id')
+  parser.add_argument('-ti', '--timelimit', type=int, default=30)
+  parser.add_argument('-u', '--update_db', action='store_true')
+
+  # Parse args
+  args = parser.parse_args()
+  if args.requirement_id:
+    institution = args.institutions[0].strip('10').upper() + '01'
+    requirement_id = args.requirement_id.strip('AaRr')
+    if not requirement_id.isdecimal():
+      sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
+    requirement_id = f'RA{int(requirement_id):06}'
+
+    if args.progress:
+      print(f'{institution} {requirement_id} {args.period}', end='')
+      sys.stdout.flush()
+    parse_tree = dgw_parser(institution,
+                            'block_type',   # Not used with requirement_id
+                            'block_value',  # Not used with requirement_id
+                            period_range=args.period,
+                            progress=args.progress,
+                            update_db=args.update_db,
+                            requirement_id=requirement_id,
+                            do_quarantined=args.do_quarantined,
+                            timelimit=args.timelimit)
+    # When not updating the db (i.e., during debugging), display the result as a web page.
+    if not args.update_db:
+      if 'error' in parse_tree.keys():
+        err_msg = parse_tree['error']
+        html = f'<h1 class="error">Error: {err_msg}</h1>'
+      else:
+        html = ''
+      html += to_html(parse_tree['header_list'])
+      html += to_html(parse_tree['body_list'])
+      print(html)
+    exit()
+  else:
+    exit('Only RA option supported.')
