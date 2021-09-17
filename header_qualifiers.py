@@ -5,28 +5,32 @@
     Note that each qualifier gets only a one-line string value here, suitable for adding to the
     program_requirements table.
 
-head : ( class_credit_head',
-       | conditional_head   ? See if this is used for major, minor, conc; might be degree-only
-       | lastres            ?
-       | maxclass',
-       | maxcredit',
-       | maxpassfail',
-       | maxperdisc',
-       | maxterm
-       | maxtransfer',
-       | mingrade',
-       | minclass',
-       | mincredit',
-       | mingpa',
-       | minperdisc',
-       | minres',
-       | optional           ?
-       | proxy_advice
-       | remark',
-       | share              ?
-       | standalone         ?
-       | under
-       )*
+    The rules that end in _head may, optioally, include a label.
+
+head        :
+            ( class_credit_head
+            | conditional_head
+            | lastres
+            | maxclass
+            | maxcredit
+            | maxpassfail_head
+            | maxperdisc_head
+            | maxterm
+            | maxtransfer_head
+            | mingrade
+            | minclass_head
+            | mincredit_head
+            | mingpa
+            | minperdisc_head
+            | minres
+            | optional
+            | proxy_advice
+            | remark
+            | share_head
+            | standalone
+            | under
+            )*
+            ;
 
   These are the ones currently handled: others may need to be added in the future
         maxclass
@@ -98,6 +102,10 @@ def _format_maxpassfail(maxpassfail_dict: dict) -> str:
   if DEBUG:
     print(f'_format_maxpassfail({maxpassfail_dict}', file=sys.stderr)
 
+  if 'label' in maxpassfail_dict.keys():
+    label_str = maxpassfail_dict['label']
+    print(f'Unhandled label for maxpassfail: {label_str}', file=sys.stderr)
+
   try:
     number = float(maxpassfail_dict.pop('number'))
     class_credit = maxpassfail_dict.pop('class_or_credit')
@@ -127,6 +135,11 @@ def _format_maxperdisc(maxperdisc_dict: dict) -> str:
   """
   if DEBUG:
     print(f'*** _format_maxperdisc({maxperdisc_dict=})', file=sys.stderr)
+
+  if 'label' in maxperdisc_dict.keys():
+    label_str = maxperdisc_dict['label']
+    print(f'Unhandled label for maxperdisc: {label_str}', file=sys.stderr)
+
   try:
     class_credit = maxperdisc_dict.pop('class_credit').lower()
     number = maxperdisc_dict.pop('number')
@@ -157,6 +170,10 @@ def _format_maxtransfer(maxtransfer_dict: dict) -> str:
   if DEBUG:
     print(f'_format_maxtransfer({maxtransfer_dict}', file=sys.stderr)
 
+  if 'label' in maxtransfer_dict.keys():
+    label_str = maxtransfer_dict['label']
+    print(f'Unhandled label for maxtransfer: {label_str}', file=sys.stderr)
+
   number = float(maxtransfer_dict.pop('number'))
   class_credit = maxtransfer_dict.pop('class_credit').lower()
   suffix = ''
@@ -184,6 +201,10 @@ def _format_minclass(minclass_dict: dict) -> str:
   if DEBUG:
     print(f'*** _format_minclass({minclass_dict=})', file=sys.stderr)
 
+  if 'label' in minclass_dict.keys():
+    label_str = minclass_dict['label']
+    print(f'Unhandled label for minclass: {label_str}', file=sys.stderr)
+
   try:
     number = int(minclass_dict.pop('number'))
     if number < 1:
@@ -204,6 +225,10 @@ def _format_mincredit(mincredit_dict: dict) -> str:
   """
   if DEBUG:
     print(f'_format_mincredit({mincredit_dict}', file=sys.stderr)
+
+  if 'label' in mincredit_dict.keys():
+    label_str = mincredit_dict['label']
+    print(f'Unhandled label for mincredit: {label_str}', file=sys.stderr)
 
   number = float(mincredit_dict.pop('number'))
   suffix = '' if number == 1.0 else 's'
@@ -274,6 +299,10 @@ def _format_minperdisc(minperdisc_dict: dict) -> str:
   """
   if DEBUG:
     print(f'_format_minperdisc({minperdisc_dict}', file=sys.stderr)
+
+  if 'label' in minperdisc_dict.keys():
+    label_str = minperdisc_dict['label']
+    print(f'Unhandled label for minperdisc: {label_str}', file=sys.stderr)
 
   number = float(minperdisc_dict.pop('number'))
   class_credit = minperdisc_dict.pop('class_credit').lower()
@@ -391,9 +420,10 @@ def format_header_qualifiers(node: dict) -> list:
   """ Given a dict that may or may not have keys for known qualifiers remove all qualifiers from the
       node, and return a list of formatted strings representing the qualifiers found.
   """
-  # The following qualifieres are legal, but we ignore ones that we don’t need.
   if DEBUG:
     print(f'*** format_header_qualifiers({node.keys()=}', file=sys.stderr)
+
+  # The following qualifieres are legal, but we ignore ones that we don’t need.
   handled_qualifiers = ['maxclass', 'maxcredit', 'maxpassfail', 'maxperdisc', 'maxtransfer',
                         'mingrade', 'minclass', 'mincredit', 'mingpa', 'minperdisc', 'minres',
                         'remark']
