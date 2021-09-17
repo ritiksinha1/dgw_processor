@@ -704,7 +704,7 @@ def dict_to_html_details_element(info: dict) -> str:
             return_str += f'<div>{key_str}: {value}</div>'
 
       else:
-        # Fallthrough
+        # Fall through
         return_str += to_html(value)
 
     if label is None:
