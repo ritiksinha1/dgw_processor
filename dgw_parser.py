@@ -191,6 +191,8 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
             if obj != {}:
               body_list.append(obj)
 
+        augmented_tree['header_list'] = header_list
+        augmented_tree['body_list'] = body_list
         if update_db:
           try:
             update_cursor.execute(f"""
@@ -198,6 +200,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
             where institution = '{row.institution}'
             and requirement_id = '{row.requirement_id}'
             """, (json.dumps(augmented_tree), ))
+
           # Deal with giant parse trees that exceed Postgres limit for jsonb data
           except Exception as err:
             if err.pgcode == '54000':
