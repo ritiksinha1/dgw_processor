@@ -1,6 +1,6 @@
 #! /usr/local/bin/python3
 """
-NOT USED: Historical Artifact
+MODULE NOT USED -- HISTORICAL ARTIFACT
 
 maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
 maxperdisc      : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
