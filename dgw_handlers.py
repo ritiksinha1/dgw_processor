@@ -151,8 +151,8 @@ def class_credit_body(ctx, institution, requirement_id):
   if share_contexts := ctx.share():
     if not isinstance(share_contexts, list):
       share_contexts = [share_contexts]
-    return_dict['share'] = '; '.join([share(ctx.share(), institution, requirement_id)
-                                     for ctx in share_contexts])
+    return_dict['share'] = '; '.join([share(share_ctx.share(), institution, requirement_id)
+                                      for share_ctx in share_contexts])
 
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
@@ -786,20 +786,24 @@ def share(ctx, institution, requirement_id):
   """
       share           : (SHARE | DONT_SHARE) (NUMBER class_or_credit)? expression? tag?;
   """
-  return_dict = dict()
+  if DEBUG:
+    print(f'*** share({dir(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
 
-  if ctx.SHARE():
-    return_dict['share_type'] = 'allow sharing'
+  if class_name(ctx) == 'Share':
+    share_ctx = ctx
   else:
-    return_dict['share_type'] = 'exclusive'
+    share_ctx = ctx.share()
+  share_dict = dict()
+
+  share_dict['allow_sharing'] = True if share_ctx.SHARE() is not None else False
 
   if ctx.NUMBER():
-    return_dict['number'] = ctx.NUMBER().getText().strip()
-    return_dict['class_or_credit'] = class_or_credit(ctx.class_or_credit())
+    share_dict['number'] = ctx.NUMBER().getText().strip()
+    share_dict['class_or_credit'] = class_or_credit(ctx.class_or_credit())
   if ctx.expression():
-    return_dict['expression'] = ctx.expression().getText()
+    share_dict['expression'] = ctx.expression().getText()
 
-  return {'share': return_dict}
+  return {'share': share_dict}
 
 
 # share_head()
@@ -808,25 +812,25 @@ def share_head(ctx, institution, requirement_id):
   """
       share_head        : share label?;
   """
-  share_ctx = ctx.share()
-  return_dict = dict()
+  if DEBUG:
+    print(f'*** share_head({dir(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
 
-  if share_ctx.SHARE():
-    return_dict['share_type'] = 'allow sharing'
-  else:
-    return_dict['share_type'] = 'exclusive'
+  share_ctx = ctx.share()
+  share_dict = dict()
+
+  share_dict['allow_sharing'] = True if share_ctx.SHARE() is not None else False
 
   if share_ctx.NUMBER():
-    return_dict['number'] = share_ctx.NUMBER().getText().strip()
-    return_dict['class_or_credit'] = class_or_credit(share_ctx.class_or_credit())
+    share_dict['number'] = share_ctx.NUMBER().getText().strip()
+    share_dict['class_or_credit'] = class_or_credit(share_ctx.class_or_credit())
   if share_ctx.expression():
-    return_dict['expression'] = share_ctx.expression().getText()
+    share_dict['expression'] = share_ctx.expression().getText()
 
   label_str = get_label(ctx)
   if label_str:
-    return_dict['label'] = label_str
+    share_dict['label'] = label_str
 
-  return {'share': return_dict}
+  return {'share': share_dict}
 
 
 # standalone()

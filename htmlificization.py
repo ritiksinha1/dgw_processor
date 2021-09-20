@@ -20,7 +20,7 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
-from body_qualifiers import format_body_qualifiers
+from body_qualifiers import format_body_qualifiers, _format_share as format_share
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection
@@ -563,8 +563,11 @@ def dict_to_html_details_element(info: dict) -> str:
       return subset_to_details_element(info['subset'], label)
     elif key == 'group_requirements':
       return group_requirements_to_details_elements(info['group_requirements'], label)
+    elif key == 'share':
+      # Also special-casing share to be consistent between header rules and body qualifiers.
+      return f'<p>{format_share(info[key])}</p>'
 
-    # Not special-case
+    # Not special-case, but just a single key
     if label is None:
       summary = f'<summary>{key.replace("_", " ").title()}</summary>'
     else:
@@ -578,7 +581,7 @@ def dict_to_html_details_element(info: dict) -> str:
       return f'<details>{summary}{to_html(value)}</details>'
 
   else:
-    # Case 2
+    # Multple keys
     pseudo_msg = ''
     try:
       pseudo = info.pop('is_pseudo')

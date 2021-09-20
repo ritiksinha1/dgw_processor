@@ -19,7 +19,7 @@ def _format_maxpassfail(maxpassfail_dict: dict) -> str:
   """
   """
   if DEBUG:
-    print(f'_format_maxpassfail({maxpassfail_dict}', file=sys.stderr)
+    print(f'_format_maxpassfail({maxpassfail_dict})', file=sys.stderr)
 
   try:
     number = float(maxpassfail_dict.pop('number'))
@@ -49,6 +49,7 @@ def _format_maxperdisc(maxperdisc_dict: dict) -> str:
   """
   if DEBUG:
     print(f'*** _format_maxperdisc({maxperdisc_dict=})', file=sys.stderr)
+
   try:
     class_credit = maxperdisc_dict.pop('class_credit').lower()
     number = maxperdisc_dict.pop('number')
@@ -76,6 +77,7 @@ def _format_maxspread(maxspread_dict: dict) -> str:
   """
   if DEBUG:
     print(f'*** _format_maxspread({maxspread_dict})', file=sys.stderr)
+
   number = int(maxspread_dict['number'])
 
   return f'No more than {number} disciplines allowed'
@@ -89,7 +91,7 @@ def _format_maxtransfer(maxtransfer_dict: dict) -> str:
        'disciplines': disciplines}
   """
   if DEBUG:
-    print(f'_format_maxtransfer({maxtransfer_dict}', file=sys.stderr)
+    print(f'_format_maxtransfer({maxtransfer_dict})', file=sys.stderr)
 
   number = float(maxtransfer_dict.pop('number'))
   class_credit = maxtransfer_dict.pop('class_credit').lower()
@@ -116,7 +118,7 @@ def _format_minarea(minarea_dict: dict) -> str:
   """ {'number': qualifier_ctx.NUMBER().getText()}
   """
   if DEBUG:
-    print(f'_format_minarea({minarea_dict}', file=sys.stderr)
+    print(f'_format_minarea({minarea_dict})', file=sys.stderr)
 
   try:
     number = int(minarea_dict.pop('number'))
@@ -155,7 +157,7 @@ def _format_mincredit(mincredit_dict: dict) -> str:
       We don't show the course_list here; that will or won't happen depending on the application.
   """
   if DEBUG:
-    print(f'_format_mincredit({mincredit_dict}', file=sys.stderr)
+    print(f'_format_mincredit({mincredit_dict})', file=sys.stderr)
 
   number = float(mincredit_dict.pop('number'))
   suffix = '' if number == 1.0 else 's'
@@ -170,6 +172,7 @@ def _format_mingpa(mingpa_dict: dict) -> str:
   """
   if DEBUG:
     print(f'*** _format_mingpa({mingpa_dict=})', file=sys.stderr)
+
   number = float(mingpa_dict.pop('number'))
   # But if there is an expression, do embed that in the response string.
   try:
@@ -225,7 +228,7 @@ def _format_minperdisc(minperdisc_dict: dict) -> str:
        'disciplines': disciplines}
   """
   if DEBUG:
-    print(f'_format_minperdisc({minperdisc_dict}', file=sys.stderr)
+    print(f'_format_minperdisc({minperdisc_dict})', file=sys.stderr)
 
   number = float(minperdisc_dict.pop('number'))
   class_credit = minperdisc_dict.pop('class_credit').lower()
@@ -252,11 +255,44 @@ def _format_minspread(minspread_dict: dict) -> str:
   """ {'number': qualifier_ctx.NUMBER().getText()}
   """
   if DEBUG:
-    print(f'_format_minspread({minspread_dict}', file=sys.stderr)
+    print(f'_format_minspread({minspread_dict})', file=sys.stderr)
 
   number = int(minspread_dict.pop('number'))
   suffix = '' if number == 1 else 's'
   return f'At least {number} discipline{suffix} required'
+
+
+# _format_share()
+# -------------------------------------------------------------------------------------------------
+def _format_share(share_dict: dict) -> str:
+  """ share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
+      Template: “{num class_credit(s)} {Mm}ay {not} be shared {with expression requirements}”
+  """
+  if DEBUG:
+    print(f'_format_share({share_dict})', file=sys.stderr)
+
+  try:
+    number = float(share_dict['number'])
+    class_credit = share_dict['class_credit']
+    if class_credit == 'class':
+      suffix = '' if number == 1.0 else 'es'
+      number_str = f'{number:.0f}'
+    else:
+      suffix = '' if number == 1.0 else 's'
+      number_str = f'{number:.1f}'
+    prefix_str = f'{number_str} {class_credit}{suffix} may'
+  except KeyError as ke:
+    prefix_str = 'May'
+
+  not_str = ' ' if share_dict['allow_sharing'] else ' not '
+
+  try:
+    expression_str = share_dict['expression'].strip(')(')
+    suffix_str = f' with “{expression_str}” requirements'
+  except KeyError as ke:
+    suffix_str = f''
+
+  return f'{prefix_str}{not_str}be shared{suffix_str}'
 
 
 # dispatch()
@@ -272,6 +308,7 @@ dispatch_table = {'maxpassfail': _format_maxpassfail,
                   'mingrade': _format_mingrade,
                   'minperdisc': _format_minperdisc,
                   'minspread': _format_minspread,
+                  'share': _format_share,
                   }
 
 
@@ -298,9 +335,10 @@ def format_body_qualifiers(node: dict) -> list:
   possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                          'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                          'proxy_advice', 'rule_tag', 'samedisc', 'share']
-  ignored_qualifiers = ['proxy_advice', 'rule_tag', 'samedisc', 'share']
+  ignored_qualifiers = ['proxy_advice', 'rule_tag', 'samedisc']
   handled_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-                        'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread']
+                        'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
+                        'share']
   qualifier_strings = []
   for qualifier in possible_qualifiers:
     if qualifier in node.keys():

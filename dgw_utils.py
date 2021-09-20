@@ -309,8 +309,9 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
                         RP
                       ;
   """
-  print(f'\n*** getgroups({class_name(ctx)})')
-  print(f'{len(ctx.group())=}')
+  if DEBUG:
+    print(f'\n*** getgroups({class_name(ctx)})')
+
   return_list = []
   for group_ctx in ctx.group():
     children = group_ctx.getChildren()
@@ -451,24 +452,13 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
               # These are used for managing the audit process and are ignored here
               pass
 
-            # share           : (SHARE | DONT_SHARE) (NUMBER (CLASS | CREDIT))? expression?
             elif valid_qualifier == 'share':
-              if qualifier_ctx.DONT_SHARE():
-                valid_qualifier = 'dont_share'
-              qualifier_dict[valid_qualifier] = dict()
-
-              if qualifier_ctx.NUMBER():
-                qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
-                qualifier_dict[valid_qualifier]['class_credit'] = class_credit
-
-              if qualifier_ctx.expression():
-                expression = qualifier_func().expression()
-                if expression:
-                  qualifier_dict[valid_qualifier]['expression'] = expression.getText()
+              qualifier_dict.update(dgw_handlers.share(qualifier_ctx, institution, requirement_id))
 
             else:
-              print(f'Unexpected qualifier: {valid_qualifier} in {requirement_id} for {institution}',
-                    file=sys.stderr)
+              print(f'Unexpected qualifier: {valid_qualifier} in {requirement_id} for '
+                    f'{institution}', file=sys.stderr)
+
   return qualifier_dict
 
 
