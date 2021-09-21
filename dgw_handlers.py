@@ -157,8 +157,9 @@ def class_credit_body(ctx, institution, requirement_id):
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  if DEBUG:
+  if True:
     print('    class_credit_body() returns the following dict', file=sys.stderr)
+    print(context_path(ctx), file=sys.stderr)
     pprint(return_dict, stream=sys.stderr)
 
   return return_dict

@@ -432,6 +432,8 @@ def group_requirements_to_details_elements(info: dict, outer_label=None) -> str:
 
   return_str = ''
   for group_requirement in info.pop('group_requirements'):
+    print('xxxx', list(group_requirement.keys()))
+    pprint(group_requirement['group_requirement'])
     num_required = int(group_requirement['number'])
     if num_required < len(number_names):
       num_required = number_names[num_required]

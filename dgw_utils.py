@@ -322,7 +322,7 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
       item_class = class_name(child)
       if item_class.lower() == 'terminalnodeimpl':
         continue
-
+      print('xxxx', class_name(child))
       if 'Course_list' == class_name(child):
         debug = build_course_list(child, institution, requirement_id)
         print(debug)
