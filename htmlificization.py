@@ -20,7 +20,9 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
-from body_qualifiers import format_body_qualifiers, _format_share as format_share
+from body_qualifiers import format_body_qualifiers, \
+    _format_share as format_share, \
+    _format_maxperdisc as format_maxperdisc
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection
@@ -348,6 +350,8 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   except KeyError as ke:
     inner_label = None
 
+  print(f'*** Subset: {outer_label is None=} {inner_label is None=}', file=sys.stderr)
+
   try:
     remark = info.pop('remark')
     remark_str = f'<p>{remark}</p>'
@@ -563,9 +567,12 @@ def dict_to_html_details_element(info: dict) -> str:
       return subset_to_details_element(info['subset'], label)
     elif key == 'group_requirements':
       return group_requirements_to_details_elements(info['group_requirements'], label)
+
+    # Also special-casing qualifiers to be consistent between header rules and body qualifiers.
     elif key == 'share':
-      # Also special-casing share to be consistent between header rules and body qualifiers.
       return f'<p>{format_share(info[key])}</p>'
+    elif key == 'maxperdisc':
+      return f'<p>{format_maxperdisc(info[key])}</p>'
 
     # Not special-case, but just a single key
     if label is None:

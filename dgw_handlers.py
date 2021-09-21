@@ -487,9 +487,10 @@ def maxperdisc(ctx, institution, requirement_id):
   if DEBUG:
     print(f'*** maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}', file=sys.stderr)
 
-  return_dict = {'number': ctx.NUMBER().getText(),
-                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
-  return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
+  maxperdisc_ctx = ctx.maxperdisc()
+  return_dict = {'number': maxperdisc_ctx.NUMBER().getText().strip(),
+                 'class_or_credit': class_or_credit(maxperdisc_ctx.class_or_credit())}
+  return_dict['disciplines'] = [discp.getText().upper() for discp in maxperdisc_ctx.SYMBOL()]
 
   return {'maxperdisc': return_dict}
 
@@ -504,8 +505,8 @@ def maxperdisc_head(ctx, institution, requirement_id):
     print(f'*** maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}', file=sys.stderr)
 
   maxperdisc_ctx = ctx.maxperdisc()
-  return_dict = {'number': maxperdisc_ctx.NUMBER().getText(),
-                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  return_dict = {'number': maxperdisc_ctx.NUMBER().getText().strip(),
+                 'class_or_credit': class_or_credit(maxperdisc_ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in maxperdisc_ctx.SYMBOL()]
 
   label_str = get_label(ctx)
