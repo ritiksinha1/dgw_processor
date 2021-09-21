@@ -427,7 +427,7 @@ def group_requirements_to_details_elements(info: dict, outer_label=None) -> str:
       group item.
   """
   if DEBUG:
-    print(f'*** groups_to_details_element({list(info.keys())})', file=sys.stderr)
+    print(f'*** group_requirements_to_details_elements({list(info.keys())})', file=sys.stderr)
   assert isinstance(info, dict), f'{info} is not a dict'
 
   return_str = ''
@@ -498,7 +498,6 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
 
   try:
     true_value = to_html(info['if_true'])
-    print('xxxx', info['if_true'])
     if_true_part = (f'<details open="open"><summary>if ({condition}) is true</summary>'
                     f'{true_value}</details>')
   except KeyError as ke:

@@ -337,8 +337,6 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
     if group_ctx.label():
       return_dict['label'] = get_label(group_ctx)
 
-  print(f'*** {len(return_list)=}')
-  print(f'*** {return_dict.keys()=}')
   return return_dict
 
 

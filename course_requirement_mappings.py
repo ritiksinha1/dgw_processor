@@ -74,7 +74,7 @@ Requirement = namedtuple('Requirement',
 def emit(requirement: Requirement, program_qualifiers: list, context: list) -> None:
   """ Update the database.
 
-      CREATE TABLE program_requirements (
+      TABLE program_requirements (
         id serial primary key,
         institution text not null,
         requirement_id text not null,
@@ -88,7 +88,7 @@ def emit(requirement: Requirement, program_qualifiers: list, context: list) -> N
         program_qualifiers jsonb not null,
         requirement_qualifiers jsonb not null, ...
 
-        CREATE TABLE course_requirement_mappings (
+      TABLE course_requirement_mappings (
         course_id integer,
         offer_nbr integer,
         program_requirement_id integer references program_requirements(id) on delete cascade,
