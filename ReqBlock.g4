@@ -206,7 +206,6 @@ head_rule         : conditional_head
                   | share_head
                   ;
 
-
 conditional_body  : IF expression THEN (body_rule | body_rule_group)
                     qualifier* label? else_body?;
 else_body         : ELSE (body_rule | body_rule_group)
@@ -280,22 +279,15 @@ blocktype       : NUMBER BLOCKTYPE expression proxy_advice? label;
  */
 allow_clause        : LP allow NUMBER RP;
 
-class_credit_head   : (num_classes | num_credits)
-                      (logical_op (num_classes | num_credits))?
-                      (IS? pseudo | display | proxy_advice | header_tag | label | tag)*
-                    ;
+class_credit_head : (num_classes | num_credits)
+                  (logical_op (num_classes | num_credits))?
+                  (IS? pseudo | display | proxy_advice | header_tag | label | tag)*
+                  ;
 
-class_credit_body   : (num_classes | num_credits)
-                      (logical_op (num_classes | num_credits))? course_list_body?
-                      (IS? pseudo
-                       | display
-                       | label
-                       | proxy_advice
-                       | remark
-                       | rule_tag
-                       | share
-                       | tag
-                      )*;
+class_credit_body : (num_classes | num_credits)
+                  (logical_op (num_classes | num_credits))? course_list_body?
+                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )*
+                  ;
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
 // ------------------------------------------------------------------------------------------------

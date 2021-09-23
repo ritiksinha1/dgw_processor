@@ -377,9 +377,9 @@ def serializedATN():
         buf.write("\3\2\2\2\u0272\u0273\3\2\2\2\u0273\u0281\3\2\2\2\u0274")
         buf.write("\u0276\7J\2\2\u0275\u0274\3\2\2\2\u0275\u0276\3\2\2\2")
         buf.write("\u0276\u0277\3\2\2\2\u0277\u0280\5\u0092J\2\u0278\u0280")
-        buf.write("\5^\60\2\u0279\u0280\5b\62\2\u027a\u0280\5\u0090I\2\u027b")
-        buf.write("\u0280\5\u0094K\2\u027c\u0280\5\u0098M\2\u027d\u0280\5")
-        buf.write("\u009cO\2\u027e\u0280\5\u00a4S\2\u027f\u0275\3\2\2\2\u027f")
+        buf.write("\5^\60\2\u0279\u0280\5\u0090I\2\u027a\u0280\5\u0094K\2")
+        buf.write("\u027b\u0280\5\u009cO\2\u027c\u0280\5\u0098M\2\u027d\u0280")
+        buf.write("\5b\62\2\u027e\u0280\5\u00a4S\2\u027f\u0275\3\2\2\2\u027f")
         buf.write("\u0278\3\2\2\2\u027f\u0279\3\2\2\2\u027f\u027a\3\2\2\2")
         buf.write("\u027f\u027b\3\2\2\2\u027f\u027c\3\2\2\2\u027f\u027d\3")
         buf.write("\2\2\2\u027f\u027e\3\2\2\2\u0280\u0283\3\2\2\2\u0281\u027f")
@@ -4874,13 +4874,6 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContext(ReqBlockParser.DisplayContext,i)
 
 
-        def label(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.LabelContext)
-            else:
-                return self.getTypedRuleContext(ReqBlockParser.LabelContext,i)
-
-
         def proxy_advice(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(ReqBlockParser.Proxy_adviceContext)
@@ -4895,6 +4888,13 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContext(ReqBlockParser.RemarkContext,i)
 
 
+        def share(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ReqBlockParser.ShareContext)
+            else:
+                return self.getTypedRuleContext(ReqBlockParser.ShareContext,i)
+
+
         def rule_tag(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(ReqBlockParser.Rule_tagContext)
@@ -4902,11 +4902,11 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContext(ReqBlockParser.Rule_tagContext,i)
 
 
-        def share(self, i:int=None):
+        def label(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.ShareContext)
+                return self.getTypedRuleContexts(ReqBlockParser.LabelContext)
             else:
-                return self.getTypedRuleContext(ReqBlockParser.ShareContext,i)
+                return self.getTypedRuleContext(ReqBlockParser.LabelContext,i)
 
 
         def tag(self, i:int=None):
@@ -5017,25 +5017,25 @@ class ReqBlockParser ( Parser ):
                         self.state = 630
                         self.display()
                         pass
-                    elif token in [ReqBlockParser.LABEL]:
-                        self.state = 631
-                        self.label()
-                        pass
                     elif token in [ReqBlockParser.PROXY_ADVICE]:
-                        self.state = 632
+                        self.state = 631
                         self.proxy_advice()
                         pass
                     elif token in [ReqBlockParser.REMARK]:
-                        self.state = 633
+                        self.state = 632
                         self.remark()
+                        pass
+                    elif token in [ReqBlockParser.DONT_SHARE, ReqBlockParser.SHARE]:
+                        self.state = 633
+                        self.share()
                         pass
                     elif token in [ReqBlockParser.RULE_TAG]:
                         self.state = 634
                         self.rule_tag()
                         pass
-                    elif token in [ReqBlockParser.DONT_SHARE, ReqBlockParser.SHARE]:
+                    elif token in [ReqBlockParser.LABEL]:
                         self.state = 635
-                        self.share()
+                        self.label()
                         pass
                     elif token in [ReqBlockParser.TAG]:
                         self.state = 636
