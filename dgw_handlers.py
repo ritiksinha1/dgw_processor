@@ -362,26 +362,28 @@ group             : LP
           file=sys.stderr)
 
   if isinstance(ctx, list):
-    if len(ctx) == 1:
-      group_requirement_ctx = ctx[0]
-    else:
-      raise ValueError(f'Length of group_requirement ctx ({len(ctx)}) is not unity')
+    group_requirement_contexts = ctx
   else:
-    group_requirement_ctx = ctx
+    group_requirement_contexts = [ctx]
 
-  return_dict = {'number': group_requirement_ctx.NUMBER().getText()}
+  requirement_list = []
+  for group_requirement_ctx in group_requirement_contexts:
 
-  return_dict['group_list'] = get_groups(group_requirement_ctx.groups(),
-                                         institution, requirement_id)
+    return_dict = {'number': group_requirement_ctx.NUMBER().getText()}
 
-  if group_requirement_ctx.label():
-    return_dict['label'] = get_label(group_requirement_ctx)
+    return_dict['group_list'] = get_groups(group_requirement_ctx.groups(),
+                                           institution, requirement_id)
 
-  if group_requirement_ctx.qualifier():
-    return_dict.update(get_qualifiers(group_requirement_ctx.qualifier(),
-                                      institution, requirement_id))
+    if group_requirement_ctx.label():
+      return_dict['label'] = get_label(group_requirement_ctx)
 
-  return {'group_requirement': return_dict}
+    if group_requirement_ctx.qualifier():
+      return_dict.update(get_qualifiers(group_requirement_ctx.qualifier(),
+                                        institution, requirement_id))
+
+    requirement_list.append({'group_requirement': return_dict})
+
+  return {'group_requirements': requirement_list}
 
 
 # header_tag()

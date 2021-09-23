@@ -141,7 +141,7 @@ def _format_maxperdisc(maxperdisc_dict: dict) -> str:
     print(f'Unhandled label for maxperdisc: {label_str}', file=sys.stderr)
 
   try:
-    class_credit = maxperdisc_dict.pop('class_credit').lower()
+    class_credit = maxperdisc_dict.pop('class_or_credit').lower()
     number = maxperdisc_dict.pop('number')
     if class_credit == 'class':
       number = int(number)

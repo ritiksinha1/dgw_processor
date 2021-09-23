@@ -62,6 +62,9 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       - active and inactive courses have the course_id, offer_nbr, discipline, catalog_number,
         title, credits, and optional with clause, so the length of those tuples is 7.
   """
+  if DEBUG:
+    print(f'*** list_of_courses({len(course_tuples)} course tuples, {title_str} {highlight=})', file=sys.stderr)
+
   suffix = '' if len(course_tuples) == 1 else 's'
   class_str = ' class="error"' if highlight else ''
   return_str = (f'<details><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</summary>'
@@ -92,6 +95,7 @@ def class_credit_to_str(min_classes: int, max_classes: int,
   if DEBUG:
     print(f'*** class_credit_to_str({min_classes=}, {max_classes=}, {min_credits=}, '
           f'{max_credits=}, {conjunction=})', file=sys.stderr)
+
   if min_classes:
     if min_classes == max_classes:
       suffix = '' if min_classes == 1 else 'es'
@@ -115,8 +119,8 @@ def class_credit_to_str(min_classes: int, max_classes: int,
     # Possibly empty string
     class_credit_str = f'{num_classes}{num_credits}'
 
-  # if DEBUG:
-  #   print(f'    returning “{class_credit_str}”', file=sys.stderr)
+  if DEBUG:
+    print(f'    returning “{class_credit_str}”', file=sys.stderr)
 
   return class_credit_str
 
@@ -182,12 +186,12 @@ def course_list_details(info: dict) -> str:
     else:
       attributes_str = ''
       try:
-        attributes = info['attributes']
+        attributes = info['attributes ']
         if attributes is not None:
           attributes_str = ','.join(attributes)
       except KeyError as ke:
         pass
-      details_str += list_of_courses(active_courses, f'Active {attributes_str} Course')
+      details_str += list_of_courses(active_courses, f'Active {attributes_str}Course')
 
     course_areas = info.pop('course_areas')
     if len(course_areas) > 0:
@@ -217,7 +221,7 @@ def course_list_details(info: dict) -> str:
     print(f'Invalid Course List: missing key is {ke}', file=sys.stderr)
     pprint(info, stream=sys.stderr)
 
-  # Class/Credit info
+  # Class/Credit info, if present
   if 'conjunction' in info.keys():
     conjunction = info.pop('conjunction')
   else:
@@ -303,7 +307,7 @@ def requirement_to_details_element(requirement: dict) -> str:
   # If nothing else, expect a list of courses for the requirement
   try:
     if DEBUG:
-      print('*** From requirement_to_details_element', file=sys.stderr)
+      print('    From requirement_to_details_element()', file=sys.stderr)
     inner_label_str, course_str = course_list_details(requirement.pop('course_list'))
   except KeyError as ke:
     inner_label_str = course_str = ''
@@ -343,14 +347,15 @@ def subset_to_details_element(info: dict, outer_label) -> str:
        return the inner part nested inside a details element with the outer label as its summary
   """
   if DEBUG:
-    print(f'*** subset_to_details_element({info.keys()=})', file=sys.stderr)
+    print(f'*** subset_to_details_element({list(info.keys())}, {outer_label=})', file=sys.stderr)
 
   try:
     inner_label = info.pop('label')
   except KeyError as ke:
     inner_label = None
 
-  print(f'*** Subset: {outer_label is None=} {inner_label is None=}', file=sys.stderr)
+  if outer_label is None and inner_label is None:
+    print(f'*** Subset with no label\n{info}', file=sys.stderr)
 
   try:
     remark = info.pop('remark')
@@ -384,12 +389,15 @@ def subset_to_details_element(info: dict, outer_label) -> str:
 
   # Are there any group requirements?
   if 'group_requirements' in info.keys():
-    course_requirements_element += group_requirements_to_details_elements(info)
-
-  if DEBUG:
-    print(f'{info.keys()=} in subset_to_details_element', file=sys.stderr)
+    for group_requirement in info['group_requirements']:
+      course_requirements_element += group_requirement_to_details_elements(group_requirement)
 
   # Remaining keys are info to appear before the course/group requirements
+
+  if DEBUG and len(info.keys()):
+    print(f'    Keys being passed to to_html() in subset_to_details_element: {list(info.keys())}',
+          file=sys.stderr)
+
   details_str = ''.join([to_html(info[key]) for key in info.keys()])
 
   requirements_str = f'{remark_str}{qualifiers_str}{details_str}{course_requirements_element}'
@@ -410,16 +418,12 @@ def subset_to_details_element(info: dict, outer_label) -> str:
     summary = 'Unnamed Requirement'
     body = requirements_str
 
-  # if DEBUG:
-  #   print(f'stode: {summary=}', file=sys.stderr)
-  #   print(f'stode: {body=}', file=sys.stderr)
-
   return f'<details>{summary}{body}</details>'
 
 
-# group_requirements_to_details_elements()
+# group_requirement_to_details_elements()
 # -------------------------------------------------------------------------------------------------
-def group_requirements_to_details_elements(info: dict, outer_label=None) -> str:
+def group_requirement_to_details_elements(info: dict, outer_label=None) -> str:
   """
       Returns a details element for each dict in the info list.
       The summary for each group is the label; the body starts with a paragraph that tells how many
@@ -427,51 +431,58 @@ def group_requirements_to_details_elements(info: dict, outer_label=None) -> str:
       group item.
   """
   if DEBUG:
-    print(f'*** group_requirements_to_details_elements({list(info.keys())})', file=sys.stderr)
+    print(f'*** group_requirement_to_details_elements({list(info.keys())}, '
+          f'{outer_label=})', file=sys.stderr)
   assert isinstance(info, dict), f'{info} is not a dict'
 
+  group_requirement = info.pop('group_requirement')
   return_str = ''
-  for group_requirement in info.pop('group_requirements'):
-    print('xxxx', list(group_requirement.keys()))
-    pprint(group_requirement['group_requirement'])
-    num_required = int(group_requirement['number'])
-    if num_required < len(number_names):
-      num_required = number_names[num_required]
-    groups = group_requirement['groups']
-    num_groups = len(groups)
-    if num_groups < len(number_names):
-      num_groups = number_names[num_groups]
-    if num_required == 'one' and num_groups == 'two':
+  num_required = int(group_requirement['number'])
+  if num_required < len(number_names):
+    num_required = number_names[num_required]
+  group_list = group_requirement['group_list']
+  assert isinstance(group_list, dict)
+  num_groups = len(group_list['groups'])
+  num_groups_suffix = '' if num_groups == 1 else 's'
+  if num_groups < len(number_names):
+    num_groups = number_names[num_groups]
+  if num_required == 'one':
+    if num_groups == 'one':
+      requirement_str = '<p>The following group'
+    elif num_groups == 'two':
       requirement_str = '<p>Either of the following two groups'
     else:
-      requirement_str = f'<p>Any {num_required} of the following {num_groups} groups'
-    label_str = group_requirement['label'].title()
+      requirement_str = f'<p>One of the following {num_groups} groups'
+  else:
+    requirement_str = f'<p>Any {num_required} of the following {num_groups} groups'
+  label_str = group_requirement['label'].title()
 
-    try:
-      qualifiers = ''.join(f'<p>{q}</p>' for q in group_requirement['qualifiers'])
-    except KeyError as ke:
-      qualifiers = ''
+  try:
+    qualifiers = ''.join(f'<p>{q}</p>' for q in group_requirement['qualifiers'])
+  except KeyError as ke:
+    qualifiers = ''
 
-    summary = f'<summary>{label_str}</summary>'
-    body = requirement_str + qualifiers
-    # Each group gets its own details element telling which group it is
-    group_number = 0
-    for group in groups:
-      group_number += 1
-      if isinstance(group, list):
-        group_body = list_to_html_list_element(group)
-      elif isinstance(group, dict):
-        group_body = dict_to_html_details_element(group)
-      else:
-        group_body = f'<div class="error">Error: {group} is neither a list nor a dict</div>'
-      index = number_names[group_number] if group_number < len(number_names) else group_number
-      body += f"""
-      <details>
-        <summary>Group {index} of {num_groups} groups</summary>
-        {group_body}
-      </details>
-      """
-    return_str += f'<details open="open">{summary}{body}</details>'
+  summary = f'<summary>{label_str}</summary>'
+  body = requirement_str + qualifiers
+
+  # Each group gets its own details element telling which group it is
+  group_number = 0
+  for group_item in group_list['groups']:
+    group_number += 1
+    if isinstance(group_item, list):
+      group_body = list_to_html_list_element(group_item)
+    elif isinstance(group_item, dict):
+      group_body = dict_to_html_details_element(group_item)
+    else:
+      group_body = f'<div class="error">Error: {group_item} is neither a list nor a dict</div>'
+    index = number_names[group_number] if group_number < len(number_names) else group_number
+    body += f"""
+    <details>
+      <summary>Group {index} of {num_groups} group{num_groups_suffix}</summary>
+      {group_body}
+    </details>
+    """
+  return_str += f'<details open="open">{summary}{body}</details>'
   return return_str
 
 
@@ -486,7 +497,8 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
        return the parts nested inside a details element with the outer summary
   """
   if DEBUG:
-    print(f'conditional_to_details_element({info.keys()=})', file=sys.stderr)
+    print(f'*** conditional_to_details_element({list(info.keys())}, {outer_label=})',
+          file=sys.stderr)
 
   try:
     condition = info.pop('condition')
@@ -548,7 +560,7 @@ def dict_to_html_details_element(info: dict) -> str:
   """
 
   if DEBUG:
-      print(f'*** dict_to_html_details_element({info.keys()=})', file=sys.stderr)
+      print(f'*** dict_to_html_details_element({list(info.keys())})', file=sys.stderr)
 
   # Indicator for not returning a nest-able display element
   label = None
@@ -560,14 +572,46 @@ def dict_to_html_details_element(info: dict) -> str:
   keys = info.keys()
 
   if len(keys) == 1:
-    # If there is a single key, see if it is group, subset, or conditional, and special-case if so
+    # If there is a single key, see if it is group, subset, conditional, or naked course list,
+    # and special-case if so
     key = list(info)[0]
     if key == 'conditional':  # Special case for conditional dicts
       return conditional_to_details_element(info['conditional'], label)
     elif key == 'subset':
       return subset_to_details_element(info['subset'], label)
     elif key == 'group_requirements':
-      return group_requirements_to_details_elements(info['group_requirements'], label)
+      return_str = ''
+      for group_requirement in info['group_requirements']:
+        return_str += group_requirement_to_details_elements(group_requirement, label)
+      return return_str
+    elif key == 'course_list':
+      label_str, course_list = course_list_details(info.pop('course_list'))
+      if label:
+        if label_str:
+          return f"""
+          <details>
+            <summary>{label}</summary>
+            <details>
+              <summary>{label_str}</summary>
+              {course_list}
+            </details>
+          </details
+          """
+        else:
+          return f"""
+          <details>
+            <summary>{label}</summary>
+            {course_list}
+          </details>
+          """
+      else:
+        label_str = label_str if label_str else '<span class="error">Unnamed requirement</span>'
+        return f"""
+        <details>
+          <summary>{label_str}</summary>
+          {course_list}
+        </details>
+        """
 
     # Also special-casing qualifiers to be consistent between header rules and body qualifiers.
     elif key == 'share':
@@ -651,9 +695,11 @@ def dict_to_html_details_element(info: dict) -> str:
         if value is not None:
           numerics += f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
 
-    # courses?
+    # course_list part of a multi-key dict
     course_list = ''
     if 'course_list' in info.keys():
+      if DEBUG:
+        print('    From dict_to_html_details_element()')
       label_str, course_list = course_list_details(info.pop('course_list'))
       # If there is a non-empty label, use it as the summary of a complete details element
       if label_str:
@@ -729,6 +775,9 @@ def dict_to_html_details_element(info: dict) -> str:
 def list_to_html_list_element(info: list, kind='Item') -> str:
   """
   """
+  if DEBUG:
+    print(f'*** list_to_html_list_element({len(info)} elements, {kind=})', file=sys.stderr)
+
   num = len(info)
   if num == 0:
     return '<p class="error">Empty List</p>'
@@ -772,6 +821,9 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
 def to_html(info: any, kind='Item') -> str:
   """  Return a nested HTML data structure as described above.
   """
+  if DEBUG:
+    print(f'*** to_html({type(info)}, {kind=})', file=sys.stderr)
+
   if info is None:
     return ''
   if isinstance(info, bool):
@@ -790,32 +842,13 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
   """ Generate html for the scribe block and interpreted head and body lists objects, unless the
       block has been quarantined.
   """
+  if DEBUG:
+    print(f'*** scribe_block_to_html({row}, {period_range=})', file=sys.stderr)
+
   if row.requirement_html == 'Not Available':
     return ('<h1 class="error">This scribe block is not available.</h1>'
             '<p><em>Should not occur.</em></p>')
 
-  # if quarantined_dict.is_quarantined((row.institution, row.requirement_id)):
-  #   header_list, body_list = None, None
-  #   block_type, catalog, year, explanation, ellucian = quarantined_dict[(row.institution,
-  #                                                                        row.requirement_id)]
-  #   if ellucian.upper().startswith('Y'):
-  #     qualifier = 'The Ellucian parser accepts this block, but this'
-  #   elif ellucian.upper().startswith('N'):
-  #     qualifier = 'The Ellucian parser rejects this block, and this'
-  #   else:
-  #     qualifier = 'This'
-  #   disclaimer = f"""
-  #   <p class="disclaimer">
-  #     <span class="error">
-  #       No Interpretation Available.<br>
-  #       {qualifier} parser detected the following problem:
-  #     </span>
-  #       “{explanation}.”
-  #   </p>
-  #   """
-  #   return row.requirement_html + disclaimer
-
-  # else:
   catalog_type, first_year, last_year, catalog_years_text = catalog_years(row.period_start,
                                                                           row.period_stop)
   college_name = college_names[row.institution]
@@ -911,9 +944,14 @@ if __name__ == '__main__':
         html = f'<h1 class="error">Error: {err_msg}</h1>'
       else:
         html = ''
+      if DEBUG:
+        print('HEADER', file=sys.stderr)
       html += to_html(parse_tree['header_list'])
+      if DEBUG:
+          print('BODY', file=sys.stderr)
       html += to_html(parse_tree['body_list'])
       print(html)
+
     exit()
   else:
     exit('Only RA option supported.')

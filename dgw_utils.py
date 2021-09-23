@@ -46,7 +46,7 @@ def _with_clause(ctx):
       This is a place where some interpretation could take place ... but does not do so yet.
   """
   if DEBUG:
-    print('*** with_clause()', file=sys.stderr)
+    print('*** with_clause({class_name(ctx)})', file=sys.stderr)
   if isinstance(ctx, list):
     return ' '.join([expression_to_str(context.expression()) for context in ctx])
   assert class_name(ctx) == 'With_clause', f'{class_name(ctx)} is not \'With_clause\''
@@ -71,7 +71,8 @@ def class_or_credit(ctx) -> str:
   try:
     if ctx.CREDIT():
       return 'credit'
-    return 'class'
+    else:
+      return 'class'
   except AttributeError as ae:
     return 'Neither Class nor Credit'
 
@@ -141,29 +142,72 @@ def concentration_list(condition: str, institution: str, requirement_id: str) ->
       The return array gives the titles of the concentrations, the requirement_ids, and hypertext
       links for use by htmlificization.
   """
+  if DEBUG:
+    print(f'*** concentration_list({condition}. {institution}. {requirement_id})', file=sys.stderr)
+
   assert 'conc' in condition.lower(), f'No CONC in “{condition}”'
   print(f'*** concentration_list({condition}) not implemented yet', file=sys.stderr)
-  return ['concentration_list not implemented yet']
+  return ['Concentration lookup not implemented yet']
 
 
 # get_rules()
 # -------------------------------------------------------------------------------------------------
 def get_rules(ctx, institution, requirement_id):
-  """ Return a list of rule dicts for the children of ctx.
+  """ Return a list of rule dicts for the children of head_rule or body_rule ctx.
+      head_rule       : conditional_head
+                      | block
+                      | blocktype
+                      | class_credit_head
+                      | copy_rules
+                      | lastres
+                      | maxcredit
+                      | maxpassfail_head
+                      | maxterm
+                      | maxtransfer_head
+                      | minclass_head
+                      | mincredit_head
+                      | mingpa
+                      | mingrade
+                      | minperdisc_head
+                      | minres
+                      | minterm
+                      | noncourse
+                      | proxy_advice
+                      | remark
+                      | rule_complete
+                      | share_head
+
+      body_rule       : conditional_body
+                      | block
+                      | blocktype
+                      | class_credit_body
+                      | copy_rules
+                      | group_requirement
+                      | lastres
+                      | maxcredit
+                      | maxtransfer
+                      | minclass
+                      | mincredit
+                      | mingrade
+                      | minres
+                      | noncourse
+                      | proxy_advice
+                      | remark
+                      | rule_complete
+                      | share
+                      | subset
+
   """
+  if DEBUG:
+    print(f'*** get_rules({class_name(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
 
+  assert(class_name(ctx).lower()) in ['head_rule', 'body_rule']
   return_list = []
-  if isinstance(ctx, list):
-    rule_list = ctx
-  else:
-    rule_list = [ctx]
 
-  for rule in rule_list:
-    rule_name = class_name(rule).lower()
-    children = rule.getChildren()
-    for child in children:
-      rule_dict = dgw_handlers.dispatch(child, institution, requirement_id)
-    return_list.append(rule_dict)
+  for child in ctx.getChildren():
+    if DEBUG:
+      print('xxxx', class_name(child), file=sys.stderr)
+    return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
 
   return return_list
 
@@ -191,6 +235,9 @@ def get_display(ctx: Any) -> str:
 def get_label(ctx: Any) -> str:
   """ Like get_display, only for labels.
   """
+  if DEBUG:
+    print(f'*** get_label({class_name(ctx)})', file=sys.stderr)
+
   if ctx.label():
     if isinstance(ctx.label(), list):
       label_str = ''
@@ -200,6 +247,9 @@ def get_label(ctx: Any) -> str:
       label_str = ctx.label().string().getText().strip(' "')
   else:
     label_str = None
+
+  if DEBUG:
+    print(f'    {label_str=}', file=sys.stderr)
 
   return label_str
 
@@ -229,9 +279,11 @@ def get_scribed_courses(course_item, list_items: list) -> list:
                       | BLOCK
                       | IS;
   """
-  assert class_name(course_item) == 'Course_item', (f'“{class_name(ctx)}” is not “Course_item”')
   if DEBUG:
-    print(f'*** get_scribed_courses({class_name(course_item)})', file=sys.stderr)
+    print(f'*** get_scribed_courses({class_name(course_item)}, {len(list_items)} list items)',
+          file=sys.stderr)
+
+  assert class_name(course_item) == 'Course_item', (f'“{class_name(ctx)}” is not “Course_item”')
 
   # The list of (discipline: str, catalog_number: str, with_clause: str) tuples to return.
   scribed_courses = []
@@ -286,7 +338,7 @@ def get_scribed_courses(course_item, list_items: list) -> list:
       scribed_courses.append('area_end')
 
   if DEBUG:
-    print(f'\n{scribed_courses=}', file=sys.stderr)
+    print(f'    {scribed_courses=}', file=sys.stderr)
 
   return scribed_courses
 
@@ -310,22 +362,20 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
                       ;
   """
   if DEBUG:
-    print(f'\n*** getgroups({class_name(ctx)})')
+    print(f'*** getgroups({class_name(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
 
   return_list = []
   for group_ctx in ctx.group():
     children = group_ctx.getChildren()
 
     for child in children:
-
       # Ignore LP | RP
       item_class = class_name(child)
       if item_class.lower() == 'terminalnodeimpl':
         continue
-      print('xxxx', class_name(child))
+
       if 'Course_list' == class_name(child):
-        debug = build_course_list(child, institution, requirement_id)
-        print(debug)
+        return_list.append(build_course_list(child, institution, requirement_id))
       else:
         return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
 
@@ -336,7 +386,6 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
 
     if group_ctx.label():
       return_dict['label'] = get_label(group_ctx)
-
   return return_dict
 
 
@@ -369,12 +418,13 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
                   | share
   """
 
+  if DEBUG:
+    print(f'*** get_qualifiers({class_name(ctx)=})', file=sys.stderr)
+
   valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                       'proxy_advice', 'rule_tag', 'samedisc', 'share']
 
-  if DEBUG:
-    print(f'*** get_qualifiers({class_name(ctx)=})', file=sys.stderr)
   if isinstance(ctx, list):
     contexts = ctx
   else:
@@ -384,7 +434,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
     if class_name(context) == 'Qualifier':
       # See which qualifiers, if any, are part of this context
       for valid_qualifier in valid_qualifiers:
-        class_credit = None
+        class_credit_str = None
         if qualifier_func := getattr(context, valid_qualifier, None):
           if qualifier_ctx := qualifier_func():
             if getattr(qualifier_ctx, 'class_or_credit', None):
@@ -393,20 +443,20 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
                 class_str = qualifier_ctx.class_or_credit().CLASS()
                 credit_str = qualifier_ctx.class_or_credit().CREDIT()
                 if class_str:
-                  class_credit = 'class'
+                  class_credit_str = 'class'
                 elif credit_str:
-                  class_credit = 'credit'
+                  class_credit_str = 'credit'
                 else:
                   print(f'*** Error: neither {class_str=} nor {credit_str=} in get_qualifiers',
                         file=sys.stderr)
               if DEBUG:
-                print(f'    get_qualifiers got {valid_qualifier=} with {class_credit=}',
+                print(f'    get_qualifiers got {valid_qualifier=} with {class_credit_str=}',
                       file=sys.stderr)
 
             # maxpassfail     : MAXPASSFAIL NUMBER (CLASS | CREDIT)
             if valid_qualifier == 'maxpassfail':
               qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
-                                                 'class_credit': class_credit}
+                                                 'class_or_credit': class_credit_str}
 
             # maxperdisc  : MAXPERDISC NUMBER (CLASS | CREDIT) LP SYMBOL (list_or SYMBOL)* RP
             # maxtransfer : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
@@ -417,7 +467,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
                 disciplines = [d.getText() for d in disciplines]
 
               qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
-                                                 'class_credit': class_credit,
+                                                 'class_or_credit': class_credit_str,
                                                  'disciplines': disciplines}
 
             # maxspread       : MAXSPREAD NUMBER
@@ -476,7 +526,7 @@ def num_class_or_num_credit(ctx) -> dict:
       num_credits     : NUMBER CREDIT allow_clause?;
   """
   if DEBUG:
-    print(f'{class_name(ctx)}', file=sys.stderr)
+    print(f'*** num_class_or_num_credit({class_name(ctx)})', file=sys.stderr)
 
   if class_contexts := ctx.num_classes():
     if not isinstance(class_contexts, list):
@@ -597,7 +647,9 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
 
   """
   if DEBUG:
-    print(f'*** build_course_list({institution}, {class_name(ctx)})', file=sys.stderr)
+    print(f'*** build_course_list({class_name(ctx)}, {institution}, {requirement_id})',
+          file=sys.stderr)
+
   if ctx is None:
     return None
   assert class_name(ctx) == 'Course_list', f'{class_name(ctx)} is not Course_list'
