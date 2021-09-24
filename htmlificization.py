@@ -570,10 +570,9 @@ def dict_to_html_details_element(info: dict) -> str:
     pass
 
   keys = info.keys()
-
   if len(keys) == 1:
-    # If there is a single key, see if it is group, subset, conditional, or naked course list,
-    # and special-case if so
+    # If there is a single key, see if it is group, subset, conditional, naked course list, or rule
+    # complete, and special-case if so.
     key = list(info)[0]
     if key == 'conditional':  # Special case for conditional dicts
       return conditional_to_details_element(info['conditional'], label)
@@ -612,6 +611,14 @@ def dict_to_html_details_element(info: dict) -> str:
           {course_list}
         </details>
         """
+    elif key == 'rule_complete':
+      print('yyyy bongo', file=sys.stderr)
+      rule_complete_dict = info.pop('rule_complete')
+      label_str = rule_complete_dict['label']
+      if label is not None:
+        label_str = label + label_str
+      is_isnot = 'is' if rule_complete_dict['is_complete'] else 'is not'
+      return f'<p><strong>{label_str}</strong>: Requirement <em>{is_isnot}</em> satisfied</p>'
 
     # Also special-casing qualifiers to be consistent between header rules and body qualifiers.
     elif key == 'share':
@@ -653,19 +660,6 @@ def dict_to_html_details_element(info: dict) -> str:
       display = f'<p><em>{display}</em></p>'
     except KeyError as ke:
       display = ''
-
-    try:
-      rule_complete_dict = info.pop('rule_complete')
-      rule_complete_value = 'complete' if rule_complete_dict['is_complete'] else 'not complete'
-      if 'label' in rule_complete_dict.keys():
-        label_str = rule_complete['label']
-      else:
-        label_str = ''
-      rule_complete = f'<p>{label_str}: Rule is {rule_complete_value}</p>'
-
-      display = f'<p><em>{display}</em></p>'
-    except KeyError as ke:
-      rule_complete = ''
 
     # Class lists and their qualifiers.
     try:
@@ -713,8 +707,7 @@ def dict_to_html_details_element(info: dict) -> str:
       except KeyError as ke:
         pass
 
-    return_str = (f'{pseudo_msg}{context_path}{remark}{display}{numerics}{course_list}'
-                  f'{rule_complete}')
+    return_str = f'{pseudo_msg}{context_path}{remark}{display}{numerics}{course_list}'
 
     # Key-value pairs not specific to course lists
     # --------------------------------------------
@@ -801,7 +794,6 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
     # The list consisted only of remarks
     return f'{opening_remarks}'
 
-  # for unremarkable_item in info:
   if num <= len(number_names):
     num_str = number_names[num].title()
   else:
