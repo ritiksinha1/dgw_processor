@@ -33,6 +33,8 @@ DEBUG = os.getenv('DEBUG_REQUIREMENT_MAPPINGS')
 log_file = open('./course_requirement_mappings.log', 'w')
 
 quarantined_dict = QuarantineManager()
+number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+                'ten', 'eleven', 'twelve']
 
 # Create list of active programs
 active_programs = []
@@ -322,19 +324,22 @@ def iter_dict(item: dict,
     if key == 'group_requirements':
       group_requirements = item['group_requirements']
       # Each group requirement provides its own context
-      for group_requirement in group_requirements:
+      for group_requirement_dict in group_requirements:
+        group_requirement = group_requirement_dict['group_requirement']
         group_context = []
         if 'label' in group_requirement.keys():
           group_context.append(group_requirement['label'])
-        num_required = group_requirement['number']
+        num_required = int(group_requirement['number'])
         if num_required < len(number_names):
           num_required = number_names[num_required]
-        num_groups = len(group_requirement['groups'])
+        group_list = group_requirement['group_list']
+        num_groups = len(group_list)
         if num_groups < len(number_names):
           num_groups = number_names[num_groups]
         group_context.append(f'Any {num_required} of {num_groups} groupa')
-        for group in groups:
-          iter_dict(group, local_context + [group_context])
+        for group in group_list:
+          iter_dict(group, program_qualifiers, requirement_qualifiers,
+                    local_context + [group_context])
 
     if key == 'course_list':
       # If there is a course_list, there's also info about num classes/credits,as well as whether
