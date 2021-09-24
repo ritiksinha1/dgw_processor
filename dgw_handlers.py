@@ -44,8 +44,10 @@ def block(ctx, institution, requirement_id):
   for context in ctx.expression().getChildren():
     if class_name(context) == 'Expression':
       symbols = context.getText().split('=')
-  assert isinstance(symbols, list) and len(symbols) == 2, (f'Invalid block expression: '
-                                                           f'{ctx.expression().getText()}')
+  assert isinstance(symbols, list) and len(symbols) == 2, (f'Assertion Error: Invalid block '
+                                                           f'expression ('
+                                                           f'{ctx.expression().getText()}) '
+                                                           f'in block()')
   return_dict['block_type'] = symbols[0].upper().strip()
   return_dict['block_value'] = symbols[1].upper().strip()
 
@@ -67,7 +69,8 @@ def blocktype(ctx, institution, requirement_id):
     if class_name(context) == 'Expression':
       return_dict['block_type'] = context.getText().strip().upper()
 
-  assert 'block_type' in return_dict.keys(), f'Invalid blocktype {ctx.expression().getText()}'
+  assert 'block_type' in return_dict.keys(), (f'Assertion Error: Invalid blocktype '
+                                              f'({ctx.expression().getText()}) in blocktype()')
 
   return_dict['label'] = get_label(ctx)
 
@@ -327,7 +330,8 @@ def copy_rules(ctx, institution, requirement_id):
     if class_name(context) == 'Expression':
       return_dict['requirement_id'] = f'{context.getText().strip().upper()}'
 
-  assert 'requirement_id' in return_dict.keys(), f'Invalid CopyRules {ctx.expression().getText()}'
+  assert 'requirement_id' in return_dict.keys(), (f'Assertion Error: no requirement_id in '
+                                                  f'({ctx.expression().getText()}) in copy_rules()')
 
   return {'copy_rules': return_dict}
 
@@ -455,7 +459,7 @@ def lastres(ctx, institution, requirement_id):
   if len(numbers) > 0:
     return_dict['of_number'] = numbers.pop().getText().strip()
 
-  assert len(numbers) == 0
+  assert len(numbers) == 0, f'Assertion Error: {len(numbers)} is not zero in lastres()'
 
   if ctx.course_list():
     return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
@@ -1014,7 +1018,8 @@ def subset(ctx, institution, requirement_id):
                                    for context in ctx.class_credit_body()]
 
   if ctx.copy_rules():
-    assert len(ctx.copy_rules()) == 1
+    assert len(ctx.copy_rules()) == 1, (f'Assertion Error: {len(ctx.copy_rules())} '
+                                        f'is not unity in subset')
     return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
 
   if ctx.course_list():
@@ -1029,7 +1034,8 @@ def subset(ctx, institution, requirement_id):
                                 for context in ctx.noncourse()]
 
   if ctx.rule_complete():
-    assert len(ctx.rule_complete()) == 1
+    assert len(ctx.rule_complete()) == 1, (f'Assertion Error: {len(ctx.rule_complete())} '
+                                           f'is not unity in subset')
     return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0],
                                                  institution, requirement_id)
 

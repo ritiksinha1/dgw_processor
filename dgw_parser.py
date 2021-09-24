@@ -286,7 +286,17 @@ if __name__ == '__main__':
     requirement_id = f'RA{int(requirement_id):06}'
 
     if args.progress:
-      print(f'{institution} {requirement_id} {args.period}', end='')
+      conn = PgConnection()
+      cursor = conn.cursor()
+      cursor.execute(f"""
+                      select block_type, block_value
+                        from requirement_blocks
+                       where institution = %s
+                         and requirement_id = %s
+                       """, (institution, requirement_id))
+      row = cursor.fetchone()
+      print(f'{institution} {requirement_id} {row.block_type:6} {row.block_value:8} {args.period}',
+            end='')
       sys.stdout.flush()
     parse_tree = dgw_parser(institution,
                             'block_type',   # Not used with requirement_id
@@ -367,8 +377,8 @@ if __name__ == '__main__':
             continue
           if args.progress:
             print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
-                  f'{values_count:3} / {num_values:3} {institution} {requirement_id} {block_type} '
-                  f'{block_value} {args.period}', end='')
+                  f'{values_count:3} / {num_values:3} {institution} {requirement_id} {block_type:6}'
+                  f' {block_value:8} {args.period}', end='')
             sys.stdout.flush()
           parse_tree = dgw_parser(institution,
                                   block_type.upper(),

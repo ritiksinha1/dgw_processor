@@ -6,13 +6,15 @@ from collections import namedtuple
 from typing import List, Set, Dict, Tuple, Optional, Union, Any
 
 import argparse
+import json
 import os
 import sys
-from pprint import pprint
 
-import json
+from pprint import pprint
+from traceback import print_stack
 
 from Any import ANY
+
 from pgconnection import PgConnection
 
 import dgw_handlers
@@ -49,7 +51,8 @@ def _with_clause(ctx):
     print('*** with_clause({class_name(ctx)})', file=sys.stderr)
   if isinstance(ctx, list):
     return ' '.join([expression_to_str(context.expression()) for context in ctx])
-  assert class_name(ctx) == 'With_clause', f'{class_name(ctx)} is not \'With_clause\''
+  assert class_name(ctx) == 'With_clause', (f'Assertion Error: {class_name(ctx)} is not With_clause'
+                                            f' in _with_clause')
   return expression_to_str(ctx.expression())
 
 
@@ -121,7 +124,8 @@ def expression_to_str(ctx):
                       | CATALOG_NUMBER
                       | LP NONCOURSE? expression RP
   """
-  assert class_name(ctx) == 'Expression', f'{class_name(ctx)} is not \'Expression\''
+  assert class_name(ctx) == 'Expression', (f'Assertion Error: {class_name(ctx)} is not Expression'
+                                           f' in expression_to_str')
   return_str = ''
   for child in ctx.getChildren():
     if class_name(child) == 'Expression':
@@ -145,7 +149,8 @@ def concentration_list(condition: str, institution: str, requirement_id: str) ->
   if DEBUG:
     print(f'*** concentration_list({condition}. {institution}. {requirement_id})', file=sys.stderr)
 
-  assert 'conc' in condition.lower(), f'No CONC in “{condition}”'
+  assert 'conc' in condition.lower(), (f'Assertion Error: No CONC in {condition} in '
+                                       f'concentration_list')
   print(f'*** concentration_list({condition}) not implemented yet', file=sys.stderr)
   return ['Concentration lookup not implemented yet']
 
@@ -201,13 +206,26 @@ def get_rules(ctx, institution, requirement_id):
   if DEBUG:
     print(f'*** get_rules({class_name(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
 
-  assert(class_name(ctx).lower()) in ['head_rule', 'body_rule']
-  return_list = []
+  # try:
+  #   assert(class_name(ctx).lower()) in ['head_rule', 'body_rule'], (f'Assertion Error: '
+  #                                                                   f'{class_name(ctx).lower()} is '
+  #                                                                   f'not head_rule or body_rule'
+  #                                                                   f' in get_rules')
+  # except AssertionError as ae:
+  #   print(f'{ae}', file=sys.stderr)
+  #   print_stack(file=sys.stderr)
+  #   raise
 
-  for child in ctx.getChildren():
-    if DEBUG:
-      print('xxxx', class_name(child), file=sys.stderr)
-    return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
+  return_list = []
+  if isinstance(ctx, list):
+    rules_ctx = ctx
+  else:
+    rules_ctx = [ctx]
+  for rule_ctx in rules_ctx:
+    for child in rule_ctx.getChildren():
+      if DEBUG:
+        print('xxxx', class_name(child), file=sys.stderr)
+      return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
 
   return return_list
 
@@ -283,7 +301,8 @@ def get_scribed_courses(course_item, list_items: list) -> list:
     print(f'*** get_scribed_courses({class_name(course_item)}, {len(list_items)} list items)',
           file=sys.stderr)
 
-  assert class_name(course_item) == 'Course_item', (f'“{class_name(ctx)}” is not “Course_item”')
+  assert class_name(course_item) == 'Course_item', (f'Assertion Error: {class_name(ctx)} is not '
+                                                    f'Course_item in get_scribed_courses')
 
   # The list of (discipline: str, catalog_number: str, with_clause: str) tuples to return.
   scribed_courses = []
@@ -331,8 +350,8 @@ def get_scribed_courses(course_item, list_items: list) -> list:
       catalog_number = list_item.catalog_number().getText().strip()
     if list_item.with_clause():
       with_clause = _with_clause(list_item.with_clause())
-    assert catalog_number is not None, (f'Course Item with no catalog number: '
-                                        f'{list_item.getText()}')
+    assert catalog_number is not None, (f'Assertion Error: Course Item with no catalog number: '
+                                        f'{list_item.getText()} in get_scribed_courses')
     scribed_courses.append((discipline, catalog_number, with_clause))
     if list_item.area_end():
       scribed_courses.append('area_end')
@@ -588,7 +607,8 @@ def build_string(ctx) -> str:
         Change "C + +" to "C++"
         - add others as needed
   """
-  assert class_name(ctx) == 'String', (f'{class_name(ctx)} 'f'is not String')
+  assert class_name(ctx) == 'String', (f'Assertion Error: {class_name(ctx)} is not String in '
+                                       f'build_string')
   fixups = {'C + +': 'C++'}
   tokens = [child.getText() for child in ctx.children]
   return_str = ' '.join(tokens[1:-1])
@@ -652,7 +672,8 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
 
   if ctx is None:
     return None
-  assert class_name(ctx) == 'Course_list', f'{class_name(ctx)} is not Course_list'
+  assert class_name(ctx) == 'Course_list', (f'Assertion Error: {class_name(ctx)} is not Course_list'
+                                            f' in build_course_list')
 
   # The dict to be returned:
   return_dict = {'scribed_courses': [],
