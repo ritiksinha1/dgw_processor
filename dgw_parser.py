@@ -363,7 +363,7 @@ if __name__ == '__main__':
             break
           values_count += 1
           if block_value.isnumeric() or block_value.startswith('MHC'):
-            print(f'Ignoring {institution} {requirement_id} {block_type} {block_value}')
+            # print(f'Ignoring {institution} {requirement_id} {block_type} {block_value}')
             continue
           if args.progress:
             print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
