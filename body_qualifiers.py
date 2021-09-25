@@ -23,7 +23,7 @@ def _format_maxpassfail(maxpassfail_dict: dict) -> str:
 
   try:
     number = float(maxpassfail_dict.pop('number'))
-    class_credit = maxpassfail_dict.pop('class_credit')
+    class_credit = maxpassfail_dict.pop('class_or_credit')
     if class_credit == 'credit':
       if number == 0:
         return 'No credits may be taken pass/fail'
@@ -94,7 +94,7 @@ def _format_maxtransfer(maxtransfer_dict: dict) -> str:
     print(f'_format_maxtransfer({maxtransfer_dict})', file=sys.stderr)
 
   number = float(maxtransfer_dict.pop('number'))
-  class_credit = maxtransfer_dict.pop('class_credit').lower()
+  class_credit = maxtransfer_dict.pop('class_or_credit').lower()
   suffix = ''
   if number != 1:
     suffix = 's' if class_credit == 'credit' else 'es'
@@ -224,14 +224,14 @@ def _format_mingrade(mingrade_dict: dict) -> str:
 # -------------------------------------------------------------------------------------------------
 def _format_minperdisc(minperdisc_dict: dict) -> str:
   """ {'number': qualifier_ctx.NUMBER().getText(),
-       'class_credit': class_credit,
+       'class_or_credit': class_credit,
        'disciplines': disciplines}
   """
   if DEBUG:
     print(f'_format_minperdisc({minperdisc_dict})', file=sys.stderr)
 
   number = float(minperdisc_dict.pop('number'))
-  class_credit = minperdisc_dict.pop('class_credit').lower()
+  class_credit = minperdisc_dict.pop('class_or_credit').lower()
   suffix = ''
   if number != 1:
     suffix = 's' if class_credit == 'credit' else 'es'
@@ -330,8 +330,11 @@ def format_body_qualifiers(node: dict) -> list:
       node, and return a list of formatted strings representing the qualifiers found.
   """
   # The following qualifieres are legal, but we ignore ones that we don’t need.
+
+  assert isinstance(node, dict), (f'{type(node)} is not dict in format_body_qualifiers. {node=}')
   if DEBUG:
     print(f'*** _format_body_qualifiers({node.keys()=}', file=sys.stderr)
+
   possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                          'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                          'proxy_advice', 'rule_tag', 'samedisc', 'share']

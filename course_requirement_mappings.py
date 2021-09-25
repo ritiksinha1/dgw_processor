@@ -137,6 +137,8 @@ def emit(requirement: Requirement, program_qualifiers: list, context: list) -> N
           file=sys.stderr)
 
   # See if the requirement already exists
+  assert isinstance(requirement.requirement_name, str), (f'Not a string: '
+                                                         f'{requirement.requirement_name}')
   cursor.execute(f"""
   select id
    from program_requirements
@@ -146,9 +148,8 @@ def emit(requirement: Requirement, program_qualifiers: list, context: list) -> N
   """, (institution, requirement_id, requirement.requirement_name))
   if cursor.rowcount == 0:
     # Not yet: add it:
-    # Note that we are not checking if two different requirements have the same name (label), which
-    # should not occur. To check for that, it would be necessary to check against contexts and
-    # qualifiers.
+    # Note that the same requirement can appear in different contexts, such as when there are
+    # different ways of satisfying it depending on a student's concentration. This is normal.
     cursor.execute(f"""insert into program_requirements values
                         (default, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) on conflict do nothing
                         returning id
@@ -239,6 +240,7 @@ def iter_dict(item: dict,
       group # i of n)
       Otherwise, augment the context and process sub-lists and sub-dicts.
   """
+  assert isinstance(item, dict), (f'{type(item)} is not dict in iter_dict. {item=}')
   if DEBUG:
     print(f'*** iter_dict({item.keys()=}, {program_qualifiers=}, {requirement_qualifiers=}, '
           f'{calling_context=})',
@@ -332,13 +334,13 @@ def iter_dict(item: dict,
         num_required = int(group_requirement['number'])
         if num_required < len(number_names):
           num_required = number_names[num_required]
-        group_list = group_requirement['group_list']
+        group_list = group_requirement['group_list']['groups']
         num_groups = len(group_list)
         if num_groups < len(number_names):
           num_groups = number_names[num_groups]
         group_context.append(f'Any {num_required} of {num_groups} groupa')
         for group in group_list:
-          iter_dict(group, program_qualifiers, requirement_qualifiers,
+          iter_dict(group, program_qualifiers, local_qualifiers,
                     local_context + [group_context])
 
     if key == 'course_list':
