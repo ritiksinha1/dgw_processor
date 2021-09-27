@@ -75,7 +75,7 @@ def timeout_manager(seconds):
 
 # dgw_parser()
 # =================================================================================================
-def dgw_parser(institution: str, block_type: str, block_value: str,
+def dgw_parser(institution: str, block_type: str=None, block_value: str=None,
                period_range='current', update_db=True, progress=False,
                do_pprint=False, requirement_id=None, do_quarantined=False, timelimit=30) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
@@ -85,7 +85,7 @@ def dgw_parser(institution: str, block_type: str, block_value: str,
        range, all will be updated in the db, but only the oldest one’s header and body lists will be
        returned.
   """
-
+  assert requirement_id is not None or (block_type is not None and block_value is not None)
   if DEBUG:
     print(f'*** dgw_parser({institution=}, {block_type=}, {block_value=}, {period_range=}, '
           f'{update_db=}, {progress=}, {do_pprint=}, {requirement_id=}, {do_quarantined=}, '
