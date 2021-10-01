@@ -24,7 +24,7 @@ from collections import namedtuple
 from pgconnection import PgConnection
 from dgw_parser import dgw_parser
 from body_qualifiers import format_body_qualifiers
-from header_qualifiers import format_header_qualifiers
+from header_productions import format_header_productions
 from quarantine_manager import QuarantineManager
 
 from pprint import pprint
@@ -536,18 +536,20 @@ if __name__ == '__main__':
                       f'currently active in CUNYfirst.')
               continue
 
-          parse_tree = (row.parse_tree)
+          parse_tree = row.parse_tree
           if (len(parse_tree.keys()) == 0):
             if args.force:
-              print(f'{institution} {row.requirement_id} Reinterpreting')
+              print(f'{institution} {row.requirement_id} {block_type} {block_value}: Parsing')
               parse_tree = dgw_parser(institution, block_type, block_value, period_range=period)
             else:
-              print(f'{institution} {row.requirement_id} has not been parsed and --force is False.')
+              print(f'{institution} {row.requirement_id} {block_type} {block_value} '
+                    f'has not been parsed and “force” is False.')
               continue
           if 'error' in parse_tree.keys():
             err_msg = parse_tree['error']
             # Next stage: make this subject to args.verbose
-            print(f'{institution} {row.requirement_id} failed to parse: {err_msg}')
+            print(f'{institution} {row.requirement_id} {block_type} {block_value}: '
+                  f'Parsing failure ({err_msg})')
             continue
 
           # Non-miscreant handler
@@ -568,7 +570,7 @@ if __name__ == '__main__':
           requirement_qualifiers = []
           for item in header_list:
             if isinstance(item, dict):
-              program_qualifiers += format_header_qualifiers(item)
+              program_qualifiers += format_header_productiond(item)
 
           # Iterate over the body, emitting db updates as a side effect.
           # There are spaces in some block values
