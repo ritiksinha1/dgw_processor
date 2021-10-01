@@ -145,13 +145,15 @@ def concentration_list(condition: str, institution: str, requirement_id: str) ->
       figure out what the matching scribe blocks are.
       The return array gives the titles of the concentrations, the requirement_ids, and hypertext
       links for use by htmlificization.
+      KINKY: the condition can be very elaborate, mentioning things like, “MAJOR=XXX and CONC=YYY or
+      MAJOR=WWW and CONC=ZZZ...”
   """
   if DEBUG:
     print(f'*** concentration_list({condition}. {institution}. {requirement_id})', file=sys.stderr)
 
   assert 'conc' in condition.lower(), (f'Assertion Error: No CONC in {condition} in '
                                        f'concentration_list')
-  print(f'*** concentration_list({condition}) not implemented yet', file=sys.stderr)
+  # print(f'*** concentration_list({condition}) not implemented yet', file=sys.stderr)
   return ['Concentration lookup not implemented yet']
 
 

@@ -75,7 +75,7 @@ def timeout_manager(seconds):
 
 # dgw_parser()
 # =================================================================================================
-def dgw_parser(institution: str, block_type: str=None, block_value: str=None,
+def dgw_parser(institution: str, block_type: str = None, block_value: str = None,
                period_range='current', update_db=True, progress=False,
                do_pprint=False, requirement_id=None, do_quarantined=False, timelimit=30) -> tuple:
   """ For each matching Scribe Block, parse the block and generate lists of JSON objects from it.
