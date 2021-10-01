@@ -359,12 +359,39 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#mingpa_head.
+    def enterMingpa_head(self, ctx:ReqBlockParser.Mingpa_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#mingpa_head.
+    def exitMingpa_head(self, ctx:ReqBlockParser.Mingpa_headContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#mingrade_head.
+    def enterMingrade_head(self, ctx:ReqBlockParser.Mingrade_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#mingrade_head.
+    def exitMingrade_head(self, ctx:ReqBlockParser.Mingrade_headContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#minperdisc_head.
     def enterMinperdisc_head(self, ctx:ReqBlockParser.Minperdisc_headContext):
         pass
 
     # Exit a parse tree produced by ReqBlockParser#minperdisc_head.
     def exitMinperdisc_head(self, ctx:ReqBlockParser.Minperdisc_headContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#minres_head.
+    def enterMinres_head(self, ctx:ReqBlockParser.Minres_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#minres_head.
+    def exitMinres_head(self, ctx:ReqBlockParser.Minres_headContext):
         pass
 
 

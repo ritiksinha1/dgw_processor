@@ -204,8 +204,23 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#mingpa_head.
+    def visitMingpa_head(self, ctx:ReqBlockParser.Mingpa_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#mingrade_head.
+    def visitMingrade_head(self, ctx:ReqBlockParser.Mingrade_headContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#minperdisc_head.
     def visitMinperdisc_head(self, ctx:ReqBlockParser.Minperdisc_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#minres_head.
+    def visitMinres_head(self, ctx:ReqBlockParser.Minres_headContext):
         return self.visitChildren(ctx)
 
 

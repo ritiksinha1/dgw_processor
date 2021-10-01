@@ -52,10 +52,10 @@ head        :
             | maxperdisc_head
             | maxterm
             | maxtransfer_head
-            | mingrade
+            | mingpa_head
+            | mingrade_head
             | minclass_head
             | mincredit_head
-            | mingpa
             | minperdisc_head
             | minres
             | optional
@@ -130,47 +130,24 @@ course_list_head_qualifier : maxspread
                            | share
                            ;
 
-course_list_body           : course_list (qualifier tag? | proxy_advice )*;
+course_list_body  : course_list (qualifier tag? | proxy_advice )*;
 
-/* The following set of qualifiers has been subsumed into a single "qualifier" Antlr rule. Althogh
- * not all qualifiers are allowed in each context (rule, subset, conditional), we use a union of
- * them all in order to simplfy the code that interprets a particular req_block. We don't have to
- * worry about the semantics because we need to interpret only req_blocks that also are deemed
- * correct by the Ellucian auditer.
-
-course_list_body_qualifier : maxpassfail
-                           | maxperdisc
-                           | maxspread
-                           | maxtransfer
-                           | minarea
-                           | minclass
-                           | mincredit
-                           | mingpa
-                           | mingrade
-                           | minperdisc
-                           | minspread
-                           | rule_tag
-                           | samedisc
-                           | share
-                           ;
-*/
-
-qualifier       : maxpassfail
-                | maxperdisc
-                | maxspread
-                | maxtransfer
-                | minarea
-                | minclass
-                | mincredit
-                | mingpa
-                | mingrade
-                | minperdisc
-                | minspread
-                | proxy_advice
-                | rule_tag
-                | samedisc
-                | share
-                ;
+qualifier         : maxpassfail
+                  | maxperdisc
+                  | maxspread
+                  | maxtransfer
+                  | minarea
+                  | minclass
+                  | mincredit
+                  | mingpa
+                  | mingrade
+                  | minperdisc
+                  | minspread
+                  | proxy_advice
+                  | rule_tag
+                  | samedisc
+                  | share
+                  ;
 
 //  conditional
 //  -----------------------------------------------------------------------------------------------
@@ -188,14 +165,15 @@ head_rule         : conditional_head
                   | class_credit_head
                   | copy_rules
                   | lastres
+                  | maxclass
                   | maxcredit
                   | maxpassfail_head
                   | maxterm
                   | maxtransfer_head
                   | minclass_head
                   | mincredit_head
-                  | mingpa
-                  | mingrade
+                  | mingpa_head
+                  | mingrade_head
                   | minperdisc_head
                   | minres
                   | minterm
@@ -218,13 +196,12 @@ body_rule       : conditional_body
                 | class_credit_body
                 | copy_rules
                 | group_requirement
-                | lastres
-                | maxcredit
+/*                | maxcredit this is supposed to be a header production only */
                 | maxtransfer
                 | minclass
                 | mincredit
                 | mingrade
-                | minres
+/*                | minres this is supposed to be a header production only */
                 | noncourse
                 | proxy_advice
                 | remark
@@ -296,7 +273,10 @@ maxperdisc_head   : maxperdisc label? ;
 maxtransfer_head  : maxtransfer label?;
 minclass_head     : minclass label?;
 mincredit_head    : mincredit label?;
+mingpa_head       : mingpa label?;
+mingrade_head     : mingrade label?;
 minperdisc_head   : minperdisc label?;
+minres_head       : minres label?;
 share_head        : share label?;
 
 // Other parser productions
@@ -312,8 +292,8 @@ display         : DISPLAY string SEMICOLON?;
 header_tag      : (HEADER_TAG nv_pair)+;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice? label?;
-maxclass        : MAXCLASS NUMBER course_list? tag?;
-maxcredit       : MAXCREDIT NUMBER course_list? tag?;
+maxclass        : MAXCLASS NUMBER course_list? tag? label?;
+maxcredit       : MAXCREDIT NUMBER course_list? tag? label?;
 
 maxpassfail     : MAXPASSFAIL NUMBER class_or_credit tag?;
 maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
@@ -325,10 +305,10 @@ maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)
 minarea         : MINAREA NUMBER tag?;
 minclass        : MINCLASS NUMBER course_list tag? display* proxy_advice?;
 mincredit       : MINCREDIT NUMBER course_list tag? display* proxy_advice?;
-mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice? label?;
+mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice?;
 mingrade        : MINGRADE NUMBER;
 minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
-minres          : MINRES (num_classes | num_credits) display* proxy_advice? tag? label?;
+minres          : MINRES (num_classes | num_credits) display* proxy_advice? tag?;
 minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 
