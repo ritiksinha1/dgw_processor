@@ -1,11 +1,11 @@
 #! /usr/local/bin/python3
-""" Format block_level qualifiers. Return a formatted string for each type of rule that can appear
+""" Format header productions. Return a formatted string for each type of rule that can appear
     in the header section of a block.
 
-    Note that each qualifier gets only a one-line string value here, suitable for adding to the
+    Note that each production gets only a one-line string value here, suitable for adding to the
     program_requirements table.
 
-    The rules that end in _head may, optioally, include a label.
+    The productions that end in _head may, optionally, include a label.
 
 head        :
             ( class_credit_head
@@ -51,6 +51,8 @@ import os
 import sys
 
 import Any
+
+import format_body_qualifiers
 
 DEBUG = os.getenv('DEBUG_HEADER')
 
@@ -129,7 +131,7 @@ def _format_maxpassfail(maxpassfail_dict: dict) -> str:
 # _format_maxperdisc()
 # -------------------------------------------------------------------------------------------------
 def _format_maxperdisc(maxperdisc_dict: dict) -> str:
-  """ {'number': qualifier_ctx.NUMBER().getText(),
+  """ {'number': production_ctx.NUMBER().getText(),
        'class_credit': class_credit,
        'disciplines': disciplines}
   """
@@ -163,7 +165,7 @@ def _format_maxperdisc(maxperdisc_dict: dict) -> str:
 # _format_maxtransfer()
 # -------------------------------------------------------------------------------------------------
 def _format_maxtransfer(maxtransfer_dict: dict) -> str:
-  """ {'number': qualifier_ctx.NUMBER().getText(),
+  """ {'number': production_ctx.NUMBER().getText(),
        'class_credit': class_credit,
        'disciplines': disciplines}
   """
@@ -249,51 +251,13 @@ def _format_mingpa(mingpa_dict: dict) -> str:
     expression = f' {mingpa_dict.pop("expression").strip()} '
   except KeyError as ke:
     expression = ' '
-  return f'Minimum GPA of {number:0.1f}{expression}required'
-
-
-# _format_mingrade()
-# -------------------------------------------------------------------------------------------------
-def _format_mingrade(mingrade_dict: dict) -> str:
-  """ {'number': qualifier_ctx.NUMBER().getText()}
-  """
-  if DEBUG:
-    print(f'*** _format_mingrade({mingrade_dict=})', file=sys.stderr)
-
-  # Convert GPA values to letter grades by table lookup.
-  # int(round(3×GPA)) gives the index into the letters table.
-  # Index positions 0 and 1 aren't actually used.
-  """
-          GPA  3×GPA  Index  Letter
-          4.3   12.9     13      A+
-          4.0   12.0     12      A
-          3.7   11.1     11      A-
-          3.3    9.9     10      B+
-          3.0    9.0      9      B
-          2.7    8.1      8      B-
-          2.3    6.9      7      C+
-          2.0    6.0      6      C
-          1.7    5.1      5      C-
-          1.3    3.9      4      D+
-          1.0    3.0      3      D
-          0.7    2.1      2      D-
-    """
-  letters = ['F', 'F', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+', 'A-', 'A', 'A+']
-
-  number = float(mingrade_dict.pop('number'))
-  if number < 1.0:
-    number = 0.7
-  # Lots of values greater than 4.0 have been used to mean "no upper limit."
-  if number > 4.0:
-    number = 4.0
-  letter = letters[int(round(3 * number))]
-  return f'Minimum grade of {letter} required'
+  return f'Minimum GPA of {number:0.2f}{expression}required'
 
 
 # _format_minperdisc()
 # -------------------------------------------------------------------------------------------------
 def _format_minperdisc(minperdisc_dict: dict) -> str:
-  """ {'number': qualifier_ctx.NUMBER().getText(),
+  """ {'number': production_ctx.NUMBER().getText(),
        'class_credit': class_credit,
        'disciplines': disciplines}
   """
@@ -374,66 +338,83 @@ def _format_minres(minres_dict: dict) -> str:
   return 'Error: MinRes with neither classes nor credits specified.'
 
 
-# _format_remark()
+# _format_share()
 # -------------------------------------------------------------------------------------------------
-def _format_remark(remark_str: str) -> str:
-  """ The value of a remark key is just the string.
+def _format_share(share_dict: dict) -> str:
+  """ share_header : share label?;
+      Template: “[{label}: ]{num class_credit(s)} {Mm}ay {not} be shared {with expression requirements}”
   """
   if DEBUG:
-    print(f'_format_remark({remark_str}', file=sys.stderr)
+    print(f'_format_share({share_dict})', file=sys.stderr)
 
-  return f'Message: {remark_str}'
+  label_str = ''
+  if 'label' in share_dict.keys():
+    label_text = share_dict.pop('label')
+    if label_text:
+      label_str = f'{label_text}: '
+
+  return f'{label_str}{format_body_qualifiers._format_share(share_dict)}'
 
 
 # dispatch()
 # -------------------------------------------------------------------------------------------------
 dispatch_table = {'maxclass': _format_maxclass,
                   'maxcredit': _format_maxcredit,
-                  'maxpassfail': _format_maxpassfail,
-                  'maxperdisc': _format_maxperdisc,
-                  'maxtransfer': _format_maxtransfer,
-                  'mingrade': _format_mingrade,
-                  'minclass': _format_minclass,
-                  'mincredit': _format_mincredit,
-                  'mingpa': _format_mingpa,
-                  'minperdisc': _format_minperdisc,
-                  'minres': _format_minres,
-                  'remark': _format_remark
+                  'maxpassfail_head': _format_maxpassfail,
+                  'maxperdisc_head': _format_maxperdisc,
+                  'maxtransfer_head': _format_maxtransfer,
+                  'mingpa_head': _format_mingpa,
+                  'mingrade_head': format_body_qualifiers._format_mingrade,
+                  'minclass_head': _format_minclass,
+                  'mincredit_head': _format_mincredit,
+                  'minperdisc_head': _format_minperdisc,
+                  'minres_head': _format_minres,
+                  'share_head': _format_share
                   }
 
 
-# _dispatch_qualifier()
+# _dispatch_production()
 # -------------------------------------------------------------------------------------------------
-def _dispatch_qualifier(qualifier: str, qualifier_info: Any) -> str:
-  """ Dispatch a dict key:value pair, where the key is the name of a qualifier, use the matching
+def _dispatch_production(production: str, production_info: Any) -> str:
+  """ Dispatch a dict key:value pair, where the key is the name of a production, use the matching
       _format_xxx function to format the value into an English string.
   """
   if DEBUG:
-    print(f'*** _dispatch_qualifier({qualifier}, {qualifier_info=})',
+    print(f'*** _dispatch_production({production}, {production_info=})',
           file=sys.stderr)
-  return dispatch_table[qualifier](qualifier_info)
+  return dispatch_table[production](production_info)
 
 
-# format_header_qualifiers()
+# format_header_productions()
 # -------------------------------------------------------------------------------------------------
-def format_header_qualifiers(node: dict) -> list:
-  """ Given a dict that may or may not have keys for known qualifiers remove all qualifiers from the
-      node, and return a list of formatted strings representing the qualifiers found.
+def format_header_productions(node: dict) -> list:
+  """ Given a dict that may or may not have keys for known productions remove all known productions
+      from the dict, and return a list of formatted strings representing them.
   """
   if DEBUG:
-    print(f'*** format_header_qualifiers({node.keys()=}', file=sys.stderr)
+    print(f'*** format_header_productions(keys: {list(node.keys())}', file=sys.stderr)
 
-  # The following qualifieres are legal, but we ignore ones that we don’t need.
-  handled_qualifiers = ['maxclass', 'maxcredit', 'maxpassfail', 'maxperdisc', 'maxtransfer',
-                        'mingrade', 'minclass', 'mincredit', 'mingpa', 'minperdisc', 'minres',
-                        'remark']
-  qualifier_strings = []
-  for qualifier in handled_qualifiers:
+  # The following productions can occur in the header.
+  handled_productions = ['maxclass',
+                         'maxcredit',
+                         'maxpassfail_head',
+                         'maxperdisc_head',
+                         'maxtransfer_head',
+                         'mingrade_head',
+                         'minclass_head',
+                         'mincredit_head',
+                         'mingpa_head',
+                         'minperdisc_head',
+                         'minres_head',
+                         'share_head']
+  production_strings = []
+  for production in handled_productions:
     try:
-      qualifier_info = node.pop(qualifier)
-      qualifier_strings.append(_dispatch_qualifier(qualifier, qualifier_info))
+      production_info = _dispatch_production(production, node.pop(production))
+      if production_info is not None:
+        production_strings.append(production_info)
     except KeyError as ke:
       # Ignore anything not in the dispatch table.
       pass
 
-  return qualifier_strings
+  return production_strings

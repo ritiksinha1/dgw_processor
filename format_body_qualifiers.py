@@ -179,7 +179,7 @@ def _format_mingpa(mingpa_dict: dict) -> str:
     expression = f' {mingpa_dict.pop("expression").strip()} '
   except KeyError as ke:
     expression = ' '
-  return f'Minimum GPA of {number:0.1f}{expression}required'
+  return f'Minimum GPA of {number:0.2f}{expression}required'
 
 
 # _format_mingrade()

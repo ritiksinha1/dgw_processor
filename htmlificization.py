@@ -20,9 +20,8 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
-from body_qualifiers import format_body_qualifiers, \
-    _format_share as format_share, \
-    _format_maxperdisc as format_maxperdisc
+from format_body_qualifiers import format_body_qualifiers
+from format_header_productions import format_header_productions
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
 from pgconnection import PgConnection
@@ -44,6 +43,10 @@ quarantined_dict = QuarantineManager()
 
 number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
                 'ten', 'eleven', 'twelve']
+
+header_productions = ['maxcredit_head', 'maxpassfail_head', 'maxperdisc_head', 'maxtransfer_head',
+                      'minclass_head', 'mincredit_head', 'mingpa_head', 'minperdisc_head',
+                      'minres_head', 'share_head']
 
 
 # list_of_courses()
@@ -570,9 +573,13 @@ def dict_to_html_details_element(info: dict) -> str:
     pass
 
   keys = info.keys()
+  print(f'xxx keys 576 {list(keys)}')
   if len(keys) == 1:
     # If there is a single key, see if it is group, subset, conditional, naked course list, or rule
     # complete, and special-case if so.
+    # BUT I don't want to do this. I want to pick out all the header keys and then add these
+    # special cases if they are all that's left. But what if there are multiple conditionals? Why
+    # return just one????????????????????????????????????????????????????????????????????????????
     key = list(info)[0]
     if key == 'conditional':  # Special case for conditional dicts
       return conditional_to_details_element(info['conditional'], label)
@@ -612,7 +619,6 @@ def dict_to_html_details_element(info: dict) -> str:
         </details>
         """
     elif key == 'rule_complete':
-      print('yyyy bongo', file=sys.stderr)
       rule_complete_dict = info.pop('rule_complete')
       label_str = rule_complete_dict['label']
       if label is not None:
@@ -620,17 +626,12 @@ def dict_to_html_details_element(info: dict) -> str:
       is_isnot = 'is' if rule_complete_dict['is_complete'] else 'is not'
       return f'<p><strong>{label_str}</strong>: Requirement <em>{is_isnot}</em> satisfied</p>'
 
-    # Also special-casing qualifiers to be consistent between header rules and body qualifiers.
-    elif key == 'share':
-      return f'<p>{format_share(info[key])}</p>'
-    elif key == 'maxperdisc':
-      return f'<p>{format_maxperdisc(info[key])}</p>'
-
     # Not special-case, but just a single key
     if label is None:
+      print('xxxx', 630, key)
       summary = f'<summary>{key.replace("_", " ").title()}</summary>'
     else:
-      summary = f'<summary>{label.title()}</summary>'
+      summary = f'<summary>{label}</summary>'
     value = info[key]
     if isinstance(value, dict):
       return f'<details>{summary}{dict_to_html_details_element(value)}</details>'
@@ -687,6 +688,7 @@ def dict_to_html_details_element(info: dict) -> str:
       if key[0:3].lower() in ['max', 'min', 'num']:
         value = info.pop(key)
         if value is not None:
+          print('xxxx', 690, key)
           numerics += f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
 
     # course_list part of a multi-key dict
@@ -714,7 +716,7 @@ def dict_to_html_details_element(info: dict) -> str:
     for key, value in info.items():
       if value is None:
         continue  # Omit empty fields
-
+      print('xxxx', 718, key)
       key_str = f'{key.replace("_", " ").title()}'
 
       if key == 'group':
