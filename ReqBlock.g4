@@ -47,7 +47,7 @@ head        :
             | conditional_head
             | lastres
             | maxclass
-            | maxcredit
+            | maxcredit_head
             | maxpassfail_head
             | maxperdisc_head
             | maxterm
@@ -57,7 +57,7 @@ head        :
             | minclass_head
             | mincredit_head
             | minperdisc_head
-            | minres
+            | minres_head
             | optional
             | proxy_advice
             | remark
@@ -166,7 +166,7 @@ head_rule         : conditional_head
                   | copy_rules
                   | lastres
                   | maxclass
-                  | maxcredit
+                  | maxcredit_head
                   | maxpassfail_head
                   | maxterm
                   | maxtransfer_head
@@ -175,7 +175,7 @@ head_rule         : conditional_head
                   | mingpa_head
                   | mingrade_head
                   | minperdisc_head
-                  | minres
+                  | minres_head
                   | minterm
                   | noncourse
                   | proxy_advice
@@ -268,6 +268,7 @@ class_credit_body : (num_classes | num_credits)
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
 // ------------------------------------------------------------------------------------------------
+maxcredit_head    : maxcredit label?;
 maxpassfail_head  : maxpassfail label?;
 maxperdisc_head   : maxperdisc label? ;
 maxtransfer_head  : maxtransfer label?;
