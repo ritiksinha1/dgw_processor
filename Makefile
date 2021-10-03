@@ -1,5 +1,10 @@
-antlr := java -Xmx500M -cp .:/usr/local/lib/antlr-4.9.2-complete.jar org.antlr.v4.Tool
-antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/usr/local/lib/antlr-4.9.2-complete.jar org.antlr.v4.Tool
+ifeq (${HOSTTYPE},aarch64)
+	antlr := java -Xmx500M -cp .:/opt/homebrew/Cellar/antlr/4.9.2/antlr-4.9.2-complete.jar org.antlr.v4.Tool
+	antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/opt/homebrew/Cellar/antlr/4.9.2/antlr-4.9.2-complete.jar org.antlr.v4.Tool
+else
+	antlr := java -Xmx500M -cp .:/usr/local/lib/antlr-4.9.2-complete.jar org.antlr.v4.Tool
+	antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/usr/local/lib/antlr-4.9.2-complete.jar org.antlr.v4.Tool
+endif
 
 .PHONY: parser
 

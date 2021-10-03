@@ -1,7 +1,14 @@
-CLASSPATH := ./classes:/usr/local/lib/antlr-4.9.2-complete.jar
-antlr4 := java -Xmx500M -cp ./classes:/usr/local/lib/antlr-4.9.2-complete.jar org.antlr.v4.Tool
-antpy := antlr4 -Dlanguage=Python3
-grun := java -Xmx500M -cp ./classes:/usr/local/lib/antlr-4.9.2-complete.jar org.antlr.v4.gui.TestRig
+ifeq (${HOSTTYPE},aarch64)
+	CLASSPATH := ./classes:/opt/homebrew/Cellar/antlr/4.9.2/antlr-4.9.2-complete.jar
+	antlr4 := java -Xmx500M -cp ./classes:/opt/homebrew/Cellar/antlr/4.9.2/antlr-4.9.2-complete.jar org.antlr.v4.Tool
+	antpy := antlr4 -Dlanguage=Python3
+	grun := java -Xmx500M -cp ./classes:/opt/homebrew/Cellar/antlr/4.9.2/antlr-4.9.2-complete.jar org.antlr.v4.gui.TestRig
+else
+	CLASSPATH := ./classes:/usr/local/lib/antlr-4.9.2-complete.jar
+	antlr4 := java -Xmx500M -cp ./classes:/usr/local/lib/antlr-4.9.2-complete.jar org.antlr.v4.Tool
+	antpy := antlr4 -Dlanguage=Python3
+	grun := java -Xmx500M -cp ./classes:/usr/local/lib/antlr-4.9.2-complete.jar org.antlr.v4.gui.TestRig
+endif
 
 build_args := -Xlog
 build_args :=
