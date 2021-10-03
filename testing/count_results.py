@@ -1,5 +1,9 @@
 #! /usr/local/bin/python3
 """ Count the sizes of the test_result files.
+
+    THIS IS NOT WORKING: run_tests.sh generates separate csv files for each block_type, not one
+    unified one that this code wants.
+
     Tell what percentage were length 0, indicating complete parsing.
     Report CUNY-wide (highlighted) as well as individual colleges’ results.
 """
@@ -17,11 +21,11 @@ if os.getenv('DEBUG'):
   highlight_on = '\u001b[31m'  # Red Text
   logfile = sys.stderr
 else:
-  time_stamp = str(datetime.now()).replace(' ', '_').rstrip('0123456789').rstrip('.')
+  time_stamp = datetime.now().date().isoformat()
   logfile = open(f'./count_results.out/count_results_{time_stamp}.txt', 'w')
 
 # Find the latest csv file to process
-potentials = Path('./run_tests.out/').glob('run_tests-*')
+potentials = Path('./run_tests.out/').glob('run_tests_*')
 actual = None
 for potential in potentials:
   if actual is None:
@@ -44,7 +48,7 @@ for college in colleges:
                                          'lines': 0,
                                          'seconds': 0.0}
 
-with open(actual) as csv_file:
+with open(actual, newline='') as csv_file:
   reader = csv.DictReader(csv_file, delimiter='\t')
   for line in reader:
     college = line['Block'].split('_')[0].lower().strip('01')
