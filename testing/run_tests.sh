@@ -61,7 +61,7 @@ do
   let $(( total += $SECONDS ))
   SECONDS=0
 done
-./count_results.py
+# ./count_results.py
 let $((mins = total/60))
 let $((secs = total - (mins * 60) ))
-printf "%02d:%02d total time" $mins $secs
+printf "%02d:%02d total time\n" $mins $secs

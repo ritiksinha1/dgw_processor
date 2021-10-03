@@ -22,8 +22,9 @@ parser.add_argument('requirement_block')
 parser.add_argument('-t', '--timelimit', default=900)
 args = parser.parse_args()
 timelimit = int(args.timelimit)
+block_type = args.block_type.lower()
 
-test_dir = Path(f'./test_data.{args.block_type}')
+test_dir = Path(f'./test_data.{block_type}')
 
 file = Path(test_dir, args.requirement_block)
 size = file.stat().st_size
@@ -34,14 +35,15 @@ lines = lines.encode('utf-8')   # Need bytes-like object for input arg to subpro
 if DEBUG:
   print(f'{test_dir.name}/{file.name} has {size} bytes; {num_lines} lines. {timelimit=}')
 
-classpath = './classes:/usr/local/lib/antlr-4.9.2-complete.jar'
+if os.getenv('HOSTTYPE') == 'aarch64':
+  classpath = './classes:/opt/homebrew/Cellar/antlr/4.9.2/antlr-4.9.2-complete.jar'
+else:
+  classpath = './classes:/usr/local/lib/antlr-4.9.2-complete.jar'
 
 try:
+  run_args = ['java', '-cp', classpath, 'org.antlr.v4.gui.TestRig', 'ReqBlock', 'req_block']
   t0 = time.time()
-  completed = subprocess.run(['java', '-cp', classpath,
-                              'org.antlr.v4.gui.TestRig',
-                              'ReqBlock',
-                              'req_block'],
+  completed = subprocess.run(run_args,
                              timeout=timelimit,
                              # stdin=file.open(),
                              input=lines,
