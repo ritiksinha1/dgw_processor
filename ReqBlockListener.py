@@ -314,6 +314,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#maxcredit_head.
+    def enterMaxcredit_head(self, ctx:ReqBlockParser.Maxcredit_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#maxcredit_head.
+    def exitMaxcredit_head(self, ctx:ReqBlockParser.Maxcredit_headContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#maxpassfail_head.
     def enterMaxpassfail_head(self, ctx:ReqBlockParser.Maxpassfail_headContext):
         pass

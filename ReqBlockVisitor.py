@@ -179,6 +179,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#maxcredit_head.
+    def visitMaxcredit_head(self, ctx:ReqBlockParser.Maxcredit_headContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#maxpassfail_head.
     def visitMaxpassfail_head(self, ctx:ReqBlockParser.Maxpassfail_headContext):
         return self.visitChildren(ctx)

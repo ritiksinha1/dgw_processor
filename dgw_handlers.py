@@ -491,14 +491,20 @@ def maxclass(ctx, institution, requirement_id):
 # --------------------------------------------------------------------------------------------------
 def maxcredit(ctx, institution, requirement_id):
   """
+      maxcredit_head  : maxcredit label?;
       maxcredit       : MAXCREDIT NUMBER course_list? tag?;
   """
   if DEBUG:
     print(f'*** maxcredit({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  return_dict = {'number': ctx.NUMBER().getText().strip()}
-  return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
+  maxcredit_ctx = ctx.maxcredit() if class_name(ctx) == 'Maxcredit_head' else ctx
+
+  return_dict = {'number': maxcredit_ctx.NUMBER().getText().strip()}
+  return_dict.update(build_course_list(maxcredit_ctx.course_list(), institution, requirement_id))
+
+  if label_str := get_label(ctx):
+    return_dict['label'] = label_str
 
   return {'maxcredit': return_dict}
 
@@ -532,8 +538,7 @@ def maxpassfail_head(ctx, institution, requirement_id):
   return_dict = {'number': maxpassfail_ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(maxpassfail_ctx.class_or_credit())}
 
-  label_str = get_label(ctx)
-  if label_str:
+  if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
   return {'maxpassfail': return_dict}
@@ -571,8 +576,7 @@ def maxperdisc_head(ctx, institution, requirement_id):
                  'class_or_credit': class_or_credit(maxperdisc_ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in maxperdisc_ctx.SYMBOL()]
 
-  label_str = get_label(ctx)
-  if label_str:
+  if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
   return {'maxperdisc': return_dict}
@@ -631,8 +635,7 @@ def maxtransfer_head(ctx, institution, requirement_id):
     symbol_contexts = maxtransfer_ctx.SYMBOL()
     return_dict['transfer_types'] = [symbol.getText() for symbol in symbol_contexts]
 
-  label_str = get_label(ctx)
-  if label_str:
+  if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
   return {'maxtransfer': return_dict}
@@ -678,8 +681,7 @@ def minclass_head(ctx, institution, requirement_id):
   if minclass_ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  label_str = get_label(ctx)
-  if label_str:
+  if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
   return {'minclass': return_dict}
@@ -723,8 +725,7 @@ def mincredit_head(ctx, institution, requirement_id):
   if mincredit_ctx.display():
     return_dict['display'] = get_display(mincredit_ctx)
 
-  label_str = get_label(ctx)
-  if label_str:
+  if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
   return {'mincredit': return_dict}
@@ -734,29 +735,35 @@ def mincredit_head(ctx, institution, requirement_id):
 # --------------------------------------------------------------------------------------------------
 def mingpa(ctx, institution, requirement_id):
   """
+      mingpa_head     : mingpa label?;
       mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
 
-      MinGPA is a standalone property when it appears in the header, and we think it doesn't include
-      anything but the number. In the body, it's a qualifier, and the other parts can appear. The
-      returned dict accommodates both scenarios.
+      This handler always returns a mingpa dict; it's up to interpreters to determine whether there
+      is a label or not.
   """
   if DEBUG:
-    print(f'*** mingpa({class_name(ctx)}, {institution}. {requirement_id})',
+    print(f'*** mingpa({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  return_dict = {'number': ctx.NUMBER().getText()}
+  mingpa_ctx = ctx.mingpa() if class_name(ctx) == 'Mingpa_head' else ctx
 
-  if ctx.course_list():
-    return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
+  return_dict = {'number': mingpa_ctx.NUMBER().getText()}
 
-  if ctx.expression():
-    return_dict['expression'] = ctx.expression().getText()
+  if mingpa_ctx.course_list():
+    return_dict.update(build_course_list(mingpa_ctx.course_list(), institution, requirement_id))
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  if mingpa_ctx.expression():
+    return_dict['expression'] = mingpa_ctx.expression().getText()
 
-  # if ctx.label():
-  #   return_dict['label'] = get_label(ctx)
+  if mingpa_ctx.display():
+    return_dict['display'] = get_display(mingpa_ctx)
+
+  try:
+    label_str = get_label(ctx)
+    if label_str:
+      return_dict['label'] = label_str
+  except AttributeError as ae:
+    pass
 
   return {'mingpa': return_dict}
 
@@ -765,13 +772,25 @@ def mingpa(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def mingrade(ctx, institution, requirement_id):
   """
-      mingrade        : MINGRADE NUMBER;
+      Both of these handled here, although only mingrade_head should ever occur.
+        mingrade_head   : mingrade label?;
+        mingrade        : MINGRADE NUMBER;
   """
   if DEBUG:
     print(f'*** mingrade({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  return {'mingrade': {'number': ctx.NUMBER().getText()}}
+  mingrade_ctx = ctx.mingrade() if class_name(ctx) == 'Mingrade_head' else ctx
+  return_dict = {'number': mingrade_ctx.NUMBER().getText()}
+
+  try:
+    label_str = get_label(ctx)
+    if label_str:
+      return_dict['label'] = label_str
+  except AttributeError as ae:
+    pass
+
+  return {'mingrade': return_dict}
 
 
 # minperdisc()
@@ -806,8 +825,7 @@ def minperdisc_head(ctx, institution, requirement_id):
                  'class_or_credit': class_or_credit(minperdisc_ctx.class_or_credit())}
   return_dict['discipline'] = [discp.getText().upper() for discp in minperdisc_ctx.SYMBOL()]
 
-  label_str = get_label(ctx)
-  if label_str:
+  if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
   return {'minperdisc': return_dict}
@@ -816,18 +834,26 @@ def minperdisc_head(ctx, institution, requirement_id):
 # minres()
 # -------------------------------------------------------------------------------------------------
 def minres(ctx, institution, requirement_id):
-  """ minres          : MINRES (num_classes | num_credits) display* label? tag?;
+  """ minres_head : minres label?;
+      minres      : MINRES (num_classes | num_credits) display* label? tag?;
   """
   if DEBUG:
     print(f'*** minres({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  return_dict = num_class_or_num_credit(ctx)
+  minres_ctx = ctx.minres() if class_name(ctx) == 'Minres_head' else ctx
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  return_dict = num_class_or_num_credit(minres_ctx)
 
-  # return_dict['label'] = get_label(ctx)
+  if minres_ctx.display():
+    return_dict['display'] = get_display(minres_ctx)
+
+  try:
+    label_str = get_label(ctx)
+    if label_str:
+      return_dict['label'] = label_str
+  except AttributeError as ae:
+    pass
 
   return {'minres': return_dict}
 
@@ -957,8 +983,7 @@ def share_head(ctx, institution, requirement_id):
   if share_ctx.expression():
     share_dict['expression'] = share_ctx.expression().getText()
 
-  label_str = get_label(ctx)
-  if label_str:
+  if label_str := get_label(ctx):
     share_dict['label'] = label_str
 
   return {'share': share_dict}
@@ -1088,17 +1113,17 @@ dispatch_header = {
     'conditional_head': conditional_head,
     'lastres': lastres,
     'maxclass': maxclass,
-    'maxcredit': maxcredit,
+    'maxcredit_head': maxcredit,
     'maxpassfail_head': maxpassfail_head,
     'maxperdisc_head': maxperdisc_head,
     'maxterm': maxterm,
     'maxtransfer_head': maxtransfer_head,
     'minclass_head': minclass_head,
     'mincredit_head': mincredit_head,
-    'mingpa': mingpa,
-    'mingrade': mingrade,
+    'mingpa_head': mingpa,
+    'mingrade_head': mingrade,
     'minperdisc_head': minperdisc_head,
-    'minres': minres,
+    'minres_head': minres,
     'optional': optional,
     'proxy_advice': proxy_advice,
     'remark': remark,
