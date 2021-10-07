@@ -60,9 +60,11 @@ class DGW_ErrorListener(ErrorListener):
 # Timeout manager
 @contextmanager
 def timeout_manager(seconds):
+
   def alarm_handler(signum, frame):
     suffix = '' if seconds == 1 else 's'
     raise DGWError(f'Timeout after {seconds} second{suffix}')
+
   signal.signal(signal.SIGALRM, alarm_handler)
   signal.alarm(seconds)
 
