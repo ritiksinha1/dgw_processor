@@ -45,12 +45,12 @@ req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
 head        :
             ( class_credit_head
             | conditional_head
-            | lastres
-            | maxclass
+            | lastres_head
+            | maxclass_head
             | maxcredit_head
             | maxpassfail_head
             | maxperdisc_head
-            | maxterm
+            | maxterm_head
             | maxtransfer_head
             | mingpa_head
             | mingrade_head
@@ -268,9 +268,12 @@ class_credit_body : (num_classes | num_credits)
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
 // ------------------------------------------------------------------------------------------------
+lastres_head      : lastres label?;
+maxclass_head     : maxclass label?;
 maxcredit_head    : maxcredit label?;
 maxpassfail_head  : maxpassfail label?;
 maxperdisc_head   : maxperdisc label? ;
+maxterm_head      : maxterm label?;
 maxtransfer_head  : maxtransfer label?;
 minclass_head     : minclass label?;
 mincredit_head    : mincredit label?;
@@ -292,7 +295,7 @@ copy_rules      : COPY_RULES expression SEMICOLON?;
 display         : DISPLAY string SEMICOLON?;
 header_tag      : (HEADER_TAG nv_pair)+;
 label           : LABEL string SEMICOLON?;
-lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice? label?;
+lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice?;
 maxclass        : MAXCLASS NUMBER course_list? tag? label?;
 maxcredit       : MAXCREDIT NUMBER course_list? tag? label?;
 

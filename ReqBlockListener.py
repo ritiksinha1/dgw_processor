@@ -314,6 +314,24 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#lastres_head.
+    def enterLastres_head(self, ctx:ReqBlockParser.Lastres_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#lastres_head.
+    def exitLastres_head(self, ctx:ReqBlockParser.Lastres_headContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#maxclass_head.
+    def enterMaxclass_head(self, ctx:ReqBlockParser.Maxclass_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#maxclass_head.
+    def exitMaxclass_head(self, ctx:ReqBlockParser.Maxclass_headContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#maxcredit_head.
     def enterMaxcredit_head(self, ctx:ReqBlockParser.Maxcredit_headContext):
         pass
@@ -338,6 +356,15 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#maxperdisc_head.
     def exitMaxperdisc_head(self, ctx:ReqBlockParser.Maxperdisc_headContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#maxterm_head.
+    def enterMaxterm_head(self, ctx:ReqBlockParser.Maxterm_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#maxterm_head.
+    def exitMaxterm_head(self, ctx:ReqBlockParser.Maxterm_headContext):
         pass
 
 

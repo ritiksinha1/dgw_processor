@@ -179,6 +179,16 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#lastres_head.
+    def visitLastres_head(self, ctx:ReqBlockParser.Lastres_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#maxclass_head.
+    def visitMaxclass_head(self, ctx:ReqBlockParser.Maxclass_headContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#maxcredit_head.
     def visitMaxcredit_head(self, ctx:ReqBlockParser.Maxcredit_headContext):
         return self.visitChildren(ctx)
@@ -191,6 +201,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#maxperdisc_head.
     def visitMaxperdisc_head(self, ctx:ReqBlockParser.Maxperdisc_headContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#maxterm_head.
+    def visitMaxterm_head(self, ctx:ReqBlockParser.Maxterm_headContext):
         return self.visitChildren(ctx)
 
 
