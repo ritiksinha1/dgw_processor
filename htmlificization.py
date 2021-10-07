@@ -549,38 +549,40 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
 # dict_to_html_details_element()
 # -------------------------------------------------------------------------------------------------
 def dict_to_html_details_element(info: dict) -> str:
-  """ Convert a Python dict to a HTML <details> element. The <summary> element is based on the
-      tag/label fields of the dict. During development, the context path goes next. Then, if there
-      are remark or display fields, they go after that. If the tag starts with "num_", that
-      value comes next. Then everything else.
-
-      There are two scenarios: a single key with a dict as its value, or multiple keys (with any
-      type of value, including dicts).
-        Case 1: If there is a single key, that’s the summary element.
-        Case 2: If there are multiple keys, use the label as the summary element. But if there is no
-        label, this isn’t a details-worthy item, and just return the fields for use in the body
-        of the parent.
+  """
   """
 
   if DEBUG:
-      print(f'*** dict_to_html_details_element({list(info.keys())})', file=sys.stderr)
+    print(f'*** dict_to_html_details_element({list(info.keys())})', file=sys.stderr)
 
-  # Indicator for not returning a nest-able display element
-  label = None
+  print(f'*** dict_to_html_details_element({list(info.keys())})')
+
+  label = '<span class="error">what is this label?</span>'
+  pseudo_msg = ''
   try:
-    label = info.pop('label')
+    pseudo = info.pop('is_pseudo')
+    if pseudo:
+      pseudo_msg = '<p><strong>This is a Pseudo-requirement</strong></p>'
   except KeyError as ke:
     pass
 
-  keys = info.keys()
-  print(f'xxx keys 576 {list(keys)}')
-  if len(keys) == 1:
-    # If there is a single key, see if it is group, subset, conditional, naked course list, or rule
-    # complete, and special-case if so.
-    # BUT I don't want to do this. I want to pick out all the header keys and then add these
-    # special cases if they are all that's left. But what if there are multiple conditionals? Why
-    # return just one????????????????????????????????????????????????????????????????????????????
-    key = list(info)[0]
+  try:
+    remark = info.pop('remark')
+    remark = f'<p><strong>{remark}</strong></p>'
+  except KeyError as ke:
+    remark = ''
+
+  try:
+    display = info.pop('display')
+    display = f'<p><em>{display}</em></p>'
+  except KeyError as ke:
+    display = ''
+
+  # Extract any header productions from the dict.
+  header_productions = '\n'.join(format_header_productions(info))
+  print('keys', list(info.keys()))
+  for key, value in info.items():
+    print(f'key: {key}')
     if key == 'conditional':  # Special case for conditional dicts
       return conditional_to_details_element(info['conditional'], label)
     elif key == 'subset':
@@ -591,7 +593,7 @@ def dict_to_html_details_element(info: dict) -> str:
         return_str += group_requirement_to_details_elements(group_requirement, label)
       return return_str
     elif key == 'course_list':
-      label_str, course_list = course_list_details(info.pop('course_list'))
+      label_str, course_list = course_list_details(info['course_list'])
       if label:
         if label_str:
           return f"""
@@ -619,57 +621,21 @@ def dict_to_html_details_element(info: dict) -> str:
         </details>
         """
     elif key == 'rule_complete':
-      rule_complete_dict = info.pop('rule_complete')
+      rule_complete_dict = info['rule_complete']
       label_str = rule_complete_dict['label']
       if label is not None:
         label_str = label + label_str
       is_isnot = 'is' if rule_complete_dict['is_complete'] else 'is not'
       return f'<p><strong>{label_str}</strong>: Requirement <em>{is_isnot}</em> satisfied</p>'
 
-    # Not special-case, but just a single key
-    if label is None:
-      print('xxxx', 630, key)
-      summary = f'<summary>{key.replace("_", " ").title()}</summary>'
-    else:
-      summary = f'<summary>{label}</summary>'
-    value = info[key]
-    if isinstance(value, dict):
-      return f'<details>{summary}{dict_to_html_details_element(value)}</details>'
-    elif isinstance(value, list):
-      return f'<details>{summary}{list_to_html_list_element(value)}</details>'
-    else:
-      return f'<details>{summary}{to_html(value)}</details>'
-
-  else:
-    # Multple keys
-    pseudo_msg = ''
-    try:
-      pseudo = info.pop('is_pseudo')
-      if pseudo:
-        pseudo_msg = '<p><strong>This is a Pseudo-requirement</strong></p>'
-    except KeyError as ke:
-      pass
-
-    try:
-      remark = info.pop('remark')
-      remark = f'<p><strong>{remark}</strong></p>'
-    except KeyError as ke:
-      remark = ''
-
-    try:
-      display = info.pop('display')
-      display = f'<p><em>{display}</em></p>'
-    except KeyError as ke:
-      display = ''
-
     # Class lists and their qualifiers.
     try:
       # Determing number of classes and/or credits required
-      min_classes = info.pop('min_classes')
-      max_classes = info.pop('max_classes')
-      min_credits = info.pop('min_credits')
-      max_credits = info.pop('max_credits')
-      conjunction = info.pop('conjunction')
+      min_classes = info['min_classes']
+      max_classes = info['max_classes']
+      min_credits = info['min_credits']
+      max_credits = info['max_credits']
+      conjunction = info['conjunction']
       cr_str = class_credit_to_str(min_classes, max_classes, min_credits, max_credits, conjunction)
       if cr_str:
         cr_str = f'<p>{cr_str}</p>'
@@ -682,30 +648,36 @@ def dict_to_html_details_element(info: dict) -> str:
       cr_str += f'<p{class_attribute}>{qualifier_string}</p>'
 
     # Other min, max, and num items
-    numerics = cr_str
-    keys = list(info.keys())
-    for key in keys:
-      if key[0:3].lower() in ['max', 'min', 'num']:
-        value = info.pop(key)
-        if value is not None:
-          print('xxxx', 690, key)
-          numerics += f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
+    numerics = ''
+    if key[0:3].lower() in ['max', 'min', 'num']:
+      numerics += f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
+    if numerics:
+      print('xxxx numerics not shown', numerics)
 
     # course_list part of a multi-key dict
     course_list = ''
     if 'course_list' in info.keys():
       if DEBUG:
         print('    From dict_to_html_details_element()')
-      label_str, course_list = course_list_details(info.pop('course_list'))
+      label_str, course_list = course_list_details(info['course_list'])
       # If there is a non-empty label, use it as the summary of a complete details element
       if label_str:
         course_list = f'<details><summary>{label_str}</summary>{course_list}</details>'
+
+    # All else
+    print(f'xxxx all else: {key} {value}')
+    # if isinstance(value, dict):
+    #   return f'<details>{summary}{dict_to_html_details_element(value)}</details>'
+    # elif isinstance(value, list):
+    #   return f'<details>{summary}{list_to_html_list_element(value)}</details>'
+    # else:
+    #   return f'<details>{summary}{to_html(value)}</details>'
 
     # Development aid
     context_path = ''
     if DEBUG:
       try:
-        context_path = f'<div>Context: {info.pop("context_path")}</div>'
+        context_path = f"<div>Context: {info['context_path']}</div>"
       except KeyError as ke:
         pass
 
@@ -713,56 +685,49 @@ def dict_to_html_details_element(info: dict) -> str:
 
     # Key-value pairs not specific to course lists
     # --------------------------------------------
-    for key, value in info.items():
-      if value is None:
-        continue  # Omit empty fields
-      print('xxxx', 718, key)
-      key_str = f'{key.replace("_", " ").title()}'
+    key_str = f'{key.replace("_", " ").title()}'
 
-      if key == 'group':
-        if len(value) > 0:
-          suffix = '' if len(value) == 1 else 's'
-          return_str += to_html(value, 'Group')
-        continue
+    if key == 'group':
+      if len(value) > 0:
+        suffix = '' if len(value) == 1 else 's'
+        return_str += to_html(value, 'Group')
+      continue
 
-      if isinstance(value, bool):
-        return_str += f'<div>{key_str}: {value}</div>'
+    if isinstance(value, bool):
+      return_str += f'<div>{key_str}: {value}</div>'
 
-      elif isinstance(value, str):
-        try:
-          # Interpret numeric and range strings
-          if ':' in value and 2 == len(value.split(':')):
-            # range of values: check if floats or ints
-            range_floor, range_ceil = [float(v) for v in value.split(':')]
-            if range_floor != int(range_floor) or range_ceil != int(range_ceil):
-              return_str += (f'<div>{key_str}: between {range_floor:0.1f} and '
-                             f'{range_ceil:0.1f}</div>')
-            elif int(range_floor) != int(range_ceil):
-              return_str += (f'<div>{key_str}: between {int(range_floor)} and '
-                             f'{int(range_ceil)}</div>')
-            else:
-              # both are ints and are the same
-              return_str += f'<div>{key_str}: {int(range_floor)}</div>'
+    elif isinstance(value, str):
+      try:
+        # Interpret numeric and range strings
+        if ':' in value and 2 == len(value.split(':')):
+          # range of values: check if floats or ints
+          range_floor, range_ceil = [float(v) for v in value.split(':')]
+          if range_floor != int(range_floor) or range_ceil != int(range_ceil):
+            return_str += (f'<div>{key_str}: between {range_floor:0.1f} and '
+                           f'{range_ceil:0.1f}</div>')
+          elif int(range_floor) != int(range_ceil):
+            return_str += (f'<div>{key_str}: between {int(range_floor)} and '
+                           f'{int(range_ceil)}</div>')
           else:
-            # single value
-            if int(value) == float(value):
-              return_str += f'<div>{key_str}: {int(value)}</div>'
-            else:
-              return_str += f'<div>{key_str}: {float(value):0.1f}</div>'
+            # both are ints and are the same
+            return_str += f'<div>{key_str}: {int(range_floor)}</div>'
+        else:
+          # single value
+          if int(value) == float(value):
+            return_str += f'<div>{key_str}: {int(value)}</div>'
+          else:
+            return_str += f'<div>{key_str}: {float(value):0.1f}</div>'
 
-        except ValueError as ve:
-          # Not a numeric string; just show the text.
-          if key != 'context_path':  # This was for development purposes
-            return_str += f'<div>{key_str}: {value}</div>'
+      except ValueError as ve:
+        # Not a numeric string; just show the text.
+        if key != 'context_path':  # This was for development purposes
+          return_str += f'<div>{key_str}: {value}</div>'
 
-      else:
-        # Fall through
-        return_str += to_html(value)
-
-    if label is None:
-      return return_str
     else:
-      return f'<details><summary>{label}</summary>{return_str}</details>'
+      # Fall through
+      print(f'xxxx Unhandled {key=} {value=}')
+
+  return f'<details><summary>{label}</summary>{return_str}</details>'
 
 
 # list_to_html_list_element()
