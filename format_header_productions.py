@@ -10,19 +10,19 @@
 head        :
             ( class_credit_head
             | conditional_head
-            | lastres
-            | maxclass
-            | maxcredit
+            | lastres_head
+            | maxclass_head
+            | maxcredit_head
             | maxpassfail_head
             | maxperdisc_head
-            | maxterm
+            | maxterm_head
             | maxtransfer_head
-            | mingrade
+            | mingpa_head
+            | mingrade_head
             | minclass_head
             | mincredit_head
-            | mingpa
             | minperdisc_head
-            | minres
+            | minres_head
             | optional
             | proxy_advice
             | remark
