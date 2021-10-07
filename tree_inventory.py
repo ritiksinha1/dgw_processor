@@ -77,7 +77,7 @@ if __name__ == '__main__':
     # Frequency distributions of keys in header/body dicts
     header_counts = defaultdict(int)
     body_counts = defaultdict(int)
-    for parse_tree in parse_trees.values():
+    for key, parse_tree in parse_trees.items():
       try:
         header_list = parse_tree['header_list']
         body_list = parse_tree['body_list']
@@ -92,18 +92,28 @@ if __name__ == '__main__':
           for body_key in body_dict.keys():
             body_counts[body_key] += 1
       except KeyError as ke:
+        # if a block is missing either the header or body list, ignore it for purposes of the
+        # inventory.
         print(key.institution, key.requirement_id, ke, file=sys.stderr)
 
-    print('Num Keys to CSV')
+    print('Num Keys to csv')
     all_lengths = set(header_lengths.keys()).union(body_lengths.keys())
     with open('Num_Keys.csv', 'w') as csv_file:
       print('Num Keys, Header, Body', file=csv_file)
       for length in sorted(all_lengths):
         print(f'{length:3},{header_lengths[length]:4}, {body_lengths[length]:4}', file=csv_file)
 
-    print('Header Counts')
-    for header_key in sorted(header_counts.keys()):
-      print(f'  {header_key:20}: {header_counts[header_key]:8,}')
-    print('Body Counts')
-    for body_key in sorted(body_counts.keys()):
-      print(f'  {body_key:20}: {body_counts[body_key]:8,}')
+    print('Key Counts to csv')
+    all_keys = set(list(header_counts.keys()) + list(body_counts.keys()))
+    with open('key_counts.csv', 'w') as csv_file:
+      print('Key, Header, Body', file=csv_file)
+      for key in sorted(all_keys):
+        if key in header_counts.keys():
+          header_val = header_counts[key]
+        else:
+          header_val = 0
+        if key in body_counts.keys():
+          body_val = body_counts[key]
+        else:
+          body_val = 0
+        print(f'{key},{header_val},{body_val}', file=csv_file)
