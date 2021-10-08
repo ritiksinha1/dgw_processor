@@ -795,7 +795,7 @@ def mincredit_head(ctx, institution, requirement_id):
 
   mincredit_ctx = ctx.mincredit()
 
-  return_dict.update(mincredit(mincredit_ctx.course_list(), institution, requirement_id))
+  return_dict.update(mincredit(mincredit_ctx, institution, requirement_id))
 
   return {'mincredit_head': return_dict}
 
