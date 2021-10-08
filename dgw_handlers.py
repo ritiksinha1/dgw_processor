@@ -101,7 +101,7 @@ def class_credit_head(ctx, institution, requirement_id):
 
   return_dict['label'] = get_label(ctx)
 
-  return return_dict
+  return {'class_credit_head': return_dict}
 
 
 # class_credit_body()
@@ -166,7 +166,7 @@ def class_credit_body(ctx, institution, requirement_id):
     if 'course_list' in return_dict.keys():
       print('    ', return_dict['course_list']['scribed_courses'], file=sys.stderr)
 
-  return return_dict
+  return {'class_credit_body': return_dict}
 
 
 # conditional_head()
@@ -444,7 +444,6 @@ def rule_tag(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def lastres(ctx, institution, requirement_id):
   """
-      lastres_head    : lastres label?;
       lastres         : LASTRES NUMBER (OF NUMBER)?
                         class_or_credit
                         course_list? tag? display* proxy_advice?;
@@ -453,49 +452,79 @@ def lastres(ctx, institution, requirement_id):
     print(f'*** lastres({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  lastres_ctx = ctx.lastres() if class_name(ctx) == 'Lastres_head' else ctx
+  return_dict = {'class_or_credit': class_or_credit(ctx.class_or_credit())}
 
-  return_dict = {'class_or_credit': class_or_credit(lastres_ctx.class_or_credit())}
-
-  numbers = lastres_ctx.NUMBER()
+  numbers = ctx.NUMBER()
   return_dict['number'] = numbers.pop().getText().strip()
   if len(numbers) > 0:
     return_dict['of_number'] = numbers.pop().getText().strip()
 
   assert len(numbers) == 0, f'Assertion Error: {len(numbers)} is not zero in lastres()'
 
-  if lastres_ctx.course_list():
-    return_dict.update(build_course_list(lastres_ctx.course_list(), institution, requirement_id))
+  if ctx.course_list():
+    return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  if lastres_ctx.display():
+  if ctx.display():
     return_dict['display'] = get_display(ctx)
 
+  return {'lastres': return_dict}
+
+
+# lastres_head()
+# -------------------------------------------------------------------------------------------------
+def lastres_head(ctx, institution, requirement_id):
+  """
+      lastres_head    : lastres label?;
+  """
+  if DEBUG:
+    print(f'*** lastres_head({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'lastres': return_dict}
+  lastres_ctx = ctx.lastres()
+  return_dict.update(lastres(lastres_ctx, institution, requirement_id))
+
+  return {'lastres_head': return_dict}
 
 
 # maxclass()
 # --------------------------------------------------------------------------------------------------
 def maxclass(ctx, institution, requirement_id):
   """
-      maxclass_head   : maxclass label?;
       maxclass        : MAXCLASS NUMBER course_list? tag?;
   """
   if DEBUG:
     print(f'*** maxclass({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  maxclass_ctx = ctx.maxclass() if class_name(ctx) == 'Maxclass_head' else ctx
+  return_dict = {'number': ctx.NUMBER().getText().strip()}
+  return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  return_dict = {'number': maxclass_ctx.NUMBER().getText().strip()}
-  return_dict.update(build_course_list(maxclass_ctx.course_list(), institution, requirement_id))
+  return {'maxclass': return_dict}
 
+
+# maxclass_head()
+# --------------------------------------------------------------------------------------------------
+def maxclass_head(ctx, institution, requirement_id):
+  """
+      maxclass_head   : maxclass label?;
+  """
+  if DEBUG:
+    print(f'*** maxclass_head({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'maxclass': return_dict}
+  maxclass_ctx = ctx.maxclass() if class_name(ctx) == 'Maxclass_head' else ctx
+
+  return_dict.update(maxclass(maxclass_ctx, institution, requirement_id))
+
+  return {'maxclass_head': return_dict}
 
 
 # maxcredit()
@@ -509,107 +538,186 @@ def maxcredit(ctx, institution, requirement_id):
     print(f'*** maxcredit({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  maxcredit_ctx = ctx.maxcredit() if class_name(ctx) == 'Maxcredit_head' else ctx
+  return_dict = {'number': ctx.NUMBER().getText().strip()}
+  return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  return_dict = {'number': maxcredit_ctx.NUMBER().getText().strip()}
-  return_dict.update(build_course_list(maxcredit_ctx.course_list(), institution, requirement_id))
+  return {'maxcredit': return_dict}
 
+
+# maxcredit_head()
+# --------------------------------------------------------------------------------------------------
+def maxcredit_head(ctx, institution, requirement_id):
+  """
+      maxcredit_head  : maxcredit label?;
+  """
+  if DEBUG:
+    print(f'*** maxcredit_head({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'maxcredit': return_dict}
+  maxcredit_ctx = ctx.maxcredit()
+
+  return_dict.update(maxcredit(maxcredit_ctx, institution, requirement_id))
+
+  return {'maxcredit_head': return_dict}
 
 
 # maxpassfail()
 # --------------------------------------------------------------------------------------------------
 def maxpassfail(ctx, institution, requirement_id):
   """
-      maxpassfail_head : maxpassfail label?;
       maxpassfail      : MAXPASSFAIL NUMBER class_or_credit tag?;
   """
   if DEBUG:
     print(f'*** maxpassfail({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  maxpassfail_ctx = ctx.maxpassfail() if class_name(ctx) == 'Maxpassfail_head' else ctx
+  return_dict = {'number': ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
 
-  return_dict = {'number': maxpassfail_ctx.NUMBER().getText(),
-                 'class_or_credit': class_or_credit(maxpassfail_ctx.class_or_credit())}
+  return {'maxpassfail': return_dict}
 
+
+# maxpassfail_head()
+# --------------------------------------------------------------------------------------------------
+def maxpassfail_head(ctx, institution, requirement_id):
+  """
+      maxpassfail_head : maxpassfail label?;
+  """
+  if DEBUG:
+    print(f'*** maxpassfail_head({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'maxpassfail': return_dict}
+  maxpassfail_ctx = ctx.maxpassfail()
+
+  return_dict.update(maxpassfail(maxpassfail_ctx, institution, requirement_id))
+
+  return {'maxpassfail_head': return_dict}
 
 
 # maxperdisc()
 # -------------------------------------------------------------------------------------------------
 def maxperdisc(ctx, institution, requirement_id):
   """
-      maxperdisc_head : maxperdisc label? ;
       maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
   """
   if DEBUG:
     print(f'*** maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}',
           file=sys.stderr)
 
-  maxperdisc_ctx = ctx.maxperdisc() if class_name(ctx == 'Maxperdisc_head') else ctx
+  return_dict = {'number': ctx.NUMBER().getText().strip(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  return_dict['disciplines'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
+
+  return {'maxperdisc': return_dict}
+
+
+# maxperdisc_head()
+# -------------------------------------------------------------------------------------------------
+def maxperdisc_head(ctx, institution, requirement_id):
+  """
+      maxperdisc_head : maxperdisc label? ;
+  """
+  if DEBUG:
+    print(f'*** maxperdisc_head({class_name(ctx)=}, {institution=}, {requirement_id=}',
+          file=sys.stderr)
+
+  return_dict = {}
+  if label_str := get_label(ctx):
+    return_dict['label'] = label_str
+
+  maxperdisc_ctx = ctx.maxperdisc()
 
   return_dict = {'number': maxperdisc_ctx.NUMBER().getText().strip(),
                  'class_or_credit': class_or_credit(maxperdisc_ctx.class_or_credit())}
   return_dict['disciplines'] = [discp.getText().upper() for discp in maxperdisc_ctx.SYMBOL()]
 
-  if label_str := get_label(ctx):
-    return_dict['label'] = label_str
-
-  return {'maxperdisc': return_dict}
+  return {'maxperdisc_head': return_dict}
 
 
 # maxterm()
 # -------------------------------------------------------------------------------------------------
 def maxterm(ctx, institution, requirement_id):
   """
-      maxterm_head    : maxterm label?;
       maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
   """
   if DEBUG:
     print(f'*** maxterm({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
-  maxterm_ctx = ctx.maxterm() if class_name(ctx) == 'Maxterm_head' else ctx
 
-  return_dict = {'number': maxterm_ctx.NUMBER().getText(),
-                 'class_or_credit': class_or_credit(maxterm_ctx.class_or_credit())}
-  return_dict.update(build_course_list(maxterm_ctx.course_list(), institution, requirement_id))
+  return_dict = {'number': ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
+  return {'maxterm': return_dict}
+
+
+# maxterm_head()
+# -------------------------------------------------------------------------------------------------
+def maxterm_head(ctx, institution, requirement_id):
+  """
+      maxterm_head    : maxterm label?;
+  """
+  if DEBUG:
+    print(f'*** maxterm({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'maxterm': return_dict}
+  maxterm_ctx = ctx.maxterm()
+
+  return_dict.update(maxterm(maxterm_ctx, institution, requirement_id))
+
+  return {'maxterm_head': return_dict}
 
 
 # maxtransfer()
 # -------------------------------------------------------------------------------------------------
 def maxtransfer(ctx, institution, requirement_id):
   """
-      maxtransfer_head : maxtransfer label?;
       maxtransfer      : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
   """
   if DEBUG:
     print(f'*** maxtransfer({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  maxtransfer_ctx = ctx.maxtransfer() if class_name(ctx) == 'Maxtransfer_head' else ctx
-
-  return_dict = {'number': maxtransfer_ctx.NUMBER().getText(),
-                 'class_or_credit': class_or_credit(maxtransfer_ctx.class_or_credit())}
-  if maxtransfer_ctx.SYMBOL():
-    symbol_contexts = maxtransfer_ctx.SYMBOL()
+  return_dict = {'number': ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+  if ctx.SYMBOL():
+    symbol_contexts = ctx.SYMBOL()
     return_dict['transfer_types'] = [symbol.getText() for symbol in symbol_contexts]
 
+  return {'maxtransfer': return_dict}
+
+
+# maxtransfer_head()
+# -------------------------------------------------------------------------------------------------
+def maxtransfer_head(ctx, institution, requirement_id):
+  """
+      maxtransfer_head : maxtransfer label?;
+  """
+  if DEBUG:
+    print(f'*** maxtransfer_head({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'maxtransfer': return_dict}
+  maxtransfer_ctx = ctx.maxtransfer()
+
+  return_dict.update(maxtransfer(maxtransfer_ctx, institution, requirement_id))
+
+  return {'maxtransfer_head': return_dict}
 
 
 # minclass()
@@ -628,8 +736,6 @@ def minclass(ctx, institution, requirement_id):
   if ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  # return_dict['label'] = get_label(ctx)
-
   return {'minclass': return_dict}
 
 
@@ -643,19 +749,15 @@ def minclass_head(ctx, institution, requirement_id):
     print(f'*** minclass_head({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  minclass_ctx = ctx.minclass()
-  return_dict = {'number': minclass_ctx.NUMBER().getText(),
-                 'courses': build_course_list(minclass_ctx.course_list(),
-                                              institution,
-                                              requirement_id)}
-
-  if minclass_ctx.display():
-    return_dict['display'] = get_display(ctx)
-
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'minclass': return_dict}
+  minclass_ctx = ctx.minclass()
+
+  return_dict.update(minclass(minclass_ctx, institution, requirement_id))
+
+  return {'minclass_head': return_dict}
 
 
 # mincredit()
@@ -674,8 +776,6 @@ def mincredit(ctx, institution, requirement_id):
   if ctx.display():
     return_dict['display'] = get_display(ctx)
 
-  # return_dict['label'] = get_label(ctx)
-
   return {'mincredit': return_dict}
 
 
@@ -689,79 +789,97 @@ def mincredit_head(ctx, institution, requirement_id):
     print(f'*** mincredit_head({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  mincredit_ctx = ctx.mincredit()
-  return_dict = {'number': mincredit_ctx.NUMBER().getText()}
-  return_dict.update(build_course_list(mincredit_ctx.course_list(), institution, requirement_id))
-
-  if mincredit_ctx.display():
-    return_dict['display'] = get_display(mincredit_ctx)
-
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'mincredit': return_dict}
+  mincredit_ctx = ctx.mincredit()
+
+  return_dict.update(mincredit(mincredit_ctx.course_list(), institution, requirement_id))
+
+  return {'mincredit_head': return_dict}
 
 
 # mingpa()
 # --------------------------------------------------------------------------------------------------
 def mingpa(ctx, institution, requirement_id):
   """
-      mingpa_head     : mingpa label?;
       mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
-
-      This handler always returns a mingpa dict; it's up to interpreters to determine whether there
-      is a label or not.
   """
   if DEBUG:
     print(f'*** mingpa({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  mingpa_ctx = ctx.mingpa() if class_name(ctx) == 'Mingpa_head' else ctx
+  return_dict = {'number': ctx.NUMBER().getText()}
 
-  return_dict = {'number': mingpa_ctx.NUMBER().getText()}
+  if ctx.course_list():
+    return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  if mingpa_ctx.course_list():
-    return_dict.update(build_course_list(mingpa_ctx.course_list(), institution, requirement_id))
+  if ctx.expression():
+    return_dict['expression'] = ctx.expression().getText()
 
-  if mingpa_ctx.expression():
-    return_dict['expression'] = mingpa_ctx.expression().getText()
-
-  if mingpa_ctx.display():
-    return_dict['display'] = get_display(mingpa_ctx)
-
-  try:
-    label_str = get_label(ctx)
-    if label_str:
-      return_dict['label'] = label_str
-  except AttributeError as ae:
-    pass
+  if ctx.display():
+    return_dict['display'] = get_display(ctx)
 
   return {'mingpa': return_dict}
+
+
+# mingpa_head()
+# --------------------------------------------------------------------------------------------------
+def mingpa_head(ctx, institution, requirement_id):
+  """
+      mingpa_head     : mingpa label?;
+  """
+  if DEBUG:
+    print(f'*** mingpa_head({class_name(ctx)}, {institution}, {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
+
+  mingpa_ctx = ctx.mingpa()
+
+  return_dict.update(mingpa(mingpa_ctx, institution, requirement_id))
+
+  return {'mingpa_head': return_dict}
 
 
 # mingrade()
 # -------------------------------------------------------------------------------------------------
 def mingrade(ctx, institution, requirement_id):
   """
-      Both of these handled here, although only mingrade_head should ever occur.
-        mingrade_head   : mingrade label?;
-        mingrade        : MINGRADE NUMBER;
+      mingrade        : MINGRADE NUMBER;
   """
   if DEBUG:
     print(f'*** mingrade({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  mingrade_ctx = ctx.mingrade() if class_name(ctx) == 'Mingrade_head' else ctx
-  return_dict = {'number': mingrade_ctx.NUMBER().getText()}
-
-  try:
-    label_str = get_label(ctx)
-    if label_str:
-      return_dict['label'] = label_str
-  except AttributeError as ae:
-    pass
+  return_dict = {'number': ctx.NUMBER().getText()}
 
   return {'mingrade': return_dict}
+
+
+# mingrade_head()
+# -------------------------------------------------------------------------------------------------
+def mingrade_head(ctx, institution, requirement_id):
+  """
+      mingrade_head   : mingrade label?;
+  """
+  if DEBUG:
+    print(f'*** mingrade_head({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
+
+  mingrade_ctx = ctx.mingrade()
+  return_dict.update(mingrade(mingrade_ctx, institution, requirement_id))
+
+  return {'mingrade_head': return_dict}
 
 
 # minperdisc()
@@ -791,42 +909,96 @@ def minperdisc_head(ctx, institution, requirement_id):
     print(f'*** minperdisc_head({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  minperdisc_ctx = ctx.minperdisc()
-  return_dict = {'number': minperdisc_ctx.NUMBER().getText(),
-                 'class_or_credit': class_or_credit(minperdisc_ctx.class_or_credit())}
-  return_dict['discipline'] = [discp.getText().upper() for discp in minperdisc_ctx.SYMBOL()]
-
+  return_dict = {}
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'minperdisc': return_dict}
+  minperdisc_ctx = ctx.minperdisc()
+
+  return_dict.update(minperdisc(minperdisc_ctx, instution, requirement_id))
+
+  return {'minperdisc_head': return_dict}
 
 
 # minres()
 # -------------------------------------------------------------------------------------------------
 def minres(ctx, institution, requirement_id):
-  """ minres_head : minres label?;
-      minres      : MINRES (num_classes | num_credits) display* label? tag?;
+  """
+      minres      : MINRES (num_classes | num_credits) display* tag?;
   """
   if DEBUG:
     print(f'*** minres({class_name(ctx)}, {institution}. {requirement_id})',
           file=sys.stderr)
 
-  minres_ctx = ctx.minres() if class_name(ctx) == 'Minres_head' else ctx
+  return_dict = num_class_or_num_credit(ctx)
 
-  return_dict = num_class_or_num_credit(minres_ctx)
-
-  if minres_ctx.display():
-    return_dict['display'] = get_display(minres_ctx)
-
-  try:
-    label_str = get_label(ctx)
-    if label_str:
-      return_dict['label'] = label_str
-  except AttributeError as ae:
-    pass
+  if ctx.display():
+    return_dict['display'] = get_display(ctx)
 
   return {'minres': return_dict}
+
+
+# minres_head()
+# -------------------------------------------------------------------------------------------------
+def minres_head(ctx, institution, requirement_id):
+  """
+      minres_head : minres label?;
+  """
+  if DEBUG:
+    print(f'*** minres_head({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  minres_ctx = ctx.minres()
+
+  return_dict = {}
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
+
+  return_dict.update(minres(minres_ctx, institution, requirement_id))
+
+  return {'minres_head': return_dict}
+
+
+# minterm()
+# -------------------------------------------------------------------------------------------------
+def minterm(ctx, institution, requirement_id):
+  """
+      minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
+  """
+  if DEBUG:
+    print(f'*** minterm({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {'number': ctx.NUMBER().getText(),
+                 'class_or_credit': class_or_credit(ctx.class_or_credit())}
+
+  if ctx.display():
+    return_dict['display'] = get_display(ctx)
+
+  return {'minterm': return_dict}
+
+
+# minterm_head()
+# -------------------------------------------------------------------------------------------------
+def minterm_head(ctx, institution, requirement_id):
+  """
+      minterm_head  : minterm label?;
+  """
+  if DEBUG:
+    print(f'*** minterm_head({class_name(ctx)}, {institution}. {requirement_id})',
+          file=sys.stderr)
+
+  return_dict = {}
+  label_str = get_label(ctx)
+  if label_str:
+    return_dict['label'] = label_str
+
+  minterm_ctx = ctx.minterm()
+
+  return_dict.update(minterm(minterm_ctx, institution, requirement_id))
+
+  return {'minterm_head': return_dict}
 
 
 # noncourse()
@@ -943,21 +1115,15 @@ def share_head(ctx, institution, requirement_id):
   if DEBUG:
     print(f'*** share_head({class_name(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
 
-  share_ctx = ctx.share()
-  share_dict = dict()
-
-  share_dict['allow_sharing'] = True if share_ctx.SHARE() is not None else False
-
-  if share_ctx.NUMBER():
-    share_dict['number'] = share_ctx.NUMBER().getText().strip()
-    share_dict['class_or_credit'] = class_or_credit(share_ctx.class_or_credit())
-  if share_ctx.expression():
-    share_dict['expression'] = share_ctx.expression().getText()
-
+  return_dict = {}
   if label_str := get_label(ctx):
-    share_dict['label'] = label_str
+    return_dict['label'] = label_str
 
-  return {'share': share_dict}
+  share_ctx = ctx.share()
+
+  return_dict.update(share(share_ctx, institution, requirement_id))
+
+  return {'share_head': return_dict}
 
 
 # standalone()
@@ -1078,30 +1244,52 @@ def under(ctx, institution, requirement_id):
 # =================================================================================================
 """ There are two in case conditional and Share need to be handled differently in Head and Body.
 """
-dispatch_header = {
-    'class_credit_head': class_credit_head,
-    'conditional_head': conditional_head,
-    'header_tag': header_tag,
-    'lastres_head': lastres,
-    'maxclass_head': maxclass,
-    'maxcredit_head': maxcredit,
-    'maxpassfail_head': maxpassfail,
-    'maxperdisc_head': maxperdisc,
-    'maxterm_head': maxterm,
-    'maxtransfer_head': maxtransfer,
-    'minclass_head': minclass_head,
-    'mincredit_head': mincredit_head,
-    'mingpa_head': mingpa,
-    'mingrade_head': mingrade,
-    'minperdisc_head': minperdisc_head,
-    'minres_head': minres,
-    'optional': optional,
-    'proxy_advice': proxy_advice,
-    'remark': remark,
-    'share_head': share_head,
-    'standalone': standalone,
-    'under': under
-}
+dispatch_header = {'class_credit_head': class_credit_head,
+                   'conditional_head': conditional_head,
+                   'lastres_head': lastres_head,
+                   'maxclass_head': maxclass_head,
+                   'maxcredit_head': maxcredit_head,
+                   'maxpassfail_head': maxpassfail_head,
+                   'maxperdisc_head': maxperdisc_head,
+                   'maxterm_head': maxterm_head,
+                   'maxtransfer_head': maxtransfer_head,
+                   'mingpa_head': mingpa_head,
+                   'mingrade_head': mingrade_head,
+                   'minclass_head': minclass_head,
+                   'mincredit_head': mincredit_head,
+                   'minperdisc_head': minperdisc_head,
+                   'minres_head': minres_head,
+                   'minterm_head': minterm_head,
+                   'optional': optional,
+                   'proxy_advice': proxy_advice,
+                   'remark': remark,
+                   'share_head': share_head,
+                   'standalone': standalone,
+                   'under': under
+                   }
+
+# 'class_credit_head': class_credit_head,
+# 'conditional_head': conditional_head,
+# 'header_tag': header_tag,
+# 'lastres_head': lastres,
+# 'maxclass_head': maxclass,
+# 'maxcredit_head': maxcredit,
+# 'maxpassfail_head': maxpassfail,
+# 'maxperdisc_head': maxperdisc,
+# 'maxterm_head': maxterm,
+# 'maxtransfer_head': maxtransfer,
+# 'minclass_head': minclass_head,
+# 'mincredit_head': mincredit_head,
+# 'mingpa_head': mingpa,
+# 'mingrade_head': mingrade,
+# 'minperdisc_head': minperdisc_head,
+# 'minres_head': minres,
+# 'optional': optional,
+# 'proxy_advice': proxy_advice,
+# 'remark': remark,
+# 'share_head': share_head,
+# 'standalone': standalone,
+# 'under': under
 
 dispatch_body = {
     'block': block,

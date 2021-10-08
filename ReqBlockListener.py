@@ -431,6 +431,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#minterm_head.
+    def enterMinterm_head(self, ctx:ReqBlockParser.Minterm_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#minterm_head.
+    def exitMinterm_head(self, ctx:ReqBlockParser.Minterm_headContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#share_head.
     def enterShare_head(self, ctx:ReqBlockParser.Share_headContext):
         pass

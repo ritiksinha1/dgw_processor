@@ -164,11 +164,11 @@ head_rule         : conditional_head
                   | blocktype
                   | class_credit_head
                   | copy_rules
-                  | lastres
-                  | maxclass
+                  | lastres_head
+                  | maxclass_head
                   | maxcredit_head
                   | maxpassfail_head
-                  | maxterm
+                  | maxterm_head
                   | maxtransfer_head
                   | minclass_head
                   | mincredit_head
@@ -176,7 +176,7 @@ head_rule         : conditional_head
                   | mingrade_head
                   | minperdisc_head
                   | minres_head
-                  | minterm
+                  | minterm_head
                   | noncourse
                   | proxy_advice
                   | remark
@@ -281,6 +281,7 @@ mingpa_head       : mingpa label?;
 mingrade_head     : mingrade label?;
 minperdisc_head   : minperdisc label?;
 minres_head       : minres label?;
+minterm_head      : minterm label?;
 share_head        : share label?;
 
 // Other parser productions
