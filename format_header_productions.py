@@ -394,27 +394,10 @@ def format_header_productions(node: dict) -> list:
   if DEBUG:
     print(f'*** format_header_productions(keys: {list(node.keys())}', file=sys.stderr)
 
-  # The following productions can occur in the header.
-  handled_productions = ['maxclass',
-                         'maxcredit',
-                         'maxpassfail_head',
-                         'maxperdisc_head',
-                         'maxtransfer_head',
-                         'mingrade_head',
-                         'minclass_head',
-                         'mincredit_head',
-                         'mingpa_head',
-                         'minperdisc_head',
-                         'minres_head',
-                         'share_head']
   production_strings = []
-  for production in handled_productions:
-    try:
-      production_info = _dispatch_production(production, node.pop(production))
-      if production_info is not None:
-        production_strings.append(production_info)
-    except KeyError as ke:
-      # Ignore anything not in the dispatch table.
-      pass
+  for production in dispatch_table.keys():
+    production_info = _dispatch_production(production, node.pop(production))
+    if production_info is not None:
+      production_strings.append(production_info)
 
   return production_strings

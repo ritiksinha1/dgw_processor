@@ -198,7 +198,7 @@ def course_list_details(info: dict) -> str:
 
     course_areas = info.pop('course_areas')
     if len(course_areas) > 0:
-      details_str += list_to_html_list_element(course_areas, kind='Course Area')
+      details_str += list_to_html(course_areas, kind='Course Area')
 
     include_courses = info.pop('include_courses')
     assert isinstance(include_courses, list)
@@ -252,7 +252,7 @@ def course_list_details(info: dict) -> str:
   for key, value in info.items():
     if isinstance(value, list):
       if len(value) > 0:
-        details_str += list_to_html_list_element(value, kind=key.strip('s').title())
+        details_str += list_to_html(value, kind=key.strip('s').title())
     else:
       details_str += f'<p>{key}: {value}</p>'
 
@@ -473,9 +473,9 @@ def group_requirement_to_details_elements(info: dict, outer_label=None) -> str:
   for group_item in group_list['groups']:
     group_number += 1
     if isinstance(group_item, list):
-      group_body = list_to_html_list_element(group_item)
+      group_body = list_to_html(group_item)
     elif isinstance(group_item, dict):
-      group_body = dict_to_html_details_element(group_item)
+      group_body = dict_to_html(group_item)
     else:
       group_body = f'<div class="error">Error: {group_item} is neither a list nor a dict</div>'
     index = number_names[group_number] if group_number < len(number_names) else group_number
@@ -546,18 +546,15 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
               f'{inner_details}</details>')
 
 
-# dict_to_html_details_element()
+# dict_to_html()
 # -------------------------------------------------------------------------------------------------
-def dict_to_html_details_element(info: dict) -> str:
-  """
+def dict_to_html(info: dict) -> str:
+  """ A dict is shown as either as a html details element or a paragraph.
   """
 
   if DEBUG:
-    print(f'*** dict_to_html_details_element({list(info.keys())})', file=sys.stderr)
+    print(f'*** dict_to_html({list(info.keys())})', file=sys.stderr)
 
-  print(f'*** dict_to_html_details_element({list(info.keys())})')
-
-  label = '<span class="error">what is this label?</span>'
   pseudo_msg = ''
   try:
     pseudo = info.pop('is_pseudo')
@@ -658,7 +655,7 @@ def dict_to_html_details_element(info: dict) -> str:
     course_list = ''
     if 'course_list' in info.keys():
       if DEBUG:
-        print('    From dict_to_html_details_element()')
+        print('    From dict_to_html()')
       label_str, course_list = course_list_details(info['course_list'])
       # If there is a non-empty label, use it as the summary of a complete details element
       if label_str:
@@ -667,9 +664,9 @@ def dict_to_html_details_element(info: dict) -> str:
     # All else
     print(f'xxxx all else: {key} {value}')
     # if isinstance(value, dict):
-    #   return f'<details>{summary}{dict_to_html_details_element(value)}</details>'
+    #   return f'<details>{summary}{dict_to_html(value)}</details>'
     # elif isinstance(value, list):
-    #   return f'<details>{summary}{list_to_html_list_element(value)}</details>'
+    #   return f'<details>{summary}{list_to_html(value)}</details>'
     # else:
     #   return f'<details>{summary}{to_html(value)}</details>'
 
@@ -730,19 +727,31 @@ def dict_to_html_details_element(info: dict) -> str:
   return f'<details><summary>{label}</summary>{return_str}</details>'
 
 
-# list_to_html_list_element()
+# list_to_html()
 # -------------------------------------------------------------------------------------------------
-def list_to_html_list_element(info: list, kind='Item') -> str:
-  """
+def list_to_html(info: list, section=None) -> str:
+  """ If this is a section-level list, return a display element with the name of the sections as
+      the summary, and the intepreted dicts in the list as the body.
+      Otherwise, go through the list and process according to what is there.
   """
   if DEBUG:
-    print(f'*** list_to_html_list_element({len(info)} elements, {kind=})', file=sys.stderr)
+    print(f'*** list_to_html({len(info)} elements, {section=})', file=sys.stderr)
+
+  assert isinstance(info, list), f'{type(info)} is not list'
+
+  if section is not None:
+    summary = f'<summary>{section.title()}</summary>'
+    details = ''
+    for item in info:
+      assert isinstance(item, dict), f'{type(item)} is not dict'
+      details += dict_to_html(item)
+    return f'<details>{summary}{details}</details>'
 
   num = len(info)
   if num == 0:
     return '<p class="error">Empty List</p>'
   if num == 1:
-    return to_html(info[0], kind)
+    return to_html(info[0])
 
   # The list has more than one element
   # If any items are dicts with only a remark key, extract them and show them before the details
@@ -765,32 +774,28 @@ def list_to_html_list_element(info: list, kind='Item') -> str:
     num_str = number_names[num].title()
   else:
     num_str = f'{num:,}'
-  # Pluralization awkwardness
-  if kind == 'Property':
-    kind = 'Properties'
-  else:
-    kind = kind + 's'
-  return_str = f'{opening_remarks}<details open="open"/><summary>{num_str} {kind}</summary>'
+  return_str = f'{opening_remarks}<details open="open"/><summary>{num_str} Item</summary>'
   return_str += '\n'.join([f'{to_html(element)}'for element in info])
+
   return return_str + '</details>'
 
 
 # to_html()
 # -------------------------------------------------------------------------------------------------
-def to_html(info: any, kind='Item') -> str:
+def to_html(info: any) -> str:
   """  Return a nested HTML data structure as described above.
   """
   if DEBUG:
-    print(f'*** to_html({type(info)}, {kind=})', file=sys.stderr)
+    print(f'*** to_html({type(info)}, {section=})', file=sys.stderr)
 
   if info is None:
     return ''
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return list_to_html_list_element(info, kind)
+    return list_to_html(info)
   if isinstance(info, dict):
-    return dict_to_html_details_element(info)
+    return dict_to_html(info)
 
   return info
 
@@ -828,28 +833,25 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
   </div>
   """
   # Interpret the block if it hasn’t been done yet.
-  if row.parse_tree == {}:
-    parse_tree = dgw_parser(row.institution,
-                            row.block_type,
-                            row.block_value,
-                            period_range=period_range)
-  else:
-    parse_tree = row.parse_tree
+  parse_tree = row.parse_tree
 
-  if 'error' in parse_tree.keys():
+  if parse_tree == {}:
+    parse_results = (f'<section><h2>Parse tree for this block is unavailable at this time.</h2>'
+                     f'</section')
+  elif 'error' in parse_tree.keys():
     err_msg = parse_tree['error']
     parse_results = f'<section><h2 class="error">Parsing failed</h2><p>{err_msg}</p></section'
   else:
     header_list, body_list = parse_tree['header_list'], parse_tree['body_list']
     parse_results = f"""
-  <section>
-  <details><summary>Header</summary>
-    {to_html(header_list)}
-  </details>
-  <details><summary>Body</summary>
-    {to_html(body_list, kind='Requirement')}
-  </details
-</section>
+    <section>
+      <details><summary>Header</summary>
+        {list_to_html(header_list, section='header')}
+      </details>
+      <details><summary>Body</summary>
+        {list_to_html(body_list, section='body')}
+      </details
+    </section>
     """
 
   return disclaimer + f"""
