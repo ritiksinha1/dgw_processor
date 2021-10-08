@@ -915,7 +915,7 @@ def minperdisc_head(ctx, institution, requirement_id):
 
   minperdisc_ctx = ctx.minperdisc()
 
-  return_dict.update(minperdisc(minperdisc_ctx, instution, requirement_id))
+  return_dict.update(minperdisc(minperdisc_ctx, institution, requirement_id))
 
   return {'minperdisc_head': return_dict}
 
