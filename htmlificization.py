@@ -20,10 +20,21 @@ from collections import namedtuple
 
 from course_lookup import lookup_course
 
+import html_utils
+# html_utils.dict_to_html
+# html_utils.list_to_html
+import format_utils
+# format_utils.class_credit_to_str
+# format_utils.format_class_credit_clause
+# format_utils.format_course_list
+# format_utils.list_of_courses
+
 from format_body_qualifiers import format_body_qualifiers
 from format_header_productions import format_header_productions
+
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
+
 from pgconnection import PgConnection
 
 DEBUG = os.getenv('DEBUG_HTML')
@@ -43,223 +54,6 @@ quarantined_dict = QuarantineManager()
 
 number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
                 'ten', 'eleven', 'twelve']
-
-header_productions = ['maxcredit_head', 'maxpassfail_head', 'maxperdisc_head', 'maxtransfer_head',
-                      'minclass_head', 'mincredit_head', 'mingpa_head', 'minperdisc_head',
-                      'minres_head', 'share_head']
-
-
-# list_of_courses()
-# -------------------------------------------------------------------------------------------------
-def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str:
-  """ This is called from course_list_details to format scribed, missing, active, inactive, include,
-      and except course lists into a HTML unordered list element inside the body of a details
-      element, where the title_str received is used as the summary element. The title string
-      normally specifies how many courses from the list are required.
-
-      Highlight the summary if highlight is True, namely for missing courses.
-
-      There are two flavors of course_tuples:
-      - scribed and missing courses have just the discipline and catalog number, and an optional
-        with clause, so the length of those tuples is 3
-      - active and inactive courses have the course_id, offer_nbr, discipline, catalog_number,
-        title, credits, and optional with clause, so the length of those tuples is 7.
-  """
-  if DEBUG:
-    print(f'*** list_of_courses({len(course_tuples)} course tuples, {title_str} {highlight=})', file=sys.stderr)
-
-  suffix = '' if len(course_tuples) == 1 else 's'
-  class_str = ' class="error"' if highlight else ''
-  return_str = (f'<details><summary{class_str}>{len(course_tuples)} {title_str}{suffix}</summary>'
-                f'<ul>')
-  for course_tuple in course_tuples:
-    assert len(course_tuple) == 3 or len(course_tuple) == 7, \
-        f'{len(course_tuple)} is not three or six'
-    if len(course_tuple) < 4:  # Scribed is 3 (possible 'with'); except and including are 2
-      return_str += f'<li>{course_tuple[0]} {course_tuple[1]}'
-      if course_tuple[2] is not None:
-        return_str += f' with {course_tuple[2]}'
-      return_str += '</li>\n'
-    else:
-      return_str += (f'<li>{course_tuple[2]} {course_tuple[3]}: <em>{course_tuple[4]}</em>')
-      if course_tuple[-1] is not None:
-         return_str += f' <strong>with {course_tuple[-1]}</strong>'
-      return_str += '</li>'
-  return_str += '</ul>\n</details>'
-  return return_str
-
-
-# class_credit_to_str()
-# -------------------------------------------------------------------------------------------------
-def class_credit_to_str(min_classes: int, max_classes: int,
-                        min_credits: float, max_credits: float, conjunction: str) -> str:
-  """ Tell how many classes and/or credits are required.
-  """
-  if DEBUG:
-    print(f'*** class_credit_to_str({min_classes=}, {max_classes=}, {min_credits=}, '
-          f'{max_credits=}, {conjunction=})', file=sys.stderr)
-
-  if min_classes:
-    if min_classes == max_classes:
-      suffix = '' if min_classes == 1 else 'es'
-      num_classes = f'{min_classes} class{suffix}'
-    else:
-      num_classes = f'between {min_classes} and {max_classes} classes'
-  else:
-    num_classes = ''
-  if min_credits:
-    if min_credits == max_credits:
-      suffix = '' if min_credits == 1.0 else 's'
-      num_credits = f'{min_credits} credit{suffix}'
-    else:
-      num_credits = f'between {min_credits} and {max_credits} credits'
-  else:
-    num_credits = ''
-
-  if num_credits and num_classes:
-    class_credit_str = f'{num_classes} {conjunction.lower()} {num_credits}'
-  else:
-    # Possibly empty string
-    class_credit_str = f'{num_classes}{num_credits}'
-
-  if DEBUG:
-    print(f'    returning “{class_credit_str}”', file=sys.stderr)
-
-  return class_credit_str
-
-
-# course_list_details()
-# -------------------------------------------------------------------------------------------------
-def course_list_details(info: dict) -> str:
-  """ The dict for a course_list must have a scribed_courses list, and should have an
-      active_courses list. After that, there might be include and except lists, and possibly a
-      missing (from CUNYfirst) list.
-
-      Returns a string representing the course list, suitable for use as the body of a HTML details
-      element. If a non-empty label is found, a complete details element is returned with the label
-      as the element’s summary.
-  """
-  if DEBUG:
-    print(f'*** course_list_details({info.keys()})', file=sys.stderr)
-
-  details_str = ''
-
-  try:
-    label = info.pop('label')
-    if label is None:
-      raise KeyError
-    label_str = label
-  except KeyError as ke:
-    label_str = ''
-
-  list_type = info.pop('list_type')
-
-  try:
-    scribed_courses = info.pop('scribed_courses')
-    assert isinstance(scribed_courses, list)
-    scribed_text = ''.join([str(sc) for sc in scribed_courses])
-    if len(scribed_courses) > 1 or ':' in scribed_text or '@' in scribed_text:
-      if list_type == 'OR':
-        if len(scribed_courses) == 2:
-          details_str += f'<p>Either of these courses</p>'
-        else:
-          details_str += f'<p>Any of these courses</p>'
-      else:
-        details_str += f'<p>All of these courses</p>'
-
-    details_str += list_of_courses(scribed_courses, 'Scribed Course')
-  except KeyError as ke:
-    details_str = f"""<p class="error">
-                       <em>course_list_details() with no scribed courses!</em></p>
-                       <p><strong>Keys:</strong> {course_list.keys()}</p>
-                  """
-
-  try:
-    qualifiers = info.pop('qualifiers')
-    if qualifiers is not None and len(qualifiers) > 0:
-      details_str += to_html(qualifiers)
-  except KeyError as ke:
-    pass
-
-  try:
-    active_courses = info.pop('active_courses')
-    assert isinstance(active_courses, list)
-    if len(active_courses) == 0:
-      details_str += '<div class="error">No Active Courses!</div>'
-    else:
-      attributes_str = ''
-      try:
-        attributes = info['attributes ']
-        if attributes is not None:
-          attributes_str = ','.join(attributes)
-      except KeyError as ke:
-        pass
-      details_str += list_of_courses(active_courses, f'Active {attributes_str}Course')
-
-    course_areas = info.pop('course_areas')
-    if len(course_areas) > 0:
-      details_str += list_to_html(course_areas, kind='Course Area')
-
-    include_courses = info.pop('include_courses')
-    assert isinstance(include_courses, list)
-    if len(include_courses) > 0:
-      details_str += list_of_courses(include_courses, 'Must-include Course')
-
-    except_courses = info.pop('except_courses')
-    assert isinstance(except_courses, list)
-    if len(except_courses) > 0:
-      details_str += list_of_courses(except_courses, 'Except Course')
-
-    inactive_courses = info.pop('inactive_courses')
-    assert isinstance(inactive_courses, list)
-    if len(inactive_courses) > 0:
-      details_str += list_of_courses(inactive_courses, 'Inactive Course')
-
-    missing_courses = info.pop('missing_courses')
-    assert isinstance(missing_courses, list)
-    if len(missing_courses) > 0:
-      details_str += list_of_courses(missing_courses, 'Not-Found-in-CUNYfirst Course',
-                                     highlight=True)
-  except KeyError as ke:
-    print(f'Invalid Course List: missing key is {ke}', file=sys.stderr)
-    pprint(info, stream=sys.stderr)
-
-  # Class/Credit info, if present
-  if 'conjunction' in info.keys():
-    conjunction = info.pop('conjunction')
-  else:
-    conjunction = None
-  if 'min_classes' in info.keys():
-    min_classes = info.pop('min_classes')
-    max_classes = info.pop('max_classes')
-  else:
-    min_classes = max_classes = None
-  if 'min_credits' in info.keys():
-    min_credits = info.pop('min_credits')
-    max_credits = info.pop('max_credits')
-  else:
-    min_credits = max_credits = None
-
-  requirements_str = class_credit_to_str(min_classes, max_classes,
-                                         min_credits, max_credits, conjunction)
-  if label_str and requirements_str:
-    label_str = f'{requirements_str} in {label_str}'
-  else:
-    # Could be one, the other, or neither
-    label_str = f'{requirements_str}{label_str}'
-
-  # Any additional information
-  for key, value in info.items():
-    if isinstance(value, list):
-      if len(value) > 0:
-        details_str += list_to_html(value, kind=key.strip('s').title())
-    else:
-      details_str += f'<p>{key}: {value}</p>'
-
-  # if DEBUG:
-  #   print(f'    returning [{label_str=} {details_str=}]', file=sys.stderr)
-
-  return (label_str, details_str)
 
 
 # requirement_to_details_element()
@@ -304,14 +98,14 @@ def requirement_to_details_element(requirement: dict) -> str:
   if conjunction is None:
     conjunction = '?'
 
-  requirements_str = class_credit_to_str(min_classes, max_classes,
+  requirements_str = format_utils.class_credit_to_str(min_classes, max_classes,
                                          min_credits, max_credits, conjunction)
 
   # If nothing else, expect a list of courses for the requirement
   try:
     if DEBUG:
       print('    From requirement_to_details_element()', file=sys.stderr)
-    inner_label_str, course_str = course_list_details(requirement.pop('course_list'))
+    inner_label_str, course_str = format_utils.format_course_list(requirement.pop('course_list'))
   except KeyError as ke:
     inner_label_str = course_str = ''
 
@@ -473,9 +267,9 @@ def group_requirement_to_details_elements(info: dict, outer_label=None) -> str:
   for group_item in group_list['groups']:
     group_number += 1
     if isinstance(group_item, list):
-      group_body = list_to_html(group_item)
+      group_body = html_utils.list_to_html(group_item)
     elif isinstance(group_item, dict):
-      group_body = dict_to_html(group_item)
+      group_body = html_utils.dict_to_html(group_item)
     else:
       group_body = f'<div class="error">Error: {group_item} is neither a list nor a dict</div>'
     index = number_names[group_number] if group_number < len(number_names) else group_number
@@ -546,240 +340,6 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
               f'{inner_details}</details>')
 
 
-# dict_to_html()
-# -------------------------------------------------------------------------------------------------
-def dict_to_html(info: dict) -> str:
-  """ A dict is shown as either as a html details element or a paragraph.
-  """
-
-  if DEBUG:
-    print(f'*** dict_to_html({list(info.keys())})', file=sys.stderr)
-
-  pseudo_msg = ''
-  try:
-    pseudo = info.pop('is_pseudo')
-    if pseudo:
-      pseudo_msg = '<p><strong>This is a Pseudo-requirement</strong></p>'
-  except KeyError as ke:
-    pass
-
-  try:
-    remark = info.pop('remark')
-    remark = f'<p><strong>{remark}</strong></p>'
-  except KeyError as ke:
-    remark = ''
-
-  try:
-    display = info.pop('display')
-    display = f'<p><em>{display}</em></p>'
-  except KeyError as ke:
-    display = ''
-
-  # Extract any header productions from the dict.
-  header_productions = '\n'.join(format_header_productions(info))
-  print('keys', list(info.keys()))
-  for key, value in info.items():
-    print(f'key: {key}')
-    if key == 'conditional':  # Special case for conditional dicts
-      return conditional_to_details_element(info['conditional'], label)
-    elif key == 'subset':
-      return subset_to_details_element(info['subset'], label)
-    elif key == 'group_requirements':
-      return_str = ''
-      for group_requirement in info['group_requirements']:
-        return_str += group_requirement_to_details_elements(group_requirement, label)
-      return return_str
-    elif key == 'course_list':
-      label_str, course_list = course_list_details(info['course_list'])
-      if label:
-        if label_str:
-          return f"""
-          <details>
-            <summary>{label}</summary>
-            <details>
-              <summary>{label_str}</summary>
-              {course_list}
-            </details>
-          </details
-          """
-        else:
-          return f"""
-          <details>
-            <summary>{label}</summary>
-            {course_list}
-          </details>
-          """
-      else:
-        label_str = label_str if label_str else '<span class="error">Unnamed requirement</span>'
-        return f"""
-        <details>
-          <summary>{label_str}</summary>
-          {course_list}
-        </details>
-        """
-    elif key == 'rule_complete':
-      rule_complete_dict = info['rule_complete']
-      label_str = rule_complete_dict['label']
-      if label is not None:
-        label_str = label + label_str
-      is_isnot = 'is' if rule_complete_dict['is_complete'] else 'is not'
-      return f'<p><strong>{label_str}</strong>: Requirement <em>{is_isnot}</em> satisfied</p>'
-
-    # Class lists and their qualifiers.
-    try:
-      # Determing number of classes and/or credits required
-      min_classes = info['min_classes']
-      max_classes = info['max_classes']
-      min_credits = info['min_credits']
-      max_credits = info['max_credits']
-      conjunction = info['conjunction']
-      cr_str = class_credit_to_str(min_classes, max_classes, min_credits, max_credits, conjunction)
-      if cr_str:
-        cr_str = f'<p>{cr_str}</p>'
-    except KeyError as ke:
-      cr_str = ''
-
-    qualifier_strings = format_body_qualifiers(info)
-    for qualifier_string in qualifier_strings:
-      class_attribute = ' class="error"' if 'Error:' in qualifier_string else ''
-      cr_str += f'<p{class_attribute}>{qualifier_string}</p>'
-
-    # Other min, max, and num items
-    numerics = ''
-    if key[0:3].lower() in ['max', 'min', 'num']:
-      numerics += f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
-    if numerics:
-      print('xxxx numerics not shown', numerics)
-
-    # course_list part of a multi-key dict
-    course_list = ''
-    if 'course_list' in info.keys():
-      if DEBUG:
-        print('    From dict_to_html()')
-      label_str, course_list = course_list_details(info['course_list'])
-      # If there is a non-empty label, use it as the summary of a complete details element
-      if label_str:
-        course_list = f'<details><summary>{label_str}</summary>{course_list}</details>'
-
-    # All else
-    print(f'xxxx all else: {key} {value}')
-    # if isinstance(value, dict):
-    #   return f'<details>{summary}{dict_to_html(value)}</details>'
-    # elif isinstance(value, list):
-    #   return f'<details>{summary}{list_to_html(value)}</details>'
-    # else:
-    #   return f'<details>{summary}{to_html(value)}</details>'
-
-    # Development aid
-    context_path = ''
-    if DEBUG:
-      try:
-        context_path = f"<div>Context: {info['context_path']}</div>"
-      except KeyError as ke:
-        pass
-
-    return_str = f'{pseudo_msg}{context_path}{remark}{display}{numerics}{course_list}'
-
-    # Key-value pairs not specific to course lists
-    # --------------------------------------------
-    key_str = f'{key.replace("_", " ").title()}'
-
-    if key == 'group':
-      if len(value) > 0:
-        suffix = '' if len(value) == 1 else 's'
-        return_str += to_html(value, 'Group')
-      continue
-
-    if isinstance(value, bool):
-      return_str += f'<div>{key_str}: {value}</div>'
-
-    elif isinstance(value, str):
-      try:
-        # Interpret numeric and range strings
-        if ':' in value and 2 == len(value.split(':')):
-          # range of values: check if floats or ints
-          range_floor, range_ceil = [float(v) for v in value.split(':')]
-          if range_floor != int(range_floor) or range_ceil != int(range_ceil):
-            return_str += (f'<div>{key_str}: between {range_floor:0.1f} and '
-                           f'{range_ceil:0.1f}</div>')
-          elif int(range_floor) != int(range_ceil):
-            return_str += (f'<div>{key_str}: between {int(range_floor)} and '
-                           f'{int(range_ceil)}</div>')
-          else:
-            # both are ints and are the same
-            return_str += f'<div>{key_str}: {int(range_floor)}</div>'
-        else:
-          # single value
-          if int(value) == float(value):
-            return_str += f'<div>{key_str}: {int(value)}</div>'
-          else:
-            return_str += f'<div>{key_str}: {float(value):0.1f}</div>'
-
-      except ValueError as ve:
-        # Not a numeric string; just show the text.
-        if key != 'context_path':  # This was for development purposes
-          return_str += f'<div>{key_str}: {value}</div>'
-
-    else:
-      # Fall through
-      print(f'xxxx Unhandled {key=} {value=}')
-
-  return f'<details><summary>{label}</summary>{return_str}</details>'
-
-
-# list_to_html()
-# -------------------------------------------------------------------------------------------------
-def list_to_html(info: list, section=None) -> str:
-  """ If this is a section-level list, return a display element with the name of the sections as
-      the summary, and the intepreted dicts in the list as the body.
-      Otherwise, go through the list and process according to what is there.
-  """
-  if DEBUG:
-    print(f'*** list_to_html({len(info)} elements, {section=})', file=sys.stderr)
-
-  assert isinstance(info, list), f'{type(info)} is not list'
-
-  if section is not None:
-    summary = f'<summary>{section.title()}</summary>'
-    details = ''
-    for item in info:
-      assert isinstance(item, dict), f'{type(item)} is not dict'
-      details += dict_to_html(item)
-    return f'<details>{summary}{details}</details>'
-
-  num = len(info)
-  if num == 0:
-    return '<p class="error">Empty List</p>'
-  if num == 1:
-    return to_html(info[0])
-
-  # The list has more than one element
-  # If any items are dicts with only a remark key, extract them and show them before the details
-  # element for the list.
-  opening_remarks = ''
-  remarkable_items = [item for item in info if isinstance(item, dict) and 'remark' in item.keys()]
-  for remarkable_item in remarkable_items:
-    if len(remarkable_item.keys()) == 1:
-      index = info.index(remarkable_item)
-      remark = remarkable_item.pop('remark')
-      opening_remarks += f'<p><strong>{remark}</strong></p>'
-      info.pop(index)
-
-  num = len(info)
-  if num == 0:
-    # The list consisted only of remarks
-    return f'{opening_remarks}'
-
-  if num <= len(number_names):
-    num_str = number_names[num].title()
-  else:
-    num_str = f'{num:,}'
-  return_str = f'{opening_remarks}<details open="open"/><summary>{num_str} Item</summary>'
-  return_str += '\n'.join([f'{to_html(element)}'for element in info])
-
-  return return_str + '</details>'
-
-
 # to_html()
 # -------------------------------------------------------------------------------------------------
 def to_html(info: any) -> str:
@@ -793,9 +353,9 @@ def to_html(info: any) -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return list_to_html(info)
+    return html_utils.list_to_html(info)
   if isinstance(info, dict):
-    return dict_to_html(info)
+    return html_utils.dict_to_html(info)
 
   return info
 
@@ -846,10 +406,10 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
     parse_results = f"""
     <section>
       <details><summary>Header</summary>
-        {list_to_html(header_list, section='header')}
+        {html_utils.list_to_html(header_list, section='header')}
       </details>
       <details><summary>Body</summary>
-        {list_to_html(body_list, section='body')}
+        {html_utils.list_to_html(body_list, section='body')}
       </details
     </section>
     """
