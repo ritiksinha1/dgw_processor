@@ -183,12 +183,10 @@ body_rule       : conditional_body
                 | class_credit_body
                 | copy_rules
                 | group_requirement
-/*                | maxcredit this is supposed to be a header production only */
                 | maxtransfer
                 | minclass
                 | mincredit
                 | mingrade
-/*                | minres this is supposed to be a header production only */
                 | noncourse
                 | proxy_advice
                 | remark
