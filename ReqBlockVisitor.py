@@ -69,11 +69,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#course_list_head_qualifier.
-    def visitCourse_list_head_qualifier(self, ctx:ReqBlockParser.Course_list_head_qualifierContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by ReqBlockParser#course_list_body.
     def visitCourse_list_body(self, ctx:ReqBlockParser.Course_list_bodyContext):
         return self.visitChildren(ctx)

@@ -117,19 +117,6 @@ discipline      : symbol
                 | BLOCK
                 | IS;
 
-/* The following list was intended to differentiate course list qualifiers from separate properties
- * in the head, where these same items can be used in course lists in the body. But it looks like
- * they are not needed: course lists in the head seem never to be qualified. Given the Ellucian
- * documentation, there remains a bit of confusion here on my part. 2020-10-05 */
-course_list_head_qualifier : maxspread
-                           | mingpa
-                           | mingrade
-                           | minspread
-                           | header_tag
-                           | samedisc
-                           | share
-                           ;
-
 course_list_body  : course_list (qualifier tag? | proxy_advice )*;
 
 qualifier         : maxpassfail
@@ -297,8 +284,8 @@ display         : DISPLAY string SEMICOLON?;
 header_tag      : (HEADER_TAG nv_pair)+;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice?;
-maxclass        : MAXCLASS NUMBER course_list? tag? label?;
-maxcredit       : MAXCREDIT NUMBER course_list? tag? label?;
+maxclass        : MAXCLASS NUMBER course_list? tag?;
+maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 
 maxpassfail     : MAXPASSFAIL NUMBER class_or_credit tag?;
 maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
