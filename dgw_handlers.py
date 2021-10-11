@@ -90,7 +90,7 @@ def class_credit_head(ctx, institution, requirement_id):
       num_credits         : NUMBER CREDIT allow_clause?;
       allow_clause        : LP allow NUMBER RP;
 
-      Note: header_tag is used only for audit presentation, and is ignored here.
+      Note: header_tag and allow are used only for audit presentation, and are ignored here.
 """
   return_dict = num_class_or_num_credit(ctx)
 
@@ -108,24 +108,17 @@ def class_credit_head(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def class_credit_body(ctx, institution, requirement_id):
   """
-      class_credit_body   : (num_classes | num_credits)
-                            (logical_op (num_classes | num_credits))? course_list_body?
-                            (IS? pseudo
-                             | display
-                             | proxy_advice
-                             | remark
-                             | rule_tag
-                             | share
-                             | tag
-                            )*
-                            label?;
+      class_credit_body : (num_classes | num_credits)
+                          (logical_op (num_classes | num_credits))? course_list_body?
+                          (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label
+                          | tag )*
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
 
       course_list_body    : course_list ( qualifier tag? | proxy_advice )*;
 
-    Ignore rule_tag and tag.
+    Ignore proxy_advice, rule_tag and tag.
   """
   if DEBUG:
     print(f'*** class_credit_body({class_name(ctx)=}, {institution=}, {requirement_id=})',
@@ -159,12 +152,6 @@ def class_credit_body(ctx, institution, requirement_id):
 
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
-
-  if DEBUG:
-    print('    class_credit_body() returns the following dict keys', file=sys.stderr)
-    print('    ', context_path(ctx), list(return_dict.keys()), file=sys.stderr)
-    if 'course_list' in return_dict.keys():
-      print('    ', return_dict['course_list']['scribed_courses'], file=sys.stderr)
 
   return {'class_credit_body': return_dict}
 
