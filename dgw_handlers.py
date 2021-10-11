@@ -381,6 +381,8 @@ group             : LP
 # -------------------------------------------------------------------------------------------------
 def header_tag(ctx, institution, requirement_id):
   """ header_tag  : (HEADER_TAG nv_pair)+;
+      Unused function.
+      Header tags are currently ignored, but this method will handle them if that ever changes!
   """
   if DEBUG:
     print(f'*** header_tag({class_name(ctx)}, {institution}. {requirement_id})',
@@ -406,7 +408,8 @@ def header_tag(ctx, institution, requirement_id):
 def rule_tag(ctx, institution, requirement_id):
   """ rule_tag  : (RULE_TAG nv_pair)+;
       nv_pair   : SYMBOL '=' (STRING | SYMBOL);
-
+      Unused function.
+      Rule tags are currently ignored, but this method will handle them if that ever changes!
   """
   if DEBUG:
     print(f'*** rule_tag({class_name(ctx)}, {institution}. {requirement_id})',
