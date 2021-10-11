@@ -4,6 +4,7 @@
       class_credit_to_str
       format_class_credit_clause
       format_course_list
+      format_number
       list_of_courses
 """
 
@@ -138,12 +139,15 @@ def format_course_list(info: dict) -> str:
   details_str = ''
 
   try:
+    # Allow for missing or empty label
     summary = None
     if label_str := info['label']:
       summary = f'<summary>{label_str}</summary>'
-    details_str += f'<p class="error">Error: course_list dict with no label key</p>'
-    print(details_str, file=sys.stderr)
+  except KeyError:
+    # Label is optional
+    pass
 
+  try:
     list_type = info['list_type']
 
     scribed_courses = info['scribed_courses']
@@ -160,9 +164,12 @@ def format_course_list(info: dict) -> str:
 
     details_str += list_of_courses(scribed_courses, 'Scribed Course')
 
-    qualifiers = info['qualifiers']
-    if qualifiers is not None and len(qualifiers) > 0:
-      details_str += to_html(qualifiers)
+    try:
+      if qualifiers := info['qualifiers']:
+        details_str += to_html(qualifiers)
+    except KeyError:
+      # Qualifiers are optional
+      pass
 
     active_courses = info['active_courses']
     assert isinstance(active_courses, list)
@@ -222,6 +229,35 @@ def format_course_list(info: dict) -> str:
     return details_str
 
 
+# format_number()
+# -------------------------------------------------------------------------------------------------
+def format_number(number_arg, is_int=False):
+  """ A number string can be 1, 1.0, an int other than 1, a float other than 1, a range of ints, a
+      range of floats. Handle all cases here, you're welcome.
+  """
+  parts = number_arg.split(':')
+  if is_int:
+    if len(parts) == 2:
+      min_part = int(parts[0])
+      max_part = int(parts[1])
+      number_str = f'between {min_part} and {max_part}'
+    else:
+      value = int(number_arg)
+      is_unity = value == 1
+      number_str = f'{value}'
+  else:
+    if len(parts) == 2:
+      min_part = float(parts[0])
+      max_part = float(parts[1])
+      number_str = f'between {min_part:.2f} and {max_part:.2f}'
+    else:
+      value = float(number_arg)
+      is_unity = abs(value - 1.0) < 0.01
+      number_str = f'{value:.2f}'
+
+  return number_str, is_unity
+
+
 # list_of_courses()
 # -------------------------------------------------------------------------------------------------
 def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str:
@@ -261,5 +297,3 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       return_str += '</li>'
   return_str += '</ul>\n</details>'
   return return_str
-
-

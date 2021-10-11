@@ -55,13 +55,18 @@ def _format_maxclass_head(maxclass_head_dict: dict) -> str:
     label_str = None
 
   maxclass_dict = maxclass_head_dict['maxclass']
-  course_list = format_utils.format_course_list(maxclass_dict)
-  # ################################################### Could it return an empty string or None? YES
+  number_str, is_unity = format_utils.format_number(maxclass_dict['number'], is_int=True)
+  suffix = '' if is_unity else 'es'
+  maxclass_str = f'<p>No more than {number_str} class{suffix} allowed'
+  if course_list := format_utils.format_course_list(maxclass_dict['course_list']):
+    maxclass_str += f' in the following courses:</p>{course_list}'
+  else:
+    maxclass_str += '.</p>'
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{max_class_info}</details>'
+    return f'<details><summary>{label_str}</summary>{maxclass_str}</details>'
   else:
-    return '<p>{max_class_info}</p>'
+    return f'{maxclass_str}'
 
 
 # _format_maxcredit_head()
@@ -84,17 +89,9 @@ def _format_maxcredit_head(maxcredit_head_dict: dict) -> str:
   maxcredit_dict = maxcredit_head_dict['maxcredit']
 
   # Number of maxcredits can be a range (weird)
-  number = maxcredit_dict['number']
-  parts = number.split(':')
-  if len(parts) == 2:
-    min_part = float(parts[0])
-    max_part = float(parts[1])
-    number_str = f'between {min_part:.2f} and {max_part:.2f} credits'
-  else:
-    value = float(number)
-    suffix = '' if abs(value - 1.0) < 0.01 else 's'
-    number_str = f'{float(number):.2f} credit{suffix}'
-  maxcredit_str = f'<p>No more than {number_str} allowed'
+  number_str, is_unity = format_utils.format_number(maxcredit_dict['number'], is_int=False)
+  suffix = '' if is_unity else 's'
+  maxcredit_str = f'<p>No more than {number_str} credit({suffix} allowed'
 
   if course_list_str := format_utils.format_course_list(maxcredit_dict['course_list']):
     maxcredit_str += f' in the following courses:</p>{course_list_str}'
