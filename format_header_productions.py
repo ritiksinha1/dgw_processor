@@ -2,10 +2,24 @@
 """ Format header productions. Return a formatted string for each type of rule that can appear
     in the header section of a block.
 
-    Note that each production gets only a one-line string value here, suitable for adding to the
-    program_requirements table.
+    Header productions may, optionally, include a label. Header-only productions are marked with an
+    asterisk, and are completely formatted here. The others use helper functions from
+    format_body_productions to handle their non-label parts.
 
-    The productions that end in _head may, optionally, include a label.
+      _format_maxclass_head*
+      _format_maxcredit_head*
+      _format_maxpassfail_head
+      _format_maxperdisc_head
+      _format_maxtransfer_head
+      _format_minclass_head
+      _format_mincredit_head
+      _format_mingpa_head
+      _format_mingrade_head
+      _format_minperdisc_head
+      _format_minres_head*
+      _format_share_head
+      _dispatch_production
+      format_header_productions
 """
 
 import os
@@ -15,7 +29,7 @@ import Any
 
 import format_body_qualifiers
 
-from format_utils import format_course_list, list_of_courses
+import format_utils
 
 DEBUG = os.getenv('DEBUG_HEADER')
 
@@ -27,17 +41,22 @@ DEBUG = os.getenv('DEBUG_HEADER')
 # -------------------------------------------------------------------------------------------------
 def _format_maxclass_head(maxclass_head_dict: dict) -> str:
   """
+      maxclass_head : maxclass label?;
+      maxclass.     : MAXCLASS NUMBER course_list? tag?;
+
+      This is a header-only production, so there is no body formatter available.
   """
   if DEBUG:
     print(f'_format_maxclass_head({maxclass_head_dict}', file=sys.stderr)
 
   try:
-    label_str = maxclass_dict['label']
+    label_str = maxclass_head_dict['label']
   except KeyError:
-    label_str = none
+    label_str = None
 
-  max_class_dict = maxclass_head_dict['maxclass']
-  max_class_info = format_body_qualifiers.format_maxclass(maxclass_dict)
+  maxclass_dict = maxclass_head_dict['maxclass']
+  course_list = format_utils.format_course_list(maxclass_dict)
+  # ################################################### Could it return an empty string or None? YES
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{max_class_info}</details>'
@@ -51,6 +70,8 @@ def _format_maxcredit_head(maxcredit_head_dict: dict) -> str:
   """
       maxcredit_head : maxcredit label?;
       maxcredit.     : MAXCREDIT NUMBER course_list? tag?;
+
+      This is a header-only production, so there is no body formatter available.
   """
   if DEBUG:
     print(f'_format_maxcredit_head({maxcredit_head_dict}', file=sys.stderr)
@@ -61,7 +82,8 @@ def _format_maxcredit_head(maxcredit_head_dict: dict) -> str:
     label_str = None
 
   maxcredit_dict = maxcredit_head_dict['maxcredit']
-  # can max credit have a range? (I think so) Format floats here; the code in htmlificization is too general!
+
+  # Number of maxcredits can be a range (weird)
   number = maxcredit_dict['number']
   parts = number.split(':')
   if len(parts) == 2:
@@ -72,12 +94,17 @@ def _format_maxcredit_head(maxcredit_head_dict: dict) -> str:
     value = float(number)
     suffix = '' if abs(value - 1.0) < 0.01 else 's'
     number_str = f'{float(number):.2f} credit{suffix}'
-  course_list_str = format_course_list(maxcredit_dict['course_list'])
-  maxcredit_info = f'No more than {number_str} allowed.'
+  maxcredit_str = f'<p>No more than {number_str} allowed'
+
+  if course_list_str := format_utils.format_course_list(maxcredit_dict['course_list']):
+    maxcredit_str += f' in the following courses:</p>{course_list_str}'
+  else:
+    max_credit_str += '.</p>'
+
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxcredit_info}<details>'
   else:
-    return f'<p>{maxcredit_info}</p>'
+    return f'{maxcredit_str}'
 
 
 # _format_maxpassfail_head()

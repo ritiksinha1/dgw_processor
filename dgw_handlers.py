@@ -495,6 +495,8 @@ def lastres_head(ctx, institution, requirement_id):
 def maxclass(ctx, institution, requirement_id):
   """
       maxclass        : MAXCLASS NUMBER course_list? tag?;
+
+      This is actually only a header production
   """
   if DEBUG:
     print(f'*** maxclass({class_name(ctx)}, {institution}. {requirement_id})',
@@ -520,7 +522,7 @@ def maxclass_head(ctx, institution, requirement_id):
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  maxclass_ctx = ctx.maxclass() if class_name(ctx) == 'Maxclass_head' else ctx
+  maxclass_ctx = ctx.maxclass()
 
   return_dict.update(maxclass(maxclass_ctx, institution, requirement_id))
 
@@ -533,6 +535,8 @@ def maxcredit(ctx, institution, requirement_id):
   """
       maxcredit_head  : maxcredit label?;
       maxcredit       : MAXCREDIT NUMBER course_list? tag?;
+
+      This is actually only a header production
   """
   if DEBUG:
     print(f'*** maxcredit({class_name(ctx)}, {institution}. {requirement_id})',
@@ -925,6 +929,8 @@ def minperdisc_head(ctx, institution, requirement_id):
 def minres(ctx, institution, requirement_id):
   """
       minres      : MINRES (num_classes | num_credits) display* tag?;
+
+      This is actually only a header production
   """
   if DEBUG:
     print(f'*** minres({class_name(ctx)}, {institution}. {requirement_id})',

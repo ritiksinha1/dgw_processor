@@ -103,28 +103,49 @@ def format_class_credit_clause(cc_dict: dict):
 # format_course_list()
 # -------------------------------------------------------------------------------------------------
 def format_course_list(info: dict) -> str:
-  """ The dict for a course_list must have a scribed_courses list, and should have an
-      active_courses list. After that, there might be include and except lists, and possibly a
-      missing (from CUNYfirst) list.
+  """ The dict for a course_list has the following structure:
+        scribed_courses     List of all (discipline, catalog_number, with_clause) tuples in the list
+                            after distributing disciplines across catalog_numbers. (Show "BIOL 1, 2"
+                            as "BIOL 1, BIOL 2")
+        active_courses      Catalog information and WITH clause (if any) for all active courses that
+                            match the scribed_courses list after expanding wildcards and
+                            catalog_number ranges.
+        inactive_courses    Catalog information for all inactive courses that match the scribed
+                            course list after wildcard and range expansions.
+        missing_courses     Explicitly-scribed courses that do not exist in CUNYfirst.
+        qualifiers          Qualifiers that apply to all courses in the list
+        label               The name of the property (head) or requirement (body)
+        course_areas        List of active_courses divided into distribution areas; presumably the
+                            full course list will have a MinArea qualifier, but this is not checked
+                            here. Omit inactive, missing, and except courses because they are
+                            handled in the full course list.
+        except_courses      Scribed list used for culling from active_courses.
+        include_courses     Like except_courses, except this list is not actually used for anything
+                            in this method.
 
-      Returns a string representing the course list, suitable for use as the body of a HTML details
-      element. If a non-empty label is found, a complete details element is returned with the label
-      as the element’s summary.
+        list_type           'AND' or 'OR'
+        attributes          List of all attribute values the active courses list have in common,
+                            currently limited to WRIC and BKCR
+
+      Return the HTML representation of the dict; if there is a label is it used as the summary
+      element of a details element that contains the remaining parts.
   """
   if DEBUG:
     print(f'*** format_course_list({info.keys()})', file=sys.stderr)
   assert isinstance(info, dict), f'{type(info)} is not dict'
 
+  # This is the HTML string that will be returned, possibly embedded in a details element.
   details_str = ''
 
   try:
-    label_str = info['label']
-  except KeyError as ke:
-    label_str = None
+    summary = None
+    if label_str := info['label']:
+      summary = f'<summary>{label_str}</summary>'
+    details_str += f'<p class="error">Error: course_list dict with no label key</p>'
+    print(details_str, file=sys.stderr)
 
-  list_type = info['list_type']
+    list_type = info['list_type']
 
-  try:
     scribed_courses = info['scribed_courses']
     assert isinstance(scribed_courses, list)
     scribed_text = ''.join([str(sc) for sc in scribed_courses])
@@ -138,20 +159,11 @@ def format_course_list(info: dict) -> str:
         details_str += f'<p>All of these courses</p>'
 
     details_str += list_of_courses(scribed_courses, 'Scribed Course')
-  except KeyError as ke:
-    details_str = f"""<p class="error">
-                       <em>format_course_list() with no scribed courses!</em></p>
-                       <p><strong>Keys:</strong> {course_list.keys()}</p>
-                  """
 
-  try:
     qualifiers = info['qualifiers']
     if qualifiers is not None and len(qualifiers) > 0:
       details_str += to_html(qualifiers)
-  except KeyError as ke:
-    pass
 
-  try:
     active_courses = info['active_courses']
     assert isinstance(active_courses, list)
     if len(active_courses) == 0:
@@ -190,46 +202,24 @@ def format_course_list(info: dict) -> str:
     if len(missing_courses) > 0:
       details_str += list_of_courses(missing_courses, 'Not-Found-in-CUNYfirst Course',
                                      highlight=True)
+    course_areas = info['course_areas']
+    assert isinstance(course_areas, list)
+    # If there are areas, show them as a definition list
+    if num_areas := len(course_areas) > 0:
+      areas_list = f'<p>These courses are grouped into the following {num_areas} areas:</p><dl>'
+      for i, courses in course_areas.enumerate():
+        areas_list += f'<dt>Area {i}</dt><dd>{courses}</dd>'
+      details_str += areas_list + '</dl>'
+
   except KeyError as ke:
-    print(f'Invalid Course List: missing key is {ke}', file=sys.stderr)
-    pprint(info, stream=sys.stderr)
+    error_msg = f'Error: invalid course list: missing key is {ke}'
+    details_str = f'<p class="error">{error_msg}</p>' + details_str
+    print(error_msg, info, file=sys.stderr)
 
-  # Class/Credit info, if present
-  if 'conjunction' in info.keys():
-    conjunction = info['conjunction']
+  if summary is not None:
+    return f'<details>{summary}{details_str}</details'
   else:
-    conjunction = None
-  if 'min_classes' in info.keys():
-    min_classes = info['min_classes']
-    max_classes = info['max_classes']
-  else:
-    min_classes = max_classes = None
-  if 'min_credits' in info.keys():
-    min_credits = info['min_credits']
-    max_credits = info['max_credits']
-  else:
-    min_credits = max_credits = None
-
-  requirements_str = class_credit_to_str(min_classes, max_classes,
-                                         min_credits, max_credits, conjunction)
-  if label_str and requirements_str:
-    label_str = f'{requirements_str} in {label_str}'
-  else:
-    # Could be one, the other, or neither
-    label_str = f'{requirements_str}{label_str}'
-
-  # Any additional information
-  for key, value in info.items():
-    if isinstance(value, list):
-      if len(value) > 0:
-        details_str += html_utils.list_to_html(value, kind=key.strip('s').title())
-    else:
-      details_str += f'<p>{key}: {value}</p>'
-
-  # if DEBUG:
-  #   print(f'    returning [{label_str=} {details_str=}]', file=sys.stderr)
-
-  return (label_str, details_str)
+    return details_str
 
 
 # list_of_courses()

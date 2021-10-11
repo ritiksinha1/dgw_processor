@@ -1,5 +1,20 @@
 #! /usr/local/bin/python3
 """ Format strings representing qualifiers.
+      format_maxpassfail
+      format_maxperdisc
+      format_maxspread
+      format_maxtransfer
+      format_minarea
+      format_minclass
+      format_mincredit
+      format_mingpa
+      format_mingrade
+      format_minperdisc
+      format_minres
+      format_minspread
+      format_share
+      _dispatch_qualifier
+      format_body_qualifiers
 """
 
 import os
