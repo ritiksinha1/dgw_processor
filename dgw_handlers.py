@@ -1268,44 +1268,20 @@ dispatch_header = {'class_credit_head': class_credit_head,
                    'under': under
                    }
 
-# 'class_credit_head': class_credit_head,
-# 'conditional_head': conditional_head,
-# 'header_tag': header_tag,
-# 'lastres_head': lastres,
-# 'maxclass_head': maxclass,
-# 'maxcredit_head': maxcredit,
-# 'maxpassfail_head': maxpassfail,
-# 'maxperdisc_head': maxperdisc,
-# 'maxterm_head': maxterm,
-# 'maxtransfer_head': maxtransfer,
-# 'minclass_head': minclass_head,
-# 'mincredit_head': mincredit_head,
-# 'mingpa_head': mingpa,
-# 'mingrade_head': mingrade,
-# 'minperdisc_head': minperdisc_head,
-# 'minres_head': minres,
-# 'optional': optional,
-# 'proxy_advice': proxy_advice,
-# 'remark': remark,
-# 'share_head': share_head,
-# 'standalone': standalone,
-# 'under': under
-
-dispatch_body = {
-    'block': block,
-    'blocktype': blocktype,
-    'class_credit_body': class_credit_body,
-    'copy_rules': copy_rules,
-    'group_requirement': group_requirement,
-    'conditional_body': conditional_body,
-    'maxperdisc': maxperdisc,
-    'noncourse': noncourse,
-    'proxy_advice': proxy_advice,
-    'remark': remark,
-    'rule_complete': rule_complete,
-    'rule_tag': rule_tag,
-    'subset': subset
-}
+dispatch_body = {'block': block,
+                 'blocktype': blocktype,
+                 'class_credit_body': class_credit_body,
+                 'copy_rules': copy_rules,
+                 'group_requirement': group_requirement,
+                 'conditional_body': conditional_body,
+                 'maxperdisc': maxperdisc,
+                 'noncourse': noncourse,
+                 'proxy_advice': proxy_advice,
+                 'remark': remark,
+                 'rule_complete': rule_complete,
+                 'rule_tag': rule_tag,
+                 'subset': subset
+                 }
 
 
 # dispatch()
