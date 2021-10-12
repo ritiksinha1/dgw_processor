@@ -8,6 +8,7 @@ import sys
 
 from format_header_productions import format_header_productions
 from format_body_qualifiers import format_body_qualifiers
+import format_body_rules
 
 if os.getenv('DEBUG_HTML_UTILS'):
   DEBUG = True
@@ -40,16 +41,17 @@ def dict_to_html(info: dict, section=None) -> str:
 
   # Header and Body sections
   if section == 'header':
-    # Get list of strings; return them as paragraphs
-    paragraphs = ''
-    for line in format_header_productions(info):
-      element_class = ' class="error"' if 'Error:' in line else ''
-      paragraphs += f'<p{element_class}>{line}</p>'
-    return paragraphs
+    # Format all top-level dicts in the Header
+    return '\n'.join([element for element in format_header_productions(info)])
   elif section == 'body':
-    return '<p>the body will go here</p>'
-  else:
-    return '<p class="error">This never happens</p>'
+    body_rules = []
+    for key, value in info.items():
+      if html_str := format_body_rules.format_body_rule(key, value):
+        body_rules.append(html_str)
+      else:
+        body_rules.append(f'<p class="error">{key} not dispatchable and not implemented')
+    return '\n'.join(body_rules)
+
   pseudo_msg = ''
   try:
     pseudo = info.pop('is_pseudo')
@@ -243,6 +245,7 @@ def list_to_html(info: list, section=None) -> str:
       # These lists contain only dicts.
       assert isinstance(item, dict), f'{type(item)} is not dict'
       details += dict_to_html(item, section)
+    print(f'xxx return {section}', details[-30:])
     return f'<details>{summary}{details}</details>'
 
   # All other lists

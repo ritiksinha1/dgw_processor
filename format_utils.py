@@ -23,7 +23,7 @@ else:
 # -------------------------------------------------------------------------------------------------
 def class_credit_to_str(min_classes: int, max_classes: int,
                         min_credits: float, max_credits: float, conjunction: str) -> str:
-  """ Tell how many classes and/or credits are required.
+  """ Format class/credit requirement productions
   """
   if DEBUG:
     print(f'*** class_credit_to_str({min_classes=}, {max_classes=}, {min_credits=}, '
@@ -61,9 +61,11 @@ def class_credit_to_str(min_classes: int, max_classes: int,
 # format_class_credit_clause()
 # -------------------------------------------------------------------------------------------------
 def format_class_credit_clause(cc_dict: dict):
-  """ Convert the elements of a class/credit requirement info into a string.
-      Use min_classes, max_classes, min_credits, max_credits, conjunction
-      Ignore allow_credits and allow_classes because they are auditor directives, not requirements.
+  """ Format (num_classes | num_credits) clauses, which have been turned into min_classes,
+      max_classes, min_credits, max_credits, conjunction keys by dgw_utils.num_class_or_num_credit()
+
+      Ignore allow_credits and allow_classes that might be present because they are auditor
+      directives, not requirements.
   """
   assert isinstance(cc_dict, dict), f'{type(cc_dict)} is not dict'
 
@@ -224,7 +226,7 @@ def format_course_list(info: dict) -> str:
     print(error_msg, info, file=sys.stderr)
 
   if summary is not None:
-    return f'<details>{summary}{details_str}</details'
+    return f'<details>{summary}{details_str}</details>'
   else:
     return details_str
 

@@ -69,6 +69,8 @@ def requirement_to_details_element(requirement: dict) -> str:
   """
   if DEBUG:
     print(f'*** requirement_to_details_element({list(requirement.keys())})', file=sys.stderr)
+
+  return '<p class="error">Requirements</p>'
   try:
     label = requirement.pop('label')
     if not label:
@@ -99,8 +101,7 @@ def requirement_to_details_element(requirement: dict) -> str:
     conjunction = '?'
 
   requirements_str = format_utils.class_credit_to_str(min_classes, max_classes,
-                                         min_credits, max_credits, conjunction)
-
+                                                      min_credits, max_credits, conjunction)
   # If nothing else, expect a list of courses for the requirement
   try:
     if DEBUG:
@@ -146,6 +147,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
   if DEBUG:
     print(f'*** subset_to_details_element({list(info.keys())}, {outer_label=})', file=sys.stderr)
 
+  return '<p class="error">Subset</p>'
   try:
     inner_label = info.pop('label')
   except KeyError as ke:
@@ -232,6 +234,7 @@ def group_requirement_to_details_elements(info: dict, outer_label=None) -> str:
           f'{outer_label=})', file=sys.stderr)
   assert isinstance(info, dict), f'{info} is not a dict'
 
+  return '<p class="error">Group</p>'
   group_requirement = info.pop('group_requirement')
   return_str = ''
   num_required = int(group_requirement['number'])
@@ -296,6 +299,8 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
   if DEBUG:
     print(f'*** conditional_to_details_element({list(info.keys())}, {outer_label=})',
           file=sys.stderr)
+
+  return '<p class="error"Conditional</p>'
 
   try:
     condition = info.pop('condition')
@@ -402,22 +407,13 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
     err_msg = parse_tree['error']
     parse_results = f'<section><h2 class="error">Parsing failed</h2><p>{err_msg}</p></section'
   else:
-    header_list, body_list = parse_tree['header_list'], parse_tree['body_list']
-    parse_results = f"""
-    <section>
-      <details><summary>Header</summary>
-        {html_utils.list_to_html(header_list, section='header')}
-      </details>
-      <details><summary>Body</summary>
-        {html_utils.list_to_html(body_list, section='body')}
-      </details
-    </section>
-    """
+    parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
+    parse_results += html_utils.list_to_html(parse_tree['body_list'], section='body')
 
   return disclaimer + f"""
   <h1>{college_name} {row.requirement_id}: <em>{row.title}</em></h1>
   <p>Requirements for {catalog_type} Catalog Years {catalog_years_text}</p>
-  <section>{row.requirement_html}</section>
+  {row.requirement_html}
   {parse_results}
   """
 

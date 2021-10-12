@@ -57,16 +57,20 @@ def _format_maxclass_head(maxclass_head_dict: dict) -> str:
   maxclass_dict = maxclass_head_dict['maxclass']
   number_str, is_unity = format_utils.format_number(maxclass_dict['number'], is_int=True)
   suffix = '' if is_unity else 'es'
-  maxclass_str = f'<p>No more than {number_str} class{suffix} allowed'
-  if course_list := format_utils.format_course_list(maxclass_dict['course_list']):
-    maxclass_str += f' in the following courses:</p>{course_list}'
+  if number_str == '0':
+    maxclass_str = 'Zero classes allowed'
   else:
-    maxclass_str += '.</p>'
+    maxclass_str = f'No more than {number_str} class{suffix} allowed'
+  if course_list := format_utils.format_course_list(maxclass_dict['course_list']):
+    maxclass_str = (f'<details><summary>{maxclass_str} in the following courses:</summary>'
+                    f'{course_list}</details>')
+  else:
+    maxclass_str = f'<p>{maxclass_str}</p>'
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxclass_str}</details>'
   else:
-    return f'{maxclass_str}'
+    return maxclass_str
 
 
 # _format_maxcredit_head()
@@ -91,17 +95,21 @@ def _format_maxcredit_head(maxcredit_head_dict: dict) -> str:
   # Number of maxcredits can be a range (weird)
   number_str, is_unity = format_utils.format_number(maxcredit_dict['number'], is_int=False)
   suffix = '' if is_unity else 's'
-  maxcredit_str = f'<p>No more than {number_str} credit({suffix} allowed'
+  if number_str == '0.00':
+    maxcredit_str = 'No credits allowed'
+  else:
+    maxcredit_str = f'No more than {number_str} credit{suffix} allowed'
 
   if course_list_str := format_utils.format_course_list(maxcredit_dict['course_list']):
-    maxcredit_str += f' in the following courses:</p>{course_list_str}'
+    maxcredit_str = (f'<details><summary>{maxcredit_str} in the following courses:</summary>'
+                     f'{course_list_str}</details>')
   else:
-    max_credit_str += '.</p>'
+    max_credit_str = f'<p>{max_credit_str}</p>'
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{maxcredit_info}<details>'
+    return f'<details><summary>{label_str}</summary>{maxcredit_info}</details>'
   else:
-    return f'{maxcredit_str}'
+    return maxcredit_str
 
 
 # _format_maxpassfail_head()
@@ -332,7 +340,7 @@ def _format_share_head(share_head_dict: dict) -> str:
     return f'<p>{share_info}</p>'
 
 
-# dispatch()
+# dispatch_table {}
 # -------------------------------------------------------------------------------------------------
 dispatch_table = {'maxclass_head': _format_maxclass_head,
                   'maxcredit_head': _format_maxcredit_head,

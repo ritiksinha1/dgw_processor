@@ -43,18 +43,18 @@ def format_maxpassfail(maxpassfail_dict: dict) -> str:
     class_credit = maxpassfail_dict.pop('class_or_credit')
     if class_credit == 'credit':
       if number == 0:
-        return 'No credits may be taken pass/fail'
+        return '<p>No credits may be taken pass/fail</p>'
       suffix = '' if number == 1 else 's'
-      return f'A maximum of {number:0.2f} credit{suffix} may be taken pass/fail'
+      return f'<p>A maximum of {number:0.2f} credit{suffix} may be taken pass/fail</p>'
     else:
       if number == 0:
-        return 'No classes may be taken pass/fail'
+        return '<p>No classes may be taken pass/fail</p>'
       suffix = '' if number == 1 else 'es'
-    return f'A maximum of {number:0} {class_credit}{suffix} may be taken pass/fail'
+    return f'<p>A maximum of {number:0} {class_credit}{suffix} may be taken pass/fail</p>'
   except KeyError as ke:
-    return f'Error: invalid MaxPassFail {ke} {maxperdisc_dict}'
+    return f'<p class="error"> invalid MaxPassFail {ke} {maxperdisc_dict}</p>'
   except ValueError as ve:
-    return f'Error: invalid MaxPassFail {ve} {maxperdisc_dict}'
+    return f'<p class="error"> invalid MaxPassFail {ve} {maxperdisc_dict}</p>'
 
 
 # format_maxperdisc()
@@ -80,11 +80,11 @@ def format_maxperdisc(maxperdisc_dict: dict) -> str:
       number = float('NaN')
       suffix = 'x'
     disciplines = sorted(maxperdisc_dict.pop('disciplines'))
-    return f'No more than {number} {class_credit}{suffix} in ({", ".join(disciplines)})'
+    return f'<p>No more than {number} {class_credit}{suffix} in ({", ".join(disciplines)})</p>'
   except KeyError as ke:
-    return f'Error: invalid MaxPerDisc {ke} {maxperdisc_dict}'
+    return f'<p class="error"> invalid MaxPerDisc {ke} {maxperdisc_dict}</p>'
   except ValueError as ve:
-    return f'Error: invalid MaxPerDisc {ve} {maxperdisc_dict}'
+    return f'<p class="error"> invalid MaxPerDisc {ve} {maxperdisc_dict}</p>'
 
 
 # format_maxspread()
@@ -97,7 +97,7 @@ def format_maxspread(maxspread_dict: dict) -> str:
 
   number = int(maxspread_dict['number'])
 
-  return f'No more than {number} disciplines allowed'
+  return f'<p>No more than {number} disciplines allowed</p>'
 
 
 # format_maxtransfer()
@@ -126,7 +126,7 @@ def format_maxtransfer(maxtransfer_dict: dict) -> str:
   except KeyError as ke:
     pass
 
-  return f'No more than {number_str} transfer {class_credit}{suffix}{discipline_str} allowed'
+  return f'<p>No more than {number_str} transfer {class_credit}{suffix}{discipline_str} allowed</p>'
 
 
 # format_minarea()
@@ -140,11 +140,11 @@ def format_minarea(minarea_dict: dict) -> str:
   try:
     number = int(minarea_dict.pop('number'))
     suffix = '' if number == 1 else 'es'
-    return f'At least  {number} area{suffix} required'
+    return f'<p>At least  {number} area{suffix} required</p>'
   except KeyError as ke:
-    return f'Error: Missing minimum number of areas'
+    return f'<p class="error"> Missing minimum number of areas</p>'
   except ValueError as ve:
-    return f'Error: Invalid minimum number of areas ({number})'
+    return f'<p class="error"> Invalid minimum number of areas ({number})</p>'
 
 
 # format_minclass()
@@ -160,11 +160,11 @@ def format_minclass(minclass_dict: dict) -> str:
     if number < 1:
       raise ValueError('MinClass with minimum less than 1.')
     suffix = '' if number == 1 else 'es'
-    return f'At least  {number} class{suffix} required'
+    return f'<p>At least  {number} class{suffix} required</p>'
   except ValueError as ve:
-    return f'Error: Invalid MinClass {ve} {minclass_dict=}'
+    return f'<p class="error"> Invalid MinClass {ve} {minclass_dict=}</p>'
   except KeyError as ke:
-    return f'Error: Invalid MinClass {ke} {minclass_dict=}'
+    return f'<p class="error"> Invalid MinClass {ke} {minclass_dict=}</p>'
 
 
 # format_mincredit()
@@ -178,7 +178,7 @@ def format_mincredit(mincredit_dict: dict) -> str:
 
   number = float(mincredit_dict.pop('number'))
   suffix = '' if number == 1.0 else 's'
-  return f'At least {number:0.2f} credit{suffix} required'
+  return f'<p>At least {number:0.2f} credit{suffix} required</p>'
 
 
 # format_mingpa()
@@ -198,7 +198,7 @@ def format_mingpa(mingpa_dict: dict) -> str:
     expression = ' '
 
   # If there is a course list, format it as  details element
-  return f'Minimum GPA of {number:0.2f}{expression}required'
+  return f'<p>Minimum GPA of {number:0.2f}{expression}required</p>'
 
 
 # format_mingrade()
@@ -236,7 +236,7 @@ def format_mingrade(mingrade_dict: dict) -> str:
   if number > 4.0:
     number = 4.0
   letter = letters[int(round(number * 3))]
-  return f'Minimum grade of {letter} required'
+  return f'<p>Minimum grade of {letter} required</p>'
 
 
 # format_minperdisc()
@@ -265,7 +265,7 @@ def format_minperdisc(minperdisc_dict: dict) -> str:
   except KeyError as ke:
     pass
 
-  return f'No more than {number_str} {class_credit}{suffix}{discipline_str} allowed'
+  return f'<p>No more than {number_str} {class_credit}{suffix}{discipline_str} allowed</p>'
 
 
 # format_minres()
@@ -295,7 +295,7 @@ def format_minspread(minspread_dict: dict) -> str:
 
   number = int(minspread_dict.pop('number'))
   suffix = '' if number == 1 else 's'
-  return f'At least {number} discipline{suffix} required'
+  return f'<p>At least {number} discipline{suffix} required</p>'
 
 
 # format_share()
@@ -328,7 +328,7 @@ def format_share(share_dict: dict) -> str:
   except KeyError as ke:
     suffix_str = f''
 
-  return f'{prefix_str}{not_str}be shared{suffix_str}'
+  return f'<p>{prefix_str}{not_str}be shared{suffix_str}</p>'
 
 
 # dispatch()
@@ -357,6 +357,7 @@ def _dispatch_qualifier(qualifier: str, qualifier_info: Any) -> str:
   """
   if DEBUG:
     print(f'*** _dispatch_qualifier({qualifier}, {qualifier_info=})', file=sys.stderr)
+
   return dispatch_table[qualifier](qualifier_info)
 
 
@@ -364,9 +365,8 @@ def _dispatch_qualifier(qualifier: str, qualifier_info: Any) -> str:
 # -------------------------------------------------------------------------------------------------
 def format_body_qualifiers(node: dict) -> list:
   """ Given a dict that may or may not have keys for known qualifiers remove all qualifiers from the
-      node, and return a list of formatted strings representing the qualifiers found.
+      node, and return a list of HTML formatted strings representing the qualifiers found.
   """
-  # The following qualifieres are legal, but we ignore ones that we don’t need.
 
   assert isinstance(node, dict), (f'{type(node)} is not dict in format_body_qualifiers. {node=}')
   if DEBUG:
