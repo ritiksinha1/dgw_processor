@@ -752,14 +752,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
       list_items = []
     include_courses += get_scribed_courses(course_item, list_items)
 
-  # Qualifiers:
-  # print(f'\n{ctx.getText()}')
-  # print(dir(ctx))
-  # qualifiers = get_qualifiers(ctx, institution, requirement_id)
-  # print(qualifiers)
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
-  all_blanket = True
-  all_writing = True
   check_missing = True  # Unless there are wildcards or ranges
   conn = PgConnection()
   cursor = conn.cursor()
@@ -842,6 +835,9 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
               """
     cursor.execute(course_query)
     if cursor.rowcount > 0:
+      all_blanket = True
+      all_writing = True
+
       for row in cursor.fetchall():
         # skip excluded courses
         if (row.discipline, row.catalog_number, ANY) in except_courses:
@@ -869,6 +865,7 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
                                    row.title, credits, with_clause))
 
   conn.close()
+
   if len(active_courses) > 0:
     if all_blanket:
       attributes.append('Blanket Credit')

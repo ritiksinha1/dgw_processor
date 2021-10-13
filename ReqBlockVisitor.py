@@ -14,8 +14,8 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#head.
-    def visitHead(self, ctx:ReqBlockParser.HeadContext):
+    # Visit a parse tree produced by ReqBlockParser#header.
+    def visitHeader(self, ctx:ReqBlockParser.HeaderContext):
         return self.visitChildren(ctx)
 
 

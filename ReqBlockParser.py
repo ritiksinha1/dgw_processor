@@ -160,8 +160,8 @@ def serializedATN():
         buf.write("\2\2\3\u00d6\3\3\2\2\2\u00d7\u00ed\5@!\2\u00d8\u00ed\5")
         buf.write("\"\22\2\u00d9\u00ed\5D#\2\u00da\u00ed\5F$\2\u00db\u00ed")
         buf.write("\5H%\2\u00dc\u00ed\5J&\2\u00dd\u00ed\5L\'\2\u00de\u00ed")
-        buf.write("\5N(\2\u00df\u00ed\5P)\2\u00e0\u00ed\5V,\2\u00e1\u00ed")
-        buf.write("\5X-\2\u00e2\u00ed\5R*\2\u00e3\u00ed\5T+\2\u00e4\u00ed")
+        buf.write("\5N(\2\u00df\u00ed\5P)\2\u00e0\u00ed\5R*\2\u00e1\u00ed")
+        buf.write("\5T+\2\u00e2\u00ed\5V,\2\u00e3\u00ed\5X-\2\u00e4\u00ed")
         buf.write("\5Z.\2\u00e5\u00ed\5\\/\2\u00e6\u00ed\5\u009cO\2\u00e7")
         buf.write("\u00ed\5\u009eP\2\u00e8\u00ed\5\u00a2R\2\u00e9\u00ed\5")
         buf.write("`\61\2\u00ea\u00ed\5\u00acW\2\u00eb\u00ed\5\u00b4[\2\u00ec")
@@ -654,7 +654,7 @@ class ReqBlockParser ( Parser ):
                       "SLASH", "UNDERSCORE" ]
 
     RULE_req_block = 0
-    RULE_head = 1
+    RULE_header = 1
     RULE_body = 2
     RULE_course_list = 3
     RULE_full_course = 4
@@ -750,7 +750,7 @@ class ReqBlockParser ( Parser ):
     RULE_list_or = 94
     RULE_list_and = 95
 
-    ruleNames =  [ "req_block", "head", "body", "course_list", "full_course", 
+    ruleNames =  [ "req_block", "header", "body", "course_list", "full_course", 
                    "course_item", "and_list", "or_list", "except_list", 
                    "include_list", "catalog_number", "discipline", "course_list_body", 
                    "qualifier", "begin_if", "end_if", "conditional_head", 
@@ -901,8 +901,8 @@ class ReqBlockParser ( Parser ):
         def BEGIN(self):
             return self.getToken(ReqBlockParser.BEGIN, 0)
 
-        def head(self):
-            return self.getTypedRuleContext(ReqBlockParser.HeadContext,0)
+        def header(self):
+            return self.getTypedRuleContext(ReqBlockParser.HeaderContext,0)
 
 
         def ENDOT(self):
@@ -959,7 +959,7 @@ class ReqBlockParser ( Parser ):
             self.state = 198
             self.match(ReqBlockParser.BEGIN)
             self.state = 199
-            self.head()
+            self.header()
             self.state = 202
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -994,7 +994,7 @@ class ReqBlockParser ( Parser ):
         return localctx
 
 
-    class HeadContext(ParserRuleContext):
+    class HeaderContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1064,20 +1064,6 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContext(ReqBlockParser.Maxtransfer_headContext,i)
 
 
-        def mingpa_head(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.Mingpa_headContext)
-            else:
-                return self.getTypedRuleContext(ReqBlockParser.Mingpa_headContext,i)
-
-
-        def mingrade_head(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(ReqBlockParser.Mingrade_headContext)
-            else:
-                return self.getTypedRuleContext(ReqBlockParser.Mingrade_headContext,i)
-
-
         def minclass_head(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(ReqBlockParser.Minclass_headContext)
@@ -1090,6 +1076,20 @@ class ReqBlockParser ( Parser ):
                 return self.getTypedRuleContexts(ReqBlockParser.Mincredit_headContext)
             else:
                 return self.getTypedRuleContext(ReqBlockParser.Mincredit_headContext,i)
+
+
+        def mingpa_head(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ReqBlockParser.Mingpa_headContext)
+            else:
+                return self.getTypedRuleContext(ReqBlockParser.Mingpa_headContext,i)
+
+
+        def mingrade_head(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(ReqBlockParser.Mingrade_headContext)
+            else:
+                return self.getTypedRuleContext(ReqBlockParser.Mingrade_headContext,i)
 
 
         def minperdisc_head(self, i:int=None):
@@ -1149,29 +1149,29 @@ class ReqBlockParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return ReqBlockParser.RULE_head
+            return ReqBlockParser.RULE_header
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterHead" ):
-                listener.enterHead(self)
+            if hasattr( listener, "enterHeader" ):
+                listener.enterHeader(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitHead" ):
-                listener.exitHead(self)
+            if hasattr( listener, "exitHeader" ):
+                listener.exitHeader(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHead" ):
-                return visitor.visitHead(self)
+            if hasattr( visitor, "visitHeader" ):
+                return visitor.visitHeader(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def head(self):
+    def header(self):
 
-        localctx = ReqBlockParser.HeadContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 2, self.RULE_head)
+        localctx = ReqBlockParser.HeaderContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 2, self.RULE_header)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -1218,21 +1218,21 @@ class ReqBlockParser ( Parser ):
                     self.state = 221
                     self.maxtransfer_head()
                     pass
-                elif token in [ReqBlockParser.MINGPA]:
-                    self.state = 222
-                    self.mingpa_head()
-                    pass
-                elif token in [ReqBlockParser.MINGRADE]:
-                    self.state = 223
-                    self.mingrade_head()
-                    pass
                 elif token in [ReqBlockParser.MINCLASS]:
-                    self.state = 224
+                    self.state = 222
                     self.minclass_head()
                     pass
                 elif token in [ReqBlockParser.MINCREDIT]:
-                    self.state = 225
+                    self.state = 223
                     self.mincredit_head()
+                    pass
+                elif token in [ReqBlockParser.MINGPA]:
+                    self.state = 224
+                    self.mingpa_head()
+                    pass
+                elif token in [ReqBlockParser.MINGRADE]:
+                    self.state = 225
+                    self.mingrade_head()
                     pass
                 elif token in [ReqBlockParser.MINPERDISC]:
                     self.state = 226

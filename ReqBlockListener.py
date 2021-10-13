@@ -17,12 +17,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#head.
-    def enterHead(self, ctx:ReqBlockParser.HeadContext):
+    # Enter a parse tree produced by ReqBlockParser#header.
+    def enterHeader(self, ctx:ReqBlockParser.HeaderContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#head.
-    def exitHead(self, ctx:ReqBlockParser.HeadContext):
+    # Exit a parse tree produced by ReqBlockParser#header.
+    def exitHeader(self, ctx:ReqBlockParser.HeaderContext):
         pass
 
 

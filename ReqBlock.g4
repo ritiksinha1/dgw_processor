@@ -41,8 +41,8 @@ grammar ReqBlock;
  * The body contains _rules_ that specify what courses must be taken to satisfy the block’s
  * requirements.
  */
-req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
-head        :
+req_block   : .*? BEGIN header (SEMICOLON body)? ENDOT .*? EOF;
+header      :
             ( class_credit_head
             | conditional_head
             | lastres_head
@@ -52,10 +52,10 @@ head        :
             | maxperdisc_head
             | maxterm_head
             | maxtransfer_head
-            | mingpa_head
-            | mingrade_head
             | minclass_head
             | mincredit_head
+            | mingpa_head
+            | mingrade_head
             | minperdisc_head
             | minres_head
             | optional
