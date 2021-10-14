@@ -503,7 +503,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
             elif valid_qualifier in ['minclass', 'mincredit']:
               # build_course_list returns its own dict, with "course_list" as the key, so we start
               # with that, and add the number, display, and label elements to that.
-              qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list(),
+              qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list_body(),
                                                                   institution, requirement_id)
               qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
               if qualifier_ctx.display():
@@ -701,8 +701,8 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   return_dict['context_path'] = context_path(ctx)
 
   # Pick up the label, if there is one
-  if label_str := get_label(ctx):
-    return_dict['label'] = label_str
+  # if label_str := get_label(ctx):
+  #   return_dict['label'] = label_str
 
   if qualifiers := get_qualifiers(ctx, institution, requirement_id):
     if DEBUG:

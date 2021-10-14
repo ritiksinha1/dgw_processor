@@ -1,6 +1,7 @@
 """ Utils needed by htmlificization
       dict_to_html
       list_to_html
+      to_html
 """
 
 import os
@@ -21,7 +22,9 @@ else:
 def dict_to_html(info: dict, section=None) -> str:
   """ A dict is shown as either as a html details element or a paragraph, depending on the number
       and values of the keys, and on whether it is a top-level dict in the header/body list for a
-      block. Top-level dicts are indicated by section being either header or body
+      block. Top-level dicts are indicated by “section” being either header or body; section was set
+      by explicitly iterating over these two lists and invoking this function for each dict in those
+      lists; from here, section is not set for any recursion that occurs.
   """
 
   if DEBUG:
@@ -29,17 +32,39 @@ def dict_to_html(info: dict, section=None) -> str:
   assert isinstance(info, dict), f'{type(info)} is not a dict'
 
   """ Based on all concentrations, majors, and minors with a period_end starting with '9' at CUNY in
-      fall 2021, the following keys appeared in header_list dicts:
+      fall 2021, the following keys appeared in the top level of header_list dicts:
+
           class_credit_head conditional lastres_head maxclass_head maxcredit_head maxpassfail_head
           maxperdisc_head maxterm_head maxtransfer_head minclass_head mincredit_head mingpa_head
           mingrade_head minperdisc_head minres_head optional remark share_head standalone
 
-      and the following keys appeared in body_list dicts:
+          This agrees with the grammar, except: conditional_head was converted to conditional by the
+          handler; and proxy-advice and under have been ignored by the handlers.
+
+      and the following keys appeared in the top level of body_list dicts:
           block blocktype class_credit_body conditional copy_rules group_requirements noncourse
           remark subset
+
+          This agrees with the grammar, except: conditional_body was converted to conditional by the
+          conditional_body handler; group_requirement was converted to group_requirements (a list)
+          by the handler; label does not appear (should be removed from the grammar because it makes
+          no sense to have a label that isn't connected to a requirement); proxy-advice has been
+          ignored by the handlers; rule_complete does not appear (like label, it doesn't make sense
+          for this to appear without being connected to a requirement, (at least for Majors,
+          Concentrations, and Minors)).
+
   """
 
-  # Header and Body sections
+  # Top-level dicts in Header and Body section lists
+  # -----------------------------------------------------------------------------------------------
+  """ Only certain productions are expected/allowed in the top level of header_list and body_list.
+      Furthermore, certain keys have different meanings in the header (where they are rules and thus
+      may have labels) and the body (where they act as “qualifiers” for requirements.)
+
+      So this section validates the augmented parse tree in the sense that it makes sure that these
+      top-level lists contain only the expected productions, and make sure that header productions
+      are handled differently from body qualifiers if necessary.
+  """
   if section == 'header':
     # Format all top-level dicts in the Header
     return '\n'.join([element for element in format_header_productions(info)])
@@ -49,8 +74,14 @@ def dict_to_html(info: dict, section=None) -> str:
       if html_str := format_body_rules.format_body_rule(key, value):
         body_rules.append(html_str)
       else:
-        body_rules.append(f'<p class="error">{key} not dispatchable and not implemented')
+        body_rules.append(f'<p class="error">{key} not dispatchable from body_list')
     return '\n'.join(body_rules)
+
+  # All other dicts
+  # -----------------------------------------------------------------------------------------------
+  """ The top-level dicts may recursively invoke various dicts and lists. These recursive
+  invocations get handled here.
+  """
 
   pseudo_msg = ''
   try:
@@ -123,18 +154,11 @@ def dict_to_html(info: dict, section=None) -> str:
       return f'<p><strong>{label_str}</strong>: Requirement <em>{is_isnot}</em> satisfied</p>'
 
     # Class lists and their qualifiers.
-    try:
-      # Determing number of classes and/or credits required
-      min_classes = info['min_classes']
-      max_classes = info['max_classes']
-      min_credits = info['min_credits']
-      max_credits = info['max_credits']
-      conjunction = info['conjunction']
-      cr_str = class_credit_to_str(min_classes, max_classes, min_credits, max_credits, conjunction)
-      if cr_str:
-        cr_str = f'<p>{cr_str}</p>'
-    except KeyError as ke:
+    cr_str = format_utils.format_class_credit_clause(info)
+    if cr_str is None:
       cr_str = ''
+    else:
+      cr_str = f'<p>{cr_str}</p>'
 
     qualifier_strings = format_body_qualifiers(info)
     for qualifier_string in qualifier_strings:
@@ -283,3 +307,23 @@ def list_to_html(info: list, section=None) -> str:
   return_str += '\n'.join([f'{to_html(element)}'for element in info])
 
   return return_str + '</details>'
+
+
+# to_html()
+# -------------------------------------------------------------------------------------------------
+def to_html(info: any) -> str:
+  """  Return a nested HTML data structure as described above.
+  """
+  if DEBUG:
+    print(f'*** to_html({type(info)}, {section=})', file=sys.stderr)
+
+  if info is None:
+    return ''
+  if isinstance(info, bool):
+    return 'True' if info else 'False'
+  if isinstance(info, list):
+    return html_utils.list_to_html(info)
+  if isinstance(info, dict):
+    return html_utils.dict_to_html(info)
+
+  return info

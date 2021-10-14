@@ -11,6 +11,7 @@ else:
   DEBUG = False
 
 import htmlificization
+import format_utils
 
 
 # format_block()
@@ -34,7 +35,7 @@ def format_block(block_dict: dict) -> str:
     if block_type == 'Conc':
       block_type = 'Concentration'
     block_value = block_dict['block_value']
-    block_str = f'<p>The {block_value} {block_value} is required</p>'
+    block_str = f'<p>The {block_value} {block_value} is required.</p>'
 
   if summary:
     return f'<details>{summary}{block_str}</details>'
@@ -54,7 +55,19 @@ def format_blocktype(blocktype_dict: dict) -> str:
   except KeyError:
     summary = None
 
-  blocktype_str = '<p class="error">Blocktype not implemented yet</p>'
+  number = int(blocktype_dict['number'])
+  block_type = blocktype_dict['block_type'].title()
+  if block_type == 'Conc':
+    block_type = 'Concentration'
+
+  if number == 1:
+    blocktype_str = f'<p>A {block_type} is required.</p>'
+  else:
+    try:
+      number = number_names[number].title()
+    except IndexError:
+      pass
+    blocktype_str = f'<p>{number} {block_type}s are required.</p>'
 
   if summary:
     return f'<details>{summary}{blocktype_str}</details>'
@@ -74,12 +87,37 @@ def format_class_credit_body(class_credit_body_dict: dict) -> str:
   except KeyError:
     summary = None
 
-  class_credit_body_str = '<p class="error">Class-Credit not implemented yet</p>'
+  # There has to be num classes and/or num credits
+  class_credit_str = format_utils.format_class_credit_clause(class_credit_body_dict)
+
+  # There might be pseudo, remark, display, and/or share items. They get shown next as paragraphs.
+  try:
+    if class_credit_body_dict['is_pseudo']:
+      class_credit_str += '<p>This requirement does not have a strict credit limit.</p>'
+  except KeyError:
+    pass
+  try:
+    if remark_str := class_credit_body_dict['remark']:
+      class_credit_str += f'<p>{remark_str}</p>'
+  except KeyError:
+    pass
+  try:
+    if display_str := class_credit_body_dict['display']:
+      class_credit_str += f'<p>{display_str}</p>'
+  except KeyError:
+    pass
+
+  # If there is a list of courses, it gets shown as a display element.
+  try:
+    if courses_str := format_utils.format_course_list(class_credit_body_dict['course_list']):
+      class_credit_str += courses_str
+  except KeyError:
+    pass
 
   if summary:
-    return f'<details>{summary}{class_credit_body_str}</details>'
+    return f'<details>{summary}{class_credit_str}</details>'
   else:
-    return f'{class_credit_body_str}'
+    return f'{class_credit_str}'
 
 
 # format_copy_rules()

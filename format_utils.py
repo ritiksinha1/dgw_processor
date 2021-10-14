@@ -1,7 +1,6 @@
 #! /usr/local/python3
 
 """ Utilities shared by htmlificization, format_header_productions, and format body_qualifiers.
-      class_credit_to_str
       format_class_credit_clause
       format_course_list
       format_number
@@ -18,59 +17,26 @@ if os.getenv('DEBUG_FORMAT_UTILS'):
 else:
   DEBUG = False
 
-
-# class_credit_to_str()
-# -------------------------------------------------------------------------------------------------
-def class_credit_to_str(min_classes: int, max_classes: int,
-                        min_credits: float, max_credits: float, conjunction: str) -> str:
-  """ Format class/credit requirement productions
-  """
-  if DEBUG:
-    print(f'*** class_credit_to_str({min_classes=}, {max_classes=}, {min_credits=}, '
-          f'{max_credits=}, {conjunction=})', file=sys.stderr)
-
-  if min_classes:
-    if min_classes == max_classes:
-      suffix = '' if min_classes == 1 else 'es'
-      num_classes = f'{min_classes} class{suffix}'
-    else:
-      num_classes = f'between {min_classes} and {max_classes} classes'
-  else:
-    num_classes = ''
-  if min_credits:
-    if min_credits == max_credits:
-      suffix = '' if min_credits == 1.0 else 's'
-      num_credits = f'{min_credits} credit{suffix}'
-    else:
-      num_credits = f'between {min_credits} and {max_credits} credits'
-  else:
-    num_credits = ''
-
-  if num_credits and num_classes:
-    class_credit_str = f'{num_classes} {conjunction.lower()} {num_credits}'
-  else:
-    # Possibly empty string
-    class_credit_str = f'{num_classes}{num_credits}'
-
-  if DEBUG:
-    print(f'    returning “{class_credit_str}”', file=sys.stderr)
-
-  return class_credit_str
+number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+                'ten', 'eleven', 'twelve']
 
 
 # format_class_credit_clause()
 # -------------------------------------------------------------------------------------------------
 def format_class_credit_clause(cc_dict: dict):
-  """ Format (num_classes | num_credits) clauses, which have been turned into min_classes,
-      max_classes, min_credits, max_credits, conjunction keys by dgw_utils.num_class_or_num_credit()
+  """ Format (num_classes | num_credits) clauses, which appear in requirements.
+      They have been converted into  min_classes, max_classes, min_credits, max_credits,
+      and conjunction keys by dgw_utils.num_class_or_num_credit()
 
       Ignore allow_credits and allow_classes that might be present because they are auditor
       directives, not requirements.
+
+      Returns None if the expected keys are not found in the cc_dict.
   """
   assert isinstance(cc_dict, dict), f'{type(cc_dict)} is not dict'
 
   try:
-    num_classes_str = None
+    num_classes_str = ''
     if cc_dict['min_classes'] is not None:
       min_classes = int(cc_dict['min_classes'])
       max_classes = int(cc_dict['max_classes'])
@@ -81,7 +47,7 @@ def format_class_credit_clause(cc_dict: dict):
       else:
         num_classes_str = f'Between {min_classes} and {maxclasses} classes'
 
-    num_credits_str = None
+    num_credits_str = ''
     if cc_dict['min_credits'] is not None:
       min_credits = float(cc_dict['min_credits'])
       max_credits = float(cc_dict['max_credits'])
@@ -100,7 +66,7 @@ def format_class_credit_clause(cc_dict: dict):
     return f'{num_classes_str}{conjunction_str}{num_credits_str}'
 
   except (KeyError, ValueError) as err:
-    return f'<p class="error">{cc_dict} is not a valid class_credit dict: {err}</p>'
+    return None
 
 
 # format_course_list()
@@ -180,9 +146,8 @@ def format_course_list(info: dict) -> str:
     else:
       attributes_str = ''
       try:
-        attributes = info['attributes ']
-        if attributes is not None:
-          attributes_str = ','.join(attributes)
+        if attributes := info['attributes']:
+          attributes_str = '<span class="error">' + ','.join(attributes) + '</span> '
       except KeyError as ke:
         pass
       details_str += list_of_courses(active_courses, f'Active {attributes_str}Course')
@@ -234,8 +199,8 @@ def format_course_list(info: dict) -> str:
 # format_number()
 # -------------------------------------------------------------------------------------------------
 def format_number(number_arg, is_int=False):
-  """ A number string can be 1, 1.0, an int other than 1, a float other than 1, a range of ints, a
-      range of floats. Handle all cases here, you're welcome.
+  """ A number string can be 1, 1.0, an int other than 1, a float other than 1.0, a range of ints,
+      or a range of floats. Handle all cases here, you're welcome.
   """
   parts = number_arg.split(':')
   if is_int:

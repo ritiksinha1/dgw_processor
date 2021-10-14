@@ -101,8 +101,7 @@ body        :
  *
  * The trick is to determine where each type of bracket might appear.
  */
-course_list     : course_item (and_list | or_list)? (except_list | include_list)*
-                  proxy_advice? label?;
+course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
 full_course     : discipline catalog_number with_clause*;   // Used only in expressions
 course_item     : area_start? discipline? catalog_number with_clause* area_end?;
 and_list        : (list_and area_end? course_item)+ ;
@@ -117,7 +116,7 @@ discipline      : symbol
                 | BLOCK
                 | IS;
 
-course_list_body  : course_list (qualifier tag? | proxy_advice )*;
+course_list_body  : course_list (qualifier tag? | proxy_advice | remark)* label?;
 
 qualifier         : maxpassfail
                   | maxperdisc
@@ -172,9 +171,9 @@ head_rule         : conditional_head
                   ;
 
 conditional_body  : IF expression THEN (body_rule | body_rule_group)
-                    qualifier* label? else_body?;
+                    (qualifier tag? | proxy_advice | remark)* label? else_body?;
 else_body         : ELSE (body_rule | body_rule_group)
-                    qualifier* label?;
+                    (qualifier tag? | proxy_advice | remark)* label?;
 body_rule_group : (begin_if body_rule+ end_if);
 
 body_rule       : conditional_body
@@ -199,17 +198,17 @@ body_rule       : conditional_body
 //  -----------------------------------------------------------------------------------------------
 /*  Body Only: n of m groups required
  */
-group_requirement : NUMBER GROUP groups qualifier* label? ;
+group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark)* label? ;
 groups            : group (logical_op group)*; // But only OR should occur
 group             : LP
                   (block
                    | blocktype
-                   | course_list
+                   | course_list_body
                    | class_credit_body
                    | group_requirement
                    | noncourse
                    | rule_complete)
-                  qualifier* label?
+                  (qualifier tag? | proxy_advice | remark)* label?
                   RP
                 ;
 
@@ -221,12 +220,12 @@ subset            : BEGINSUB
                     | blocktype
                     | class_credit_body
                     | copy_rules
-                    | course_list
+                    | course_list_body
                     | group_requirement
                     | noncourse
                     | rule_complete
                   )+
-                  ENDSUB qualifier* (remark | label)*;
+                  ENDSUB (qualifier tag? | proxy_advice | remark)* label?;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
@@ -243,12 +242,12 @@ allow_clause        : LP allow NUMBER RP;
 
 class_credit_head : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))?
-                  (IS? pseudo | display | proxy_advice | header_tag | label | tag)*
+                  (IS? pseudo | display | proxy_advice | header_tag | tag)* label?
                   ;
 
 class_credit_body : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))? course_list_body?
-                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )*
+                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )* label?
                   ;
 
 // Header-only productions: same as rule qualifiers, but these allow a label.

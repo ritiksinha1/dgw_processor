@@ -305,8 +305,8 @@ def _format_minres_head(minres_head_dict: dict) -> str:
 
   minres_dict = minres_head_dict['minres']
   try:
-    display_str = minres_dict['display']
-    display_str = f'<p>{display_str}</p>'
+    if display_str := minres_dict['display']:
+      display_str = f'<p>{display_str}</p>'
   except KeyError:
     display_str = ''
   class_credit_str = format_body_qualifiers.format_class_credit_clause(minres_dict)

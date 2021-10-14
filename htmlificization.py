@@ -23,6 +23,7 @@ from course_lookup import lookup_course
 import html_utils
 # html_utils.dict_to_html
 # html_utils.list_to_html
+# html_utils.to_html
 import format_utils
 # format_utils.class_credit_to_str
 # format_utils.format_class_credit_clause
@@ -52,9 +53,6 @@ conn.close()
 # Dict of quarantined requirement_blocks
 quarantined_dict = QuarantineManager()
 
-number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-                'ten', 'eleven', 'twelve']
-
 
 # requirement_to_details_element()
 # -------------------------------------------------------------------------------------------------
@@ -83,25 +81,10 @@ def requirement_to_details_element(requirement: dict) -> str:
   if 'is_pseudo' in requirement.keys() and requirement['is_pseudo']:
     requirement_list.append('<p>This requirement does not have a strict credit limit.</p>')
 
-  if 'min_classes' in requirement.keys():
-    min_classes = requirement.pop('min_classes')
-    max_classes = requirement.pop('max_classes')
-  else:
-    min_classes = max_classes = None
-  if 'min_credits' in requirement.keys():
-    min_credits = requirement.pop('min_credits')
-    max_credits = requirement.pop('max_credits')
-  else:
-    min_credits = max_credits = None
+  requirements_str = format_utils.format_class_credit_clause(requirement)
+  if requirements_str is None:
+    requirements_str = '<span class="error">Missing number of classes/credits information</span>'
 
-  assert min_credits or min_classes
-
-  conjunction = requirement.pop('conjunction')
-  if conjunction is None:
-    conjunction = '?'
-
-  requirements_str = format_utils.class_credit_to_str(min_classes, max_classes,
-                                                      min_credits, max_credits, conjunction)
   # If nothing else, expect a list of courses for the requirement
   try:
     if DEBUG:
@@ -197,7 +180,7 @@ def subset_to_details_element(info: dict, outer_label) -> str:
     print(f'    Keys being passed to to_html() in subset_to_details_element: {list(info.keys())}',
           file=sys.stderr)
 
-  details_str = ''.join([to_html(info[key]) for key in info.keys()])
+  details_str = ''.join([html_utils.to_html(info[key]) for key in info.keys()])
 
   requirements_str = f'{remark_str}{qualifiers_str}{details_str}{course_requirements_element}'
   if len(requirements_str) == 0:
@@ -238,14 +221,14 @@ def group_requirement_to_details_elements(info: dict, outer_label=None) -> str:
   group_requirement = info.pop('group_requirement')
   return_str = ''
   num_required = int(group_requirement['number'])
-  if num_required < len(number_names):
-    num_required = number_names[num_required]
+  if num_required < len(format_utils.number_names):
+    num_required = format_utils.number_names[num_required]
   group_list = group_requirement['group_list']
   assert isinstance(group_list, dict)
   num_groups = len(group_list['groups'])
   num_groups_suffix = '' if num_groups == 1 else 's'
-  if num_groups < len(number_names):
-    num_groups = number_names[num_groups]
+  if num_groups < len(format_utils.number_names):
+    num_groups = format_utils.number_names[num_groups]
   if num_required == 'one':
     if num_groups == 'one':
       requirement_str = '<p>The following group'
@@ -275,7 +258,7 @@ def group_requirement_to_details_elements(info: dict, outer_label=None) -> str:
       group_body = html_utils.dict_to_html(group_item)
     else:
       group_body = f'<div class="error">Error: {group_item} is neither a list nor a dict</div>'
-    index = number_names[group_number] if group_number < len(number_names) else group_number
+    index = format_utils.number_names[group_number] if group_number < len(format_utils.number_names) else group_number
     body += f"""
     <details>
       <summary>Group {index} of {num_groups} group{num_groups_suffix}</summary>
@@ -313,14 +296,14 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
     inner_label = None
 
   try:
-    true_value = to_html(info['if_true'])
+    true_value = html_utils.to_html(info['if_true'])
     if_true_part = (f'<details open="open"><summary>if ({condition}) is true</summary>'
                     f'{true_value}</details>')
   except KeyError as ke:
     if_true_part = '<p class="error">Empty If-then rule!</p>'
 
   try:
-    false_value = to_html(info['if_false'])
+    false_value = html_utils.to_html(info['if_false'])
     if_false_part = (f'<details open="open"><summary>if ({condition}) is not true</summary>'
                      f'{false_value}</details>')
   except KeyError as ke:
@@ -343,26 +326,6 @@ def conditional_to_details_element(info: dict, outer_label: str) -> str:
     else:
       return (f'<details><summary open="open"><summary{outer_label.title()}</summary>'
               f'{inner_details}</details>')
-
-
-# to_html()
-# -------------------------------------------------------------------------------------------------
-def to_html(info: any) -> str:
-  """  Return a nested HTML data structure as described above.
-  """
-  if DEBUG:
-    print(f'*** to_html({type(info)}, {section=})', file=sys.stderr)
-
-  if info is None:
-    return ''
-  if isinstance(info, bool):
-    return 'True' if info else 'False'
-  if isinstance(info, list):
-    return html_utils.list_to_html(info)
-  if isinstance(info, dict):
-    return html_utils.dict_to_html(info)
-
-  return info
 
 
 # scribe_block_to_html()
@@ -421,54 +384,6 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
 # __main__
 # =================================================================================================
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Test DGW Parser')
-  parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
-  parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
-  parser.add_argument('-d', '--debug', action='store_true', default=False)
-  parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
-  parser.add_argument('-np', '--progress', action='store_false')
-  parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='current')
-  parser.add_argument('-q', '--do_quarantined', action='store_true')
-  parser.add_argument('-ra', '--requirement_id')
-  parser.add_argument('-ti', '--timelimit', type=int, default=30)
-  parser.add_argument('-u', '--update_db', action='store_true')
-
-  # Parse args
-  args = parser.parse_args()
-  if args.requirement_id:
-    institution = args.institutions[0].strip('10').upper() + '01'
-    requirement_id = args.requirement_id.strip('AaRr')
-    if not requirement_id.isdecimal():
-      sys.exit(f'Requirement ID “{args.requirement_id}” must be a number.')
-    requirement_id = f'RA{int(requirement_id):06}'
-
-    if args.progress:
-      print(f'{institution} {requirement_id} {args.period}', end='')
-      sys.stdout.flush()
-    parse_tree = dgw_parser(institution,
-                            'block_type',   # Not used with requirement_id
-                            'block_value',  # Not used with requirement_id
-                            period_range=args.period,
-                            progress=args.progress,
-                            update_db=args.update_db,
-                            requirement_id=requirement_id,
-                            do_quarantined=args.do_quarantined,
-                            timelimit=args.timelimit)
-    # When not updating the db (i.e., during debugging), display the result as a web page.
-    if not args.update_db:
-      if 'error' in parse_tree.keys():
-        err_msg = parse_tree['error']
-        html = f'<h1 class="error">Error: {err_msg}</h1>'
-      else:
-        html = ''
-      if DEBUG:
-        print('HEADER', file=sys.stderr)
-      html += to_html(parse_tree['header_list'])
-      if DEBUG:
-          print('BODY', file=sys.stderr)
-      html += to_html(parse_tree['body_list'])
-      print(html)
-
-    exit()
-  else:
-    exit('Only RA option supported.')
+  """ Testing is done by running dgw_parser.py, and viewing the results in the website.
+  """
+  exit('Command line invocation not supported.')

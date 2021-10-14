@@ -1145,7 +1145,7 @@ def subset(ctx, institution, requirement_id):
                           | blocktype
                           | class_credit_body
                           | copy_rules
-                          | course_list
+                          | course_list_body
                           | group_requirement
                           | noncourse
                           | rule_complete
@@ -1156,7 +1156,6 @@ def subset(ctx, institution, requirement_id):
   if DEBUG:
     print(f'*** subset({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
-
   return_dict = dict()
 
   if ctx.conditional_body():
@@ -1180,9 +1179,9 @@ def subset(ctx, institution, requirement_id):
                                         f'is not unity in subset')
     return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
 
-  if ctx.course_list():
+  if ctx.course_list_body():
     return_dict['course_lists'] = [build_course_list(context, institution, requirement_id)
-                                   for context in ctx.course_list()]
+                                   for context in ctx.course_list_body()]
 
   if ctx.group_requirement():
     return_dict.update(group_requirement(ctx.group_requirement(), institution, requirement_id))
@@ -1267,6 +1266,7 @@ dispatch_header = {'class_credit_head': class_credit_head,
 dispatch_body = {'block': block,
                  'blocktype': blocktype,
                  'class_credit_body': class_credit_body,
+                 'course_list_body': course_list_body,
                  'copy_rules': copy_rules,
                  'group_requirement': group_requirement,
                  'conditional_body': conditional_body,
