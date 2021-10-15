@@ -321,7 +321,7 @@ def copy_rules(ctx, institution, requirement_id):
 
   # Look up the block_type and block_value, and build a link to the specified block if possible.
   conn = PgConnection()
-  cursor = conn.cursor
+  cursor = conn.cursor()
   cursor.execute(f"""
   select block_type, block_value, period_stop
     from requirement_blocks
