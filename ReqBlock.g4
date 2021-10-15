@@ -66,11 +66,13 @@ header      :
             | under
             )*
             ;
+
 body        :
             ( block
             | blocktype
             | class_credit_body
             | conditional_body
+            | course_list_body
             | copy_rules
             | group_requirement
             | label
@@ -81,6 +83,7 @@ body        :
             | subset
             )*
             ;
+
 
 /* Grammar convention: Kleene Star is used in the usual "zero or more" sense, but also to allow
  * elements to appear in any order. Thus, (a | b)* accepts a, b, ab, and ba. Both a and b will
@@ -137,19 +140,24 @@ qualifier         : maxpassfail
 
 //  conditional
 //  -----------------------------------------------------------------------------------------------
+/*  Observed anomaly: the documentation says that the begin_if/end_if brackets are optional when
+ *. an if or end_if body has only a single rule. Howerver, we see blocks where they are omitted
+ *  with multiple rules before the ELSE clause. We treat those blocks as un-parsable and quarantine
+ *. them.
+ */
 begin_if          : BEGINIF | BEGINELSE;
 end_if            : ENDIF | ENDELSE;
 
 conditional_head  : IF expression THEN (head_rule | head_rule_group )
-                    (proxy_advice | label)* else_head?;
+                    (proxy_advice)* label? else_head?;
 else_head         : ELSE (head_rule | head_rule_group)
                     (proxy_advice | label)*;
 head_rule_group   : (begin_if head_rule+ end_if);
-head_rule         : conditional_head
-                  | block
+head_rule         : block
                   | blocktype
                   | class_credit_head
                   | copy_rules
+                  | conditional_head
                   | lastres_head
                   | maxclass_head
                   | maxcredit_head
@@ -180,6 +188,7 @@ body_rule       : conditional_body
                 | block
                 | blocktype
                 | class_credit_body
+                | course_list_body
                 | copy_rules
                 | group_requirement
                 | maxtransfer
@@ -203,8 +212,8 @@ groups            : group (logical_op group)*; // But only OR should occur
 group             : LP
                   (block
                    | blocktype
-                   | course_list_body
                    | class_credit_body
+                   | course_list_body
                    | group_requirement
                    | noncourse
                    | rule_complete)

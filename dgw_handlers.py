@@ -24,6 +24,8 @@ from dgw_utils import class_name,\
 from traceback import print_stack
 from pprint import pprint
 
+from pgconnection import PgConnection
+
 DEBUG = os.getenv('DEBUG_HANDLERS')
 
 # Handlers
@@ -130,8 +132,9 @@ def class_credit_body(ctx, institution, requirement_id):
     if qualifiers := get_qualifiers(ctx.course_list_body().qualifier(),
                                     institution, requirement_id):
       return_dict.update(qualifiers)
-    return_dict.update(build_course_list(ctx.course_list_body().course_list(),
-                                         institution, requirement_id))
+
+    return_dict['course_list'] = build_course_list(ctx.course_list_body().course_list(),
+                                                   institution, requirement_id)
 
   if ctx.pseudo():
     return_dict['is_pseudo'] = True
@@ -153,7 +156,7 @@ def class_credit_body(ctx, institution, requirement_id):
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  return {'class_credit_body': return_dict}
+  return {'class_credit': return_dict}
 
 
 # conditional_head()
@@ -264,7 +267,8 @@ def conditional_body(ctx, institution, requirement_id):
       print(f'*** conditional_body({class_name(ctx)}, {institution}. {requirement_id})',
             file=sys.stderr)
 
-  return_dict = dict()
+  return_dict = {'label': ctx.label()}
+
   condition = expression_to_str(ctx.expression())
   return_dict['condition'] = condition
 
@@ -273,8 +277,6 @@ def conditional_body(ctx, institution, requirement_id):
     return_dict['concentrations'] = concentration_list(condition,
                                                        institution,
                                                        requirement_id)
-
-  return_dict['label'] = get_label(ctx)
 
   if qualifiers := get_qualifiers(ctx, institution, requirement_id):
     return_dict.update(qualifiers)
@@ -317,10 +319,55 @@ def copy_rules(ctx, institution, requirement_id):
     if class_name(context) == 'Expression':
       return_dict['requirement_id'] = f'{context.getText().strip().upper()}'
 
-  assert 'requirement_id' in return_dict.keys(), (f'Assertion Error: no requirement_id in '
-                                                  f'({ctx.expression().getText()}) in copy_rules()')
+  # Look up the block_type and block_value, and build a link to the specified block if possible.
+  conn = PgConnection()
+  cursor = conn.cursor
+  cursor.execute(f"""
+  select block_type, block_value, period_stop
+    from requirement_blocks
+   where institution = '{institution}'
+     and requirement_id = '{requirement_id}'
+  """)
+  if cursor.rowcount == 0:
+    return_dict['error'] = (f'“Missing {requirement_id}” for {institution}')
+  else:
+    row = cursor.fetchone()  # There cannot be mnore than one requrement block per requirement id
+    block_type = row.block_type
+    block_value = row.block_value
+    if row.period_stop.startswith('9'):
+      return_dict['block_type'] = block_type
+      return_dict['block_value'] = block_value
+    else:
+      return_dict['error'] = (f'{requirement_id} {block_type} {block_block} not current for '
+                              f'{institution}')
+  conn.close()
 
   return {'copy_rules': return_dict}
+
+
+# course_list_body()
+# -------------------------------------------------------------------------------------------------
+def course_list_body(ctx: Any, institution: str, requirement_id: str) -> dict:
+  """
+    In the body, a bare course list (presumably followed by a label) can serve as a requirement,
+    with the implicit assumption that all courses in the list are required.
+
+    CSI01 RA 000544 is the only block observed to use this feature!
+
+    course_list_body  : course_list (qualifier tag? | proxy_advice | remark)* label?;
+    course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
+  """
+  return_dict = {'label': get_label(ctx),
+                 'course_list': build_course_list(ctx.course_list(), institution, requirement_id)}
+  if ctx.qualifier():
+    return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
+
+  if ctx.remark():
+    return_dict['remark'] = ' '.join([s.getText().strip(' "')
+                                     for c in ctx.remark()
+                                     for s in c.string()])
+
+  return {'course_list_body': return_dict}
 
 
 # group_requirement()
@@ -1171,8 +1218,8 @@ def subset(ctx, institution, requirement_id):
 
   if ctx.class_credit_body():
     # Return a list of class_credit dicts
-    return_dict['requirements'] = [class_credit_body(context, institution, requirement_id)
-                                   for context in ctx.class_credit_body()]
+    return_dict['class_credit_body'] = [class_credit_body(context, institution, requirement_id)
+                                        for context in ctx.class_credit_body()]
 
   if ctx.copy_rules():
     assert len(ctx.copy_rules()) == 1, (f'Assertion Error: {len(ctx.copy_rules())} '

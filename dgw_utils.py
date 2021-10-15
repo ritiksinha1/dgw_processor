@@ -226,7 +226,7 @@ def get_rules(ctx, institution, requirement_id):
   for rule_ctx in rules_ctx:
     for child in rule_ctx.getChildren():
       if DEBUG:
-        print('xxxx', class_name(child), file=sys.stderr)
+        print('.  ', class_name(child), file=sys.stderr)
       return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
 
   return return_list
