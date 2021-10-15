@@ -79,9 +79,19 @@ def dict_to_html(info: dict, section=None) -> str:
 
   # All other dicts
   # -----------------------------------------------------------------------------------------------
-  """ The top-level dicts may recursively invoke various dicts and lists. These recursive
+  """ The top-level dicts may recursively invoke various dicts and lists. The recursive dict
   invocations get handled here.
   """
+
+  return f'<p><em>Recursive dict_to_html(): {list(info.keys())}</em></p>'
+
+  summary = None
+  try:
+    if label_str := info.pop('label'):
+      summary = f'<summary>{label_str}</summary>'
+  except KeyError:
+    pass
+  return_str = ''
 
   pseudo_msg = ''
   try:
@@ -269,7 +279,6 @@ def list_to_html(info: list, section=None) -> str:
       # These lists contain only dicts.
       assert isinstance(item, dict), f'{type(item)} is not dict'
       details += dict_to_html(item, section)
-    print(f'xxx return {section}', details[-30:])
     return f'<details>{summary}{details}</details>'
 
   # All other lists

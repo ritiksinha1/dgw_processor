@@ -11,6 +11,7 @@ else:
   DEBUG = False
 
 import htmlificization
+import format_body_qualifiers
 import format_utils
 
 
@@ -132,7 +133,20 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
   except KeyError:
     summary = None
 
-  copy_rules_str = '<p class="error">Copy rules not implemented yet</p>'
+  institution = copy_rules_dict['institution']
+  requirement_id = copy_rules_dict['requirement_id]']
+  if 'error' in copy_rules_dict.keys():
+    error_msg = copy_rules_dict['error']
+    copy_rules_str = f'<p class="error">{error_msg}</p>'
+  else:
+    block_type = copy_rules_dict['block_type']
+    block_value = copy_rules_dict['block_value']
+    url = (f"requirements/?institution='{institution}'&college='{institution}'"
+           f"&requirement-type='{block_type}'&requirement-name='{block_value}'"
+           f"&period-range=current")
+    block_type = 'Concentration' if block_type == 'CONC' else block_type.title()
+    anchor_text = f'{block_value} {block_type} at {institution} ({requirement_id})'
+    copy_rules_str = '<p>Use the body section of the <a href="{url}">{anchor_text}</a></p>'
 
   if summary:
     return f'<details>{summary}{copy_rules_str}</details>'
@@ -285,8 +299,22 @@ def format_rule_tag(rule_tag_dict: dict) -> str:
 # format_subset()
 # -------------------------------------------------------------------------------------------------
 def format_subset(subset_dict: dict) -> str:
+  """  Subset dict keys:
+         block
+         blocktype
+         class_credit_body
+         conditional
+         copy_rules
+         course_list
+         group
+         label
+         noncourse
+         qualifier
+         remark
+         rule_complete
   """
-  """
+  if DEBUG:
+    print(f'*** format_subset({list(info.keys())})', file=sys.stderr)
 
   try:
     label_str = subset_dict['label']
@@ -294,7 +322,73 @@ def format_subset(subset_dict: dict) -> str:
   except KeyError:
     summary = None
 
-  subset_str = '<p class="error">Subset not implemented yet</p>'
+  subset_str = ''
+
+# If there is a remark, it goes right after the summary
+  try:
+    if remark_str := subset_dict['remark']:
+      subset_str += f'<p>{subset_str}</p>'
+  except KeyError:
+    pass
+
+# Next, any qualifiers.
+  try:
+    if qualifiers_list := format_body_qualifiers.format_body_qualifiers(subset_dict):
+      subset_str += '\n'.join(qualifiers_list)
+  except KeyError:
+    pass
+
+# Is this a non-course requirement?
+  try:
+    if noncource_dict := subset_dict['noncourse']:
+      subset_str += format_noncourse(noncourse_dict)
+  except KeyError:
+    pass
+
+# Block, blocktype, copy_rules, rule_complete
+  try:
+    if block_str := subset_dict['block']:
+      subset_str += format_block(subset_dict['block'])
+  except KeyError:
+    pass
+
+  try:
+    if blocktype_str := subset_dict['blocktype']:
+      subset_str += format_blocktype(subset_dict['blocktype'])
+  except KeyError:
+    pass
+
+  try:
+    if copy_rules_str := subset_dict['copy_rules']:
+      subset_str += format_copy_rules(subset_dict['copy_rules'])
+  except KeyError:
+    pass
+
+  try:
+    if rule_complete_str := subset_dict['rule_complete']:
+      subset_str += format_rule_complete(subset_dict['rule_complete'])
+  except KeyError:
+    pass
+
+# this leaves conditional, group, and class_credit_body
+  try:
+    if conditioinal_dict := subset_dict['conditinal']:
+      subset_str += format_conditional(conditional_dict)
+  except KeyError:
+    pass
+
+  try:
+    if group_dict := subset_dict['group']:
+      subset_str += format_group(group_dict)
+  except KeyError:
+    pass
+
+  try:
+    if class_credit_dict := subset_dict['class_credit_body']:
+      # The value of class_credit_body might be either a dict or a list of dicts.
+      subset_str += format_class_credit(class_credit_dict)
+  except KeyError:
+    pass
 
   if summary:
     return f'<details>{summary}{subset_str}</details>'
