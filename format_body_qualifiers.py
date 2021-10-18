@@ -22,7 +22,7 @@ import sys
 
 import Any
 
-from format_utils import format_class_credit_clause
+from format_utils import format_num_class_credit
 
 DEBUG = os.getenv('DEBUG_QUALIFIERS')
 
@@ -281,7 +281,7 @@ def format_minres(minres_dict: dict) -> str:
   except KeyError:
     display_str = ''
 
-  return (f'{display_str}<p>{format_class_credit_clause(minres_dict)} must be completed in '
+  return (f'{display_str}<p>{format_num_class_credit(minres_dict)} must be completed in '
           f'residence.</p>')
 
 

@@ -164,7 +164,7 @@ def dict_to_html(info: dict, section=None) -> str:
       return f'<p><strong>{label_str}</strong>: Requirement <em>{is_isnot}</em> satisfied</p>'
 
     # Class lists and their qualifiers.
-    cr_str = format_utils.format_class_credit_clause(info)
+    cr_str = format_utils.format_num_class_credit(info)
     if cr_str is None:
       cr_str = ''
     else:

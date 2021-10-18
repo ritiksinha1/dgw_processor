@@ -1,7 +1,8 @@
 #! /usr/local/python3
 
 """ Utilities shared by htmlificization, format_header_productions, and format body_qualifiers.
-      format_class_credit_clause
+      and_list
+      format_num_class_credit
       format_course_list
       format_number
       list_of_courses
@@ -21,9 +22,25 @@ number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', '
                 'ten', 'eleven', 'twelve']
 
 
-# format_class_credit_clause()
+# and_list()
 # -------------------------------------------------------------------------------------------------
-def format_class_credit_clause(cc_dict: dict):
+def and_list(args: list) -> str:
+  """ Given a list of strings, format them into an oxford-comma's and list
+      Does not deal with commas embedded in arg strings.
+  """
+  return_str = ', '.join(args)
+  if len(args) == 2:
+    return_str = return_str.replace(',', ' and')
+  else:
+    point = return_str.rindex(',') + 1
+    return_str = return_str[0:point] + 'and' + return_str[point:]
+
+  return return_str
+
+
+# format_num_class_credit()
+# -------------------------------------------------------------------------------------------------
+def format_num_class_credit(cc_dict: dict):
   """ Format (num_classes | num_credits) clauses, which appear in requirements.
       They have been converted into  min_classes, max_classes, min_credits, max_credits,
       and conjunction keys by dgw_utils.num_class_or_num_credit()

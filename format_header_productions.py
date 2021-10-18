@@ -309,7 +309,7 @@ def _format_minres_head(minres_head_dict: dict) -> str:
       display_str = f'<p>{display_str}</p>'
   except KeyError:
     display_str = ''
-  class_credit_str = format_body_qualifiers.format_class_credit_clause(minres_dict)
+  class_credit_str = format_utils.format_num_class_credit(minres_dict)
   minres_info = f'<p>{class_credit_str} must be completed in residence.</p>'
 
   if label_str:

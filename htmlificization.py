@@ -26,7 +26,7 @@ import html_utils
 # html_utils.to_html
 import format_utils
 # format_utils.class_credit_to_str
-# format_utils.format_class_credit_clause
+# format_utils.format_num_class_credit
 # format_utils.format_course_list
 # format_utils.list_of_courses
 
@@ -81,7 +81,7 @@ def requirement_to_details_element(requirement: dict) -> str:
   if 'is_pseudo' in requirement.keys() and requirement['is_pseudo']:
     requirement_list.append('<p>This requirement does not have a strict credit limit.</p>')
 
-  requirements_str = format_utils.format_class_credit_clause(requirement)
+  requirements_str = format_utils.format_num_class_credit(requirement)
   if requirements_str is None:
     requirements_str = '<span class="error">Missing number of classes/credits information</span>'
 

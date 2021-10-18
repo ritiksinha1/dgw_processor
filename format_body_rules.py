@@ -5,6 +5,8 @@
 import os
 import sys
 
+import Any
+
 if os.getenv('DEBUG_BODY_RULES'):
   DEBUG = True
 else:
@@ -78,9 +80,17 @@ def format_blocktype(blocktype_dict: dict) -> str:
 
 # format_class_credit_body()
 # -------------------------------------------------------------------------------------------------
-def format_class_credit_body(class_credit_body_dict: dict) -> str:
+def format_class_credit_body(class_credit_body_arg: Any) -> str:
   """
   """
+
+  if isinstance(class_credit_body_arg, list):
+    if len(class_credit_body_arg) > 1:
+      return '<p class="error"> List of class/credit requirements not implemented</p>'
+    else:
+      class_credit_body_dict = class_credit_body_arg[0]
+  else:
+    class_credit_body_dict = class_credit_body_arg
 
   try:
     label_str = class_credit_body_dict['label']
@@ -89,7 +99,7 @@ def format_class_credit_body(class_credit_body_dict: dict) -> str:
     summary = None
 
   # There has to be num classes and/or num credits
-  class_credit_str = format_utils.format_class_credit_clause(class_credit_body_dict)
+  class_credit_str = format_utils.format_num_class_credit(class_credit_body_dict)
 
   # There might be pseudo, remark, display, and/or share items. They get shown next as paragraphs.
   try:
@@ -206,7 +216,11 @@ def format_maxperdisc(maxperdisc_dict: dict) -> str:
   except KeyError:
     summary = None
 
-  maxperdisc_str = '<p class="error">Maxperdisc not implemented yet</p>'
+  number = int(max_perdisc_dict['number'])
+  suffix = '' if number == 1 else 's'
+  number_str = number_names[number].lower() if number < len(number_names) else f'{number:,}'
+  discipline_list = and_list(max_perdisc[disciplines])
+  maxperdisc_str = f'<p>No more than {number_str} course{suffix} in {discipline_list} allowed</p>'
 
   if summary:
     return f'<details>{summary}{maxperdisc_str}</details>'
@@ -386,7 +400,7 @@ def format_subset(subset_dict: dict) -> str:
   try:
     if class_credit_dict := subset_dict['class_credit_body']:
       # The value of class_credit_body might be either a dict or a list of dicts.
-      subset_str += format_class_credit(class_credit_dict)
+      subset_str += format_class_credit_body(class_credit_dict)
   except KeyError:
     pass
 
