@@ -2,49 +2,24 @@
 """ Format header productions. Return a formatted string for each type of rule that can appear
     in the header section of a block.
 
-    Note that each production gets only a one-line string value here, suitable for adding to the
-    program_requirements table.
+    Header productions may, optionally, include a label. Header-only productions are marked with an
+    asterisk, and are completely formatted here. The others use helper functions from
+    format_body_productions to handle their non-label parts.
 
-    The productions that end in _head may, optionally, include a label.
-
-head        :
-            ( class_credit_head
-            | conditional_head
-            | lastres_head
-            | maxclass_head
-            | maxcredit_head
-            | maxpassfail_head
-            | maxperdisc_head
-            | maxterm_head
-            | maxtransfer_head
-            | mingpa_head
-            | mingrade_head
-            | minclass_head
-            | mincredit_head
-            | minperdisc_head
-            | minres_head
-            | optional
-            | proxy_advice
-            | remark
-            | share_head
-            | standalone
-            | under
-            )*
-            ;
-
-  These are the ones currently handled: others may need to be added in the future
-        maxclass
-        maxcredit
-        maxpassfail
-        maxperdisc
-        maxtransfer
-        minclass
-        mincredit
-        mingrade
-        mingpa
-        minperdisc
-        minres
-        remark
+      _format_maxclass_head*
+      _format_maxcredit_head*
+      _format_maxpassfail_head
+      _format_maxperdisc_head
+      _format_maxtransfer_head
+      _format_minclass_head
+      _format_mincredit_head
+      _format_mingpa_head
+      _format_mingrade_head
+      _format_minperdisc_head
+      _format_minres_head*
+      _format_share_head
+      _dispatch_production
+      format_header_productions
 """
 
 import os
@@ -54,322 +29,331 @@ import Any
 
 import format_body_qualifiers
 
+import format_utils
+
 DEBUG = os.getenv('DEBUG_HEADER')
 
 
 # Header Qualifier Handlers
 # =================================================================================================
 
-# _format_maxclass()
+# _format_maxclass_head()
 # -------------------------------------------------------------------------------------------------
-def _format_maxclass(maxclass_dict: dict) -> str:
+def _format_maxclass_head(maxclass_head_dict: dict) -> str:
   """
+      maxclass_head : maxclass label?;
+      maxclass.     : MAXCLASS NUMBER course_list? tag?;
+
+      This is a header-only production, so there is no body formatter available.
   """
   if DEBUG:
-    print(f'_format_maxclass({maxpassfail_dict}', file=sys.stderr)
-
-  num_class = int(maxclass_dict.pop('number'))
-  class_suffix = '' if num_class == 1 else 'es'
-  course_list = maxclass_dict.pop('course_list')
-  num_active = len(course_list['active_courses'])
-  active_suffix = '' if num_active == 1 else 's'
-  return (f'No more than {num_class} credit{class_suffix} from a set of {num_active} '
-          f'active course{active_suffix} allowed')
-
-
-# _format_maxcredit()
-# -------------------------------------------------------------------------------------------------
-def _format_maxcredit(maxcredit_dict: dict) -> str:
-  """ When the number is zero, it means "none of" the courses in the list, but when > zero, it
-      really is a maximum. In either case the course list can be very long. We list the number of
-      active courses here.
-  """
-  if DEBUG:
-    print(f'_format_maxcredit({maxcredit_dict}', file=sys.stderr)
-
-  num_credit = float(maxcredit_dict.pop('number'))
-  credit_suffix = '' if num_credit == 1.0 else 's'
-  course_list = maxcredit_dict.pop('course_list')
-  num_active = len(course_list['active_courses'])
-  active_suffix = '' if num_active == 1 else 's'
-  return (f'No more than {num_credit:0.1f} credit{credit_suffix} from a set of {num_active} '
-          f'active course{active_suffix} allowed')
-
-
-# _format_maxpassfail()
-# -------------------------------------------------------------------------------------------------
-def _format_maxpassfail(maxpassfail_dict: dict) -> str:
-  """
-  """
-  if DEBUG:
-    print(f'_format_maxpassfail({maxpassfail_dict}', file=sys.stderr)
-
-  if 'label' in maxpassfail_dict.keys():
-    label_str = maxpassfail_dict['label']
-    print(f'Unhandled label for maxpassfail: {label_str}', file=sys.stderr)
+    print(f'_format_maxclass_head({maxclass_head_dict}', file=sys.stderr)
 
   try:
-    number = float(maxpassfail_dict.pop('number'))
-    class_credit = maxpassfail_dict.pop('class_or_credit')
+    label_str = maxclass_head_dict['label']
+  except KeyError:
+    label_str = None
 
-    if class_credit == 'credit':
-      if number == 0:
-        return 'No credits may be taken pass/fail'
-      suffix = '' if number == 1 else 's'
-      return f'A maximum of {number:0.1f} credit{suffix} may be taken pass/fail'
-    else:
-      if number == 0:
-        return 'No classes may be taken pass/fail'
-      suffix = '' if number == 1 else 'es'
-    return f'A maximum of {number:0} {class_credit}{suffix} may be taken pass/fail'
-  except KeyError as ke:
-    return f'Error: invalid MaxPassFail {ke} {maxpassfail_dict}'
-  except ValueError as ve:
-    return f'Error: invalid MaxPassFail {ve} {maxpassfail_dict}'
+  maxclass_dict = maxclass_head_dict['maxclass']
+  number_str, is_unity = format_utils.format_number(maxclass_dict['number'], is_int=True)
+  suffix = '' if is_unity else 'es'
+  if number_str == '0':
+    maxclass_str = 'Zero classes allowed'
+  else:
+    maxclass_str = f'No more than {number_str} class{suffix} allowed'
+  if course_list := format_utils.format_course_list(maxclass_dict['course_list']):
+    maxclass_str = (f'<details><summary>{maxclass_str} in the following courses:</summary>'
+                    f'{course_list}</details>')
+  else:
+    maxclass_str = f'<p>{maxclass_str}</p>'
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{maxclass_str}</details>'
+  else:
+    return maxclass_str
+
+
+# _format_maxcredit_head()
+# -------------------------------------------------------------------------------------------------
+def _format_maxcredit_head(maxcredit_head_dict: dict) -> str:
+  """
+      maxcredit_head : maxcredit label?;
+      maxcredit.     : MAXCREDIT NUMBER course_list? tag?;
+
+      This is a header-only production, so there is no body formatter available.
+  """
+  if DEBUG:
+    print(f'_format_maxcredit_head({maxcredit_head_dict}', file=sys.stderr)
+
+  try:
+    label_str = maxcredit_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  maxcredit_dict = maxcredit_head_dict['maxcredit']
+
+  # Number of maxcredits can be a range (weird)
+  number_str, is_unity = format_utils.format_number(maxcredit_dict['number'], is_int=False)
+  suffix = '' if is_unity else 's'
+  if number_str == '0.00':
+    maxcredit_str = 'No credits allowed'
+  else:
+    maxcredit_str = f'No more than {number_str} credit{suffix} allowed'
+
+  if course_list_str := format_utils.format_course_list(maxcredit_dict['course_list']):
+    maxcredit_str = (f'<details><summary>{maxcredit_str} in the following courses:</summary>'
+                     f'{course_list_str}</details>')
+  else:
+    max_credit_str = f'<p>{max_credit_str}</p>'
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{maxcredit_info}</details>'
+  else:
+    return maxcredit_str
+
+
+# _format_maxpassfail_head()
+# -------------------------------------------------------------------------------------------------
+def _format_maxpassfail_head(maxpassfail_head_dict: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'_format_maxpassfail_head({maxpassfail_head_dict}', file=sys.stderr)
+
+  try:
+    label_str = maxpassfail_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  maxpassfail_dict = maxpassfail_head_dict['maxpassfail']
+  maxpassfail_info = format_body_qualifiers.format_maxpassfail(maxpassfail_dict)
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{maxpassfail_info}<details>'
+  else:
+    return f'<p>{maxpassfail_info}</p>'
 
 
 # _format_maxperdisc()
 # -------------------------------------------------------------------------------------------------
-def _format_maxperdisc(maxperdisc_dict: dict) -> str:
-  """ {'number': production_ctx.NUMBER().getText(),
-       'class_credit': class_credit,
-       'disciplines': disciplines}
+def _format_maxperdisc_head(maxperdisc_head_dict: dict) -> str:
+  """
   """
   if DEBUG:
-    print(f'*** _format_maxperdisc({maxperdisc_dict=})', file=sys.stderr)
-
-  if 'label' in maxperdisc_dict.keys():
-    label_str = maxperdisc_dict['label']
-    print(f'Unhandled label for maxperdisc: {label_str}', file=sys.stderr)
+    print(f'*** _format_maxperdisc_head({maxperdisc_head_dict=})', file=sys.stderr)
 
   try:
-    class_credit = maxperdisc_dict.pop('class_or_credit').lower()
-    number = maxperdisc_dict.pop('number')
-    if class_credit == 'class':
-      number = int(number)
-      suffix = '' if number == 1 else 's'
-    elif class_credit == 'credit':
-      number = float(number)
-      suffix = '' if number == 1.0 else 'es'
-    else:
-      number = float('NaN')
-      suffix = 'x'
-    disciplines = sorted(maxperdisc_dict.pop('disciplines'))
-    return f'No more than {number} {class_credit}{suffix} in ({", ".join(disciplines)})'
-  except KeyError as ke:
-    return f'Error: invalid MaxPerDisc {ke} {maxperdisc_dict}'
-  except ValueError as ve:
-    return f'Error: invalid MaxPerDisc {ve} {maxperdisc_dict}'
+    label_str = maxperdisc_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  maxperdisc_dict = maxperdisc_head_dict['maxperdisc']
+  maxperdisc_info = format_body_qualifiers.format_maxperdisc(maxperdisc_dict)
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{maxperdisc_info}<details>'
+  else:
+    return f'<p>{maxperdisc_info}</p>'
 
 
 # _format_maxtransfer()
 # -------------------------------------------------------------------------------------------------
-def _format_maxtransfer(maxtransfer_dict: dict) -> str:
-  """ {'number': production_ctx.NUMBER().getText(),
-       'class_credit': class_credit,
-       'disciplines': disciplines}
+def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
+  """
   """
   if DEBUG:
-    print(f'_format_maxtransfer({maxtransfer_dict}', file=sys.stderr)
-
-  if 'label' in maxtransfer_dict.keys():
-    label_str = maxtransfer_dict['label']
-    print(f'Unhandled label for maxtransfer: {label_str}', file=sys.stderr)
-
-  number = float(maxtransfer_dict.pop('number'))
-  class_credit = maxtransfer_dict.pop('class_credit').lower()
-  suffix = ''
-  if number != 1:
-    suffix = 's' if class_credit == 'credit' else 'es'
-
-  number_str = f'{number:0.1f}' if class_credit == 'credit' else f'{int(number)}'
-
-  discipline_str = ''
-  try:
-    disciplines = maxtransfer_dict.pop('disciplines')
-    if len(disciplines) > 0:
-      discipline_str = ' in ' + ', '.join(disciplines)
-  except KeyError as ke:
-    pass
-
-  return f'No more than {number_str} transfer {class_credit}{suffix}{discipline_str} allowed'
-
-
-# _format_minclass()
-# -------------------------------------------------------------------------------------------------
-def _format_minclass(minclass_dict: dict) -> str:
-  """ dict_keys(['number', 'course_list'])
-  """
-  if DEBUG:
-    print(f'*** _format_minclass({minclass_dict=})', file=sys.stderr)
-
-  if 'label' in minclass_dict.keys():
-    label_str = minclass_dict['label']
-    print(f'Unhandled label for minclass: {label_str}', file=sys.stderr)
+    print(f'_format_maxtransfer_head({maxtransfer_head_dict}', file=sys.stderr)
 
   try:
-    number = int(minclass_dict.pop('number'))
-    if number < 1:
-      raise ValueError('MinClass with minimum less than 1.')
-    suffix = '' if number == 1 else 'es'
-    return f'At least  {number} class{suffix} required'
-  except ValueError as ve:
-    return f'Error: Invalid MinClass {ve} {minclass_dict=}'
-  except KeyError as ke:
-    return f'Error: Invalid MinClass {ke} {minclass_dict=}'
+    label_str = maxtransfer_head_dict['label']
+  except KeyError:
+    label_str = None
 
+  maxtransfer_dict = maxtransfer_head_dict['maxtransfer']
+  maxtransfer_info = format_body_qualifiers.format_maxtransfer(maxtransfer_dict)
 
-# _format_mincredit()
-# -------------------------------------------------------------------------------------------------
-def _format_mincredit(mincredit_dict: dict) -> str:
-  """ dict_keys(['number', 'course_list'])
-      We don't show the course_list here; that will or won't happen depending on the application.
-  """
-  if DEBUG:
-    print(f'_format_mincredit({mincredit_dict}', file=sys.stderr)
-
-  if 'label' in mincredit_dict.keys():
-    label_str = mincredit_dict['label']
-    print(f'Unhandled label for mincredit: {label_str}', file=sys.stderr)
-
-  number = float(mincredit_dict.pop('number'))
-  suffix = '' if number == 1.0 else 's'
-  return f'At least {number:0.1f} credit{suffix} required'
-
-
-# _format_mingpa()
-# -------------------------------------------------------------------------------------------------
-def _format_mingpa(mingpa_dict: dict) -> str:
-  """ MINGPA NUMBER (course_list | expression)? tag? display* label?
-      We don't show a course_list here; that will or won't happen depending on the application.
-  """
-  if DEBUG:
-    print(f'*** _format_mingpa({mingpa_dict=})', file=sys.stderr)
-  number = float(mingpa_dict.pop('number'))
-  # But if there is an expression, do embed that in the response string.
-  try:
-    expression = f' {mingpa_dict.pop("expression").strip()} '
-  except KeyError as ke:
-    expression = ' '
-  return f'Minimum GPA of {number:0.2f}{expression}required'
-
-
-# _format_minperdisc()
-# -------------------------------------------------------------------------------------------------
-def _format_minperdisc(minperdisc_dict: dict) -> str:
-  """ {'number': production_ctx.NUMBER().getText(),
-       'class_credit': class_credit,
-       'disciplines': disciplines}
-  """
-  if DEBUG:
-    print(f'_format_minperdisc({minperdisc_dict}', file=sys.stderr)
-
-  if 'label' in minperdisc_dict.keys():
-    label_str = minperdisc_dict['label']
-    print(f'Unhandled label for minperdisc: {label_str}', file=sys.stderr)
-
-  number = float(minperdisc_dict.pop('number'))
-  class_credit = minperdisc_dict.pop('class_credit').lower()
-  suffix = ''
-  if number != 1:
-    suffix = 's' if class_credit == 'credit' else 'es'
-
-  number_str = f'{number:0.1f}' if class_credit == 'credit' else f'{int(number)}'
-
-  discipline_str = ''
-  try:
-    disciplines = minperdisc_dict.pop('disciplines')
-    if len(disciplines) > 0:
-      discipline_str = ' in ' + ', '.join(disciplines)
-  except KeyError as ke:
-    pass
-
-  return f'No more than {number_str} {class_credit}{suffix}{discipline_str} allowed'
-
-
-# _format_minres()
-# -------------------------------------------------------------------------------------------------
-def _format_minres(minres_dict: dict) -> str:
-  """  {'minres': {'allow_classes': None,
-                   'allow_credits': None,
-                   'conjunction': None,
-                   'label': None,
-                   'max_classes': None,
-                   'max_credits': 41.0,
-                   'min_classes': None,
-                   'min_credits': 41.0}},
-  """
-  if DEBUG:
-    print(f'_format_minres({minres_dict}', file=sys.stderr)
-
-  conjunction = minres_dict.pop('conjunction')
-  label = minres_dict.pop('label')
-  if label is not None:
-    label_str = f'{label}: '
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{maxtransfer_info}<details>'
   else:
-    label_str = ''
-  min_classes = minres_dict.pop('min_classes')
-  max_classes = minres_dict.pop('max_classes')
-  min_credits = minres_dict.pop('min_credits')
-  max_credits = minres_dict.pop('max_credits')
-
-  if min_classes is not None:
-    if min_classes == max_classes:
-      num_classes = min_classes
-    else:
-      num_classes = f'between {min_classes} and {max_classes}'
-  else:
-    num_classes = None
-  if min_credits is not None:
-    if min_credits == max_credits:
-      num_credits = min_credits
-    else:
-      num_credits = f'between {min_credits} and {max_credits}'
-  else:
-    num_credits = None
-
-  if num_classes is not None and num_credits is not None:
-    return (f'{label_str}At least {num_classes} classes {conjunction} {num_credits} must be '
-            f'taken in residence')
-  if num_classes:
-    return f'{label_str}At least {num_classes} classes must be taken in residence'
-  if num_credits:
-    return f'{label_str}At least {num_credits} credits must be taken in residence'
-  return 'Error: MinRes with neither classes nor credits specified.'
+    return f'<p>{maxtransfer_info}</p>'
 
 
-# _format_share()
+# _format_minclass_head()
 # -------------------------------------------------------------------------------------------------
-def _format_share(share_dict: dict) -> str:
+def _format_minclass_head(minclass_head_dict: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'*** _format_minclass_head({minclass_head_dict=})', file=sys.stderr)
+
+  try:
+    label_str = minclass_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  minclass_dict = minclass_head_dict['minclass']
+  minclass_info = format_body_qualifiers.format_minclass(minclass_dict)
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{minclass_info}<details>'
+  else:
+    return f'<p>{minclass_info}</p>'
+
+
+# _format_mincredit_head()
+# -------------------------------------------------------------------------------------------------
+def _format_mincredit_head(mincredit_head_dict: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'_format_mincredit_head({mincredit_head_dict}', file=sys.stderr)
+
+  try:
+    label_str = mincredit_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  mincredit_dict = mincredit_head_dict['mincredit']
+  mincredit_info = format_body_qualifiers.format_mincredit(mincredit_dict)
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{mincredit_info}<details>'
+  else:
+    return f'<p>{mincredit_info}<.p>'
+
+
+# _format_mingpa_head()
+# -------------------------------------------------------------------------------------------------
+def _format_mingpa_head(mingpa_head_dict: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'*** _format_mingpa_head({mingpa_head_dict})', file=sys.stderr)
+
+  try:
+    label_str = mingpa_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  mingpa_dict = mingpa_head_dict['mingpa']
+  mingpa_info = format_body_qualifiers.format_mingpa(mingpa_dict)
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{mingpa_info}<details>'
+  else:
+    return f'<p>{mingpa_info}</p>'
+
+
+# _format_mingrade_head()
+# -------------------------------------------------------------------------------------------------
+def _format_mingrade_head(mingrade_head_dict: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'*** _format_mingrade_head({mingrade_head_dict})', file=sys.stderr)
+
+  try:
+    label_str = mingrade_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  mingrade_dict = mingrade_head_dict['mingrade']
+  mingrade_info = format_body_qualifiers.format_mingrade(mingrade_dict)
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{mingrade_info}<details>'
+  else:
+    return f'<p>{mingrade_info}</p>'
+
+
+# _format_minperdisc_head()
+# -------------------------------------------------------------------------------------------------
+def _format_minperdisc_head(minperdisc_head_dict: dict) -> str:
+  """
+  """
+  if DEBUG:
+    print(f'_format_minperdisc_head({minperdisc_head_dict}', file=sys.stderr)
+
+  try:
+    label_str = minperdisc_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  minperdisc_dict = minperdisc_head_dict['minperdisc']
+  minperdisc_info = format_body_qualifiers.format_minperdisc(minperdisc_dict)
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{minperdisc_info}<details>'
+  else:
+    return f'<p>{minperdisc_info}</p>'
+
+
+# _format_minres_head()
+# -------------------------------------------------------------------------------------------------
+def _format_minres_head(minres_head_dict: dict) -> str:
+  """
+      minres_head : minres label?;
+      minres.     : MINRES (num_classes | num_credits) display* tag?;
+  """
+  if DEBUG:
+    print(f'_format_minres_head({minres_head_dict}', file=sys.stderr)
+
+  try:
+    label_str = minres_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  minres_dict = minres_head_dict['minres']
+  try:
+    if display_str := minres_dict['display']:
+      display_str = f'<p>{display_str}</p>'
+  except KeyError:
+    display_str = ''
+  class_credit_str = format_utils.format_num_class_credit(minres_dict)
+  minres_info = f'<p>{class_credit_str} must be completed in residence.</p>'
+
+  if label_str:
+    return f'<details>{display_str}<summary>{label_str}</summary>{minres_info}<details>'
+  else:
+    return f'{display_str}{minres_info}'
+
+
+# _format_share_head()
+# -------------------------------------------------------------------------------------------------
+def _format_share_head(share_head_dict: dict) -> str:
   """ share_header : share label?;
-      Template: “[{label}: ]{num class_credit(s)} {Mm}ay {not} be shared {with expression requirements}”
   """
   if DEBUG:
-    print(f'_format_share({share_dict})', file=sys.stderr)
+    print(f'_format_share_head({share_head_dict})', file=sys.stderr)
 
-  label_str = ''
-  if 'label' in share_dict.keys():
-    label_text = share_dict.pop('label')
-    if label_text:
-      label_str = f'{label_text}: '
+  try:
+    label_str = share_head_dict['label']
+  except KeyError:
+    label_str = None
 
-  return f'{label_str}{format_body_qualifiers._format_share(share_dict)}'
+  share_dict = share_head_dict['share']
+  share_info = format_body_qualifiers.format_share(share_dict)
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{share_info}<details>'
+  else:
+    return f'<p>{share_info}</p>'
 
 
-# dispatch()
+# dispatch_table {}
 # -------------------------------------------------------------------------------------------------
-dispatch_table = {'maxclass': _format_maxclass,
-                  'maxcredit': _format_maxcredit,
-                  'maxpassfail_head': _format_maxpassfail,
-                  'maxperdisc_head': _format_maxperdisc,
-                  'maxtransfer_head': _format_maxtransfer,
-                  'mingpa_head': _format_mingpa,
-                  'mingrade_head': format_body_qualifiers._format_mingrade,
-                  'minclass_head': _format_minclass,
-                  'mincredit_head': _format_mincredit,
-                  'minperdisc_head': _format_minperdisc,
-                  'minres_head': _format_minres,
-                  'share_head': _format_share
+dispatch_table = {'maxclass_head': _format_maxclass_head,
+                  'maxcredit_head': _format_maxcredit_head,
+                  'maxpassfail_head': _format_maxpassfail_head,
+                  'maxperdisc_head': _format_maxperdisc_head,
+                  'maxtransfer_head': _format_maxtransfer_head,
+                  'mingpa_head': _format_mingpa_head,
+                  'mingrade_head': _format_mingrade_head,
+                  'minclass_head': _format_minclass_head,
+                  'mincredit_head': _format_mincredit_head,
+                  'minperdisc_head': _format_minperdisc_head,
+                  'minres_head': _format_minres_head,
+                  'share_head': _format_share_head
                   }
 
 
@@ -396,8 +380,9 @@ def format_header_productions(node: dict) -> list:
 
   production_strings = []
   for production in dispatch_table.keys():
-    production_info = _dispatch_production(production, node.pop(production))
-    if production_info is not None:
-      production_strings.append(production_info)
+    if production in node.keys():
+      production_info = _dispatch_production(production, node.pop(production))
+      if production_info is not None:
+        production_strings.append(production_info)
 
   return production_strings

@@ -24,6 +24,8 @@ from dgw_utils import class_name,\
 from traceback import print_stack
 from pprint import pprint
 
+from pgconnection import PgConnection
+
 DEBUG = os.getenv('DEBUG_HANDLERS')
 
 # Handlers
@@ -90,7 +92,7 @@ def class_credit_head(ctx, institution, requirement_id):
       num_credits         : NUMBER CREDIT allow_clause?;
       allow_clause        : LP allow NUMBER RP;
 
-      Note: header_tag is used only for audit presentation, and is ignored here.
+      Note: header_tag and allow are used only for audit presentation, and are ignored here.
 """
   return_dict = num_class_or_num_credit(ctx)
 
@@ -108,24 +110,17 @@ def class_credit_head(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def class_credit_body(ctx, institution, requirement_id):
   """
-      class_credit_body   : (num_classes | num_credits)
-                            (logical_op (num_classes | num_credits))? course_list_body?
-                            (IS? pseudo
-                             | display
-                             | proxy_advice
-                             | remark
-                             | rule_tag
-                             | share
-                             | tag
-                            )*
-                            label?;
+      class_credit_body : (num_classes | num_credits)
+                          (logical_op (num_classes | num_credits))? course_list_body?
+                          (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label
+                          | tag )*
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
 
       course_list_body    : course_list ( qualifier tag? | proxy_advice )*;
 
-    Ignore rule_tag and tag.
+    Ignore proxy_advice, rule_tag and tag.
   """
   if DEBUG:
     print(f'*** class_credit_body({class_name(ctx)=}, {institution=}, {requirement_id=})',
@@ -137,8 +132,9 @@ def class_credit_body(ctx, institution, requirement_id):
     if qualifiers := get_qualifiers(ctx.course_list_body().qualifier(),
                                     institution, requirement_id):
       return_dict.update(qualifiers)
-    return_dict.update(build_course_list(ctx.course_list_body().course_list(),
-                                         institution, requirement_id))
+
+    return_dict['course_list'] = build_course_list(ctx.course_list_body().course_list(),
+                                                   institution, requirement_id)
 
   if ctx.pseudo():
     return_dict['is_pseudo'] = True
@@ -160,13 +156,7 @@ def class_credit_body(ctx, institution, requirement_id):
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  if DEBUG:
-    print('    class_credit_body() returns the following dict keys', file=sys.stderr)
-    print('    ', context_path(ctx), list(return_dict.keys()), file=sys.stderr)
-    if 'course_list' in return_dict.keys():
-      print('    ', return_dict['course_list']['scribed_courses'], file=sys.stderr)
-
-  return {'class_credit_body': return_dict}
+  return {'class_credit': return_dict}
 
 
 # conditional_head()
@@ -277,7 +267,8 @@ def conditional_body(ctx, institution, requirement_id):
       print(f'*** conditional_body({class_name(ctx)}, {institution}. {requirement_id})',
             file=sys.stderr)
 
-  return_dict = dict()
+  return_dict = {'label': ctx.label()}
+
   condition = expression_to_str(ctx.expression())
   return_dict['condition'] = condition
 
@@ -286,8 +277,6 @@ def conditional_body(ctx, institution, requirement_id):
     return_dict['concentrations'] = concentration_list(condition,
                                                        institution,
                                                        requirement_id)
-
-  return_dict['label'] = get_label(ctx)
 
   if qualifiers := get_qualifiers(ctx, institution, requirement_id):
     return_dict.update(qualifiers)
@@ -330,10 +319,55 @@ def copy_rules(ctx, institution, requirement_id):
     if class_name(context) == 'Expression':
       return_dict['requirement_id'] = f'{context.getText().strip().upper()}'
 
-  assert 'requirement_id' in return_dict.keys(), (f'Assertion Error: no requirement_id in '
-                                                  f'({ctx.expression().getText()}) in copy_rules()')
+  # Look up the block_type and block_value, and build a link to the specified block if possible.
+  conn = PgConnection()
+  cursor = conn.cursor()
+  cursor.execute(f"""
+  select block_type, block_value, period_stop
+    from requirement_blocks
+   where institution = '{institution}'
+     and requirement_id = '{requirement_id}'
+  """)
+  if cursor.rowcount == 0:
+    return_dict['error'] = (f'“Missing {requirement_id}” for {institution}')
+  else:
+    row = cursor.fetchone()  # There cannot be mnore than one requrement block per requirement id
+    block_type = row.block_type
+    block_value = row.block_value
+    if row.period_stop.startswith('9'):
+      return_dict['block_type'] = block_type
+      return_dict['block_value'] = block_value
+    else:
+      return_dict['error'] = (f'{requirement_id} {block_type} {block_block} not current for '
+                              f'{institution}')
+  conn.close()
 
   return {'copy_rules': return_dict}
+
+
+# course_list_body()
+# -------------------------------------------------------------------------------------------------
+def course_list_body(ctx: Any, institution: str, requirement_id: str) -> dict:
+  """
+    In the body, a bare course list (presumably followed by a label) can serve as a requirement,
+    with the implicit assumption that all courses in the list are required.
+
+    CSI01 RA 000544 is the only block observed to use this feature!
+
+    course_list_body  : course_list (qualifier tag? | proxy_advice | remark)* label?;
+    course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
+  """
+  return_dict = {'label': get_label(ctx),
+                 'course_list': build_course_list(ctx.course_list(), institution, requirement_id)}
+  if ctx.qualifier():
+    return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
+
+  if ctx.remark():
+    return_dict['remark'] = ' '.join([s.getText().strip(' "')
+                                     for c in ctx.remark()
+                                     for s in c.string()])
+
+  return {'course_list_body': return_dict}
 
 
 # group_requirement()
@@ -394,6 +428,8 @@ group             : LP
 # -------------------------------------------------------------------------------------------------
 def header_tag(ctx, institution, requirement_id):
   """ header_tag  : (HEADER_TAG nv_pair)+;
+      Unused function.
+      Header tags are currently ignored, but this method will handle them if that ever changes!
   """
   if DEBUG:
     print(f'*** header_tag({class_name(ctx)}, {institution}. {requirement_id})',
@@ -419,7 +455,8 @@ def header_tag(ctx, institution, requirement_id):
 def rule_tag(ctx, institution, requirement_id):
   """ rule_tag  : (RULE_TAG nv_pair)+;
       nv_pair   : SYMBOL '=' (STRING | SYMBOL);
-
+      Unused function.
+      Rule tags are currently ignored, but this method will handle them if that ever changes!
   """
   if DEBUG:
     print(f'*** rule_tag({class_name(ctx)}, {institution}. {requirement_id})',
@@ -495,6 +532,8 @@ def lastres_head(ctx, institution, requirement_id):
 def maxclass(ctx, institution, requirement_id):
   """
       maxclass        : MAXCLASS NUMBER course_list? tag?;
+
+      This is actually only a header production
   """
   if DEBUG:
     print(f'*** maxclass({class_name(ctx)}, {institution}. {requirement_id})',
@@ -520,7 +559,7 @@ def maxclass_head(ctx, institution, requirement_id):
   if label_str := get_label(ctx):
     return_dict['label'] = label_str
 
-  maxclass_ctx = ctx.maxclass() if class_name(ctx) == 'Maxclass_head' else ctx
+  maxclass_ctx = ctx.maxclass()
 
   return_dict.update(maxclass(maxclass_ctx, institution, requirement_id))
 
@@ -533,6 +572,8 @@ def maxcredit(ctx, institution, requirement_id):
   """
       maxcredit_head  : maxcredit label?;
       maxcredit       : MAXCREDIT NUMBER course_list? tag?;
+
+      This is actually only a header production
   """
   if DEBUG:
     print(f'*** maxcredit({class_name(ctx)}, {institution}. {requirement_id})',
@@ -925,6 +966,8 @@ def minperdisc_head(ctx, institution, requirement_id):
 def minres(ctx, institution, requirement_id):
   """
       minres      : MINRES (num_classes | num_credits) display* tag?;
+
+      This is actually only a header production
   """
   if DEBUG:
     print(f'*** minres({class_name(ctx)}, {institution}. {requirement_id})',
@@ -1149,7 +1192,7 @@ def subset(ctx, institution, requirement_id):
                           | blocktype
                           | class_credit_body
                           | copy_rules
-                          | course_list
+                          | course_list_body
                           | group_requirement
                           | noncourse
                           | rule_complete
@@ -1160,7 +1203,6 @@ def subset(ctx, institution, requirement_id):
   if DEBUG:
     print(f'*** subset({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
-
   return_dict = dict()
 
   if ctx.conditional_body():
@@ -1176,17 +1218,17 @@ def subset(ctx, institution, requirement_id):
 
   if ctx.class_credit_body():
     # Return a list of class_credit dicts
-    return_dict['requirements'] = [class_credit_body(context, institution, requirement_id)
-                                   for context in ctx.class_credit_body()]
+    return_dict['class_credit_body'] = [class_credit_body(context, institution, requirement_id)
+                                        for context in ctx.class_credit_body()]
 
   if ctx.copy_rules():
     assert len(ctx.copy_rules()) == 1, (f'Assertion Error: {len(ctx.copy_rules())} '
                                         f'is not unity in subset')
     return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
 
-  if ctx.course_list():
+  if ctx.course_list_body():
     return_dict['course_lists'] = [build_course_list(context, institution, requirement_id)
-                                   for context in ctx.course_list()]
+                                   for context in ctx.course_list_body()]
 
   if ctx.group_requirement():
     return_dict.update(group_requirement(ctx.group_requirement(), institution, requirement_id))
@@ -1268,44 +1310,21 @@ dispatch_header = {'class_credit_head': class_credit_head,
                    'under': under
                    }
 
-# 'class_credit_head': class_credit_head,
-# 'conditional_head': conditional_head,
-# 'header_tag': header_tag,
-# 'lastres_head': lastres,
-# 'maxclass_head': maxclass,
-# 'maxcredit_head': maxcredit,
-# 'maxpassfail_head': maxpassfail,
-# 'maxperdisc_head': maxperdisc,
-# 'maxterm_head': maxterm,
-# 'maxtransfer_head': maxtransfer,
-# 'minclass_head': minclass_head,
-# 'mincredit_head': mincredit_head,
-# 'mingpa_head': mingpa,
-# 'mingrade_head': mingrade,
-# 'minperdisc_head': minperdisc_head,
-# 'minres_head': minres,
-# 'optional': optional,
-# 'proxy_advice': proxy_advice,
-# 'remark': remark,
-# 'share_head': share_head,
-# 'standalone': standalone,
-# 'under': under
-
-dispatch_body = {
-    'block': block,
-    'blocktype': blocktype,
-    'class_credit_body': class_credit_body,
-    'copy_rules': copy_rules,
-    'group_requirement': group_requirement,
-    'conditional_body': conditional_body,
-    'maxperdisc': maxperdisc,
-    'noncourse': noncourse,
-    'proxy_advice': proxy_advice,
-    'remark': remark,
-    'rule_complete': rule_complete,
-    'rule_tag': rule_tag,
-    'subset': subset
-}
+dispatch_body = {'block': block,
+                 'blocktype': blocktype,
+                 'class_credit_body': class_credit_body,
+                 'course_list_body': course_list_body,
+                 'copy_rules': copy_rules,
+                 'group_requirement': group_requirement,
+                 'conditional_body': conditional_body,
+                 'maxperdisc': maxperdisc,
+                 'noncourse': noncourse,
+                 'proxy_advice': proxy_advice,
+                 'remark': remark,
+                 'rule_complete': rule_complete,
+                 'rule_tag': rule_tag,
+                 'subset': subset
+                 }
 
 
 # dispatch()

@@ -41,8 +41,8 @@ grammar ReqBlock;
  * The body contains _rules_ that specify what courses must be taken to satisfy the block’s
  * requirements.
  */
-req_block   : .*? BEGIN head (SEMICOLON body)? ENDOT .*? EOF;
-head        :
+req_block   : .*? BEGIN header (SEMICOLON body)? ENDOT .*? EOF;
+header      :
             ( class_credit_head
             | conditional_head
             | lastres_head
@@ -52,10 +52,10 @@ head        :
             | maxperdisc_head
             | maxterm_head
             | maxtransfer_head
-            | mingpa_head
-            | mingrade_head
             | minclass_head
             | mincredit_head
+            | mingpa_head
+            | mingrade_head
             | minperdisc_head
             | minres_head
             | optional
@@ -66,11 +66,13 @@ head        :
             | under
             )*
             ;
+
 body        :
             ( block
             | blocktype
             | class_credit_body
             | conditional_body
+            | course_list_body
             | copy_rules
             | group_requirement
             | label
@@ -81,6 +83,7 @@ body        :
             | subset
             )*
             ;
+
 
 /* Grammar convention: Kleene Star is used in the usual "zero or more" sense, but also to allow
  * elements to appear in any order. Thus, (a | b)* accepts a, b, ab, and ba. Both a and b will
@@ -101,8 +104,7 @@ body        :
  *
  * The trick is to determine where each type of bracket might appear.
  */
-course_list     : course_item (and_list | or_list)? (except_list | include_list)*
-                  proxy_advice? label?;
+course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
 full_course     : discipline catalog_number with_clause*;   // Used only in expressions
 course_item     : area_start? discipline? catalog_number with_clause* area_end?;
 and_list        : (list_and area_end? course_item)+ ;
@@ -117,20 +119,7 @@ discipline      : symbol
                 | BLOCK
                 | IS;
 
-/* The following list was intended to differentiate course list qualifiers from separate properties
- * in the head, where these same items can be used in course lists in the body. But it looks like
- * they are not needed: course lists in the head seem never to be qualified. Given the Ellucian
- * documentation, there remains a bit of confusion here on my part. 2020-10-05 */
-course_list_head_qualifier : maxspread
-                           | mingpa
-                           | mingrade
-                           | minspread
-                           | header_tag
-                           | samedisc
-                           | share
-                           ;
-
-course_list_body  : course_list (qualifier tag? | proxy_advice )*;
+course_list_body  : course_list (qualifier tag? | proxy_advice | remark)* label?;
 
 qualifier         : maxpassfail
                   | maxperdisc
@@ -151,19 +140,24 @@ qualifier         : maxpassfail
 
 //  conditional
 //  -----------------------------------------------------------------------------------------------
+/*  Observed anomaly: the documentation says that the begin_if/end_if brackets are optional when
+ *. an if or end_if body has only a single rule. Howerver, we see blocks where they are omitted
+ *  with multiple rules before the ELSE clause. We treat those blocks as un-parsable and quarantine
+ *. them.
+ */
 begin_if          : BEGINIF | BEGINELSE;
 end_if            : ENDIF | ENDELSE;
 
 conditional_head  : IF expression THEN (head_rule | head_rule_group )
-                    (proxy_advice | label)* else_head?;
+                    (proxy_advice)* label? else_head?;
 else_head         : ELSE (head_rule | head_rule_group)
                     (proxy_advice | label)*;
 head_rule_group   : (begin_if head_rule+ end_if);
-head_rule         : conditional_head
-                  | block
+head_rule         : block
                   | blocktype
                   | class_credit_head
                   | copy_rules
+                  | conditional_head
                   | lastres_head
                   | maxclass_head
                   | maxcredit_head
@@ -185,23 +179,22 @@ head_rule         : conditional_head
                   ;
 
 conditional_body  : IF expression THEN (body_rule | body_rule_group)
-                    qualifier* label? else_body?;
+                    (qualifier tag? | proxy_advice | remark)* label? else_body?;
 else_body         : ELSE (body_rule | body_rule_group)
-                    qualifier* label?;
+                    (qualifier tag? | proxy_advice | remark)* label?;
 body_rule_group : (begin_if body_rule+ end_if);
 
 body_rule       : conditional_body
                 | block
                 | blocktype
                 | class_credit_body
+                | course_list_body
                 | copy_rules
                 | group_requirement
-/*                | maxcredit this is supposed to be a header production only */
                 | maxtransfer
                 | minclass
                 | mincredit
                 | mingrade
-/*                | minres this is supposed to be a header production only */
                 | noncourse
                 | proxy_advice
                 | remark
@@ -214,17 +207,17 @@ body_rule       : conditional_body
 //  -----------------------------------------------------------------------------------------------
 /*  Body Only: n of m groups required
  */
-group_requirement : NUMBER GROUP groups qualifier* label? ;
+group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark)* label? ;
 groups            : group (logical_op group)*; // But only OR should occur
 group             : LP
                   (block
                    | blocktype
-                   | course_list
                    | class_credit_body
+                   | course_list_body
                    | group_requirement
                    | noncourse
                    | rule_complete)
-                  qualifier* label?
+                  (qualifier tag? | proxy_advice | remark)* label?
                   RP
                 ;
 
@@ -236,12 +229,12 @@ subset            : BEGINSUB
                     | blocktype
                     | class_credit_body
                     | copy_rules
-                    | course_list
+                    | course_list_body
                     | group_requirement
                     | noncourse
                     | rule_complete
                   )+
-                  ENDSUB qualifier* (remark | label)*;
+                  ENDSUB (qualifier tag? | proxy_advice | remark)* label?;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
@@ -258,12 +251,12 @@ allow_clause        : LP allow NUMBER RP;
 
 class_credit_head : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))?
-                  (IS? pseudo | display | proxy_advice | header_tag | label | tag)*
+                  (IS? pseudo | display | proxy_advice | header_tag | tag)* label?
                   ;
 
 class_credit_body : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))? course_list_body?
-                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )*
+                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )* label?
                   ;
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
@@ -297,8 +290,8 @@ display         : DISPLAY string SEMICOLON?;
 header_tag      : (HEADER_TAG nv_pair)+;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice?;
-maxclass        : MAXCLASS NUMBER course_list? tag? label?;
-maxcredit       : MAXCREDIT NUMBER course_list? tag? label?;
+maxclass        : MAXCLASS NUMBER course_list? tag?;
+maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 
 maxpassfail     : MAXPASSFAIL NUMBER class_or_credit tag?;
 maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;

@@ -170,12 +170,12 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
         parser.addErrorListener(DGW_ErrorListener())
         parse_tree = parser.req_block()
 
-        # Walk the head and body parts of the parse tree, interpreting the parts to be saved.
+        # Walk the header and body parts of the parse tree, interpreting the parts to be saved.
         header_list = []
         if DEBUG:
           print('\n*** PARSE HEAD ***', file=debug_file)
 
-        head_ctx = parse_tree.head()
+        head_ctx = parse_tree.header()
         if head_ctx:
           for child in head_ctx.getChildren():
             obj = dispatch(child, institution, row.requirement_id)

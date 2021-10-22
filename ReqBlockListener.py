@@ -17,12 +17,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#head.
-    def enterHead(self, ctx:ReqBlockParser.HeadContext):
+    # Enter a parse tree produced by ReqBlockParser#header.
+    def enterHeader(self, ctx:ReqBlockParser.HeaderContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#head.
-    def exitHead(self, ctx:ReqBlockParser.HeadContext):
+    # Exit a parse tree produced by ReqBlockParser#header.
+    def exitHeader(self, ctx:ReqBlockParser.HeaderContext):
         pass
 
 
@@ -113,15 +113,6 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#discipline.
     def exitDiscipline(self, ctx:ReqBlockParser.DisciplineContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#course_list_head_qualifier.
-    def enterCourse_list_head_qualifier(self, ctx:ReqBlockParser.Course_list_head_qualifierContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#course_list_head_qualifier.
-    def exitCourse_list_head_qualifier(self, ctx:ReqBlockParser.Course_list_head_qualifierContext):
         pass
 
 
