@@ -2,15 +2,15 @@
 """ Convert Lexer and metadata items into JSON elements
 """
 
-from collections import namedtuple
-from typing import List, Set, Dict, Tuple, Optional, Union, Any
-
 import argparse
 import json
 import os
 import sys
 
-from pprint import pprint
+from collections import namedtuple
+from icecream import ic
+from typing import List, Set, Dict, Tuple, Optional, Union, Any
+
 from traceback import print_stack
 
 from Any import ANY
@@ -210,9 +210,9 @@ def get_rules(ctx, institution, requirement_id):
 
   # try:
   #   assert(class_name(ctx).lower()) in ['head_rule', 'body_rule'], (f'Assertion Error: '
-  #                                                                   f'{class_name(ctx).lower()} is '
-  #                                                                   f'not head_rule or body_rule'
-  #                                                                   f' in get_rules')
+  #                                                                   f'{class_name(ctx).lower()} '
+  #                                                                   f'is not head_rule or '
+  #                                                                   f'body_rule in get_rules')
   # except AssertionError as ae:
   #   print(f'{ae}', file=sys.stderr)
   #   print_stack(file=sys.stderr)
@@ -823,24 +823,26 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
           # Either low or high is not in the form: \d+@
           catnum_clause = "catalog_number = ''"  # Will match no courses
     course_query = f"""
-select institution, course_id, offer_nbr, discipline, catalog_number, title,
-       requisites, description, course_status, contact_hours, min_credits, max_credits, designation,
-       replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',')
-       as attributes
-  from cuny_courses
- where institution ~* '{institution}'
-   and discipline {discp_op} '{discipline}'
-   and {catnum_clause}
-   order by discipline, numeric_part(catalog_number)
+        select institution, course_id, offer_nbr, discipline, catalog_number, title,
+               requisites, description, course_status, contact_hours, min_credits, max_credits,
+               designation,
+               replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',') as attributes
+          from cuny_courses
+         where institution ~* '{institution}'
+           and discipline {discp_op} '{discipline}'
+           and {catnum_clause}
+           order by discipline, numeric_part(catalog_number)
               """
     cursor.execute(course_query)
     if cursor.rowcount > 0:
-      all_blanket = True
-      all_writing = True
+      num_blanket = 0
+      num_writing = 0
 
       for row in cursor.fetchall():
-        # skip excluded courses
+        # skip excluded and zero-credit courses
         if (row.discipline, row.catalog_number, ANY) in except_courses:
+          continue
+        if row.max_credits < 0.5:  # Allow for "creative" interpretations of zero.
           continue
         if row.min_credits == row.max_credits:
           credits = f'{row.min_credits:0.1f}'
@@ -850,27 +852,28 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
           active_course_tuple = (row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                  row.title, credits, with_clause)
           active_courses.append(active_course_tuple)
+
+          # Include only active courses in any course areas
           if current_area is not None:
             current_area.append(active_course_tuple)
+
           # Check BKCR and WRIC only for active courses
-          if row.max_credits > 0 and 'BKCR' not in row.attributes:
-            # if all_blanket:
+          if 'BKCR' in row.attributes:
+            # if num_blanket:
             #   print(f'*** wet blanket: {row.course_id} {row.discipline} {row.catalog_number} '
             #         f'{row.max_credits} {row.attributes}', file=sys.stderr)
-            all_blanket = False
-          if 'WRIC' not in row.attributes:
-            all_writing = False
+            num_blanket += 1
+          if 'WRIC' in row.attributes:
+            num_writing += 1
         else:
           inactive_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
                                    row.title, credits, with_clause))
 
-  conn.close()
-
-  if len(active_courses) > 0:
-    if all_blanket:
-      attributes.append('Blanket Credit')
-    if all_writing:
-      attributes.append('Writing Intensive')
+      if (num_active := len(active_courses)) > 0:
+        if num_blanket == num_active:
+          attributes.append('Blanket Credit')
+        if num_writing == num_active:
+          attributes.append('Writing Intensive')
 
   # Clean out any (area_start and area_end) strings from the scribed_courses list
   return_dict['scribed_courses'] = [item for item in return_dict['scribed_courses']
@@ -889,6 +892,8 @@ select institution, course_id, offer_nbr, discipline, catalog_number, title,
   # of wildcard(s). It’s an OR list.
   if len(active_courses) > 1 and list_type is None:
     return_dict['list_type'] = 'OR'
+
+  conn.close()
 
   return {'course_list': return_dict}
 
