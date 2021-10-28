@@ -74,6 +74,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#course_list_rule.
+    def visitCourse_list_rule(self, ctx:ReqBlockParser.Course_list_ruleContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#qualifier.
     def visitQualifier(self, ctx:ReqBlockParser.QualifierContext):
         return self.visitChildren(ctx)

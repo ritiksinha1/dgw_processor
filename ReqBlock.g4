@@ -72,7 +72,7 @@ body        :
             | blocktype
             | class_credit_body
             | conditional_body
-            | course_list_body
+            | course_list_rule
             | copy_rules
             | group_requirement
             | label
@@ -119,7 +119,8 @@ discipline      : symbol
                 | BLOCK
                 | IS;
 
-course_list_body  : course_list (qualifier tag? | proxy_advice | remark)* label?;
+course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
+course_list_rule  : course_list_body label?;
 
 qualifier         : maxpassfail
                   | maxperdisc
@@ -188,7 +189,7 @@ body_rule       : conditional_body
                 | block
                 | blocktype
                 | class_credit_body
-                | course_list_body
+                | course_list_rule
                 | copy_rules
                 | group_requirement
                 | maxtransfer
@@ -213,7 +214,7 @@ group             : LP
                   (block
                    | blocktype
                    | class_credit_body
-                   | course_list_body
+                   | course_list_rule
                    | group_requirement
                    | noncourse
                    | rule_complete)
@@ -229,7 +230,7 @@ subset            : BEGINSUB
                     | blocktype
                     | class_credit_body
                     | copy_rules
-                    | course_list_body
+                    | course_list_rule
                     | group_requirement
                     | noncourse
                     | rule_complete
@@ -256,7 +257,7 @@ class_credit_head : (num_classes | num_credits)
 
 class_credit_body : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))? course_list_body?
-                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )* label?
+                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )*
                   ;
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
