@@ -7,6 +7,8 @@ import sys
 
 import Any
 
+from icecream import ic
+
 if os.getenv('DEBUG_BODY_RULES'):
   DEBUG = True
 else:
@@ -78,49 +80,49 @@ def format_blocktype(blocktype_dict: dict) -> str:
     return f'{blocktype_str}'
 
 
-# format_class_credit_body()
+# format_class_credit()
 # -------------------------------------------------------------------------------------------------
-def format_class_credit_body(class_credit_body_arg: Any) -> str:
+def format_class_credit(class_credit_arg: Any) -> str:
   """
   """
 
-  if isinstance(class_credit_body_arg, list):
-    if len(class_credit_body_arg) > 1:
+  if isinstance(class_credit_arg, list):
+    if len(class_credit_arg) > 1:
       return '<p class="error"> List of class/credit requirements not implemented</p>'
     else:
-      class_credit_body_dict = class_credit_body_arg[0]
+      class_credit_dict = class_credit_arg[0]
   else:
-    class_credit_body_dict = class_credit_body_arg
+    class_credit_dict = class_credit_arg
 
   try:
-    label_str = class_credit_body_dict['label']
+    label_str = class_credit_dict['label']
     summary = f'<summary>{label_str}</summary>'
   except KeyError:
     summary = None
 
   # There has to be num classes and/or num credits
-  class_credit_str = format_utils.format_num_class_credit(class_credit_body_dict)
+  class_credit_str = format_utils.format_num_class_credit(class_credit_dict)
 
   # There might be pseudo, remark, display, and/or share items. They get shown next as paragraphs.
   try:
-    if class_credit_body_dict['is_pseudo']:
+    if class_credit_dict['is_pseudo']:
       class_credit_str += '<p>This requirement does not have a strict credit limit.</p>'
   except KeyError:
     pass
   try:
-    if remark_str := class_credit_body_dict['remark']:
+    if remark_str := class_credit_dict['remark']:
       class_credit_str += f'<p>{remark_str}</p>'
   except KeyError:
     pass
   try:
-    if display_str := class_credit_body_dict['display']:
+    if display_str := class_credit_dict['display']:
       class_credit_str += f'<p>{display_str}</p>'
   except KeyError:
     pass
 
   # If there is a list of courses, it gets shown as a display element.
   try:
-    if courses_str := format_utils.format_course_list(class_credit_body_dict['course_list']):
+    if courses_str := format_utils.format_course_list(class_credit_dict['course_list']):
       class_credit_str += courses_str
   except KeyError:
     pass
@@ -384,7 +386,7 @@ def format_subset(subset_dict: dict) -> str:
   except KeyError:
     pass
 
-# this leaves conditional, group, and class_credit_body
+# this leaves conditional, group, and class_credit_list
   try:
     if conditioinal_dict := subset_dict['conditinal']:
       subset_str += format_conditional(conditional_dict)
@@ -398,9 +400,12 @@ def format_subset(subset_dict: dict) -> str:
     pass
 
   try:
-    if class_credit_dict := subset_dict['class_credit_body']:
+    if class_credit_list := subset_dict['class_credit_list']:
       # The value of class_credit_body might be either a dict or a list of dicts.
-      subset_str += format_class_credit_body(class_credit_dict)
+      for class_credit_dict in class_credit_list:
+
+        # subset_str += str(class_credit_dict)
+        subset_str += format_class_credit(class_credit_dict['class_credit'])
   except KeyError:
     pass
 
@@ -414,7 +419,7 @@ def format_subset(subset_dict: dict) -> str:
 # -------------------------------------------------------------------------------------------------
 dispatch_table = {'block': format_block,
                   'blocktype': format_blocktype,
-                  'class_credit_body': format_class_credit_body,
+                  'class_credit': format_class_credit,
                   'copy_rules': format_copy_rules,
                   'group_requirement': format_group_requirement,
                   'conditional': format_conditional,

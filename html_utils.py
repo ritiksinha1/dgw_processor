@@ -62,7 +62,7 @@ def dict_to_html(info: dict, section=None) -> str:
       may have labels) and the body (where they act as “qualifiers” for requirements.)
 
       So this section validates the augmented parse tree in the sense that it makes sure that these
-      top-level lists contain only the expected productions, and make sure that header productions
+      top-level lists contain only the expected productions, and makes sure that header productions
       are handled differently from body qualifiers if necessary.
   """
   if section == 'header':

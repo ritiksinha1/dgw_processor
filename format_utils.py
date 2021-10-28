@@ -11,6 +11,9 @@
 import os
 import sys
 
+from icecream import ic
+from traceback import print_stack
+
 import html_utils
 
 if os.getenv('DEBUG_FORMAT_UTILS'):
@@ -29,11 +32,14 @@ def and_list(args: list) -> str:
       Does not deal with commas embedded in arg strings.
   """
   return_str = ', '.join(args)
-  if len(args) == 2:
-    return_str = return_str.replace(',', ' and')
-  else:
-    point = return_str.rindex(',') + 1
-    return_str = return_str[0:point] + 'and' + return_str[point:]
+  match return_str.count(','):
+    case 0:
+      pass
+    case 1:
+      return_str = return_str.replace(',', ' and')
+    case _:
+      point = return_str.rindex(',') + 1
+      return_str = return_str[0:point] + ' and' + return_str[point:]
 
   return return_str
 
@@ -164,7 +170,7 @@ def format_course_list(info: dict) -> str:
       attributes_str = ''
       try:
         if attributes := info['attributes']:
-          attributes_str = '<span class="error">' + ','.join(attributes) + '</span> '
+          attributes_str = '<span class="error">' + and_list(attributes) + '</span> '
       except KeyError as ke:
         pass
       details_str += list_of_courses(active_courses, f'Active {attributes_str}Course')
