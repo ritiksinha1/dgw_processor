@@ -110,10 +110,10 @@ def class_credit_head(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def class_credit_body(ctx, institution, requirement_id):
   """
-      class_credit_body : (num_classes | num_credits)
-                          (logical_op (num_classes | num_credits))? course_list_body?
-                          (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label
-                          | tag )*
+class_credit_body : (num_classes | num_credits)
+                  (logical_op (num_classes | num_credits))? course_list_body?
+                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )* label?
+                  ;
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
@@ -133,8 +133,8 @@ def class_credit_body(ctx, institution, requirement_id):
                                     institution, requirement_id):
       return_dict.update(qualifiers)
 
-    return_dict['course_list'] = build_course_list(ctx.course_list_body().course_list(),
-                                                   institution, requirement_id)
+    return_dict.update(build_course_list(ctx.course_list_body().course_list(),
+                                         institution, requirement_id))
 
   if ctx.pseudo():
     return_dict['is_pseudo'] = True
@@ -345,29 +345,31 @@ def copy_rules(ctx, institution, requirement_id):
   return {'copy_rules': return_dict}
 
 
-# course_list_body()
+# course_list_rule()
 # -------------------------------------------------------------------------------------------------
-def course_list_body(ctx: Any, institution: str, requirement_id: str) -> dict:
+def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
   """
     In the body, a bare course list (presumably followed by a label) can serve as a requirement,
     with the implicit assumption that all courses in the list are required.
 
-    CSI01 RA 000544 is the only block observed to use this feature!
+    CSI01 RA 000544 is the only block observed to use this feature at the top level of the body.
 
-    course_list_body  : course_list (qualifier tag? | proxy_advice | remark)* label?;
+    course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
+    course_list_rule  : course_list_body label?;
     course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
   """
-  return_dict = {'label': get_label(ctx),
-                 'course_list': build_course_list(ctx.course_list(), institution, requirement_id)}
-  if ctx.qualifier():
-    return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
+  return_dict = {'label': get_label(ctx)}
+  course_list_body_ctx = ctx.course_list_body()
+  return_dict.update(build_course_list(course_list_body_ctx.course_list(), institution, requirement_id))
+  if course_list_body_ctx.qualifier():
+    return_dict.update(get_qualifiers(course_list_body_ctx.qualifier(), institution, requirement_id))
 
-  if ctx.remark():
+  if course_list_body_ctx.remark():
     return_dict['remark'] = ' '.join([s.getText().strip(' "')
-                                     for c in ctx.remark()
+                                     for c in course_list_body_ctx.remark()
                                      for s in c.string()])
 
-  return {'course_list_body': return_dict}
+  return {'course_list_rule': return_dict}
 
 
 # group_requirement()
@@ -1192,7 +1194,7 @@ def subset(ctx, institution, requirement_id):
                           | blocktype
                           | class_credit_body
                           | copy_rules
-                          | course_list_body
+                          | course_list_rule
                           | group_requirement
                           | noncourse
                           | rule_complete
@@ -1218,7 +1220,7 @@ def subset(ctx, institution, requirement_id):
 
   if ctx.class_credit_body():
     # Return a list of class_credit dicts
-    return_dict['class_credit_body'] = [class_credit_body(context, institution, requirement_id)
+    return_dict['class_credit_list'] = [class_credit_body(context, institution, requirement_id)
                                         for context in ctx.class_credit_body()]
 
   if ctx.copy_rules():
@@ -1226,9 +1228,9 @@ def subset(ctx, institution, requirement_id):
                                         f'is not unity in subset')
     return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
 
-  if ctx.course_list_body():
+  if ctx.course_list_rule():
     return_dict['course_lists'] = [build_course_list(context, institution, requirement_id)
-                                   for context in ctx.course_list_body()]
+                                   for context in ctx.course_list_rule()]
 
   if ctx.group_requirement():
     return_dict.update(group_requirement(ctx.group_requirement(), institution, requirement_id))
@@ -1313,7 +1315,7 @@ dispatch_header = {'class_credit_head': class_credit_head,
 dispatch_body = {'block': block,
                  'blocktype': blocktype,
                  'class_credit_body': class_credit_body,
-                 'course_list_body': course_list_body,
+                 'course_list_rule': course_list_rule,
                  'copy_rules': copy_rules,
                  'group_requirement': group_requirement,
                  'conditional_body': conditional_body,
