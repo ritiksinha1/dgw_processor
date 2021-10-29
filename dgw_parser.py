@@ -233,8 +233,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
           pprint(body_list, stream=debug_file)
 
       except Exception as err:
-        if progress:
-          print(f': {err}.')
+        print(f'{row.institution} {row.requirement_id}: {err}', file=sys.stderr)
         if is_quarantined:
           explanation = quarantined_dict.explanation((row.institution, row.requirement_id))
           augmented_tree['error'] = f'Quarantined: {explanation}'

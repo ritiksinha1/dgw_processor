@@ -9,9 +9,9 @@ import sys
 
 from collections import namedtuple
 from icecream import ic
+from traceback import print_stack
 from typing import List, Set, Dict, Tuple, Optional, Union, Any
 
-from traceback import print_stack
 
 from Any import ANY
 
@@ -276,7 +276,7 @@ def get_label(ctx: Any) -> str:
 
 # get_scribed_courses()
 # -------------------------------------------------------------------------------------------------
-def get_scribed_courses(course_item, list_items: list) -> list:
+def get_scribed_courses(first_course, other_courses) -> list:
   """ Generate list of (discipline, catalog_number, with_clause) tuples for courses in a course
       list. Distribute wildcards across the list so that each “scribed course” is a complete
       (discipline, catalog_number, with_clause) tuple, even if the with clause is None.
@@ -300,27 +300,31 @@ def get_scribed_courses(course_item, list_items: list) -> list:
                       | IS;
   """
   if DEBUG:
-    print(f'*** get_scribed_courses({class_name(course_item)}, {len(list_items)} list items)',
+    print(f'*** get_scribed_courses({class_name(first_course)}, {len(other_courses)} list items)',
           file=sys.stderr)
 
-  assert class_name(course_item) == 'Course_item', (f'Assertion Error: {class_name(ctx)} is not '
-                                                    f'Course_item in get_scribed_courses')
+  assert class_name(first_course) == 'Course_item', (f'Assertion Error: {class_name(ctx)} is not '
+                                                     f'Course_item in get_scribed_courses')
+
+  assert class_name(other_courses).endswith('_list'), (f'Other courses is not And_list or Or_list '
+                                                       f'in get_scribed_courses')
 
   # The list of (discipline: str, catalog_number: str, with_clause: str) tuples to return.
   scribed_courses = []
 
-  # The course_item at the start of the list has to start with both a discipline and catalog number,
-  # but sometimes just a wildcard is given.
+  # The first_course at the start of the list has to start with both a discipline and catalog number,
+  # but sometimes just a wildcard is given. It may be preceded by an area_start token.
   discipline, catalog_number, with_clause = (None, None, None)
+  catalog_number = first_course.catalog_number().getText().strip()
 
-  catalog_number = course_item.catalog_number().getText().strip()
   # The next two might be absent
   try:
-    discipline = course_item.discipline().getText()
+    discipline = first_course.discipline().getText()
   except AttributeError as ae:
     discipline = '@'
+
   try:
-    with_list = course_item.with_clause()
+    with_list = first_course.with_clause()
     for with_ctx in with_list:
       if class_name(with_ctx) == 'With_clause':
         if with_clause is None:
@@ -332,30 +336,34 @@ def get_scribed_courses(course_item, list_items: list) -> list:
     pass
 
   # Enter the first course
-  if course_item.area_start():
+  if first_course.area_start():
     scribed_courses.append('area_start')
   scribed_courses.append((discipline, catalog_number, with_clause))
-  if course_item.area_end():
+  if first_course.area_end():
     scribed_courses.append('area_end')
+
   # For the remaining scribed courses (if any), the discipline determined above will be the "seed"
   # for distributing across succeeding courses where the discipline is not specified.
   catalog_number = None  # Must be present
   with_clause = None     # Does not distribute (as discipline does)
-  for list_item in list_items:
-    if list_item.area_end():
+
+  for other_course in other_courses.course_item():
+    print(f'wwww {class_name(other_course)=} {other_course.area_end()=}')
+    if other_course.area_end():
       scribed_courses.append('area_end')
-    if list_item.area_start():
+    if other_course.area_start():
       scribed_courses.append('area_start')
-    if list_item.discipline():
-      discipline = list_item.discipline().getText().strip()
-    if list_item.catalog_number():
-      catalog_number = list_item.catalog_number().getText().strip()
-    if list_item.with_clause():
-      with_clause = _with_clause(list_item.with_clause())
+    if other_course.discipline():
+      discipline = other_course.discipline().getText().strip()
+    if other_course.catalog_number():
+      catalog_number = other_course.catalog_number().getText().strip()
+    if other_course.with_clause():
+      with_clause = _with_clause(other_course.with_clause())
+
     assert catalog_number is not None, (f'Assertion Error: Course Item with no catalog number: '
-                                        f'{list_item.getText()} in get_scribed_courses')
+                                        f'{other_course.getText()} in get_scribed_courses')
     scribed_courses.append((discipline, catalog_number, with_clause))
-    if list_item.area_end():
+    if other_course.area_end():
       scribed_courses.append('area_end')
 
   if DEBUG:
@@ -503,7 +511,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
             elif valid_qualifier in ['minclass', 'mincredit']:
               # build_course_list returns its own dict, with "course_list" as the key, so we start
               # with that, and add the number, display, and label elements to that.
-              qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list_body(),
+              qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list(),
                                                                   institution, requirement_id)
               qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
               if qualifier_ctx.display():
@@ -674,8 +682,13 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
 
   if ctx is None:
     return None
-  assert class_name(ctx) == 'Course_list', (f'Assertion Error: {class_name(ctx)} is not Course_list'
-                                            f' in build_course_list')
+  try:
+    assert class_name(ctx) == 'Course_list', (f'Assertion Error: {class_name(ctx)} is not '
+                                              f'Course_list in build_course_list')
+  except AssertionError as ae:
+    print(ae, file=sys.stderr)
+    if DEBUG:
+      print_stack(limit=5)
 
   # The dict to be returned:
   return_dict = {'scribed_courses': [],
@@ -697,10 +710,14 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   missing_courses = return_dict['missing_courses']
   attributes = return_dict['attributes']
 
-  # get context of the required course_item and list of optional additional course_items.
+  # get context of the required first_course and list of optional additional first_courses.
   return_dict['context_path'] = context_path(ctx)
 
   # Pick up the label, if there is one
+  #   A course list has no label, but a course_list_rule can (should) have one, and so also should
+  #   xxx_head productions, where the label is attached to the production, not the list. Leaving
+  #   this note here in the hope of finding it the next time the question of whether to look for a
+  #   label here comes up.
   # if label_str := get_label(ctx):
   #   return_dict['label'] = label_str
 
@@ -710,47 +727,50 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     return_dict['qualifiers'] = qualifiers
 
   # The Scribe context in which the list appeared
-  course_item = ctx.course_item()
+  first_course = ctx.course_item()
   if ctx.and_list():
     return_dict['list_type'] = 'AND'
-    list_items = ctx.and_list().course_item()
+    other_courses = ctx.and_list()
   elif ctx.or_list():
     return_dict['list_type'] = 'OR'
-    list_items = ctx.or_list().course_item()
+    other_courses = ctx.or_list()
   else:
     return_dict['list_type'] = None
-    list_items = []
+    other_courses = []
 
   list_type = return_dict['list_type']
 
-  scribed_courses += get_scribed_courses(course_item, list_items)
+  scribed_courses += get_scribed_courses(first_course, other_courses)
   if len(scribed_courses) > 1 and list_type is None:
     # This would be a grammar/parser error. But see the active_course list check at the end of this
     # function.
     print(f'{institution} {requirement_id} {list_type=} {len(scribed_courses)=}', file=sys.stderr)
 
   # Sublists
+  # THESE LOOK WRONG: HOW CAN EXCEPT_LIST BE A PYTHON LIST? IT SHOULD BE AN EXCEPT_LIST OBJECT. SAME
+  # FOR INCLUDE_LIST. CHANGING except_list()[0] TO except_list() WITH NO SUBSCRIPT, ETC FOR TESTING.
   if ctx.except_list():
-    course_item = ctx.except_list()[0].course_item()
+    print(f'aaaa {isinstance(ctx.except_list(), list)=}')
+    first_course = ctx.except_list().course_item()
     # Ellucian allows either AND or OR even though it has to be OR
-    if ctx.except_list()[0].and_list():
-      list_items = ctx.except_list()[0].and_list().course_item()
-    elif ctx.except_list()[0].or_list():
-      list_items = ctx.except_list()[0].or_list().course_item()
+    if ctx.except_list().and_list():
+      other_courses = ctx.except_list().and_list().course_item()
+    elif ctx.except_list().or_list():
+      other_courses = ctx.except_list().or_list().course_item()
     else:
-      list_items = []
-    except_courses += get_scribed_courses(course_item, list_items)
+      other_courses = []
+    except_courses += get_scribed_courses(first_course, other_courses)
 
   if ctx.include_list():
-    course_item = ctx.include_list()[0].course_item()
+    first_course = ctx.include_list().course_item()
     # Ellucian allows either AND or OR even though it has to be OR
-    if ctx.include_list()[0].and_list():
-      list_items = ctx.include_list()[0].and_list().course_item()
-    elif ctx.include_list()[0].or_list():
-      list_items = ctx.include_list()[0].or_list().course_item()
+    if ctx.include_list().and_list():
+      other_courses = ctx.include_list().and_list().course_item()
+    elif ctx.include_list().or_list():
+      other_courses = ctx.include_list().or_list().course_item()
     else:
-      list_items = []
-    include_courses += get_scribed_courses(course_item, list_items)
+      other_courses = []
+    include_courses += get_scribed_courses(first_course, other_courses)
 
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
   check_missing = True  # Unless there are wildcards or ranges
@@ -758,6 +778,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   cursor = conn.cursor()
 
   current_area = None
+
   for scribed_course in scribed_courses:
 
     # Start and end course areas. Active courses will be added to current_area if it exists
