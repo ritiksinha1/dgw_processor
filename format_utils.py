@@ -177,7 +177,7 @@ def format_course_list(info: dict) -> str:
 
     course_areas = info['course_areas']
     if len(course_areas) > 0:
-      details_str += html_utils.list_to_html(course_areas, kind='Course Area')
+      details_str += html_utils.list_to_html(course_areas, is_area=True)
 
     include_courses = info['include_courses']
     assert isinstance(include_courses, list)
@@ -202,9 +202,10 @@ def format_course_list(info: dict) -> str:
     course_areas = info['course_areas']
     assert isinstance(course_areas, list)
     # If there are areas, show them as a definition list
-    if num_areas := len(course_areas) > 0:
+    if (num_areas := len(course_areas)) > 0:
+      ic(course_areas)
       areas_list = f'<p>These courses are grouped into the following {num_areas} areas:</p><dl>'
-      for i, courses in course_areas.enumerate():
+      for i, courses in enumerate(course_areas):
         areas_list += f'<dt>Area {i}</dt><dd>{courses}</dd>'
       details_str += areas_list + '</dl>'
 

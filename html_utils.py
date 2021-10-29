@@ -16,6 +16,9 @@ if os.getenv('DEBUG_HTML_UTILS'):
 else:
   DEBUG = False
 
+number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+                'ten', 'eleven', 'twelve']
+
 
 # dict_to_html()
 # -------------------------------------------------------------------------------------------------
@@ -260,9 +263,11 @@ def dict_to_html(info: dict, section=None) -> str:
 
 # list_to_html()
 # -------------------------------------------------------------------------------------------------
-def list_to_html(info: list, section=None) -> str:
+def list_to_html(info: list, section=None, is_area=False) -> str:
   """ If this is a section-level list, return a display element with the name of the sections as
       the summary, and the intepreted dicts in the list as the body.
+      If this is a course-area list (square brackets in the Scribed course list), enclose the
+      elements in a details element with "Course Area" as the summary.
       Otherwise, go through the list and process according to what is there.
   """
   if DEBUG:
@@ -283,12 +288,13 @@ def list_to_html(info: list, section=None) -> str:
 
   # All other lists
   # ---------------
+  list_type = ' Course Area ' if is_area else ' '
   num = len(info)
   if num == 0:
-    return '<p class="error">Empty List</p>'
+    return '<p class="error">Empty{list_type}List</p>'
 
   # Simplified handling when the list has only one element
-  if num == 1:
+  if num == 1 and not is_area:
     return to_html(info[0])
 
   # The list has more than one element
@@ -308,11 +314,15 @@ def list_to_html(info: list, section=None) -> str:
     # The list consisted only of remarks
     return f'{opening_remarks}'
 
+  suffix = '' if num == 1 else 's'
+  list_type = 'Course Area' if is_area else 'Item'
   if num <= len(number_names):
     num_str = number_names[num].title()
   else:
     num_str = f'{num:,}'
-  return_str = f'{opening_remarks}<details open="open"/><summary>{num_str} Item</summary>'
+
+  return_str = (f'{opening_remarks}<details open="open"/>'
+                f'<summary>{num_str} {list_type}{suffix}</summary>')
   return_str += '\n'.join([f'{to_html(element)}'for element in info])
 
   return return_str + '</details>'
@@ -331,8 +341,8 @@ def to_html(info: any) -> str:
   if isinstance(info, bool):
     return 'True' if info else 'False'
   if isinstance(info, list):
-    return html_utils.list_to_html(info)
+    return list_to_html(info)
   if isinstance(info, dict):
-    return html_utils.dict_to_html(info)
+    return dict_to_html(info)
 
   return info

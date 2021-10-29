@@ -112,13 +112,14 @@ def class_credit_body(ctx, institution, requirement_id):
   """
 class_credit_body : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))? course_list_body?
-                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )* label?
+                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )*
                   ;
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
 
-      course_list_body    : course_list ( qualifier tag? | proxy_advice )*;
+      course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
+      course_list_rule  : course_list_body label?;  # (Not actually relevant here)
 
     Ignore proxy_advice, rule_tag and tag.
   """
@@ -1229,7 +1230,8 @@ def subset(ctx, institution, requirement_id):
     return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
 
   if ctx.course_list_rule():
-    return_dict['course_lists'] = [build_course_list(context, institution, requirement_id)
+    return_dict['course_lists'] = [build_course_list(context.course_list_body().course_list(),
+                                                     institution, requirement_id)
                                    for context in ctx.course_list_rule()]
 
   if ctx.group_requirement():
