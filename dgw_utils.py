@@ -276,7 +276,7 @@ def get_label(ctx: Any) -> str:
 
 # get_scribed_courses()
 # -------------------------------------------------------------------------------------------------
-def get_scribed_courses(first_course, other_courses) -> list:
+def get_scribed_courses(first_course, other_courses=None) -> list:
   """ Generate list of (discipline, catalog_number, with_clause) tuples for courses in a course
       list. Distribute wildcards across the list so that each “scribed course” is a complete
       (discipline, catalog_number, with_clause) tuple, even if the with clause is None.
@@ -303,11 +303,15 @@ def get_scribed_courses(first_course, other_courses) -> list:
     print(f'*** get_scribed_courses({class_name(first_course)}, {len(other_courses)} list items)',
           file=sys.stderr)
 
-  assert class_name(first_course) == 'Course_item', (f'Assertion Error: {class_name(ctx)} is not '
-                                                     f'Course_item in get_scribed_courses')
-
-  assert class_name(other_courses).endswith('_list'), (f'Other courses is not And_list or Or_list '
-                                                       f'in get_scribed_courses')
+  try:
+    assert class_name(first_course) == 'Course_item', (f'Assertion Error: {class_name(ctx)} is not '
+                                                       f'Course_item in get_scribed_courses')
+    if other_courses is not None:
+      assert class_name(other_courses).endswith('_list'), (f'Other courses is not And_list or '
+                                                           f'Or_list in get_scribed_courses')
+  except AssertionError as ae:
+    print(ae)
+    print_stack(limit=4)
 
   # The list of (discipline: str, catalog_number: str, with_clause: str) tuples to return.
   scribed_courses = []
@@ -347,24 +351,25 @@ def get_scribed_courses(first_course, other_courses) -> list:
   catalog_number = None  # Must be present
   with_clause = None     # Does not distribute (as discipline does)
 
-  for other_course in other_courses.course_item():
-    print(f'wwww {class_name(other_course)=} {other_course.area_end()=}')
-    if other_course.area_end():
-      scribed_courses.append('area_end')
-    if other_course.area_start():
-      scribed_courses.append('area_start')
-    if other_course.discipline():
-      discipline = other_course.discipline().getText().strip()
-    if other_course.catalog_number():
-      catalog_number = other_course.catalog_number().getText().strip()
-    if other_course.with_clause():
-      with_clause = _with_clause(other_course.with_clause())
+  if other_courses is not None:
+    for other_course in other_courses.course_item():
+      print(f'wwww {class_name(other_course)=} {other_course.area_end()=}')
+      if other_course.area_end():
+        scribed_courses.append('area_end')
+      if other_course.area_start():
+        scribed_courses.append('area_start')
+      if other_course.discipline():
+        discipline = other_course.discipline().getText().strip()
+      if other_course.catalog_number():
+        catalog_number = other_course.catalog_number().getText().strip()
+      if other_course.with_clause():
+        with_clause = _with_clause(other_course.with_clause())
 
-    assert catalog_number is not None, (f'Assertion Error: Course Item with no catalog number: '
-                                        f'{other_course.getText()} in get_scribed_courses')
-    scribed_courses.append((discipline, catalog_number, with_clause))
-    if other_course.area_end():
-      scribed_courses.append('area_end')
+      assert catalog_number is not None, (f'Assertion Error: Course Item with no catalog number: '
+                                          f'{other_course.getText()} in get_scribed_courses')
+      scribed_courses.append((discipline, catalog_number, with_clause))
+      if other_course.area_end():
+        scribed_courses.append('area_end')
 
   if DEBUG:
     print(f'    {scribed_courses=}', file=sys.stderr)
@@ -736,7 +741,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     other_courses = ctx.or_list()
   else:
     return_dict['list_type'] = None
-    other_courses = []
+    other_courses = None
 
   list_type = return_dict['list_type']
 
@@ -750,7 +755,8 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   # THESE LOOK WRONG: HOW CAN EXCEPT_LIST BE A PYTHON LIST? IT SHOULD BE AN EXCEPT_LIST OBJECT. SAME
   # FOR INCLUDE_LIST. CHANGING except_list()[0] TO except_list() WITH NO SUBSCRIPT, ETC FOR TESTING.
   if ctx.except_list():
-    print(f'aaaa {isinstance(ctx.except_list(), list)=}')
+    if isinstance(ctx.except_list(), list):
+      print_stack(limit=5)
     first_course = ctx.except_list().course_item()
     # Ellucian allows either AND or OR even though it has to be OR
     if ctx.except_list().and_list():
