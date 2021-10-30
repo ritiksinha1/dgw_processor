@@ -751,31 +751,36 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     # function.
     print(f'{institution} {requirement_id} {list_type=} {len(scribed_courses)=}', file=sys.stderr)
 
-  # Sublists
-  # THESE LOOK WRONG: HOW CAN EXCEPT_LIST BE A PYTHON LIST? IT SHOULD BE AN EXCEPT_LIST OBJECT. SAME
-  # FOR INCLUDE_LIST. CHANGING except_list()[0] TO except_list() WITH NO SUBSCRIPT, ETC FOR TESTING.
+  # Sublists (except and/or include)
+  # course_list : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
+  # The grammar allows them to be in either order, but to do that they show up as lists. Expect
+  # 0 or 1 element per list, but report cases of more than one.
   if ctx.except_list():
-    if isinstance(ctx.except_list(), list):
-      print_stack(limit=5)
-    first_course = ctx.except_list().course_item()
+    if list_len := len(ctx.except_list()) > 1:
+      print(f'Unexpected: except_list occurs {list_len} times. Only first one processed.',
+            file=sys.stderr)
+    first_course = ctx.except_list()[0].course_item()
     # Ellucian allows either AND or OR even though it has to be OR
-    if ctx.except_list().and_list():
-      other_courses = ctx.except_list().and_list().course_item()
-    elif ctx.except_list().or_list():
-      other_courses = ctx.except_list().or_list().course_item()
+    if ctx.except_list()[0].and_list():
+      other_courses = ctx.except_list().and_list()
+    elif ctx.except_list()[0].or_list():
+      other_courses = ctx.except_list()[0].or_list()
     else:
-      other_courses = []
+      other_courses = None
     except_courses += get_scribed_courses(first_course, other_courses)
 
   if ctx.include_list():
-    first_course = ctx.include_list().course_item()
+    if list_len := len(ctx.include_list()) > 1:
+      print(f'Unexpected: include_list occurs {list_len} times. Only first one processed.',
+            file=sys.stderr)
+    first_course = ctx.include_list()[0].course_item()
     # Ellucian allows either AND or OR even though it has to be OR
-    if ctx.include_list().and_list():
-      other_courses = ctx.include_list().and_list().course_item()
-    elif ctx.include_list().or_list():
-      other_courses = ctx.include_list().or_list().course_item()
+    if ctx.include_list()[0].and_list():
+      other_courses = ctx.include_list()[0].and_list()
+    elif ctx.include_list()[0].or_list():
+      other_courses = ctx.include_list()[0].or_list()
     else:
-      other_courses = []
+      other_courses = None
     include_courses += get_scribed_courses(first_course, other_courses)
 
   # Active Courses (skip if no institution given, such as in a course list qualifier course list)
