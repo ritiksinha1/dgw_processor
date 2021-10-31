@@ -316,8 +316,8 @@ def get_scribed_courses(first_course, other_courses=None) -> list:
   # The list of (discipline: str, catalog_number: str, with_clause: str) tuples to return.
   scribed_courses = []
 
-  # The first_course at the start of the list has to start with both a discipline and catalog number,
-  # but sometimes just a wildcard is given. It may be preceded by an area_start token.
+  # The first_course at the start of the list has to start with both a discipline and catalog
+  # number, but sometimes just a wildcard is given. It may be preceded by an area_start token.
   discipline, catalog_number, with_clause = (None, None, None)
   catalog_number = first_course.catalog_number().getText().strip()
 
@@ -352,24 +352,28 @@ def get_scribed_courses(first_course, other_courses=None) -> list:
   with_clause = None     # Does not distribute (as discipline does)
 
   if other_courses is not None:
-    for other_course in other_courses.course_item():
-      print(f'wwww {class_name(other_course)=} {other_course.area_end()=}')
-      if other_course.area_end():
+    for child in other_courses.getChildren():
+      # Children might be list_and/list_or (ignore), area_end, or course_item
+      if class_name(child) == 'Area_end':
         scribed_courses.append('area_end')
-      if other_course.area_start():
-        scribed_courses.append('area_start')
-      if other_course.discipline():
-        discipline = other_course.discipline().getText().strip()
-      if other_course.catalog_number():
-        catalog_number = other_course.catalog_number().getText().strip()
-      if other_course.with_clause():
-        with_clause = _with_clause(other_course.with_clause())
+        continue
 
-      assert catalog_number is not None, (f'Assertion Error: Course Item with no catalog number: '
-                                          f'{other_course.getText()} in get_scribed_courses')
-      scribed_courses.append((discipline, catalog_number, with_clause))
-      if other_course.area_end():
-        scribed_courses.append('area_end')
+      elif class_name(child) == 'Course_item':
+        # course_items can have area start, area_end, discipline, catalog number
+        if child.area_end():
+          scribed_courses.append('area_end')
+        if child.area_start():
+          scribed_courses.append('area_start')
+        if child.discipline():
+          discipline = child.discipline().getText().strip()
+        if child.catalog_number():
+          catalog_number = child.catalog_number().getText().strip()
+        if child.with_clause():
+          with_clause = _with_clause(child.with_clause())
+
+        assert catalog_number is not None, (f'Assertion Error: Course Item with no catalog number: '
+                                            f'{child.getText()} in get_scribed_courses')
+        scribed_courses.append((discipline, catalog_number, with_clause))
 
   if DEBUG:
     print(f'    {scribed_courses=}', file=sys.stderr)
