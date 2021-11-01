@@ -94,7 +94,7 @@ def format_num_class_credit(cc_dict: dict):
 
 # format_course_list()
 # -------------------------------------------------------------------------------------------------
-def format_course_list(info: dict) -> str:
+def format_course_list(info: dict, num_areas_required: int = 0) -> str:
   """ The dict for a course_list has the following structure:
         scribed_courses     List of all (discipline, catalog_number, with_clause) tuples in the list
                             after distributing disciplines across catalog_numbers. (Show "BIOL 1, 2"
@@ -162,7 +162,12 @@ def format_course_list(info: dict) -> str:
       # Qualifiers are optional
       pass
 
+    # The active courses may be divided into "course areas." If so the same courses appear in both
+    # lists. NOT IMPLEMENTED: it's possible that some of the areas have a common attribute (BKCR
+    # not likely, but maybe WRIC.) The common attributes are shown only if all the activee courses,
+    # across areas, share them.
     active_courses = info['active_courses']
+    course_areas = info['course_areas']
     assert isinstance(active_courses, list)
     if len(active_courses) == 0:
       details_str += '<div class="error">No Active Courses!</div>'
@@ -173,11 +178,24 @@ def format_course_list(info: dict) -> str:
           attributes_str = '<span class="error">' + and_list(attributes) + '</span> '
       except KeyError as ke:
         pass
-      details_str += list_of_courses(active_courses, f'Active {attributes_str}Course')
-
-    course_areas = info['course_areas']
-    if len(course_areas) > 0:
-      details_str += html_utils.list_to_html(course_areas, is_area=True)
+      if (num_areas := len(course_areas)) > 0:
+        suffix = '' if num_areas == 1 else 's'
+        if num_areas < len(number_names):
+          num_areas = number_names[num_areas].lower()
+        if num_areas_required < len(number_names):
+          num_areas_required = number_names[num_areas_required].lower()
+        details_str += (f'<p>Courses from a minimum of {num_areas_required} of the following '
+                        f'{num_areas} area{suffix} must be taken to satisfy this requirement:</p>')
+        for index, area_courses in enumerate(course_areas):
+          if (index + 1) < len(number_names):
+            area_id = number_names[index + 1].title()
+          else:
+            area_id = index + 1
+          area_summary = f'<summary>Area {area_id}</summary>'
+          area_details = list_of_courses(area_courses, f'Active {attributes_str}Course')
+          details_str += f'<details>{area_summary}{area_details}</details>'
+      else:
+        details_str += list_of_courses(active_courses, f'Active {attributes_str}Course')
 
     include_courses = info['include_courses']
     assert isinstance(include_courses, list)
@@ -199,15 +217,6 @@ def format_course_list(info: dict) -> str:
     if len(missing_courses) > 0:
       details_str += list_of_courses(missing_courses, 'Not-Found-in-CUNYfirst Course',
                                      highlight=True)
-    course_areas = info['course_areas']
-    assert isinstance(course_areas, list)
-    # If there are areas, show them as a definition list
-    if (num_areas := len(course_areas)) > 0:
-      ic(course_areas)
-      areas_list = f'<p>These courses are grouped into the following {num_areas} areas:</p><dl>'
-      for i, courses in enumerate(course_areas):
-        areas_list += f'<dt>Area {i}</dt><dd>{courses}</dd>'
-      details_str += areas_list + '</dl>'
 
   except KeyError as ke:
     error_msg = f'Error: invalid course list: missing key is {ke}'

@@ -88,7 +88,7 @@ def format_class_credit(class_credit_arg: Any) -> str:
 
   if isinstance(class_credit_arg, list):
     if len(class_credit_arg) > 1:
-      return '<p class="error"> List of class/credit requirements not implemented</p>'
+      return '<p class="error"> More than one class/credit requirement not expected.</p>'
     else:
       class_credit_dict = class_credit_arg[0]
   else:
@@ -102,6 +102,10 @@ def format_class_credit(class_credit_arg: Any) -> str:
 
   # There has to be num classes and/or num credits
   class_credit_str = format_utils.format_num_class_credit(class_credit_dict)
+  try:
+    num_areas_required = int(class_credit_dict['minarea']['number'])
+  except KeyError:
+    num_areas_required = 0
 
   # There might be pseudo, remark, display, and/or share items. They get shown next as paragraphs.
   try:
@@ -122,7 +126,8 @@ def format_class_credit(class_credit_arg: Any) -> str:
 
   # If there is a list of courses, it gets shown as a display element.
   try:
-    if courses_str := format_utils.format_course_list(class_credit_dict['course_list']):
+    if courses_str := format_utils.format_course_list(class_credit_dict['course_list'],
+                                                      num_areas_required):
       class_credit_str += courses_str
   except KeyError:
     pass
