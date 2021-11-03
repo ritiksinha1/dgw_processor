@@ -69,7 +69,7 @@ def format_blocktype(blocktype_dict: dict) -> str:
     blocktype_str = f'<p>A {block_type} is required.</p>'
   else:
     try:
-      number = number_names[number].title()
+      number = format_utils.number_names[number].title()
     except IndexError:
       pass
     blocktype_str = f'<p>{number} {block_type}s are required.</p>'
@@ -168,27 +168,51 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
   if summary:
     return f'<details>{summary}{copy_rules_str}</details>'
   else:
-    return f'{copy_rules_str}'
+    return copy_rules_str
 
 
-# format_group_requirement()
+# format_group_requirements()
 # -------------------------------------------------------------------------------------------------
-def format_group_requirement(group_requirement_dict: dict) -> str:
+def format_group_requirements(group_requirements: list) -> str:
+  """ Each group requirement has a group_list, label, and number
+      Each group_list is a list of groups(!)
+      Each group can be a block, blocktype, class_credit, course_list, group_requirement,
+                        noncourse, or rule_complete)
   """
-  """
+  assert isinstance(group_requirements, list), (f'{type(group_requirements)} is not list '
+                                                f'in format_group_requirements')
+  group_requirements_str = ''
+  for group_requirement in [gr['group_requirement'] for gr in group_requirements]:
+    print(f'**** looping {list(group_requirement.keys())}')
+    try:
+      label_str = group_requirement['label']
+      summary = f'<summary>{label_str}</summary>'
+    except KeyError:
+      summary = None
+    print(f'**** |{summary}|')
+    num_required = int(group_requirement['number'])
+    suffix = '' if num_required == 1 else 's'
+    if num_required < len(format_utils.number_names):
+      num_required = format_utils.number_names[num_required]
+    num_groups = len(group_requirement['group_list']['groups'])
+    if num_groups < len(format_utils.number_names):
+      num_groups = format_utils.number_names[num_groups]
+    print(f'**** {num_required=} {num_groups=}')
+    if num_required == num_groups:
+      if num_required == 'two':
+        prefix = 'Both'
+      else:
+        prefix = 'All'
+    else:
+      prefix = f'Any {num_required}'
+    group_requirement_str = f'<p>{prefix} of the following {num_groups} requirements:</p>'
 
-  try:
-    label_str = group_requirement_dict['label']
-    summary = f'<summary>{label_str}</summary>'
-  except KeyError:
-    summary = None
-
-  group_requirement_str = '<p class="error">Group requirement not implemented yet</p>'
-
-  if summary:
-    return f'<details>{summary}{group_requirement_str}</details>'
-  else:
-    return f'{group_requirement_str}'
+    if summary:
+      group_requirements_str += f'<details>{summary}{group_requirement_str}</details>'
+    else:
+      group_requirements_str += f'{group_requirement_str}'
+  print(f'**** returning |{group_requirements_str}|')
+  return group_requirements_str
 
 
 # format_conditional()
@@ -225,7 +249,10 @@ def format_maxperdisc(maxperdisc_dict: dict) -> str:
 
   number = int(max_perdisc_dict['number'])
   suffix = '' if number == 1 else 's'
-  number_str = number_names[number].lower() if number < len(number_names) else f'{number:,}'
+  if number < len(format_utils.number_names):
+    number_str = format_utils.number_names[number].lower()
+  else:
+    number_str = f'{number:,}'
   discipline_list = and_list(max_perdisc[disciplines])
   maxperdisc_str = f'<p>No more than {number_str} course{suffix} in {discipline_list} allowed</p>'
 
@@ -249,8 +276,8 @@ def format_noncourse(noncourse_dict: dict) -> str:
 
   number = int(noncourse_dict['number'])
   suffix = '' if number == 1 else 's'
-  if number < len(htmlificization.number_names):
-    number_str = htmlificization.number_names[number].title()
+  if number < len(format_utils.number_names):
+    number_str = format_utils.number_names[number].title()
   else:
     number_str = f'{number:,}'
 
@@ -426,7 +453,7 @@ dispatch_table = {'block': format_block,
                   'blocktype': format_blocktype,
                   'class_credit': format_class_credit,
                   'copy_rules': format_copy_rules,
-                  'group_requirement': format_group_requirement,
+                  'group_requirements': format_group_requirements,
                   'conditional': format_conditional,
                   'maxperdisc': format_maxperdisc,
                   'noncourse': format_noncourse,

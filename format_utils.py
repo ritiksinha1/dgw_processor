@@ -163,9 +163,10 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
       pass
 
     # The active courses may be divided into "course areas." If so the same courses appear in both
-    # lists. NOT IMPLEMENTED: it's possible that some of the areas have a common attribute (BKCR
-    # not likely, but maybe WRIC.) The common attributes are shown only if all the activee courses,
-    # across areas, share them.
+    # lists. So either the active list or the areas list gets displayed, not both.
+    #   NOT IMPLEMENTED: it's possible that all courses within an area have a common attribute
+    #   (BKCR not likely, but maybe WRIC.) But the common attributes are shown only if _all_ the
+    #   activee courses, across areas, share them.
     active_courses = info['active_courses']
     course_areas = info['course_areas']
     assert isinstance(active_courses, list)

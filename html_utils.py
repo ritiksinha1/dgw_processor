@@ -86,7 +86,7 @@ def dict_to_html(info: dict, section=None) -> str:
   invocations get handled here.
   """
 
-  return f'<p><em>Recursive dict_to_html(): {list(info.keys())}</em></p>'
+  print(f'Recursive dict_to_html(): {list(info.keys())}')
 
   summary = None
   try:

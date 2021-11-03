@@ -10,10 +10,11 @@
 
 """
 
+import argparse
+import csv
+import functiontrace
 import os
 import sys
-import csv
-import argparse
 
 from pprint import pprint
 from collections import namedtuple
@@ -233,6 +234,7 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
   """ Generate html for the scribe block and interpreted head and body lists objects, unless the
       block has been quarantined.
   """
+
   if DEBUG:
     print(f'*** scribe_block_to_html({row}, {period_range=})', file=sys.stderr)
 
