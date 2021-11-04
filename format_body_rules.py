@@ -82,7 +82,7 @@ def format_blocktype(blocktype_dict: dict) -> str:
 
 # format_class_credit()
 # -------------------------------------------------------------------------------------------------
-def format_class_credit(class_credit_arg: Any) -> str:
+def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
   """
   """
 
@@ -94,9 +94,11 @@ def format_class_credit(class_credit_arg: Any) -> str:
   else:
     class_credit_dict = class_credit_arg
 
+  prefix_str = '' if prefix_str is None else (f'<span class="fixed-sans">'
+                                              f'{prefix_str: >5}: </span>')
   try:
     label_str = class_credit_dict['label']
-    summary = f'<summary>{label_str}</summary>'
+    summary = f'<summary>{prefix_str}{label_str}</summary>'
   except KeyError:
     summary = None
 
@@ -135,7 +137,7 @@ def format_class_credit(class_credit_arg: Any) -> str:
   if summary:
     return f'<details>{summary}{class_credit_str}</details>'
   else:
-    return f'{class_credit_str}'
+    return f'{prefix_str}{class_credit_str}'
 
 
 # format_copy_rules()
@@ -183,13 +185,13 @@ def format_group_requirements(group_requirements: list) -> str:
                                                 f'in format_group_requirements')
   group_requirements_str = ''
   for group_requirement in [gr['group_requirement'] for gr in group_requirements]:
-    print(f'**** looping {list(group_requirement.keys())}')
+
     try:
       label_str = group_requirement['label']
       summary = f'<summary>{label_str}</summary>'
     except KeyError:
       summary = None
-    print(f'**** |{summary}|')
+
     num_required = int(group_requirement['number'])
     suffix = '' if num_required == 1 else 's'
     if num_required < len(format_utils.number_names):
@@ -197,7 +199,7 @@ def format_group_requirements(group_requirements: list) -> str:
     num_groups = len(group_requirement['group_list']['groups'])
     if num_groups < len(format_utils.number_names):
       num_groups = format_utils.number_names[num_groups]
-    print(f'**** {num_required=} {num_groups=}')
+
     if num_required == num_groups:
       if num_required == 'two':
         prefix = 'Both'
@@ -207,11 +209,22 @@ def format_group_requirements(group_requirements: list) -> str:
       prefix = f'Any {num_required}'
     group_requirement_str = f'<p>{prefix} of the following {num_groups} requirements:</p>'
 
+    for index, requirement in enumerate(group_requirement['group_list']['groups']):
+      prefix_str = format_utils.to_roman(index)
+      for key in requirement.keys():
+        match key:
+          case 'class_credit':
+            prefix_str = format_utils.to_roman(index + 1)
+            group_requirement_str += format_class_credit(requirement[key], prefix_str)
+          case _:
+            group_requirement_str += (f'<p class="error">{key.title()} requirement not '
+                                      f'implemented.</p>')
+
     if summary:
       group_requirements_str += f'<details>{summary}{group_requirement_str}</details>'
     else:
       group_requirements_str += f'{group_requirement_str}'
-  print(f'**** returning |{group_requirements_str}|')
+
   return group_requirements_str
 
 

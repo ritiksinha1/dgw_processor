@@ -298,3 +298,24 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
       return_str += '</li>'
   return_str += '</ul>\n</details>'
   return return_str
+
+
+# to_roman()
+# -------------------------------------------------------------------------------------------------
+def to_roman(value: int, make_upper: bool = True) -> str:
+  """ The presence of 500 (D) and 50 (L), coupled with the special handling of 400, 900, 40, 90, 4
+      and 9, make table lookup seem like the best approach.
+  """
+  if value == 0:
+    return 'Zero'
+  if value > 3999:
+    return f'{value:,}'
+  thousands, value = divmod(value, 1000)
+  hundreds, value = divmod(value, 100)
+  tens, ones = divmod(value, 10)
+  return_str = thousands * 'm'
+  return_str += ['', 'c', 'cc', 'ccc', 'cd', 'd', 'dc', 'dcc', 'dccc', 'cm'][hundreds]
+  return_str += ['', 'x', 'xx', 'xxx', 'xl', 'l', 'lx', 'lxx', 'lxxx', 'xc'][tens]
+  return_str += ['', 'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix'][ones]
+  return_str = return_str.upper() if make_upper else return_str.lower()
+  return return_str
