@@ -95,7 +95,7 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     class_credit_dict = class_credit_arg
 
   prefix_str = '' if prefix_str is None else (f'<span class="fixed-sans">'
-                                              f'{prefix_str: >5}: </span>')
+                                              f'{prefix_str: <5}</span>')
   try:
     label_str = class_credit_dict['label']
     summary = f'<summary>{prefix_str}{label_str}</summary>'
@@ -214,7 +214,7 @@ def format_group_requirements(group_requirements: list) -> str:
       for key in requirement.keys():
         match key:
           case 'class_credit':
-            prefix_str = format_utils.to_roman(index + 1)
+            prefix_str = format_utils.to_roman(index + 1) + '.'
             group_requirement_str += format_class_credit(requirement[key], prefix_str)
           case _:
             group_requirement_str += (f'<p class="error">{key.title()} requirement not '
