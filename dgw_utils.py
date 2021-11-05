@@ -766,7 +766,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     first_course = ctx.except_list()[0].course_item()
     # Ellucian allows either AND or OR even though it has to be OR
     if ctx.except_list()[0].and_list():
-      other_courses = ctx.except_list().and_list()
+      other_courses = ctx.except_list()[0].and_list()
     elif ctx.except_list()[0].or_list():
       other_courses = ctx.except_list()[0].or_list()
     else:
