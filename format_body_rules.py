@@ -213,9 +213,21 @@ def format_group_requirements(group_requirements: list) -> str:
       prefix_str = format_utils.to_roman(index)
       for key in requirement.keys():
         match key:
+          case 'block':
+            group_requirement_str += format_block(requirement[key])
+          case 'blocktype':
+            group_requirement_str += format_blocktype(requirement[key])
           case 'class_credit':
             prefix_str = format_utils.to_roman(index + 1) + '.'
             group_requirement_str += format_class_credit(requirement[key], prefix_str)
+          case 'course_list':
+            group_requirement_str += format_course_list(requirement[key])
+          case 'group_requirements':
+            group_requirement_str += format_group_requirements([requirement[key]])
+          case 'noncourse':
+            group_requirement_str += format_noncourse([requirement[key]])
+          case 'rule_complete':
+            group_requirement_str += format_rule_complete([requirement[key]])
           case _:
             group_requirement_str += (f'<p class="error">{key.title()} requirement not '
                                       f'implemented.</p>')
