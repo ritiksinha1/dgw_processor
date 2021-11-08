@@ -138,19 +138,21 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
     # Label is optional
     pass
 
+  scribed_courses = info['scribed_courses']
+  active_courses = info['active_courses']
+  course_areas = info['course_areas']
+  num_areas = len(course_areas)
   try:
     list_type = info['list_type']
-
-    scribed_courses = info['scribed_courses']
     assert isinstance(scribed_courses, list)
     scribed_text = ''.join([str(sc) for sc in scribed_courses])
     if len(scribed_courses) > 1 or ':' in scribed_text or '@' in scribed_text:
-      if list_type == 'OR':
+      if (list_type == 'OR') and (num_areas == 0):
         if len(scribed_courses) == 2:
           details_str += f'<p>Either of these courses</p>'
         else:
           details_str += f'<p>Any of these courses</p>'
-      else:
+      elif num_areas == 0:
         details_str += f'<p>All of these courses</p>'
 
     details_str += list_of_courses(scribed_courses, 'Scribed Course')
@@ -164,11 +166,9 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
 
     # The active courses may be divided into "course areas." If so the same courses appear in both
     # lists. So either the active list or the areas list gets displayed, not both.
-    #   NOT IMPLEMENTED: it's possible that all courses within an area have a common attribute
+    #   It's possible that all courses within an area have a common attribute
     #   (BKCR not likely, but maybe WRIC.) But the common attributes are shown only if _all_ the
     #   activee courses, across areas, share them.
-    active_courses = info['active_courses']
-    course_areas = info['course_areas']
     assert isinstance(active_courses, list)
     if len(active_courses) == 0:
       details_str += '<div class="error">No Active Courses!</div>'
@@ -185,13 +185,11 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
           num_areas = number_names[num_areas].lower()
         if num_areas_required < len(number_names):
           num_areas_required = number_names[num_areas_required].lower()
-        details_str += (f'<p>Courses from a minimum of {num_areas_required} of the following '
-                        f'{num_areas} area{suffix} must be taken to satisfy this requirement:</p>')
+        details_str += (f'<p>The active courses that satisfy this requirement are divided into the '
+                        f'following {num_areas} area{suffix}. Courses must be taken from a minimum '
+                        f'of {num_areas_required} of these areas to satisfy this requirement.</p>')
         for index, area_courses in enumerate(course_areas):
-          if (index + 1) < len(number_names):
-            area_id = number_names[index + 1].title()
-          else:
-            area_id = index + 1
+          area_id = to_roman(index + 1)
           area_summary = f'<summary>Area {area_id}</summary>'
           area_details = list_of_courses(area_courses, f'Active {attributes_str}Course')
           details_str += f'<details>{area_summary}{area_details}</details>'

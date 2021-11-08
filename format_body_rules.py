@@ -94,8 +94,9 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
   else:
     class_credit_dict = class_credit_arg
 
-  prefix_str = '' if prefix_str is None else (f'<span class="fixed-sans">'
-                                              f'{prefix_str: <5}</span>')
+  if prefix_str is None:
+    prefix_str = ''
+
   try:
     label_str = class_credit_dict['label']
     summary = f'<summary>{prefix_str}{label_str}</summary>'
@@ -103,7 +104,7 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     summary = None
 
   # There has to be num classes and/or num credits
-  class_credit_str = format_utils.format_num_class_credit(class_credit_dict)
+  class_credit_str = f'<p>{format_utils.format_num_class_credit(class_credit_dict)} required</p>'
   try:
     num_areas_required = int(class_credit_dict['minarea']['number'])
   except KeyError:
@@ -207,10 +208,9 @@ def format_group_requirements(group_requirements: list) -> str:
         prefix = 'All'
     else:
       prefix = f'Any {num_required}'
-    group_requirement_str = f'<p>{prefix} of the following {num_groups} requirements:</p>'
+    group_requirement_str = f'<p>{prefix} of the following {num_groups} groups</p>'
 
     for index, requirement in enumerate(group_requirement['group_list']['groups']):
-      prefix_str = format_utils.to_roman(index)
       for key in requirement.keys():
         match key:
           case 'block':
@@ -218,7 +218,7 @@ def format_group_requirements(group_requirements: list) -> str:
           case 'blocktype':
             group_requirement_str += format_blocktype(requirement[key])
           case 'class_credit':
-            prefix_str = format_utils.to_roman(index + 1) + '.'
+            prefix_str = f'Group {format_utils.to_roman(index + 1)}: '
             group_requirement_str += format_class_credit(requirement[key], prefix_str)
           case 'course_list':
             group_requirement_str += format_course_list(requirement[key])
