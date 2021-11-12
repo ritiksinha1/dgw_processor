@@ -94,18 +94,6 @@ def context_path(ctx, interpret=[]):
   return ' => '.join(ctx_list[1:])
 
 
-# expression_terminals()
-# -------------------------------------------------------------------------------------------------
-def expression_terminals(ctx, terminal_list):
-  """ print the terminal nodes of an expression
-  """
-  if ctx.getChildCount() == 0:
-    terminal_list.append({ctx.getParent().__class__.__name__: ctx.getText()})
-  else:
-    for child in ctx.getChildren():
-      expression_terminals(child, terminal_list)
-
-
 # expression_to_str()
 # -------------------------------------------------------------------------------------------------
 def expression_to_str(ctx):
@@ -254,23 +242,24 @@ def get_display(ctx: Any) -> str:
 # -------------------------------------------------------------------------------------------------
 def get_label(ctx: Any) -> str:
   """ Like get_display, only for labels.
-      If in the header, labels are under label_head.
+      If in the header, labels are children of label_head.
   """
   if DEBUG:
     print(f'*** get_label({class_name(ctx)})', file=sys.stderr)
 
   label_ctx = None
-  match 'header' if context_path(ctx).lower().startswith('head') else 'body':
-    case 'header':
-      if label_head_ctx := ctx.label_head():
-        print(f'*** ctx.label_head(): {dir(ctx.label_head())}')
-        if label_ctx := label_head_ctx.label():
+  try:
+    match 'header' if context_path(ctx).lower().startswith('head') else 'body':
+      case 'header':
+        if label_head_ctx := ctx.label_head():
+          if label_ctx := label_head_ctx.label():
+            pass
+      case 'body':
+        if label_ctx := ctx.label():
           pass
-    case 'body':
-      if label_ctx := ctx.label():
-        print(f'*** ctx: {dir(ctx.label())}')
-        pass
-    case _: exit(f'Invalid match: {_}')
+      case _: exit(f'Invalid match: {_}')
+  except AttributeError:
+    pass
 
   if label_ctx is None:
     return None
@@ -428,8 +417,10 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
 
       group_dict = {'label': get_label(child)}
       group_dict.update(get_qualifiers(child, institution, requirement_id))
-      if child.remark():
+      try:
         group_dict.update(dgw_handlers.remark(child.remark(), institution, requirement_id))
+      except AttributeError:
+        pass
       if class_name(child).lower() in dgw_handlers.dispatch_body.keys():
         group_dict.update(dgw_handlers.dispatch(child, institution, requirement_id))
       else:

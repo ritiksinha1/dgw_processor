@@ -52,6 +52,7 @@ def block(ctx, institution, requirement_id):
                                                            f'in block()')
   return_dict['block_type'] = symbols[0].upper().strip()
   return_dict['block_value'] = symbols[1].upper().strip()
+  return_dict['institution'] = institution
 
   return_dict['label'] = get_label(ctx)
 
@@ -415,7 +416,7 @@ group             : LP
 
     requirement_list.append({'group_requirement': requirement_list_dict})
 
-  return {'group_requirement': requirement_list}
+  return {'group_requirements': requirement_list}
 
 
 # header_tag()
@@ -1335,6 +1336,12 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
     if which_part == 'header':
       return dispatch_header[key](ctx, institution, requirement_id)
     else:
+      if key == 'body_rule':
+        children = ctx.children
+        assert len(children) == 1, (f'body_rule with {len(children)} children')
+        child = children[0]
+        key = class_name(child).lower()
+        return dispatch_body[key](child, institution, requirement_id)
       return dispatch_body[key](ctx, institution, requirement_id)
   except KeyError as key_error:
     key_error = str(key_error).strip('\'')

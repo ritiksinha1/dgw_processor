@@ -11,9 +11,9 @@
 import os
 import sys
 
-from icecream import ic
 from traceback import print_stack
 
+import format_body_qualifiers
 import html_utils
 
 if os.getenv('DEBUG_FORMAT_UTILS'):
@@ -157,12 +157,10 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
 
     details_str += list_of_courses(scribed_courses, 'Scribed Course')
 
-    try:
-      if qualifiers := info['qualifiers']:
-        details_str += to_html(qualifiers)
-    except KeyError:
-      # Qualifiers are optional
-      pass
+    # We can infer that if there are any qualifiers, this course_list is in the body.
+    if qualifiers := format_body_qualifiers.dispatch_body_qualifiers(info):
+      details_str += '\n'.join(qualifiers)
+      print(f'xxxx THIS IS OK: got qualifiers in format_course_list: {qualifiers}', file=sys.stderr)
 
     # The active courses may be divided into "course areas." If so the same courses appear in both
     # lists. So either the active list or the areas list gets displayed, not both.

@@ -1,4 +1,4 @@
-# Generated from ReqBlock.g4 by ANTLR 4.9.2
+# Generated from ReqBlock.g4 by ANTLR 4.9.3
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .ReqBlockParser import ReqBlockParser
@@ -509,6 +509,15 @@ class ReqBlockListener(ParseTreeListener):
 
     # Exit a parse tree produced by ReqBlockParser#header_tag.
     def exitHeader_tag(self, ctx:ReqBlockParser.Header_tagContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#label_head.
+    def enterLabel_head(self, ctx:ReqBlockParser.Label_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#label_head.
+    def exitLabel_head(self, ctx:ReqBlockParser.Label_headContext):
         pass
 
 

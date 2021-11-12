@@ -344,5 +344,8 @@ def to_html(info: any) -> str:
     return list_to_html(info)
   if isinstance(info, dict):
     return dict_to_html(info)
+  if isinstance(info, str):
+    return f'<em>{info}</em>'
+  print(f'to_html(): Not bool, list, dict, or str: |{info}|', file=sys.stderr)
 
   return info

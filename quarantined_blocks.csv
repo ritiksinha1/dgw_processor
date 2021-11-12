@@ -5,6 +5,7 @@ BKL01,RA003399,MAJOR,UGRD,Current,Missing comma in course list on line 99,Yes
 BMC01,RA000291,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000321,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000335,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
+BMC01,RA000360,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,No
 CSI01,RA000365,MAJOR,UGRD,Current,“18 Credits in  10 @@” on line 32,Yes
 CSI01,RA000465,MAJOR,UGRD,Current,“26 Credits in  10 @@” on line 30,Yes
 CSI01,RA000575,MAJOR,UGRD,Current,“20 Credits in  10 @@” on line 54,Yes

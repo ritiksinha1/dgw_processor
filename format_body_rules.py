@@ -6,8 +6,8 @@ import os
 import sys
 
 import Any
-
-from icecream import ic
+import html_utils
+from pgconnection import PgConnection
 
 if os.getenv('DEBUG_BODY_RULES'):
   DEBUG = True
@@ -35,11 +35,38 @@ def format_block(block_dict: dict) -> str:
     block_str = ('<p class="error">Number of blocks other than one ({number} encountered) '
                  f'not implemented yet</p>')
   else:
-    block_type = block_dict['block_type'].title()
-    if block_type == 'Conc':
-      block_type = 'Concentration'
+    block_type = block_dict['block_type']
     block_value = block_dict['block_value']
-    block_str = f'<p>The {block_type} {block_value} block is required.</p>'
+    institution = block_dict['institution']
+    # Get the block
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(f"""
+      select parse_tree from requirement_blocks
+      where institution = %s
+      and block_type ~* %s
+      and block_value ~* %s
+      and period_stop ~* '^9'
+      """, [institution, block_type, f'^{block_value}$'])
+    block_type_str = 'Concentration'if block_type.lower() == 'conc' else block_type.title()
+    block_str = f'<p>The {block_value} {block_type.title()} block is required:</p>'
+    if cursor.rowcount == 0:
+      block_str += f'<p class="error">Requirement Block not found!</p>'
+    elif cursor.rowcount > 1:
+      block_str += f'<p class="error">Multiple matching Requirement Blocks found!</p>'
+    else:
+      parse_tree = cursor.fetchone().parse_tree
+      if parse_tree == {}:
+        parse_results = f'<p>No information available for this block at this time.</p>'
+      elif 'error' in parse_tree.keys():
+        err_msg = parse_tree['error']
+        parse_results = f'<p>There was an error processing this block: {err_msg}</p>'
+      else:
+        parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
+        parse_results += html_utils.list_to_html(parse_tree['body_list'], section='body')
+      block_str += parse_results
+
+    conn.close()
 
   if summary:
     return f'<details>{summary}{block_str}</details>'
@@ -117,22 +144,18 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     pass
   try:
     if remark_str := class_credit_dict['remark']:
-      class_credit_str += f'<p>{remark_str}</p>'
+      class_credit_str += f'<p>Remark: <em>{remark_str}</em></p>'
   except KeyError:
     pass
   try:
     if display_str := class_credit_dict['display']:
-      class_credit_str += f'<p>{display_str}</p>'
+      class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
   except KeyError:
     pass
 
-  # Qualifiers
-  try:
-    # Expect list of html paragraphs, but it might be empty
-    if qualifiers_str := dispatch_body_qualifiers(class_credit_dict['qualifiers']):
-      class_credit_str += '\n'.join(qualifiers_str)
-  except KeyError:
-    pass
+  # Qualifiers: Expect list of html paragraphs, but it might be empty
+  if qualifiers_str := dispatch_body_qualifiers(class_credit_dict):
+    class_credit_str += '\n'.join(qualifiers_str)
 
   # If there is a list of courses, it gets shown as a display element.
   try:
@@ -163,7 +186,7 @@ def format_conditional(conditional_dict: dict) -> str:
   except KeyError:
     summary = None
 
-  conditional_str = ''
+  conditional_str = f'<p class="error">format_conditional({conditional_dict})</p>'
 
   if summary:
     return f'<details>{summary}{conditional_str}</details>'
@@ -235,19 +258,25 @@ def format_group_requirements(group_requirements: list) -> str:
     num_required = int(group_requirement['number'])
     suffix = '' if num_required == 1 else 's'
     if num_required < len(format_utils.number_names):
-      num_required = format_utils.number_names[num_required]
+      num_required_str = format_utils.number_names[num_required].lower()
+    else:
+      num_required_str = f'{num_required:,}'
     num_groups = len(group_requirement['group_list']['groups'])
     if num_groups < len(format_utils.number_names):
-      num_groups = format_utils.number_names[num_groups]
+      num_groups_str = format_utils.number_names[num_groups].lower()
+    else:
+      num_groups_str = f'{num_groups:,}'
 
     if num_required == num_groups:
-      if num_required == 'two':
+      if num_required == 2:
         prefix = 'Both'
       else:
         prefix = 'All'
+    elif (num_required == 1) and (num_groups == 2):
+      prefix = 'Either'
     else:
-      prefix = f'Any {num_required}'
-    group_requirement_str = f'<p>{prefix} of the following {num_groups} groups</p>'
+      prefix = f'Any {num_required_str}'
+    group_requirement_str = f'<p>{prefix} of the following {num_groups_str} groups</p>'
 
     for index, requirement in enumerate(group_requirement['group_list']['groups']):
       for key in requirement.keys():
@@ -267,8 +296,11 @@ def format_group_requirements(group_requirements: list) -> str:
             group_requirement_str += format_noncourse([requirement[key]])
           case 'rule_complete':
             group_requirement_str += format_rule_complete([requirement[key]])
+          case 'label':
+            pass  # Labels are extracted by one of the above matches
           case _:
-            group_requirement_str += (f'<p class="error">{key.title()} requirement not '
+            # Remarks will show up here? Or are they handled like labels??
+            group_requirement_str += (f'<p>{key.title()}: {requirement[key]} requirement not '
                                       f'implemented.</p>')
 
     if summary:
@@ -432,8 +464,8 @@ def format_subset(subset_dict: dict) -> str:
     pass
 
   try:
-    if group_dict := subset_dict['group']:
-      subset_str += format_group(group_dict)
+    if group_dict := subset_dict['group_requirements']:
+      subset_str += format_group_requirements(group_dict)
   except KeyError:
     pass
 

@@ -22,6 +22,7 @@ import sys
 
 import Any
 
+from traceback import print_stack
 from format_utils import format_num_class_credit
 
 DEBUG = os.getenv('DEBUG_QUALIFIERS')
@@ -371,7 +372,6 @@ def dispatch_body_qualifiers(node: dict) -> list:
   assert isinstance(node, dict), (f'{type(node)} is not dict in format_body_qualifiers. {node=}')
   if DEBUG:
     print(f'*** dispatch_body_qualifiers({node.keys()=}', file=sys.stderr)
-  print(f'*** dispatch_body_qualifiers({node.keys()=}', file=sys.stderr)
 
   possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                          'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',

@@ -188,7 +188,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
         body_ctx = parse_tree.body()
         if body_ctx:
           for child in body_ctx.getChildren():
-            obj = dispatch(child.body_rule(), institution, row.requirement_id)
+            obj = dispatch(child, institution, row.requirement_id)
             if obj != {}:
               body_list.append(obj)
 
@@ -203,11 +203,8 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
             """, (json.dumps(augmented_tree), ))
 
           # Deal with giant parse trees that exceed Postgres limit for jsonb data
-          except Exception as err:
-            if err.pgcode == '54000':
-              err_msg = 'Parse tree too large for database'
-            else:
-              err_msg = f'Database error: {err.pgerror}'
+          except psycopg.errors.ProgramLimitExceeded:
+            err_msg = 'Parse tree too large for database'
             if progress:
               print(f': {err_msg}.')
             augmented_tree = {'error': err_msg, 'header_list': [], 'bocy_list': []}
