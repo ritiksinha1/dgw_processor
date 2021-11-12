@@ -188,7 +188,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
         body_ctx = parse_tree.body()
         if body_ctx:
           for child in body_ctx.getChildren():
-            obj = dispatch(child, institution, row.requirement_id)
+            obj = dispatch(child.body_rule(), institution, row.requirement_id)
             if obj != {}:
               body_list.append(obj)
 

@@ -226,7 +226,7 @@ def get_rules(ctx, institution, requirement_id):
   for rule_ctx in rules_ctx:
     for child in rule_ctx.getChildren():
       if DEBUG:
-        print('.  ', class_name(child), file=sys.stderr)
+        print('...', class_name(child), file=sys.stderr)
       return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
 
   return return_list
@@ -254,19 +254,33 @@ def get_display(ctx: Any) -> str:
 # -------------------------------------------------------------------------------------------------
 def get_label(ctx: Any) -> str:
   """ Like get_display, only for labels.
+      If in the header, labels are under label_head.
   """
   if DEBUG:
     print(f'*** get_label({class_name(ctx)})', file=sys.stderr)
 
-  if ctx.label():
-    if isinstance(ctx.label(), list):
-      label_str = ''
-      for context in ctx.label():
-        label_str += ' '.join([context.string().getText().strip(' "')])
-    else:
-      label_str = ctx.label().string().getText().strip(' "')
+  label_ctx = None
+  match 'header' if context_path(ctx).lower().startswith('head') else 'body':
+    case 'header':
+      if label_head_ctx := ctx.label_head():
+        print(f'*** ctx.label_head(): {dir(ctx.label_head())}')
+        if label_ctx := label_head_ctx.label():
+          pass
+    case 'body':
+      if label_ctx := ctx.label():
+        print(f'*** ctx: {dir(ctx.label())}')
+        pass
+    case _: exit(f'Invalid match: {_}')
+
+  if label_ctx is None:
+    return None
+
+  if isinstance(label_ctx, list):
+    label_str = ''
+    for context in label_ctx:
+      label_str += ' '.join([context.string().getText().strip(' "')])
   else:
-    label_str = None
+    label_str = label_ctx.string().getText().strip(' "')
 
   if DEBUG:
     print(f'    {label_str=}', file=sys.stderr)
@@ -300,7 +314,7 @@ def get_scribed_courses(first_course, other_courses=None) -> list:
                       | IS;
   """
   if DEBUG:
-    print(f'*** get_scribed_courses({class_name(first_course)}, {len(other_courses)} list items)',
+    print(f'*** get_scribed_courses({class_name(first_course)}, {other_courses} list items)',
           file=sys.stderr)
 
   try:
@@ -388,21 +402,21 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
       group_requirement : NUMBER GROUP groups qualifier* label? ;
       groups            : group (logical_op group)*; // But only OR should occur
       group             : LP
-                        (block
+                         ( block
                          | blocktype
-                         | course_list
                          | class_credit_body
+                         | course_list_rule
                          | group_requirement
                          | noncourse
-                         | rule_complete)
-                        qualifier* label?
-                        RP
-                      ;
+                         | rule_complete ) (qualifier tag? | proxy_advice | remark)* label?
+                         RP ;
   """
   if DEBUG:
     print(f'*** getgroups({class_name(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
+    print(context_path(ctx))
+    print_stack()
 
-  return_list = []
+  return_dict = {'groups': []}
   for group_ctx in ctx.group():
     children = group_ctx.getChildren()
 
@@ -412,18 +426,19 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
       if item_class.lower() == 'terminalnodeimpl':
         continue
 
-      if 'Course_list' == class_name(child):
-        return_list.append(build_course_list(child, institution, requirement_id))
+      group_dict = {'label': get_label(child)}
+      group_dict.update(get_qualifiers(child, institution, requirement_id))
+      if child.remark():
+        group_dict.update(dgw_handlers.remark(child.remark(), institution, requirement_id))
+      if class_name(child).lower() in dgw_handlers.dispatch_body.keys():
+        group_dict.update(dgw_handlers.dispatch(child, institution, requirement_id))
       else:
-        return_list.append(dgw_handlers.dispatch(child, institution, requirement_id))
+        print(f'xxxx {class_name(child)} is not a dispatchable body key')
+      return_dict['groups'].append(group_dict)
 
-    return_dict = {'groups': return_list}
+  if DEBUG:
+    print('   ', return_dict, file=sys.stderr)
 
-    if qualifier_ctx := group_ctx.qualifier():
-      return_dict.update(get_qualifiers(qualifier_ctx, institution, requirement_id))
-
-    if group_ctx.label():
-      return_dict['label'] = get_label(group_ctx)
   return return_dict
 
 
@@ -458,6 +473,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
 
   if DEBUG:
     print(f'*** get_qualifiers({class_name(ctx)=})', file=sys.stderr)
+    print_stack()
 
   valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                       'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
@@ -544,6 +560,9 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
             else:
               print(f'Unexpected qualifier: {valid_qualifier} in {requirement_id} for '
                     f'{institution}', file=sys.stderr)
+
+  if DEBUG:
+    print(f'    {qualifier_dict=}', file=sys.stderr)
 
   return qualifier_dict
 
@@ -793,7 +812,6 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   cursor = conn.cursor()
 
   current_area = None
-
   for scribed_course in scribed_courses:
 
     # Start and end course areas. Active courses will be added to current_area if it exists
@@ -930,6 +948,9 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     return_dict['list_type'] = 'OR'
 
   conn.close()
+
+  if DEBUG:
+    print(f'    course_list: {return_dict}', file=sys.stderr)
 
   return {'course_list': return_dict}
 
