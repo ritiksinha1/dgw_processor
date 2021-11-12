@@ -6,7 +6,8 @@ __pycache__/
 *.class
 *.interp
 *.tokens
-*.out
+*out
+*err
 *.html
 *.txt
 *.log
@@ -15,8 +16,6 @@ __pycache__/
 
 tokens
 tree
-out
-err
 debug
 
 .bumpversion.cfg
@@ -34,7 +33,7 @@ Logs/
 /testing/ReqBlock.g4
 /testing/dgw_filter.py
 /testing/run_tests*.csv
-/testing/t
+/testing/t.txt
 /testing/test_data.*/
 /testing/test_results.*/
 /testing/test_timeouts
