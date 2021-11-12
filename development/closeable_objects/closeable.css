@@ -1,0 +1,29 @@
+/* Closeable Sections
+ * ---------------------------------------------------
+ * Click on an element of class closer to toggle the
+ * visibility of the next element, using JS. This css
+ * handles the triangle indicator.
+ */
+
+ul {
+  list-style-type: none;
+}
+/* The trangle */
+.closer::before {
+  content: "\25B6";
+  color: black;
+  display: inline-block;
+  margin-right: 0.5em;
+}
+
+/* Style the triangle */
+.closer {
+  margin: 0.1em;
+  cursor: pointer;
+}
+
+/* Rotate the triangle when open*/
+.open::before {
+  transform: rotate(90deg);
+}
+
