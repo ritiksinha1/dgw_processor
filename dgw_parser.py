@@ -21,6 +21,8 @@ from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
 
 from pgconnection import PgConnection
+# Need psycopg for error handling
+import psycopg
 
 from quarantine_manager import QuarantineManager
 from dgw_filter import dgw_filter
