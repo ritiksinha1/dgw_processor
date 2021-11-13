@@ -221,6 +221,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
         if is_quarantined:
           # Quarantined block now parses without error
           del quarantined_dict[(row.institution, row.requirement_id)]
+
         if progress:
           # End the progress line
           print('.')
@@ -233,6 +234,8 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
 
       except Exception as err:
         print(f'{row.institution} {row.requirement_id}: {err}', file=sys.stderr)
+        if progress:
+          print('*')  # instead of a period.
         if is_quarantined:
           explanation = quarantined_dict.explanation((row.institution, row.requirement_id))
           augmented_tree['error'] = f'Quarantined: {explanation}'
