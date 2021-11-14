@@ -1,13 +1,13 @@
 #! /usr/local/bin/python3
 """ Generate parse trees for Scribe Blocks.
 """
+import argparse
+import json
 import os
 import re
-import csv
-import sys
-import json
 import signal
-import argparse
+import sys
+import time
 
 from contextlib import contextmanager
 from collections import namedtuple
@@ -157,6 +157,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
     # All processing for a requirement_block must complete within timelimit seconds. If not, the
     # returned augmented tree will contain an 'error' key and empty header/body lists.
     with timeout_manager(timelimit):
+      start_time = time.time()
       try:
         # Filter out everything after END, plus hide-related tokens (but not hidden content).
         text_to_parse = dgw_filter(row.requirement_text)
@@ -196,20 +197,25 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
 
         augmented_tree['header_list'] = header_list
         augmented_tree['body_list'] = body_list
+        elapsed_time = round((time.time() - start_time), 3)
         if update_db:
           try:
             update_cursor.execute(f"""
-            update requirement_blocks set parse_tree = %s
+            update requirement_blocks set parse_tree = %s, dgw_seconds = %s
             where institution = '{row.institution}'
             and requirement_id = '{row.requirement_id}'
-            """, (json.dumps(augmented_tree), ))
+            """, (json.dumps(augmented_tree), elapsed_time))
 
           # Deal with giant parse trees that exceed Postgres limit for jsonb data
           except psycopg.errors.ProgramLimitExceeded:
+            with open('tree_to_large.log', 'a') as tree_too_large:
+              print(f'\n{row.institution} {row.requirement_id}\n--------------'
+                    f'JSON tree is {len(json.dumps(augmented_tree)):,} bytes', file=tree_too_large)
+              print(augmented_tree, file=tree_too_large)
             err_msg = 'Parse tree too large for database'
             if progress:
-              print(f': {err_msg}.')
-            augmented_tree = {'error': err_msg, 'header_list': [], 'bocy_list': []}
+              print(f': {err_msg}*')
+            augmented_tree = {'error': err_msg, 'header_list': [], 'body_list': []}
             update_cursor.execute(f"""
             rollback;
             update requirement_blocks set parse_tree = %s
