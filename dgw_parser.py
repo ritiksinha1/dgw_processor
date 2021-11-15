@@ -216,8 +216,8 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
             if progress:
               print(f': {err_msg}*')
             augmented_tree = {'error': err_msg, 'header_list': [], 'body_list': []}
+            update_cursor.execute(f'rollback')
             update_cursor.execute(f"""
-            rollback;
             update requirement_blocks set parse_tree = %s
             where institution = '{row.institution}'
             and requirement_id = '{row.requirement_id}'
