@@ -149,48 +149,42 @@ def concentration_list(condition: str, institution: str, requirement_id: str) ->
 # -------------------------------------------------------------------------------------------------
 def get_rules(ctx, institution, requirement_id):
   """ Return a list of rule dicts for the children of head_rule or body_rule ctx.
-      head_rule       : conditional_head
-                      | block
-                      | blocktype
-                      | class_credit_head
-                      | copy_rules
-                      | lastres
-                      | maxcredit
-                      | maxpassfail_head
-                      | maxterm
-                      | maxtransfer_head
-                      | minclass_head
-                      | mincredit_head
-                      | mingpa
-                      | mingrade
-                      | minperdisc_head
-                      | minres
-                      | minterm
-                      | noncourse
-                      | proxy_advice
-                      | remark
-                      | rule_complete
-                      | share_head
+      head_rule         : class_credit_head
+                        | conditional_head
+                        | copy_rules
+                        | lastres_head
+                        | maxclass_head
+                        | maxcredit_head
+                        | maxpassfail_head
+                        | maxterm_head
+                        | maxtransfer_head
+                        | minclass_head
+                        | mincredit_head
+                        | mingpa_head
+                        | mingrade_head
+                        | minperdisc_head
+                        | minres_head
+                        | minterm_head
+                        | noncourse
+                        | proxy_advice
+                        | remark
+                        | rule_complete
+                        | share_head
+                        ;
 
-      body_rule       : conditional_body
-                      | block
-                      | blocktype
-                      | class_credit_body
-                      | copy_rules
-                      | group_requirement
-                      | lastres
-                      | maxcredit
-                      | maxtransfer
-                      | minclass
-                      | mincredit
-                      | mingrade
-                      | minres
-                      | noncourse
-                      | proxy_advice
-                      | remark
-                      | rule_complete
-                      | share
-                      | subset
+        body_rule       : block
+                        | blocktype
+                        | class_credit_body
+                        | conditional_body
+                        | course_list_rule
+                        | copy_rules
+                        | group_requirement
+                        | noncourse
+                        | proxy_advice
+                        | remark
+                        | rule_complete
+                        | subset
+                        ;
 
   """
   if DEBUG:
