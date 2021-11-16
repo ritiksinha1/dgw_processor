@@ -238,24 +238,17 @@ def conditional_body(ctx, institution, requirement_id):
       else_body         : ELSE (body_rule | body_rule_group);
       body_rule_group : (begin_if body_rule+ end_if);
 
-      body_rule       : conditional_body
-                      | block
+      body_rule       :block
                       | blocktype
                       | class_credit_body
+                      | conditional_body
+                      | course_list_rule
                       | copy_rules
                       | group_requirement
-                      | lastres
-                      | maxcredit
-                      | maxtransfer
-                      | minclass
-                      | mincredit
-                      | mingrade
-                      | minres
                       | noncourse
                       | proxy_advice
                       | remark
                       | rule_complete
-                      | share
                       | subset
                       ;
   """

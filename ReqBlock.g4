@@ -68,20 +68,6 @@ header      :
             ;
 
 body        : body_rule* ;
-//            ( block
-//            | blocktype
-//            | class_credit_body
-//            | conditional_body
-//            | copy_rules
-//            | course_list_rule
-//            | group_requirement
-//            | noncourse
-//            | proxy_advice
-//            | remark
-//            | rule_complete
-//            | subset
-//            )*
-//            ;
 
 
 /* Grammar convention: Kleene Star is used in the usual "zero or more" sense, but also to allow
@@ -189,15 +175,10 @@ body_rule       : block
                 | course_list_rule
                 | copy_rules
                 | group_requirement
-//                | maxtransfer
-//                | minclass
-//                | mincredit
-//                | mingrade
                 | noncourse
                 | proxy_advice
                 | remark
                 | rule_complete
-//                | share
                 | subset
                 ;
 
