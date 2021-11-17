@@ -289,6 +289,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#label_head.
+    def visitLabel_head(self, ctx:ReqBlockParser.Label_headContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#label.
     def visitLabel(self, ctx:ReqBlockParser.LabelContext):
         return self.visitChildren(ctx)

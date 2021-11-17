@@ -67,22 +67,7 @@ header      :
             )*
             ;
 
-body        :
-            ( block
-            | blocktype
-            | class_credit_body
-            | conditional_body
-            | course_list_rule
-            | copy_rules
-            | group_requirement
-            | label
-            | noncourse
-            | proxy_advice
-            | remark
-            | rule_complete
-            | subset
-            )*
-            ;
+body        : body_rule* ;
 
 
 /* Grammar convention: Kleene Star is used in the usual "zero or more" sense, but also to allow
@@ -149,16 +134,14 @@ qualifier         : maxpassfail
 begin_if          : BEGINIF | BEGINELSE;
 end_if            : ENDIF | ENDELSE;
 
-conditional_head  : IF expression THEN (head_rule | head_rule_group )
-                    (proxy_advice)* label? else_head?;
-else_head         : ELSE (head_rule | head_rule_group)
-                    (proxy_advice | label)*;
+conditional_head  : IF expression THEN (head_rule | head_rule_group ) else_head?;
+//                    (proxy_advice)* label? else_head?;
+else_head         : ELSE (head_rule | head_rule_group);
+//                    (proxy_advice | label)*;
 head_rule_group   : (begin_if head_rule+ end_if);
-head_rule         : block
-                  | blocktype
-                  | class_credit_head
-                  | copy_rules
+head_rule         : class_credit_head
                   | conditional_head
+                  | copy_rules
                   | lastres_head
                   | maxclass_head
                   | maxcredit_head
@@ -179,28 +162,23 @@ head_rule         : block
                   | share_head
                   ;
 
-conditional_body  : IF expression THEN (body_rule | body_rule_group)
-                    (qualifier tag? | proxy_advice | remark)* label? else_body?;
-else_body         : ELSE (body_rule | body_rule_group)
-                    (qualifier tag? | proxy_advice | remark)* label?;
+conditional_body  : IF expression THEN (body_rule | body_rule_group) else_body?;
+//                    (qualifier tag? | proxy_advice | remark)* label? else_body?;
+else_body         : ELSE (body_rule | body_rule_group) ;
+//                    (qualifier tag? | proxy_advice | remark)* label?;
 body_rule_group : (begin_if body_rule+ end_if);
 
-body_rule       : conditional_body
-                | block
+body_rule       : block
                 | blocktype
                 | class_credit_body
+                | conditional_body
                 | course_list_rule
                 | copy_rules
                 | group_requirement
-                | maxtransfer
-                | minclass
-                | mincredit
-                | mingrade
                 | noncourse
                 | proxy_advice
                 | remark
                 | rule_complete
-                | share
                 | subset
                 ;
 
@@ -211,16 +189,14 @@ body_rule       : conditional_body
 group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark)* label? ;
 groups            : group (logical_op group)*; // But only OR should occur
 group             : LP
-                  (block
+                   ( block
                    | blocktype
                    | class_credit_body
                    | course_list_rule
                    | group_requirement
                    | noncourse
-                   | rule_complete)
-                  (qualifier tag? | proxy_advice | remark)* label?
-                  RP
-                ;
+                   | rule_complete ) (qualifier tag? | proxy_advice | remark)* label?
+                   RP ;
 
 //  Rule Subset (body only)
 //  -----------------------------------------------------------------------------------------------
@@ -252,7 +228,7 @@ allow_clause        : LP allow NUMBER RP;
 
 class_credit_head : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))?
-                  (IS? pseudo | display | proxy_advice | header_tag | tag)* label?
+                  (IS? pseudo | display | proxy_advice | header_tag | tag)* label_head?
                   ;
 
 class_credit_body : (num_classes | num_credits)
@@ -262,21 +238,21 @@ class_credit_body : (num_classes | num_credits)
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
 // ------------------------------------------------------------------------------------------------
-lastres_head      : lastres label?;
-maxclass_head     : maxclass label?;
-maxcredit_head    : maxcredit label?;
-maxpassfail_head  : maxpassfail label?;
-maxperdisc_head   : maxperdisc label? ;
-maxterm_head      : maxterm label?;
-maxtransfer_head  : maxtransfer label?;
-minclass_head     : minclass label?;
-mincredit_head    : mincredit label?;
-mingpa_head       : mingpa label?;
-mingrade_head     : mingrade label?;
-minperdisc_head   : minperdisc label?;
-minres_head       : minres label?;
-minterm_head      : minterm label?;
-share_head        : share label?;
+lastres_head      : lastres label_head?;
+maxclass_head     : maxclass label_head?;
+maxcredit_head    : maxcredit label_head?;
+maxpassfail_head  : maxpassfail label_head?;
+maxperdisc_head   : maxperdisc label_head? ;
+maxterm_head      : maxterm label_head?;
+maxtransfer_head  : maxtransfer label_head?;
+minclass_head     : minclass label_head?;
+mincredit_head    : mincredit label_head?;
+mingpa_head       : mingpa label_head?;
+mingrade_head     : mingrade label_head?;
+minperdisc_head   : minperdisc label_head?;
+minres_head       : minres label_head?;
+minterm_head      : minterm label_head?;
+share_head        : share label_head?;
 
 // Other parser productions
 // ------------------------------------------------------------------------------------------------
@@ -289,6 +265,7 @@ copy_rules      : COPY_RULES expression SEMICOLON?;
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
 display         : DISPLAY string SEMICOLON?;
 header_tag      : (HEADER_TAG nv_pair)+;
+label_head      : LABEL string ;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice?;
 maxclass        : MAXCLASS NUMBER course_list? tag?;
@@ -311,7 +288,7 @@ minres          : MINRES (num_classes | num_credits) display* proxy_advice? tag?
 minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 
-noncourse       : NUMBER NONCOURSE LP expression RP proxy_advice? label?;
+noncourse       : NUMBER NONCOURSE LP expression RP proxy_advice? rule_tag? label?;
 num_classes     : NUMBER CLASS allow_clause?;
 num_credits     : NUMBER CREDIT allow_clause?;
 nv_pair         : SYMBOL '=' (STRING | SYMBOL);

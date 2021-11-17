@@ -22,6 +22,7 @@ import sys
 
 import Any
 
+from traceback import print_stack
 from format_utils import format_num_class_credit
 
 DEBUG = os.getenv('DEBUG_QUALIFIERS')
@@ -331,22 +332,22 @@ def format_share(share_dict: dict) -> str:
   return f'<p>{prefix_str}{not_str}be shared{suffix_str}</p>'
 
 
-# dispatch()
+# _dispatch_table {}
 # -------------------------------------------------------------------------------------------------
-dispatch_table = {'maxpassfail': format_maxpassfail,
-                  'maxperdisc': format_maxperdisc,
-                  'maxspread': format_maxspread,
-                  'maxtransfer': format_maxtransfer,
-                  'minarea': format_minarea,
-                  'minclass': format_minclass,
-                  'mincredit': format_mincredit,
-                  'mingpa': format_mingpa,
-                  'mingrade': format_mingrade,
-                  'minperdisc': format_minperdisc,
-                  'minres': format_minres,
-                  'minspread': format_minspread,
-                  'share': format_share,
-                  }
+_dispatch_table = {'maxpassfail': format_maxpassfail,
+                   'maxperdisc': format_maxperdisc,
+                   'maxspread': format_maxspread,
+                   'maxtransfer': format_maxtransfer,
+                   'minarea': format_minarea,
+                   'minclass': format_minclass,
+                   'mincredit': format_mincredit,
+                   'mingpa': format_mingpa,
+                   'mingrade': format_mingrade,
+                   'minperdisc': format_minperdisc,
+                   'minres': format_minres,
+                   'minspread': format_minspread,
+                   'share': format_share,
+                   }
 
 
 # _dispatch_qualifier()
@@ -358,25 +359,25 @@ def _dispatch_qualifier(qualifier: str, qualifier_info: Any) -> str:
   if DEBUG:
     print(f'*** _dispatch_qualifier({qualifier}, {qualifier_info=})', file=sys.stderr)
 
-  return dispatch_table[qualifier](qualifier_info)
+  return _dispatch_table[qualifier](qualifier_info)
 
 
-# format_body_qualifiers()
+# dispatch_body_qualifiers()
 # -------------------------------------------------------------------------------------------------
-def format_body_qualifiers(node: dict) -> list:
+def dispatch_body_qualifiers(node: dict) -> list:
   """ Given a dict that may or may not have keys for known qualifiers remove all qualifiers from the
       node, and return a list of HTML formatted strings representing the qualifiers found.
   """
 
   assert isinstance(node, dict), (f'{type(node)} is not dict in format_body_qualifiers. {node=}')
   if DEBUG:
-    print(f'*** format_body_qualifiers({node.keys()=}', file=sys.stderr)
+    print(f'*** dispatch_body_qualifiers({node.keys()=}', file=sys.stderr)
 
   possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                          'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                          'proxy_advice', 'rule_tag', 'samedisc', 'share']
   ignored_qualifiers = ['proxy_advice', 'rule_tag', 'samedisc']
-  handled_qualifiers = dispatch_table.keys()
+  handled_qualifiers = _dispatch_table.keys()
   qualifier_strings = []
   for qualifier in possible_qualifiers:
     if qualifier in node.keys():

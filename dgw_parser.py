@@ -1,13 +1,13 @@
 #! /usr/local/bin/python3
 """ Generate parse trees for Scribe Blocks.
 """
+import argparse
+import json
 import os
 import re
-import csv
-import sys
-import json
 import signal
-import argparse
+import sys
+import time
 
 from contextlib import contextmanager
 from collections import namedtuple
@@ -21,6 +21,8 @@ from antlr4 import *
 from antlr4.error.ErrorListener import ErrorListener
 
 from pgconnection import PgConnection
+# Need psycopg for error handling
+import psycopg
 
 from quarantine_manager import QuarantineManager
 from dgw_filter import dgw_filter
@@ -155,6 +157,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
     # All processing for a requirement_block must complete within timelimit seconds. If not, the
     # returned augmented tree will contain an 'error' key and empty header/body lists.
     with timeout_manager(timelimit):
+      start_time = time.time()
       try:
         # Filter out everything after END, plus hide-related tokens (but not hidden content).
         text_to_parse = dgw_filter(row.requirement_text)
@@ -194,25 +197,27 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
 
         augmented_tree['header_list'] = header_list
         augmented_tree['body_list'] = body_list
+        elapsed_time = round((time.time() - start_time), 3)
         if update_db:
           try:
             update_cursor.execute(f"""
-            update requirement_blocks set parse_tree = %s
+            update requirement_blocks set parse_tree = %s, dgw_seconds = %s
             where institution = '{row.institution}'
             and requirement_id = '{row.requirement_id}'
-            """, (json.dumps(augmented_tree), ))
+            """, (json.dumps(augmented_tree), elapsed_time))
 
           # Deal with giant parse trees that exceed Postgres limit for jsonb data
-          except Exception as err:
-            if err.pgcode == '54000':
-              err_msg = 'Parse tree too large for database'
-            else:
-              err_msg = f'Database error: {err.pgerror}'
+          except psycopg.errors.ProgramLimitExceeded:
+            with open('tree_to_large.log', 'a') as tree_too_large:
+              print(f'\n{row.institution} {row.requirement_id}\n--------------'
+                    f'JSON tree is {len(json.dumps(augmented_tree)):,} bytes', file=tree_too_large)
+              print(augmented_tree, file=tree_too_large)
+            err_msg = 'Parse tree too large for database'
             if progress:
-              print(f': {err_msg}.')
-            augmented_tree = {'error': err_msg, 'header_list': [], 'bocy_list': []}
+              print(f': {err_msg}*')
+            augmented_tree = {'error': err_msg, 'header_list': [], 'body_list': []}
+            update_cursor.execute(f'rollback')
             update_cursor.execute(f"""
-            rollback;
             update requirement_blocks set parse_tree = %s
             where institution = '{row.institution}'
             and requirement_id = '{row.requirement_id}'
@@ -222,6 +227,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
         if is_quarantined:
           # Quarantined block now parses without error
           del quarantined_dict[(row.institution, row.requirement_id)]
+
         if progress:
           # End the progress line
           print('.')
@@ -234,6 +240,8 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
 
       except Exception as err:
         print(f'{row.institution} {row.requirement_id}: {err}', file=sys.stderr)
+        if progress:
+          print('*')  # instead of a period.
         if is_quarantined:
           explanation = quarantined_dict.explanation((row.institution, row.requirement_id))
           augmented_tree['error'] = f'Quarantined: {explanation}'

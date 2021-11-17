@@ -19,29 +19,16 @@ from dgw_filter import dgw_filter
 # Parse args
 parser = argparse.ArgumentParser(description='Generate test data for ReqBlock.g4')
 parser.add_argument('-d', '--debug', action='store_true', default=False)
-parser.add_argument('-p', '--period', default='99999999')
+parser.add_argument('-p', '--period', default='current')
 parser.add_argument('block_types', metavar='block_type', nargs='*', default=['all'])
 args = parser.parse_args()
-period_stop = args.period
-if period_stop.lower() == 'active':
-  period_stop = '99999999'
-if period_stop != '99999999':
-  exit(f'"{period_stop}" is an unsupported period. '
-       'Only "active" or "99999999" are valid for now.')
 
-# Get quarantine list
-# Row = namedtuple('ROW', 'institution requirement_id block_type reason can_ellucian')
-# quarantined_blocks = []
-# with open('../quarantine_list.csv') as qfile:
-#   reader = csv.reader(qfile)
-#   for line in reader:
-#     if reader.line_num == 1 or len(line) == 0 or line[0].startswith('#'):
-#       continue
-#     row = Row._make(line)
-#     if 'timeout' in row.reason.lower():
-#       timeout_blocks.append((row.institution.strip(), row.requirement_id.strip()))
-#     else:
-#       quarantined_blocks.append((row.institution, row.requirement_id.strip()))
+if args.period.lower() == 'current':
+  period_stop = '^9'
+else:
+  exit(f'"{args.period}" is an unsupported period. '
+       'Only "current" is valid for now.')
+
 quarantined_dict = QuarantineManager()
 
 quarantine_dir = Path('./test_data.quarantine')
@@ -77,7 +64,7 @@ for block_type in block_types:
   cursor.execute(f"""
                  select * from requirement_blocks
                  where block_type = '{block_type.upper()}'
-                   and period_stop = '{period_stop}'
+                   and period_stop ~* '{period_stop}'
                    order by institution, requirement_id""")
   print(f'{cursor.rowcount} {block_type}s found')
 

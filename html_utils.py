@@ -7,8 +7,8 @@
 import os
 import sys
 
-from format_header_productions import format_header_productions
-from format_body_qualifiers import format_body_qualifiers
+from format_header_productions import dispatch_header_productions
+from format_body_qualifiers import dispatch_body_qualifiers
 import format_body_rules
 
 if os.getenv('DEBUG_HTML_UTILS'):
@@ -70,11 +70,11 @@ def dict_to_html(info: dict, section=None) -> str:
   """
   if section == 'header':
     # Format all top-level dicts in the Header
-    return '\n'.join([element for element in format_header_productions(info)])
+    return '\n'.join([element for element in dispatch_header_productions(info)])
   elif section == 'body':
     body_rules = []
     for key, value in info.items():
-      if html_str := format_body_rules.format_body_rule(key, value):
+      if html_str := format_body_rules.dispatch_body_rule(key, value):
         body_rules.append(html_str)
       else:
         body_rules.append(f'<p class="error">{key} not dispatchable from body_list')
@@ -173,7 +173,7 @@ def dict_to_html(info: dict, section=None) -> str:
     else:
       cr_str = f'<p>{cr_str}</p>'
 
-    qualifier_strings = format_body_qualifiers(info)
+    qualifier_strings = dispatch_body_qualifiers(info)
     for qualifier_string in qualifier_strings:
       class_attribute = ' class="error"' if 'Error:' in qualifier_string else ''
       cr_str += f'<p{class_attribute}>{qualifier_string}</p>'
@@ -344,5 +344,8 @@ def to_html(info: any) -> str:
     return list_to_html(info)
   if isinstance(info, dict):
     return dict_to_html(info)
+  if isinstance(info, str):
+    return f'<em>{info}</em>'
+  print(f'to_html(): Not bool, list, dict, or str: |{info}|', file=sys.stderr)
 
   return info

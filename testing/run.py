@@ -36,9 +36,9 @@ if DEBUG:
   print(f'{test_dir.name}/{file.name} has {size} bytes; {num_lines} lines. {timelimit=}')
 
 if os.getenv('HOSTTYPE') == 'aarch64':
-  classpath = './classes:/opt/homebrew/Cellar/antlr/4.9.2/antlr-4.9.2-complete.jar'
+  classpath = './classes:/opt/homebrew/Cellar/antlr/4.9.3/antlr-4.9.3-complete.jar'
 else:
-  classpath = './classes:/usr/local/lib/antlr-4.9.2-complete.jar'
+  classpath = './classes:/usr/local/lib/antlr-4.9.3-complete.jar'
 
 try:
   run_args = ['java', '-cp', classpath, 'org.antlr.v4.gui.TestRig', 'ReqBlock', 'req_block']

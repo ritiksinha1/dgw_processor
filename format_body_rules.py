@@ -6,16 +6,15 @@ import os
 import sys
 
 import Any
-
-from icecream import ic
+import html_utils
+from pgconnection import PgConnection
 
 if os.getenv('DEBUG_BODY_RULES'):
   DEBUG = True
 else:
   DEBUG = False
 
-import htmlificization
-import format_body_qualifiers
+from format_body_qualifiers import dispatch_body_qualifiers
 import format_utils
 
 
@@ -36,11 +35,38 @@ def format_block(block_dict: dict) -> str:
     block_str = ('<p class="error">Number of blocks other than one ({number} encountered) '
                  f'not implemented yet</p>')
   else:
-    block_type = block_dict['block_type'].title()
-    if block_type == 'Conc':
-      block_type = 'Concentration'
+    block_type = block_dict['block_type']
     block_value = block_dict['block_value']
-    block_str = f'<p>The {block_value} {block_value} is required.</p>'
+    institution = block_dict['institution']
+    # Get the block
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(f"""
+      select parse_tree from requirement_blocks
+      where institution = %s
+      and block_type ~* %s
+      and block_value ~* %s
+      and period_stop ~* '^9'
+      """, [institution, block_type, f'^{block_value}$'])
+    block_type_str = 'Concentration'if block_type.lower() == 'conc' else block_type.title()
+    block_str = f'<p>The {block_value} {block_type.title()} block is required:</p>'
+    if cursor.rowcount == 0:
+      block_str += f'<p class="error">Requirement Block not found!</p>'
+    elif cursor.rowcount > 1:
+      block_str += f'<p class="error">Multiple matching Requirement Blocks found!</p>'
+    else:
+      parse_tree = cursor.fetchone().parse_tree
+      if parse_tree == {}:
+        parse_results = f'<p>No information available for this block at this time.</p>'
+      elif 'error' in parse_tree.keys():
+        err_msg = parse_tree['error']
+        parse_results = f'<p>There was an error processing this block: {err_msg}</p>'
+      else:
+        parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
+        parse_results += html_utils.list_to_html(parse_tree['body_list'], section='body')
+      block_str += parse_results
+
+    conn.close()
 
   if summary:
     return f'<details>{summary}{block_str}</details>'
@@ -118,14 +144,18 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     pass
   try:
     if remark_str := class_credit_dict['remark']:
-      class_credit_str += f'<p>{remark_str}</p>'
+      class_credit_str += f'<p>Remark: <em>{remark_str}</em></p>'
   except KeyError:
     pass
   try:
     if display_str := class_credit_dict['display']:
-      class_credit_str += f'<p>{display_str}</p>'
+      class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
   except KeyError:
     pass
+
+  # Qualifiers: Expect list of html paragraphs, but it might be empty
+  if qualifiers_str := dispatch_body_qualifiers(class_credit_dict):
+    class_credit_str += '\n'.join(qualifiers_str)
 
   # If there is a list of courses, it gets shown as a display element.
   try:
@@ -141,10 +171,34 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     return f'{prefix_str}{class_credit_str}'
 
 
+# format_conditional()
+# -------------------------------------------------------------------------------------------------
+def format_conditional(conditional_dict: dict) -> str:
+  """ Expect a label, a conditional expression string, a possible list of concentrations,
+             qualifiers, an if_true list of rules, and an optional if_false list of rules.
+      The concentration list is only a stub so far, so it's ignored here.
+      The list of rules get dispatched back into this module.
+  """
+
+  try:
+    label_str = conditional_dict['label']
+    summary = f'<summary>{label_str}</summary>'
+  except KeyError:
+    summary = None
+
+  conditional_str = f'<p class="error">format_conditional({conditional_dict})</p>'
+
+  if summary:
+    return f'<details>{summary}{conditional_str}</details>'
+  else:
+    return f'{conditional_str}'
+
+
 # format_copy_rules()
 # -------------------------------------------------------------------------------------------------
 def format_copy_rules(copy_rules_dict: dict) -> str:
-  """
+  """ Instead of linking to the imported block, an enhancement would be to access the block here and
+      to interpret them inline.
   """
 
   try:
@@ -174,6 +228,14 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
     return copy_rules_str
 
 
+# format_course_list_rule()
+# -------------------------------------------------------------------------------------------------
+def format_course_list_rule(course_list_rule: dict) -> str:
+  """
+  """
+  return '<p class="error">format_course_list_rule() not implemented yet.</p>'
+
+
 # format_group_requirements()
 # -------------------------------------------------------------------------------------------------
 def format_group_requirements(group_requirements: list) -> str:
@@ -196,19 +258,25 @@ def format_group_requirements(group_requirements: list) -> str:
     num_required = int(group_requirement['number'])
     suffix = '' if num_required == 1 else 's'
     if num_required < len(format_utils.number_names):
-      num_required = format_utils.number_names[num_required]
+      num_required_str = format_utils.number_names[num_required].lower()
+    else:
+      num_required_str = f'{num_required:,}'
     num_groups = len(group_requirement['group_list']['groups'])
     if num_groups < len(format_utils.number_names):
-      num_groups = format_utils.number_names[num_groups]
+      num_groups_str = format_utils.number_names[num_groups].lower()
+    else:
+      num_groups_str = f'{num_groups:,}'
 
     if num_required == num_groups:
-      if num_required == 'two':
+      if num_required == 2:
         prefix = 'Both'
       else:
         prefix = 'All'
+    elif (num_required == 1) and (num_groups == 2):
+      prefix = 'Either'
     else:
-      prefix = f'Any {num_required}'
-    group_requirement_str = f'<p>{prefix} of the following {num_groups} groups</p>'
+      prefix = f'Any {num_required_str}'
+    group_requirement_str = f'<p>{prefix} of the following {num_groups_str} groups</p>'
 
     for index, requirement in enumerate(group_requirement['group_list']['groups']):
       for key in requirement.keys():
@@ -228,8 +296,11 @@ def format_group_requirements(group_requirements: list) -> str:
             group_requirement_str += format_noncourse([requirement[key]])
           case 'rule_complete':
             group_requirement_str += format_rule_complete([requirement[key]])
+          case 'label':
+            pass  # Labels are extracted by one of the above matches
           case _:
-            group_requirement_str += (f'<p class="error">{key.title()} requirement not '
+            # Remarks will show up here? Or are they handled like labels??
+            group_requirement_str += (f'<p>{key.title()}: {requirement[key]} requirement not '
                                       f'implemented.</p>')
 
     if summary:
@@ -238,53 +309,6 @@ def format_group_requirements(group_requirements: list) -> str:
       group_requirements_str += f'{group_requirement_str}'
 
   return group_requirements_str
-
-
-# format_conditional()
-# -------------------------------------------------------------------------------------------------
-def format_conditional(conditional_dict: dict) -> str:
-  """
-  """
-
-  try:
-    label_str = conditional_dict['label']
-    summary = f'<summary>{label_str}</summary>'
-  except KeyError:
-    summary = None
-
-  conditional_str = '<p class="error">Conditional not implemented yet</p>'
-
-  if summary:
-    return f'<details>{summary}{conditional_str}</details>'
-  else:
-    return f'{conditional_str}'
-
-
-# format_maxperdisc()
-# -------------------------------------------------------------------------------------------------
-def format_maxperdisc(maxperdisc_dict: dict) -> str:
-  """
-  """
-
-  try:
-    label_str = maxperdisc_dict['label']
-    summary = f'<summary>{label_str}</summary>'
-  except KeyError:
-    summary = None
-
-  number = int(max_perdisc_dict['number'])
-  suffix = '' if number == 1 else 's'
-  if number < len(format_utils.number_names):
-    number_str = format_utils.number_names[number].lower()
-  else:
-    number_str = f'{number:,}'
-  discipline_list = and_list(max_perdisc[disciplines])
-  maxperdisc_str = f'<p>No more than {number_str} course{suffix} in {discipline_list} allowed</p>'
-
-  if summary:
-    return f'<details>{summary}{maxperdisc_str}</details>'
-  else:
-    return f'{maxperdisc_str}'
 
 
 # format_noncourse()
@@ -358,17 +382,6 @@ def format_rule_complete(rule_complete_dict: dict) -> str:
     return rule_complete_str
 
 
-# format_rule_tag()
-# -------------------------------------------------------------------------------------------------
-def format_rule_tag(rule_tag_dict: dict) -> str:
-  """ Ignoring rule_tag
-  """
-
-  rule_tag_str = '<p class="error">Rule tag not implemented yet</p>'
-
-  return ''
-
-
 # format_subset()
 # -------------------------------------------------------------------------------------------------
 def format_subset(subset_dict: dict) -> str:
@@ -406,7 +419,7 @@ def format_subset(subset_dict: dict) -> str:
 
 # Next, any qualifiers.
   try:
-    if qualifiers_list := format_body_qualifiers.format_body_qualifiers(subset_dict):
+    if qualifiers_list := dispatch_body_qualifiers(subset_dict):
       subset_str += '\n'.join(qualifiers_list)
   except KeyError:
     pass
@@ -451,8 +464,8 @@ def format_subset(subset_dict: dict) -> str:
     pass
 
   try:
-    if group_dict := subset_dict['group']:
-      subset_str += format_group(group_dict)
+    if group_dict := subset_dict['group_requirements']:
+      subset_str += format_group_requirements(group_dict)
   except KeyError:
     pass
 
@@ -472,31 +485,30 @@ def format_subset(subset_dict: dict) -> str:
     return f'{subset_str}'
 
 
-# format_dispatch_table {}
+# _dispatch_table {}
 # -------------------------------------------------------------------------------------------------
-dispatch_table = {'block': format_block,
-                  'blocktype': format_blocktype,
-                  'class_credit': format_class_credit,
-                  'copy_rules': format_copy_rules,
-                  'group_requirements': format_group_requirements,
-                  'conditional': format_conditional,
-                  'maxperdisc': format_maxperdisc,
-                  'noncourse': format_noncourse,
-                  'proxy_advice': format_proxy_advice,
-                  'remark': format_remark,
-                  'rule_complete': format_rule_complete,
-                  'rule_tag': format_rule_tag,
-                  'subset': format_subset
-                  }
+_dispatch_table = {'block': format_block,
+                   'blocktype': format_blocktype,
+                   'class_credit': format_class_credit,
+                   'conditional': format_conditional,
+                   'copy_rules': format_copy_rules,
+                   'course_list_rule': format_course_list_rule,
+                   'group_requirements': format_group_requirements,
+                   'noncourse': format_noncourse,
+                   'proxy_advice': format_proxy_advice,
+                   'remark': format_remark,
+                   'rule_complete': format_rule_complete,
+                   'subset': format_subset
+                   }
 
 
-# format_body_rule()
+# dispatch_body_rule()
 # -------------------------------------------------------------------------------------------------
-def format_body_rule(dict_key: str, rule_dict: dict) -> str:
+def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
   """ If this fails, the formatter is not one of the top-level ones, and will have to be called
       directly.
   """
   try:
-    return dispatch_table[dict_key](rule_dict)
+    return _dispatch_table[dict_key](rule_dict)
   except KeyError:
     return None

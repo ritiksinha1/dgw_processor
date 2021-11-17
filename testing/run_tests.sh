@@ -2,6 +2,7 @@
 
 # Be sure ReqBlock.g4 here matches the real one, one directory up.
 cp ../ReqBlock.g4 .
+make parser
 
 # Clean out the test_results directories
 # Parse all requirement blocks in the test_data directories.

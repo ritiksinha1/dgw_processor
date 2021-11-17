@@ -81,7 +81,8 @@ if __name__ == '__main__':
       error_value = parse_tree['error']
     else:
       error_value = ''
-    exit(f'{base_name} has not been parsed. {error_value}')
+    print(f'{base_name} has not been parsed. {error_value}')
+    header_list = body_list = {}
 
   print(base_name)
   with open(f'./extracts/{base_name}.html', 'w') as html_file:

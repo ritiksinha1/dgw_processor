@@ -512,6 +512,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#label_head.
+    def enterLabel_head(self, ctx:ReqBlockParser.Label_headContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#label_head.
+    def exitLabel_head(self, ctx:ReqBlockParser.Label_headContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#label.
     def enterLabel(self, ctx:ReqBlockParser.LabelContext):
         pass

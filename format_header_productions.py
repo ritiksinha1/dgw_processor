@@ -369,14 +369,14 @@ def _dispatch_production(production: str, production_info: Any) -> str:
   return dispatch_table[production](production_info)
 
 
-# format_header_productions()
+# dispatch_header_productions()
 # -------------------------------------------------------------------------------------------------
-def format_header_productions(node: dict) -> list:
+def dispatch_header_productions(node: dict) -> list:
   """ Given a dict that may or may not have keys for known productions remove all known productions
       from the dict, and return a list of formatted strings representing them.
   """
   if DEBUG:
-    print(f'*** format_header_productions(keys: {list(node.keys())}', file=sys.stderr)
+    print(f'*** dispatch_header_productions(keys: {list(node.keys())}', file=sys.stderr)
 
   production_strings = []
   for production in dispatch_table.keys():

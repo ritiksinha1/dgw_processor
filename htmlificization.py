@@ -31,8 +31,8 @@ import format_utils
 # format_utils.format_course_list
 # format_utils.list_of_courses
 
-from format_body_qualifiers import format_body_qualifiers
-from format_header_productions import format_header_productions
+from format_body_qualifiers import dispatch_body_qualifiers
+from format_header_productions import dispatch_header_productions
 
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
