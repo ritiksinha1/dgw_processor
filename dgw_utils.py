@@ -418,7 +418,7 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
       if class_name(child).lower() in dgw_handlers.dispatch_body.keys():
         group_dict.update(dgw_handlers.dispatch(child, institution, requirement_id))
       else:
-        print(f'xxxx {class_name(child)} is not a dispatchable body key')
+        print(f'xxxx {class_name(child)} is not a dispatchable body key', file=sys.stderr)
       return_dict['groups'].append(group_dict)
 
   if DEBUG:
