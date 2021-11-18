@@ -6,6 +6,7 @@
 
 import os
 import sys
+from traceback import print_stack
 
 from format_header_productions import dispatch_header_productions
 from format_body_qualifiers import dispatch_body_qualifiers
