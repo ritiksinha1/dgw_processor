@@ -219,7 +219,7 @@ def format_conditional(conditional_dict: dict) -> str:
 # format_copy_rules()
 # -------------------------------------------------------------------------------------------------
 def format_copy_rules(copy_rules_dict: dict) -> str:
-  """ Get the body of the referenced block, and display them.
+  """ Get the body of the referenced block, and display the rules from there.
   """
 
   try:
@@ -229,19 +229,35 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
     summary = None
 
   institution = copy_rules_dict['institution']
-  requirement_id = copy_rules_dict['requirement_id]']
+  requirement_id = copy_rules_dict['requirement_id']
+  block_type = copy_rules_dict['block_type']
+  block_type = 'Concentration' if block_type == 'CONC' else block_type.title()
+  block_value = copy_rules_dict['block_value']
+  copy_rules_str = ''
+  # Check that the block exists and is current
   if 'error' in copy_rules_dict.keys():
     error_msg = copy_rules_dict['error']
     copy_rules_str = f'<p class="error">{error_msg}</p>'
   else:
-    block_type = copy_rules_dict['block_type']
-    block_value = copy_rules_dict['block_value']
-    url = (f"requirements/?institution='{institution}'&college='{institution}'"
-           f"&requirement-type='{block_type}'&requirement-name='{block_value}'"
-           f"&period-range=current")
-    block_type = 'Concentration' if block_type == 'CONC' else block_type.title()
-    anchor_text = f'{block_value} {block_type} at {institution} ({requirement_id})'
-    copy_rules_str = '<p>Use the body section of the <a href="{url}">{anchor_text}</a></p>'
+    # Get the parse_tree (this was not done by dgw_parser to avoid bloating the db)
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(f"""
+      select parse_tree, title
+        from requirement_blocks
+       where institution = %s and requirement_id= %s""", [institution, requirement_id])
+    if cursor.rowcount != 1:
+      copy_rules_str = (f'<p class="error">No parse tree found for {institution} '
+                        f'{requirement_id}</p>')
+    else:
+      row = cursor.fetchone()
+      copy_rules_str += f'<p>“{row.title}” Requirements</p>'
+      body_list = row.parse_tree['body_list']
+      for body_element in body_list:
+        for key, value in body_element.items():
+          copy_rules_str += dispatch_body_rule(key, value)
+
+    conn.close()
 
   if summary:
     return f'<details>{summary}{copy_rules_str}</details>'

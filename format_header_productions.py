@@ -139,10 +139,6 @@ def _format_maxpassfail_head(maxpassfail_head_dict: dict) -> str:
   maxpassfail_dict = maxpassfail_head_dict['maxpassfail']
   maxpassfail_info = format_body_qualifiers.format_maxpassfail(maxpassfail_dict)
 
-  if courses_str := format_utils.format_course_list(maxpassfail_dict['course_list']):
-    maxpassfail_info = maxpassfail_info.replace('</p>', ' in these courses:</p>')
-    maxpassfail_info += courses_str
-
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxpassfail_info}<details>'
   else:
@@ -234,7 +230,6 @@ def _format_mincredit_head(mincredit_head_dict: dict) -> str:
   """
   if DEBUG:
     print(f'_format_mincredit_head({mincredit_head_dict}', file=sys.stderr)
-  print(f'_format_mincredit_head({mincredit_head_dict}', file=sys.stderr)
 
   try:
     label_str = mincredit_head_dict['label']
