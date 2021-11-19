@@ -219,8 +219,7 @@ def format_conditional(conditional_dict: dict) -> str:
 # format_copy_rules()
 # -------------------------------------------------------------------------------------------------
 def format_copy_rules(copy_rules_dict: dict) -> str:
-  """ Instead of linking to the imported block, an enhancement would be to access the block here and
-      to interpret them inline.
+  """ Get the body of the referenced block, and display them.
   """
 
   try:

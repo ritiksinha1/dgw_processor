@@ -693,16 +693,6 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     print(f'*** build_course_list({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  if ctx is None:
-    return None
-  try:
-    assert class_name(ctx) == 'Course_list', (f'Assertion Error: {class_name(ctx)} is not '
-                                              f'Course_list in build_course_list')
-  except AssertionError as ae:
-    print(ae, file=sys.stderr)
-    if DEBUG:
-      print_stack(limit=5)
-
   # The dict to be returned:
   return_dict = {'scribed_courses': [],
                  'list_type': None,
@@ -722,6 +712,21 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   include_courses = return_dict['include_courses']
   missing_courses = return_dict['missing_courses']
   attributes = return_dict['attributes']
+
+  if ctx is None:
+    # Should not occur, but return the dict structure just in case
+    print('Error: build_course_list with missing context value', file=sys.stderr)
+    print_stack()
+    return return_dict
+
+  try:
+    assert class_name(ctx) == 'Course_list', (f'Assertion Error: {class_name(ctx)} is not '
+                                              f'Course_list in build_course_list')
+  except AssertionError as ae:
+    print(ae, file=sys.stderr)
+    if DEBUG:
+      print_stack(limit=5)
+
 
   # get context of the required first_course and list of optional additional first_courses.
   return_dict['context_path'] = context_path(ctx)
