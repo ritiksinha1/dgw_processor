@@ -28,7 +28,6 @@ import sys
 import Any
 
 import format_body_qualifiers
-
 import format_utils
 
 DEBUG = os.getenv('DEBUG_HEADER')
@@ -36,6 +35,18 @@ DEBUG = os.getenv('DEBUG_HEADER')
 
 # Header Qualifier Handlers
 # =================================================================================================
+""" About Labels and Course Lists
+
+      The grammar differentiates between labels in the header (label_head) and body (label). But
+      dgw_parser has turned them both into 'label' keys, so this module doesn't have to deal with
+      that difference.
+
+      In all cases where a header production allows (but does not require) a course_list, dgw_parser
+      will supply a 'course_list' key for the dict, but its value can be None. That is, there should
+      be no KeyErrors when calling format_utils.format_course_list(), but the result needs to be
+      checked for emptiness.
+"""
+
 
 # _format_maxclass_head()
 # -------------------------------------------------------------------------------------------------
@@ -150,6 +161,10 @@ def _format_maxperdisc_head(maxperdisc_head_dict: dict) -> str:
   maxperdisc_dict = maxperdisc_head_dict['maxperdisc']
   maxperdisc_info = format_body_qualifiers.format_maxperdisc(maxperdisc_dict)
 
+  if courses_str := format_utils.format_course_list(maxperdisc_dict['course_list']):
+    maxperdisc_info = maxperdisc_info.replace('</p>', ' in these courses:</p>')
+    maxperdisc_info += courses_str
+
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxperdisc_info}<details>'
   else:
@@ -171,6 +186,10 @@ def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
 
   maxtransfer_dict = maxtransfer_head_dict['maxtransfer']
   maxtransfer_info = format_body_qualifiers.format_maxtransfer(maxtransfer_dict)
+
+  if courses_str := format_utils.format_course_list(mintransfer_dict['course_list']):
+    mintransfer_info = mintransfer_info.replace('</p>', ' in these courses:</p>')
+    mintransfer_info += courses_str
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxtransfer_info}<details>'
@@ -194,6 +213,10 @@ def _format_minclass_head(minclass_head_dict: dict) -> str:
   minclass_dict = minclass_head_dict['minclass']
   minclass_info = format_body_qualifiers.format_minclass(minclass_dict)
 
+  if courses_str := format_utils.format_course_list(minclass_dict['course_list']):
+    minclass_info = minclass_info.replace('</p>', ' in these courses:</p>')
+    minclass_info += courses_str
+
   if label_str:
     return f'<details><summary>{label_str}</summary>{minclass_info}<details>'
   else:
@@ -216,10 +239,14 @@ def _format_mincredit_head(mincredit_head_dict: dict) -> str:
   mincredit_dict = mincredit_head_dict['mincredit']
   mincredit_info = format_body_qualifiers.format_mincredit(mincredit_dict)
 
+  if courses_str := format_utils.format_course_list(mincredit_dict['course_list']):
+    mincredit_info = mincredit_info.replace('</p>', ' in these courses:</p>')
+    mincredit_info += courses_str
+
   if label_str:
     return f'<details><summary>{label_str}</summary>{mincredit_info}<details>'
   else:
-    return f'<p>{mincredit_info}<.p>'
+    return mincredit_info
 
 
 # _format_mingpa_head()
@@ -237,6 +264,10 @@ def _format_mingpa_head(mingpa_head_dict: dict) -> str:
 
   mingpa_dict = mingpa_head_dict['mingpa']
   mingpa_info = format_body_qualifiers.format_mingpa(mingpa_dict)
+
+  if courses_str := format_utils.format_course_list(mingpa_dict['course_list']):
+    mingpa_info = mingpa_info.replace('</p>', ' in these courses:</p>')
+    mingpa_info += courses_str
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{mingpa_info}<details>'
@@ -260,6 +291,10 @@ def _format_mingrade_head(mingrade_head_dict: dict) -> str:
   mingrade_dict = mingrade_head_dict['mingrade']
   mingrade_info = format_body_qualifiers.format_mingrade(mingrade_dict)
 
+  if courses_str := format_utils.format_course_list(mingrade_dict['course_list']):
+    mingrade_info = mingrade_info.replace('</p>', ' in these courses:</p>')
+    mingrade_info += courses_str
+
   if label_str:
     return f'<details><summary>{label_str}</summary>{mingrade_info}<details>'
   else:
@@ -270,6 +305,10 @@ def _format_mingrade_head(mingrade_head_dict: dict) -> str:
 # -------------------------------------------------------------------------------------------------
 def _format_minperdisc_head(minperdisc_head_dict: dict) -> str:
   """
+      minperdisc_head : minperdisc label_head?
+      minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag?
+                        display*;
+
   """
   if DEBUG:
     print(f'_format_minperdisc_head({minperdisc_head_dict}', file=sys.stderr)
@@ -281,6 +320,10 @@ def _format_minperdisc_head(minperdisc_head_dict: dict) -> str:
 
   minperdisc_dict = minperdisc_head_dict['minperdisc']
   minperdisc_info = format_body_qualifiers.format_minperdisc(minperdisc_dict)
+
+  if courses_str := format_utils.format_course_list(minperdisc_dict['course_list']):
+    minperdisc_info = minperdisc_info.replace('</p>', ' in these courses:</p>')
+    minperdisc_info += courses_str
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{minperdisc_info}<details>'
@@ -312,6 +355,11 @@ def _format_minres_head(minres_head_dict: dict) -> str:
   class_credit_str = format_utils.format_num_class_credit(minres_dict)
   minres_info = f'<p>{class_credit_str} must be completed in residence.</p>'
 
+  if courses_str := format_utils.format_course_list(minres_dict['course_list']):
+    minres_info = (f'<p>{class_credit_str} of the following courses must be completed in '
+                   f'residence:</p>')
+    minres_info += courses_str
+
   if label_str:
     return f'<details>{display_str}<summary>{label_str}</summary>{minres_info}<details>'
   else:
@@ -322,6 +370,7 @@ def _format_minres_head(minres_head_dict: dict) -> str:
 # -------------------------------------------------------------------------------------------------
 def _format_share_head(share_head_dict: dict) -> str:
   """ share_header : share label?;
+      share        : (SHARE | DONT_SHARE) (NUMBER class_or_credit)? expression? tag?;
   """
   if DEBUG:
     print(f'_format_share_head({share_head_dict})', file=sys.stderr)

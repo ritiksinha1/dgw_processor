@@ -4,6 +4,7 @@
 
 import os
 import sys
+from traceback import print_stack
 
 import Any
 import html_utils
@@ -36,7 +37,7 @@ def format_block(block_dict: dict) -> str:
                  f'not implemented yet</p>')
   else:
     block_type = block_dict['block_type']
-    block_value = block_dict['block_value']
+    block_value = block_dict['block_value'].upper()
     institution = block_dict['institution']
     # Get the block
     conn = PgConnection()
@@ -49,7 +50,7 @@ def format_block(block_dict: dict) -> str:
       and period_stop ~* '^9'
       """, [institution, block_type, f'^{block_value}$'])
     block_type_str = 'Concentration'if block_type.lower() == 'conc' else block_type.title()
-    block_str = f'<p>The {block_value} {block_type.title()} block is required:</p>'
+    block_str = f'<p>{block_value} {block_type_str.title()} Requirements:</p>'
     if cursor.rowcount == 0:
       block_str += f'<p class="error">Requirement Block not found!</p>'
     elif cursor.rowcount > 1:
@@ -174,31 +175,51 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
 # format_conditional()
 # -------------------------------------------------------------------------------------------------
 def format_conditional(conditional_dict: dict) -> str:
-  """ Expect a label, a conditional expression string, a possible list of concentrations,
-             qualifiers, an if_true list of rules, and an optional if_false list of rules.
-      The concentration list is only a stub so far, so it's ignored here.
-      The list of rules get dispatched back into this module.
+  """ Expect a conditional expression string, an if_true list of rules, and an optional if_false
+      list of rules. (Note: conditionals don't have labels: they aren't requirements per se.)
+      As a reminder of work to be done, we call format_conditional() to interpret the condition
+      string and return a list of conditions required. But that function is only a stub, pending
+      determination of what should actually be done to interpret the condition string.
+
+      The list of rules get dispatched back into this module, which requires this function to
+      determine whether to dispatch through format_header_productions of format_body_rules.
   """
 
+  condition_str = conditional_dict['condition']
+  true_type = true_op = true_name = None
+  # Simple case: major, minor, concentration is, or is not, something
   try:
-    label_str = conditional_dict['label']
-    summary = f'<summary>{label_str}</summary>'
+    lp, true_type, true_op, true_name, rp = condition_str.split()
+    if true_op not in ['=', '<>']:
+      raise ValueError('Wrong true_op')
+    true_type = 'Concentration' if true_type.lower() == 'conc' else true_type.title()
+    op_name = 'is' if true_op == '=' else 'is not'
+    summary_str = f'<summary>If {true_type} {op_name} {true_name.upper()}</summary>'
+  except ValueError:
+    # Not the simple case
+    summary_str = f'<summary>If {condition_str} is True</summary>'
+
+  conditional_body = ''
+  for rule in conditional_dict['if_true']:
+    for key, value in rule.items():
+      conditional_body += dispatch_body_rule(key, value)
+  else_summary = else_body = ''
+  try:
+    for rule in conditional_dict['if_false']:
+      for key, value in rule.items():
+        else_body += dispatch_body_rule(key, value)
+    else_summary = f'<details><summary>Otherwise</summary>'
+    else_body += '</details>'
   except KeyError:
-    summary = None
+    pass
 
-  conditional_str = f'<p class="error">format_conditional({conditional_dict})</p>'
-
-  if summary:
-    return f'<details>{summary}{conditional_str}</details>'
-  else:
-    return f'{conditional_str}'
+  return f'<details>{summary_str}{conditional_body}{else_summary}{else_body}</details>'
 
 
 # format_copy_rules()
 # -------------------------------------------------------------------------------------------------
 def format_copy_rules(copy_rules_dict: dict) -> str:
-  """ Instead of linking to the imported block, an enhancement would be to access the block here and
-      to interpret them inline.
+  """ Get the body of the referenced block, and display the rules from there.
   """
 
   try:
@@ -208,19 +229,35 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
     summary = None
 
   institution = copy_rules_dict['institution']
-  requirement_id = copy_rules_dict['requirement_id]']
+  requirement_id = copy_rules_dict['requirement_id']
+  block_type = copy_rules_dict['block_type']
+  block_type = 'Concentration' if block_type == 'CONC' else block_type.title()
+  block_value = copy_rules_dict['block_value']
+  copy_rules_str = ''
+  # Check that the block exists and is current
   if 'error' in copy_rules_dict.keys():
     error_msg = copy_rules_dict['error']
     copy_rules_str = f'<p class="error">{error_msg}</p>'
   else:
-    block_type = copy_rules_dict['block_type']
-    block_value = copy_rules_dict['block_value']
-    url = (f"requirements/?institution='{institution}'&college='{institution}'"
-           f"&requirement-type='{block_type}'&requirement-name='{block_value}'"
-           f"&period-range=current")
-    block_type = 'Concentration' if block_type == 'CONC' else block_type.title()
-    anchor_text = f'{block_value} {block_type} at {institution} ({requirement_id})'
-    copy_rules_str = '<p>Use the body section of the <a href="{url}">{anchor_text}</a></p>'
+    # Get the parse_tree (this was not done by dgw_parser to avoid bloating the db)
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute(f"""
+      select parse_tree, title
+        from requirement_blocks
+       where institution = %s and requirement_id= %s""", [institution, requirement_id])
+    if cursor.rowcount != 1:
+      copy_rules_str = (f'<p class="error">No parse tree found for {institution} '
+                        f'{requirement_id}</p>')
+    else:
+      row = cursor.fetchone()
+      copy_rules_str += f'<p>“{row.title}” Requirements</p>'
+      body_list = row.parse_tree['body_list']
+      for body_element in body_list:
+        for key, value in body_element.items():
+          copy_rules_str += dispatch_body_rule(key, value)
+
+    conn.close()
 
   if summary:
     return f'<details>{summary}{copy_rules_str}</details>'
@@ -371,7 +408,7 @@ def format_rule_complete(rule_complete_dict: dict) -> str:
   except KeyError:
     summary = None
 
-  if rule_complete['is_complete']:
+  if rule_complete_dict['is_complete']:
     rule_complete_str = '<p>This rule is satisfied.</p>'
   else:
     rule_complete_str = '<p>This rule is <strong>not</strong> satisfied.</p>'

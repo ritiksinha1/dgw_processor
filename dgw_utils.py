@@ -418,7 +418,7 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
       if class_name(child).lower() in dgw_handlers.dispatch_body.keys():
         group_dict.update(dgw_handlers.dispatch(child, institution, requirement_id))
       else:
-        print(f'xxxx {class_name(child)} is not a dispatchable body key')
+        print(f'xxxx {class_name(child)} is not a dispatchable body key', file=sys.stderr)
       return_dict['groups'].append(group_dict)
 
   if DEBUG:
@@ -693,15 +693,17 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     print(f'*** build_course_list({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
+  # Preconditions, with error recovery
   if ctx is None:
-    return None
-  try:
-    assert class_name(ctx) == 'Course_list', (f'Assertion Error: {class_name(ctx)} is not '
-                                              f'Course_list in build_course_list')
-  except AssertionError as ae:
-    print(ae, file=sys.stderr)
-    if DEBUG:
-      print_stack(limit=5)
+    # Should not occur, but return an empty dict just in case
+    print('Error: build_course_list with missing context value', file=sys.stderr)
+    print_stack(limit=5)
+    return {}
+
+  if class_name(ctx) != 'Course_list':
+    print(f'{class_name(ctx)} is not Course_list in build_course_list', file=sys.stderr)
+    print_stack(limit=5)
+    return {}
 
   # The dict to be returned:
   return_dict = {'scribed_courses': [],
@@ -722,6 +724,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   include_courses = return_dict['include_courses']
   missing_courses = return_dict['missing_courses']
   attributes = return_dict['attributes']
+
 
   # get context of the required first_course and list of optional additional first_courses.
   return_dict['context_path'] = context_path(ctx)

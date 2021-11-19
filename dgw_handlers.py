@@ -262,10 +262,11 @@ def conditional_body(ctx, institution, requirement_id):
   return_dict['condition'] = condition
 
   # Concentrations in the expression?
-  if 'conc' in condition.lower():
-    return_dict['concentrations'] = concentration_list(condition,
-                                                       institution,
-                                                       requirement_id)
+  # concentration_list() is only a stub, so no point in cluttering the dict.
+  # if 'conc' in condition.lower():
+  #   return_dict['concentrations'] = concentration_list(condition,
+  #                                                      institution,
+  #                                                      requirement_id)
 
   if ctx.body_rule():
     return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
