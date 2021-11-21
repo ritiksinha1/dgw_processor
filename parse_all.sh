@@ -18,7 +18,8 @@ do
   shift
 done
 
-# Option to use an environment variable to specify a timeout interval differing from the default
+# Option to use an environment variable to specify a timeout interval different from the built-in
+# default of 30 sec.
 if [[ $TIMEOUT_INTERVAL ]]
 then timeout_arg="-ti $TIMEOUT_INTERVAL"
      echo "Timeout interval is $TIMEOUT_INTERVAL seconds"
@@ -30,8 +31,8 @@ fi
 truncate -s 0 parse_all.out
 truncate -s 0 parse_all.err
 
-# Process each institution separately
 SECONDS=0
+# Process each institution separately
 for institution in ${institutions[@]}
 do
   start=$SECONDS
