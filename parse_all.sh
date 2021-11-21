@@ -1,20 +1,52 @@
 #! /usr/local/bin/bash
 
-# Parse all current blocks for all institutions with option to ignore institutions
+# Parse all current blocks for all institutions
+
+# All institutions
 institutions=(bar bcc bkl bmc csi cty grd hos htr jjc kcc lag law leh mec med ncc nyt qcc qns slu \
               soj sph sps yrk)
 
+# Option to skip institutions by listing them on the command line
 while [[ $# > 0 ]]
 do
   inst=`echo ${1} | cut -c 1-3 | tr A-Z a-z`
   if [[ ${#inst} != 3 ]]
   then echo "invalid institution: $1"
-  else institutions=( "${institutions[@]/$inst}" )
+  else echo "Will skip $inst"
+       institutions=( "${institutions[@]/$inst}" )
   fi
   shift
 done
 
+# Option to use an environment variable to specify a timeout interval differing from the default
+if [[ $TIMEOUT_INTERVAL ]]
+then timeout_arg="-ti $TIMEOUT_INTERVAL"
+     echo "Timeout interval is $TIMEOUT_INTERVAL seconds"
+else timeout_arg=''
+     echo "Timeout interval is default value (30 sec)"
+fi
+
+# Truncate pre-existing out and err files
+truncate -s 0 parse_all.out
+truncate -s 0 parse_all.err
+
+# Process each institution separately
+SECONDS=0
 for institution in ${institutions[@]}
 do
-  dgw_parser.py -i $institution -t all -v all >>parse_all.out 2>>parse_all.err
+  start=$SECONDS
+  dgw_parser.py -i $institution -t all -v all $timeout_arg >>parse_all.out 2>>parse_all.err
+  end=$SECONDS
+  let $(( interval = end - start ))
+  let $(( hours = interval / 3600  ))
+  let $(( minutes = (interval - (hours * 3600)) / 60 ))
+  let $(( seconds = interval - ( (hours * 3600) + (minutes * 60) ) ))
+  printf "%s completed in %02d:%02d:%02d\n" `echo $institution|tr a-z A-Z` $hours $minutes $seconds
 done
+
+# Timing summary
+interval=$SECONDS
+let $(( hours = interval / 3600  ))
+let $(( minutes = (interval - (hours * 3600)) / 60 ))
+let $(( seconds = interval - ( (hours * 3600) + (minutes * 60) ) ))
+printf "All institutions completed in %02d:%02d:%02d\n" $hours $minutes $seconds
