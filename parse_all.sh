@@ -7,6 +7,7 @@ institutions=(bar bcc bkl bmc csi cty grd hos htr jjc kcc lag law leh mec med nc
               soj sph sps yrk)
 
 # Option to skip institutions by listing them on the command line
+export truncate=True
 while [[ $# > 0 ]]
 do
   inst=`echo ${1} | cut -c 1-3 | tr A-Z a-z`
@@ -14,6 +15,8 @@ do
   then echo "invalid institution: $1"
   else echo "Will skip $inst"
        institutions=( "${institutions[@]/$inst}" )
+       # Keep previous out and error files
+       unset truncate
   fi
   shift
 done
@@ -27,9 +30,12 @@ else timeout_arg=''
      echo "Timeout interval is default value (30 sec)"
 fi
 
-# Truncate pre-existing out and err files
-truncate -s 0 parse_all.out
-truncate -s 0 parse_all.err
+# Truncate pre-existing out and err files if this is a "full run"
+if [[ $truncate ]]
+then
+     truncate -s 0 parse_all.out
+     truncate -s 0 parse_all.err
+fi
 
 SECONDS=0
 # Process each institution separately
