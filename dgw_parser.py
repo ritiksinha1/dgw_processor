@@ -208,7 +208,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
 
           # Deal with giant parse trees that exceed Postgres limit for jsonb data
           except psycopg.errors.ProgramLimitExceeded:
-            with open('tree_to_large.log', 'a') as tree_too_large:
+            with open('tree_too_large.log', 'a') as tree_too_large:
               print(f'\n{row.institution} {row.requirement_id}\n--------------'
                     f'JSON tree is {len(json.dumps(augmented_tree)):,} bytes', file=tree_too_large)
               print(augmented_tree, file=tree_too_large)
