@@ -42,31 +42,7 @@ grammar ReqBlock;
  * requirements.
  */
 req_block   : .*? BEGIN header (SEMICOLON body)? ENDOT .*? EOF;
-header      :
-            ( class_credit_head
-            | conditional_head
-            | lastres_head
-            | maxclass_head
-            | maxcredit_head
-            | maxpassfail_head
-            | maxperdisc_head
-            | maxterm_head
-            | maxtransfer_head
-            | minclass_head
-            | mincredit_head
-            | mingpa_head
-            | mingrade_head
-            | minperdisc_head
-            | minres_head
-            | optional
-            | proxy_advice
-            | remark
-            | share_head
-            | standalone
-            | under
-            )*
-            ;
-
+header      : header_rule* ;
 body        : body_rule* ;
 
 
@@ -134,44 +110,44 @@ qualifier         : maxpassfail
 begin_if          : BEGINIF | BEGINELSE;
 end_if            : ENDIF | ENDELSE;
 
-conditional_head  : IF expression THEN (head_rule | head_rule_group ) else_head?;
+header_conditional  : IF expression THEN (header_rule | header_rule_group ) header_else?;
 //                    (proxy_advice)* label? else_head?;
-else_head         : ELSE (head_rule | head_rule_group);
+header_else         : ELSE (header_rule | header_rule_group);
 //                    (proxy_advice | label)*;
-head_rule_group   : (begin_if head_rule+ end_if);
-head_rule         : class_credit_head
-                  | conditional_head
-                  | copy_rules
-                  | lastres_head
-                  | maxclass_head
-                  | maxcredit_head
-                  | maxpassfail_head
-                  | maxterm_head
-                  | maxtransfer_head
-                  | minclass_head
-                  | mincredit_head
-                  | mingpa_head
-                  | mingrade_head
-                  | minperdisc_head
-                  | minres_head
-                  | minterm_head
-                  | noncourse
-                  | proxy_advice
-                  | remark
-                  | rule_complete
-                  | share_head
-                  ;
+header_rule_group   : (begin_if header_rule+ end_if);
+header_rule         : header_class_credit
+                    | header_conditional
+                    | copy_rules
+                    | header_lastres
+                    | header_maxclass
+                    | header_maxcredit
+                    | header_maxpassfail
+                    | header_maxterm
+                    | header_maxtransfer
+                    | header_minclass
+                    | header_mincredit
+                    | header_mingpa
+                    | header_mingrade
+                    | header_minperdisc
+                    | header_minres
+                    | header_minterm
+                    | noncourse
+                    | proxy_advice
+                    | remark
+                    | rule_complete
+                    | header_share
+                    ;
 
-conditional_body  : IF expression THEN (body_rule | body_rule_group) else_body?;
-//                    (qualifier tag? | proxy_advice | remark)* label? else_body?;
-else_body         : ELSE (body_rule | body_rule_group) ;
+body_conditional  : IF expression THEN (body_rule | body_rule_group) body_else?;
+//                    (qualifier tag? | proxy_advice | remark)* label? body_else?;
+body_else         : ELSE (body_rule | body_rule_group) ;
 //                    (qualifier tag? | proxy_advice | remark)* label?;
 body_rule_group : (begin_if body_rule+ end_if);
 
 body_rule       : block
                 | blocktype
-                | class_credit_body
-                | conditional_body
+                | body_class_credit
+                | body_conditional
                 | course_list_rule
                 | copy_rules
                 | group_requirement
@@ -191,7 +167,7 @@ groups            : group (logical_op group)*; // But only OR should occur
 group             : LP
                    ( block
                    | blocktype
-                   | class_credit_body
+                   | body_class_credit
                    | course_list_rule
                    | group_requirement
                    | noncourse
@@ -201,10 +177,10 @@ group             : LP
 //  Rule Subset (body only)
 //  -----------------------------------------------------------------------------------------------
 subset            : BEGINSUB
-                  ( conditional_body
+                  ( body_conditional
                     | block
                     | blocktype
-                    | class_credit_body
+                    | body_class_credit
                     | copy_rules
                     | course_list_rule
                     | group_requirement
@@ -226,33 +202,33 @@ blocktype       : NUMBER BLOCKTYPE expression proxy_advice? label;
  */
 allow_clause        : LP allow NUMBER RP;
 
-class_credit_head : (num_classes | num_credits)
-                  (logical_op (num_classes | num_credits))?
-                  (IS? pseudo | display | proxy_advice | header_tag | tag)* label_head?
-                  ;
+header_class_credit : (num_classes | num_credits)
+                    (logical_op (num_classes | num_credits))?
+                    (IS? pseudo | display | proxy_advice | header_tag | tag)* header_label?
+                    ;
 
-class_credit_body : (num_classes | num_credits)
+body_class_credit : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))? course_list_body?
                   (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )*
                   ;
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
 // ------------------------------------------------------------------------------------------------
-lastres_head      : lastres label_head?;
-maxclass_head     : maxclass label_head?;
-maxcredit_head    : maxcredit label_head?;
-maxpassfail_head  : maxpassfail label_head?;
-maxperdisc_head   : maxperdisc label_head? ;
-maxterm_head      : maxterm label_head?;
-maxtransfer_head  : maxtransfer label_head?;
-minclass_head     : minclass label_head?;
-mincredit_head    : mincredit label_head?;
-mingpa_head       : mingpa label_head?;
-mingrade_head     : mingrade label_head?;
-minperdisc_head   : minperdisc label_head?;
-minres_head       : minres label_head?;
-minterm_head      : minterm label_head?;
-share_head        : share label_head?;
+header_lastres      : lastres header_label?;
+header_maxclass     : maxclass header_label?;
+header_maxcredit    : maxcredit header_label?;
+header_maxpassfail  : maxpassfail header_label?;
+header_maxperdisc   : maxperdisc header_label? ;
+header_maxterm      : maxterm header_label?;
+header_maxtransfer  : maxtransfer header_label?;
+header_minclass     : minclass header_label?;
+header_mincredit    : mincredit header_label?;
+header_mingpa       : mingpa header_label?;
+header_mingrade     : mingrade header_label?;
+header_minperdisc   : minperdisc header_label?;
+header_minres       : minres header_label?;
+header_minterm      : minterm header_label?;
+header_share        : share header_label?;
 
 // Other parser productions
 // ------------------------------------------------------------------------------------------------
@@ -265,7 +241,7 @@ copy_rules      : COPY_RULES expression SEMICOLON?;
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
 display         : DISPLAY string SEMICOLON?;
 header_tag      : (HEADER_TAG nv_pair)+;
-label_head      : LABEL string ;
+header_label    : LABEL string ;
 label           : LABEL string SEMICOLON?;
 lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice?;
 maxclass        : MAXCLASS NUMBER course_list? tag?;

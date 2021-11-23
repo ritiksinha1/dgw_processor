@@ -248,11 +248,12 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
   disclaimer = """
   <div class="disclaimer">
     <p class="warning">
-      This is project is in the “beta” stage. That means that the display below
-      <em>should</em> be an an accurate representation of the requirements for this block,
-      omitting elements that would depend an individual student’s academic record, such as Proxy
-      Advice. But there may be errors and omissions. If you see such anomalies, I would
-      appreciate hearing about them. (<em>Click on my name for an email link.</em>)
+      This is a display of the requirements specified in this Scribe block, omitting information
+      that Degree Works uses to audit any particular student’s progress towards meeting those
+      requirements.
+      <br>
+      If you see any errors or omissions, I would appreciate hearing about them. (<em>Click on my
+      name for an email link.</em>)
     </p>
     <p>
       <em>Thanks</em>,<br>

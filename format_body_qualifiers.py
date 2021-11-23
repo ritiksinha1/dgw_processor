@@ -23,7 +23,7 @@ import sys
 import Any
 
 from traceback import print_stack
-from format_utils import format_num_class_credit
+from format_utils import format_num_class_credit, format_course_list
 
 DEBUG = os.getenv('DEBUG_QUALIFIERS')
 
@@ -185,21 +185,39 @@ def format_mincredit(mincredit_dict: dict) -> str:
 # format_mingpa()
 # -------------------------------------------------------------------------------------------------
 def format_mingpa(mingpa_dict: dict) -> str:
-  """ MINGPA NUMBER (course_list | expression)? tag? display*
+  """ MINGPA NUMBER (course_list | expression)? display*
   """
   if DEBUG:
     print(f'*** format_mingpa({mingpa_dict=})', file=sys.stderr)
 
   number = float(mingpa_dict.pop('number'))
+  mingpa_str = f'<p>A GPA of at least {number:0.2f}'
 
-  # If there is an expression, embed that in the response string.
+  # Possible display text
   try:
-    expression = f' {mingpa_dict.pop("expression").strip()} '
-  except KeyError as ke:
-    expression = ' '
+    display_str = f'<p><strong>{mingpa_dict["display"]}</strong></p>'
+  except KeyError:
+    display_str = ''
 
-  # If there is a course list, format it as  details element
-  return f'<p>Minimum GPA of {number:0.2f}{expression}required</p>'
+  # There might be either an expression or a course list, but not both
+
+  # If there is an expression, add that to the response string.
+  try:
+    mingpa_str += f' in {mingpa_dict.pop("expression")}</p>'
+  except KeyError as ke:
+    pass
+
+  # If there is a course list, it may come back as a string or as a display element.
+  try:
+    if course_list_str := format_course_list(mingpa_dict['course_list']):
+      if '<display>' in course_list_str:
+        mingpa_str += f' in the following courses:</p>{course_list_str}'
+      else:
+        mingpa_str += f' in the following courses: {course_list_str}</p>'
+  except KeyError:
+    course_list_str = ''
+
+  return mingpa_str
 
 
 # format_mingrade()

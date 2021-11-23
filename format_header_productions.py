@@ -41,11 +41,41 @@ DEBUG = os.getenv('DEBUG_HEADER')
       dgw_parser has turned them both into 'label' keys, so this module doesn't have to deal with
       that difference.
 
-      In all cases where a header production allows (but does not require) a course_list, dgw_parser
-      will supply a 'course_list' key for the dict, but its value can be None. That is, there should
-      be no KeyErrors when calling format_utils.format_course_list(), but the result needs to be
-      checked for emptiness.
+      In all cases where a header production allows (but does not require) a label, dgw_parser will
+      supply a 'label' key for the dict, but its value can be None or the empty string. That is,
+      there should be no KeyErrors when calling format_utils.format_course_list(), but the result
+      needs to be checked for emptiness.
+
+      Likewise, in all cases where a header production allows (but does not require) a course_list,
+      dgw_parser will supply a 'course_list' key for the dict, but its value can be None. That is,
+      there should be no KeyErrors when calling format_utils.format_course_list(), but the result
+      needs to be checked for emptiness.
 """
+
+
+# _format_conditional()
+# -------------------------------------------------------------------------------------------------
+def _format_conditional(conditional_dict: dict) -> str:
+  """
+  """
+  return_str = f'<details><summary>If {conditional_dict["condition"]} is true</summary>'
+  for rule_dict in conditional_dict['if_true']:
+    return_str += '\n'.join([item for item in dispatch_header_productions(rule_dict)])
+  if 'is_false' in conditional_dict.keys():
+    else_details = '<details><summary>Otherwise</summary>'
+    for rule_dict in conditional_dict['if_false']:
+      else_details += '\n'.join([item for item in dispatch_header_productions(rule_dict)])
+    else_details += '</details>'
+    return_str += else_details
+  return return_str + '</details>'
+
+
+# _format_class_credit()
+# -------------------------------------------------------------------------------------------------
+def _format_class_credit(class_credit_dict: dict) -> str:
+  """
+  """
+  return '<p class="error">Class-credit header production</p>'
 
 
 # _format_maxclass_head()
@@ -187,9 +217,9 @@ def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
   maxtransfer_dict = maxtransfer_head_dict['maxtransfer']
   maxtransfer_info = format_body_qualifiers.format_maxtransfer(maxtransfer_dict)
 
-  if courses_str := format_utils.format_course_list(mintransfer_dict['course_list']):
-    mintransfer_info = mintransfer_info.replace('</p>', ' in these courses:</p>')
-    mintransfer_info += courses_str
+  if courses_str := format_utils.format_course_list(maxtransfer_dict['course_list']):
+    maxtransfer_info = maxtransfer_info.replace('</p>', ' in these courses:</p>')
+    maxtransfer_info += courses_str
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxtransfer_info}<details>'
@@ -252,7 +282,7 @@ def _format_mincredit_head(mincredit_head_dict: dict) -> str:
 # _format_mingpa_head()
 # -------------------------------------------------------------------------------------------------
 def _format_mingpa_head(mingpa_head_dict: dict) -> str:
-  """
+  """ MINGPA NUMBER (course_list | expression)? display*
   """
   if DEBUG:
     print(f'*** _format_mingpa_head({mingpa_head_dict})', file=sys.stderr)
@@ -264,10 +294,6 @@ def _format_mingpa_head(mingpa_head_dict: dict) -> str:
 
   mingpa_dict = mingpa_head_dict['mingpa']
   mingpa_info = format_body_qualifiers.format_mingpa(mingpa_dict)
-
-  if courses_str := format_utils.format_course_list(mingpa_dict['course_list']):
-    mingpa_info = mingpa_info.replace('</p>', ' in these courses:</p>')
-    mingpa_info += courses_str
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{mingpa_info}<details>'
@@ -290,10 +316,6 @@ def _format_mingrade_head(mingrade_head_dict: dict) -> str:
 
   mingrade_dict = mingrade_head_dict['mingrade']
   mingrade_info = format_body_qualifiers.format_mingrade(mingrade_dict)
-
-  if courses_str := format_utils.format_course_list(mingrade_dict['course_list']):
-    mingrade_info = mingrade_info.replace('</p>', ' in these courses:</p>')
-    mingrade_info += courses_str
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{mingrade_info}<details>'
@@ -355,11 +377,6 @@ def _format_minres_head(minres_head_dict: dict) -> str:
   class_credit_str = format_utils.format_num_class_credit(minres_dict)
   minres_info = f'<p>{class_credit_str} must be completed in residence.</p>'
 
-  if courses_str := format_utils.format_course_list(minres_dict['course_list']):
-    minres_info = (f'<p>{class_credit_str} of the following courses must be completed in '
-                   f'residence:</p>')
-    minres_info += courses_str
-
   if label_str:
     return f'<details>{display_str}<summary>{label_str}</summary>{minres_info}<details>'
   else:
@@ -389,20 +406,38 @@ def _format_share_head(share_head_dict: dict) -> str:
     return f'<p>{share_info}</p>'
 
 
+# _nop()
+# -------------------------------------------------------------------------------------------------
+def _nop(nop_dict: dict) -> str:
+  """ Placeholder for header productions that are either being ignored or not implemented yet.
+  """
+
+  return None
+
+
 # dispatch_table {}
 # -------------------------------------------------------------------------------------------------
-dispatch_table = {'maxclass_head': _format_maxclass_head,
+dispatch_table = {'class_credit_head': _format_class_credit,
+                  'conditional': _format_conditional,
+                  'lastres_head': _nop,
+                  'maxclass_head': _format_maxclass_head,
                   'maxcredit_head': _format_maxcredit_head,
                   'maxpassfail_head': _format_maxpassfail_head,
                   'maxperdisc_head': _format_maxperdisc_head,
+                  'maxterm_head': _nop,
                   'maxtransfer_head': _format_maxtransfer_head,
-                  'mingpa_head': _format_mingpa_head,
-                  'mingrade_head': _format_mingrade_head,
                   'minclass_head': _format_minclass_head,
                   'mincredit_head': _format_mincredit_head,
+                  'mingpa_head': _format_mingpa_head,
+                  'mingrade_head': _format_mingrade_head,
                   'minperdisc_head': _format_minperdisc_head,
                   'minres_head': _format_minres_head,
-                  'share_head': _format_share_head
+                  'optional': _nop,
+                  'proxy_advice': _nop,
+                  'remark': _nop,
+                  'share_head': _format_share_head,
+                  'standalone': _nop,
+                  'under': _nop
                   }
 
 
@@ -426,12 +461,11 @@ def dispatch_header_productions(node: dict) -> list:
   """
   if DEBUG:
     print(f'*** dispatch_header_productions(keys: {list(node.keys())}', file=sys.stderr)
-
   production_strings = []
-  for production in dispatch_table.keys():
-    if production in node.keys():
-      production_info = _dispatch_production(production, node.pop(production))
-      if production_info is not None:
-        production_strings.append(production_info)
+  for key, value in node.items():
+    if production_info := _dispatch_production(key, value):
+      production_strings.append(production_info)
+    else:
+      print(f'**** No header info for {key}', file=sys.stderr)
 
   return production_strings

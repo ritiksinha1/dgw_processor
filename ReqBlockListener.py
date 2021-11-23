@@ -161,57 +161,57 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#conditional_head.
-    def enterConditional_head(self, ctx:ReqBlockParser.Conditional_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_conditional.
+    def enterHeader_conditional(self, ctx:ReqBlockParser.Header_conditionalContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#conditional_head.
-    def exitConditional_head(self, ctx:ReqBlockParser.Conditional_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#else_head.
-    def enterElse_head(self, ctx:ReqBlockParser.Else_headContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#else_head.
-    def exitElse_head(self, ctx:ReqBlockParser.Else_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_conditional.
+    def exitHeader_conditional(self, ctx:ReqBlockParser.Header_conditionalContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#head_rule_group.
-    def enterHead_rule_group(self, ctx:ReqBlockParser.Head_rule_groupContext):
+    # Enter a parse tree produced by ReqBlockParser#header_else.
+    def enterHeader_else(self, ctx:ReqBlockParser.Header_elseContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#head_rule_group.
-    def exitHead_rule_group(self, ctx:ReqBlockParser.Head_rule_groupContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#head_rule.
-    def enterHead_rule(self, ctx:ReqBlockParser.Head_ruleContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#head_rule.
-    def exitHead_rule(self, ctx:ReqBlockParser.Head_ruleContext):
+    # Exit a parse tree produced by ReqBlockParser#header_else.
+    def exitHeader_else(self, ctx:ReqBlockParser.Header_elseContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#conditional_body.
-    def enterConditional_body(self, ctx:ReqBlockParser.Conditional_bodyContext):
+    # Enter a parse tree produced by ReqBlockParser#header_rule_group.
+    def enterHeader_rule_group(self, ctx:ReqBlockParser.Header_rule_groupContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#conditional_body.
-    def exitConditional_body(self, ctx:ReqBlockParser.Conditional_bodyContext):
+    # Exit a parse tree produced by ReqBlockParser#header_rule_group.
+    def exitHeader_rule_group(self, ctx:ReqBlockParser.Header_rule_groupContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#else_body.
-    def enterElse_body(self, ctx:ReqBlockParser.Else_bodyContext):
+    # Enter a parse tree produced by ReqBlockParser#header_rule.
+    def enterHeader_rule(self, ctx:ReqBlockParser.Header_ruleContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#else_body.
-    def exitElse_body(self, ctx:ReqBlockParser.Else_bodyContext):
+    # Exit a parse tree produced by ReqBlockParser#header_rule.
+    def exitHeader_rule(self, ctx:ReqBlockParser.Header_ruleContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#body_conditional.
+    def enterBody_conditional(self, ctx:ReqBlockParser.Body_conditionalContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#body_conditional.
+    def exitBody_conditional(self, ctx:ReqBlockParser.Body_conditionalContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#body_else.
+    def enterBody_else(self, ctx:ReqBlockParser.Body_elseContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#body_else.
+    def exitBody_else(self, ctx:ReqBlockParser.Body_elseContext):
         pass
 
 
@@ -296,156 +296,156 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#class_credit_head.
-    def enterClass_credit_head(self, ctx:ReqBlockParser.Class_credit_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_class_credit.
+    def enterHeader_class_credit(self, ctx:ReqBlockParser.Header_class_creditContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#class_credit_head.
-    def exitClass_credit_head(self, ctx:ReqBlockParser.Class_credit_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#class_credit_body.
-    def enterClass_credit_body(self, ctx:ReqBlockParser.Class_credit_bodyContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#class_credit_body.
-    def exitClass_credit_body(self, ctx:ReqBlockParser.Class_credit_bodyContext):
+    # Exit a parse tree produced by ReqBlockParser#header_class_credit.
+    def exitHeader_class_credit(self, ctx:ReqBlockParser.Header_class_creditContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#lastres_head.
-    def enterLastres_head(self, ctx:ReqBlockParser.Lastres_headContext):
+    # Enter a parse tree produced by ReqBlockParser#body_class_credit.
+    def enterBody_class_credit(self, ctx:ReqBlockParser.Body_class_creditContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#lastres_head.
-    def exitLastres_head(self, ctx:ReqBlockParser.Lastres_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#maxclass_head.
-    def enterMaxclass_head(self, ctx:ReqBlockParser.Maxclass_headContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#maxclass_head.
-    def exitMaxclass_head(self, ctx:ReqBlockParser.Maxclass_headContext):
+    # Exit a parse tree produced by ReqBlockParser#body_class_credit.
+    def exitBody_class_credit(self, ctx:ReqBlockParser.Body_class_creditContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#maxcredit_head.
-    def enterMaxcredit_head(self, ctx:ReqBlockParser.Maxcredit_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_lastres.
+    def enterHeader_lastres(self, ctx:ReqBlockParser.Header_lastresContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#maxcredit_head.
-    def exitMaxcredit_head(self, ctx:ReqBlockParser.Maxcredit_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#maxpassfail_head.
-    def enterMaxpassfail_head(self, ctx:ReqBlockParser.Maxpassfail_headContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#maxpassfail_head.
-    def exitMaxpassfail_head(self, ctx:ReqBlockParser.Maxpassfail_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_lastres.
+    def exitHeader_lastres(self, ctx:ReqBlockParser.Header_lastresContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#maxperdisc_head.
-    def enterMaxperdisc_head(self, ctx:ReqBlockParser.Maxperdisc_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_maxclass.
+    def enterHeader_maxclass(self, ctx:ReqBlockParser.Header_maxclassContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#maxperdisc_head.
-    def exitMaxperdisc_head(self, ctx:ReqBlockParser.Maxperdisc_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#maxterm_head.
-    def enterMaxterm_head(self, ctx:ReqBlockParser.Maxterm_headContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#maxterm_head.
-    def exitMaxterm_head(self, ctx:ReqBlockParser.Maxterm_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_maxclass.
+    def exitHeader_maxclass(self, ctx:ReqBlockParser.Header_maxclassContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#maxtransfer_head.
-    def enterMaxtransfer_head(self, ctx:ReqBlockParser.Maxtransfer_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_maxcredit.
+    def enterHeader_maxcredit(self, ctx:ReqBlockParser.Header_maxcreditContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#maxtransfer_head.
-    def exitMaxtransfer_head(self, ctx:ReqBlockParser.Maxtransfer_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#minclass_head.
-    def enterMinclass_head(self, ctx:ReqBlockParser.Minclass_headContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#minclass_head.
-    def exitMinclass_head(self, ctx:ReqBlockParser.Minclass_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_maxcredit.
+    def exitHeader_maxcredit(self, ctx:ReqBlockParser.Header_maxcreditContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#mincredit_head.
-    def enterMincredit_head(self, ctx:ReqBlockParser.Mincredit_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_maxpassfail.
+    def enterHeader_maxpassfail(self, ctx:ReqBlockParser.Header_maxpassfailContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#mincredit_head.
-    def exitMincredit_head(self, ctx:ReqBlockParser.Mincredit_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#mingpa_head.
-    def enterMingpa_head(self, ctx:ReqBlockParser.Mingpa_headContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#mingpa_head.
-    def exitMingpa_head(self, ctx:ReqBlockParser.Mingpa_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_maxpassfail.
+    def exitHeader_maxpassfail(self, ctx:ReqBlockParser.Header_maxpassfailContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#mingrade_head.
-    def enterMingrade_head(self, ctx:ReqBlockParser.Mingrade_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_maxperdisc.
+    def enterHeader_maxperdisc(self, ctx:ReqBlockParser.Header_maxperdiscContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#mingrade_head.
-    def exitMingrade_head(self, ctx:ReqBlockParser.Mingrade_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#minperdisc_head.
-    def enterMinperdisc_head(self, ctx:ReqBlockParser.Minperdisc_headContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#minperdisc_head.
-    def exitMinperdisc_head(self, ctx:ReqBlockParser.Minperdisc_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_maxperdisc.
+    def exitHeader_maxperdisc(self, ctx:ReqBlockParser.Header_maxperdiscContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#minres_head.
-    def enterMinres_head(self, ctx:ReqBlockParser.Minres_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_maxterm.
+    def enterHeader_maxterm(self, ctx:ReqBlockParser.Header_maxtermContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#minres_head.
-    def exitMinres_head(self, ctx:ReqBlockParser.Minres_headContext):
-        pass
-
-
-    # Enter a parse tree produced by ReqBlockParser#minterm_head.
-    def enterMinterm_head(self, ctx:ReqBlockParser.Minterm_headContext):
-        pass
-
-    # Exit a parse tree produced by ReqBlockParser#minterm_head.
-    def exitMinterm_head(self, ctx:ReqBlockParser.Minterm_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_maxterm.
+    def exitHeader_maxterm(self, ctx:ReqBlockParser.Header_maxtermContext):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#share_head.
-    def enterShare_head(self, ctx:ReqBlockParser.Share_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_maxtransfer.
+    def enterHeader_maxtransfer(self, ctx:ReqBlockParser.Header_maxtransferContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#share_head.
-    def exitShare_head(self, ctx:ReqBlockParser.Share_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_maxtransfer.
+    def exitHeader_maxtransfer(self, ctx:ReqBlockParser.Header_maxtransferContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_minclass.
+    def enterHeader_minclass(self, ctx:ReqBlockParser.Header_minclassContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_minclass.
+    def exitHeader_minclass(self, ctx:ReqBlockParser.Header_minclassContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_mincredit.
+    def enterHeader_mincredit(self, ctx:ReqBlockParser.Header_mincreditContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_mincredit.
+    def exitHeader_mincredit(self, ctx:ReqBlockParser.Header_mincreditContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_mingpa.
+    def enterHeader_mingpa(self, ctx:ReqBlockParser.Header_mingpaContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_mingpa.
+    def exitHeader_mingpa(self, ctx:ReqBlockParser.Header_mingpaContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_mingrade.
+    def enterHeader_mingrade(self, ctx:ReqBlockParser.Header_mingradeContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_mingrade.
+    def exitHeader_mingrade(self, ctx:ReqBlockParser.Header_mingradeContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_minperdisc.
+    def enterHeader_minperdisc(self, ctx:ReqBlockParser.Header_minperdiscContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_minperdisc.
+    def exitHeader_minperdisc(self, ctx:ReqBlockParser.Header_minperdiscContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_minres.
+    def enterHeader_minres(self, ctx:ReqBlockParser.Header_minresContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_minres.
+    def exitHeader_minres(self, ctx:ReqBlockParser.Header_minresContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_minterm.
+    def enterHeader_minterm(self, ctx:ReqBlockParser.Header_mintermContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_minterm.
+    def exitHeader_minterm(self, ctx:ReqBlockParser.Header_mintermContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#header_share.
+    def enterHeader_share(self, ctx:ReqBlockParser.Header_shareContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#header_share.
+    def exitHeader_share(self, ctx:ReqBlockParser.Header_shareContext):
         pass
 
 
@@ -512,12 +512,12 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by ReqBlockParser#label_head.
-    def enterLabel_head(self, ctx:ReqBlockParser.Label_headContext):
+    # Enter a parse tree produced by ReqBlockParser#header_label.
+    def enterHeader_label(self, ctx:ReqBlockParser.Header_labelContext):
         pass
 
-    # Exit a parse tree produced by ReqBlockParser#label_head.
-    def exitLabel_head(self, ctx:ReqBlockParser.Label_headContext):
+    # Exit a parse tree produced by ReqBlockParser#header_label.
+    def exitHeader_label(self, ctx:ReqBlockParser.Header_labelContext):
         pass
 
 

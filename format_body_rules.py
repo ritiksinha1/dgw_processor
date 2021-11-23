@@ -24,7 +24,6 @@ import format_utils
 def format_block(block_dict: dict) -> str:
   """
   """
-
   try:
     label_str = block_dict['label']
     summary = f'<summary>{label_str}</summary>'
@@ -57,22 +56,26 @@ def format_block(block_dict: dict) -> str:
       block_str += f'<p class="error">Multiple matching Requirement Blocks found!</p>'
     else:
       parse_tree = cursor.fetchone().parse_tree
+      print(f'{len(parse_tree)=}')
       if parse_tree == {}:
         parse_results = f'<p>No information available for this block at this time.</p>'
       elif 'error' in parse_tree.keys():
         err_msg = parse_tree['error']
         parse_results = f'<p>There was an error processing this block: {err_msg}</p>'
       else:
-        parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
-        parse_results += html_utils.list_to_html(parse_tree['body_list'], section='body')
+        try:
+          parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
+          parse_results += html_utils.list_to_html(parse_tree['body_list'], section='body')
+        except Exception as e:
+          print(f'{e=}')
       block_str += parse_results
 
     conn.close()
-
+  print('{block_str=}')
   if summary:
     return f'<details>{summary}{block_str}</details>'
   else:
-    return f'{block_str}'
+    return block_str
 
 
 # format_blocktype()
@@ -184,7 +187,6 @@ def format_conditional(conditional_dict: dict) -> str:
       The list of rules get dispatched back into this module, which requires this function to
       determine whether to dispatch through format_header_productions of format_body_rules.
   """
-
   condition_str = conditional_dict['condition']
   true_type = true_op = true_name = None
   # Simple case: major, minor, concentration is, or is not, something
@@ -202,7 +204,8 @@ def format_conditional(conditional_dict: dict) -> str:
   conditional_body = ''
   for rule in conditional_dict['if_true']:
     for key, value in rule.items():
-      conditional_body += dispatch_body_rule(key, value)
+      if body_rule_str := dispatch_body_rule(key, value):
+        conditional_body += body_rule_str
   else_summary = else_body = ''
   try:
     for rule in conditional_dict['if_false']:
@@ -328,11 +331,11 @@ def format_group_requirements(group_requirements: list) -> str:
           case 'course_list':
             group_requirement_str += format_course_list(requirement[key])
           case 'group_requirements':
-            group_requirement_str += format_group_requirements([requirement[key]])
+            group_requirement_str += format_group_requirements(requirement[key])
           case 'noncourse':
-            group_requirement_str += format_noncourse([requirement[key]])
+            group_requirement_str += format_noncourse(requirement[key])
           case 'rule_complete':
-            group_requirement_str += format_rule_complete([requirement[key]])
+            group_requirement_str += format_rule_complete(requirement[key])
           case 'label':
             pass  # Labels are extracted by one of the above matches
           case _:
@@ -369,7 +372,7 @@ def format_noncourse(noncourse_dict: dict) -> str:
 
   expression = noncourse_dict['expression']
   # Not interpreting the expression yet
-  noncourse_str = '<p>{number_str} ({expression}){suffix) required'
+  noncourse_str = f'<p>{number_str} ({expression}){suffix}) required'
 
   if summary:
     return f'<details>{summary}{noncourse_str}</details>'
@@ -547,5 +550,6 @@ def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
   """
   try:
     return _dispatch_table[dict_key](rule_dict)
-  except KeyError:
+  except KeyError as ke:
+    # print(f'No _dispatch_table[{ke}]', file=sys.stderr)
     return None

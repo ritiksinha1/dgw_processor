@@ -94,33 +94,33 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#conditional_head.
-    def visitConditional_head(self, ctx:ReqBlockParser.Conditional_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_conditional.
+    def visitHeader_conditional(self, ctx:ReqBlockParser.Header_conditionalContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#else_head.
-    def visitElse_head(self, ctx:ReqBlockParser.Else_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_else.
+    def visitHeader_else(self, ctx:ReqBlockParser.Header_elseContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#head_rule_group.
-    def visitHead_rule_group(self, ctx:ReqBlockParser.Head_rule_groupContext):
+    # Visit a parse tree produced by ReqBlockParser#header_rule_group.
+    def visitHeader_rule_group(self, ctx:ReqBlockParser.Header_rule_groupContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#head_rule.
-    def visitHead_rule(self, ctx:ReqBlockParser.Head_ruleContext):
+    # Visit a parse tree produced by ReqBlockParser#header_rule.
+    def visitHeader_rule(self, ctx:ReqBlockParser.Header_ruleContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#conditional_body.
-    def visitConditional_body(self, ctx:ReqBlockParser.Conditional_bodyContext):
+    # Visit a parse tree produced by ReqBlockParser#body_conditional.
+    def visitBody_conditional(self, ctx:ReqBlockParser.Body_conditionalContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#else_body.
-    def visitElse_body(self, ctx:ReqBlockParser.Else_bodyContext):
+    # Visit a parse tree produced by ReqBlockParser#body_else.
+    def visitBody_else(self, ctx:ReqBlockParser.Body_elseContext):
         return self.visitChildren(ctx)
 
 
@@ -169,88 +169,88 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#class_credit_head.
-    def visitClass_credit_head(self, ctx:ReqBlockParser.Class_credit_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_class_credit.
+    def visitHeader_class_credit(self, ctx:ReqBlockParser.Header_class_creditContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#class_credit_body.
-    def visitClass_credit_body(self, ctx:ReqBlockParser.Class_credit_bodyContext):
+    # Visit a parse tree produced by ReqBlockParser#body_class_credit.
+    def visitBody_class_credit(self, ctx:ReqBlockParser.Body_class_creditContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#lastres_head.
-    def visitLastres_head(self, ctx:ReqBlockParser.Lastres_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_lastres.
+    def visitHeader_lastres(self, ctx:ReqBlockParser.Header_lastresContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#maxclass_head.
-    def visitMaxclass_head(self, ctx:ReqBlockParser.Maxclass_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_maxclass.
+    def visitHeader_maxclass(self, ctx:ReqBlockParser.Header_maxclassContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#maxcredit_head.
-    def visitMaxcredit_head(self, ctx:ReqBlockParser.Maxcredit_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_maxcredit.
+    def visitHeader_maxcredit(self, ctx:ReqBlockParser.Header_maxcreditContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#maxpassfail_head.
-    def visitMaxpassfail_head(self, ctx:ReqBlockParser.Maxpassfail_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_maxpassfail.
+    def visitHeader_maxpassfail(self, ctx:ReqBlockParser.Header_maxpassfailContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#maxperdisc_head.
-    def visitMaxperdisc_head(self, ctx:ReqBlockParser.Maxperdisc_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_maxperdisc.
+    def visitHeader_maxperdisc(self, ctx:ReqBlockParser.Header_maxperdiscContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#maxterm_head.
-    def visitMaxterm_head(self, ctx:ReqBlockParser.Maxterm_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_maxterm.
+    def visitHeader_maxterm(self, ctx:ReqBlockParser.Header_maxtermContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#maxtransfer_head.
-    def visitMaxtransfer_head(self, ctx:ReqBlockParser.Maxtransfer_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_maxtransfer.
+    def visitHeader_maxtransfer(self, ctx:ReqBlockParser.Header_maxtransferContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#minclass_head.
-    def visitMinclass_head(self, ctx:ReqBlockParser.Minclass_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_minclass.
+    def visitHeader_minclass(self, ctx:ReqBlockParser.Header_minclassContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#mincredit_head.
-    def visitMincredit_head(self, ctx:ReqBlockParser.Mincredit_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_mincredit.
+    def visitHeader_mincredit(self, ctx:ReqBlockParser.Header_mincreditContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#mingpa_head.
-    def visitMingpa_head(self, ctx:ReqBlockParser.Mingpa_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_mingpa.
+    def visitHeader_mingpa(self, ctx:ReqBlockParser.Header_mingpaContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#mingrade_head.
-    def visitMingrade_head(self, ctx:ReqBlockParser.Mingrade_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_mingrade.
+    def visitHeader_mingrade(self, ctx:ReqBlockParser.Header_mingradeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#minperdisc_head.
-    def visitMinperdisc_head(self, ctx:ReqBlockParser.Minperdisc_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_minperdisc.
+    def visitHeader_minperdisc(self, ctx:ReqBlockParser.Header_minperdiscContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#minres_head.
-    def visitMinres_head(self, ctx:ReqBlockParser.Minres_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_minres.
+    def visitHeader_minres(self, ctx:ReqBlockParser.Header_minresContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#minterm_head.
-    def visitMinterm_head(self, ctx:ReqBlockParser.Minterm_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_minterm.
+    def visitHeader_minterm(self, ctx:ReqBlockParser.Header_mintermContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#share_head.
-    def visitShare_head(self, ctx:ReqBlockParser.Share_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_share.
+    def visitHeader_share(self, ctx:ReqBlockParser.Header_shareContext):
         return self.visitChildren(ctx)
 
 
@@ -289,8 +289,8 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#label_head.
-    def visitLabel_head(self, ctx:ReqBlockParser.Label_headContext):
+    # Visit a parse tree produced by ReqBlockParser#header_label.
+    def visitHeader_label(self, ctx:ReqBlockParser.Header_labelContext):
         return self.visitChildren(ctx)
 
 
