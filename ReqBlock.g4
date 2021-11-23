@@ -122,6 +122,7 @@ header_rule         : header_class_credit
                     | header_maxclass
                     | header_maxcredit
                     | header_maxpassfail
+                    | header_maxperdisc
                     | header_maxterm
                     | header_maxtransfer
                     | header_minclass
@@ -132,9 +133,11 @@ header_rule         : header_class_credit
                     | header_minres
                     | header_minterm
                     | noncourse
+                    | optional
                     | proxy_advice
                     | remark
                     | rule_complete
+                    | standalone
                     | header_share
                     ;
 
