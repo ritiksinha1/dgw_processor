@@ -105,8 +105,10 @@ def header_class_credit(ctx, institution, requirement_id):
 
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  # Like proxy-advice, display text is student specific, so there is no point in carrying it into
+  # the parse tree
+  # if ctx.display():
+  #   return_dict['display'] = get_display(ctx)
 
   return {'header_class_credit': return_dict}
 
@@ -144,8 +146,9 @@ body_class_credit : (num_classes | num_credits)
   if ctx.pseudo():
     return_dict['is_pseudo'] = True
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  # display is student-specific
+  # if ctx.display():
+  #   return_dict['display'] = get_display(ctx)
 
   if ctx.remark():
     return_dict['remark'] = ' '.join([s.getText().strip(' "')
