@@ -151,11 +151,13 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
       class_credit_str += f'<p>Remark: <em>{remark_str}</em></p>'
   except KeyError:
     pass
-  try:
-    if display_str := class_credit_dict['display']:
-      class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
-  except KeyError:
-    pass
+
+  # display is student-specific
+  # try:
+  #   if display_str := class_credit_dict['display']:
+  #     class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
+  # except KeyError:
+  #   pass
 
   # Qualifiers: Expect list of html paragraphs, but it might be empty
   if qualifiers_str := dispatch_body_qualifiers(class_credit_dict):

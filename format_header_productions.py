@@ -61,7 +61,7 @@ def _format_conditional(conditional_dict: dict) -> str:
   return_str = f'<details><summary>If {conditional_dict["condition"]} is true</summary>'
   for rule_dict in conditional_dict['if_true']:
     return_str += '\n'.join([item for item in dispatch_header_productions(rule_dict)])
-  if 'is_false' in conditional_dict.keys():
+  if 'if_false' in conditional_dict.keys():
     else_details = '<details><summary>Otherwise</summary>'
     for rule_dict in conditional_dict['if_false']:
       else_details += '\n'.join([item for item in dispatch_header_productions(rule_dict)])
@@ -73,9 +73,26 @@ def _format_conditional(conditional_dict: dict) -> str:
 # _format_class_credit()
 # -------------------------------------------------------------------------------------------------
 def _format_class_credit(class_credit_dict: dict) -> str:
+  """ No course list in the head. But pseudo, if true, means the number of classes and/or credits
+      is not actually meaningful.
   """
-  """
-  return '<p class="error">Class-credit header production</p>'
+  if label_str := class_credit_dict['label']:
+    return_str = f'<details><summary>{label_str}</summary'
+  else:
+    return_str = ''
+
+  return_str += f'<p>{format_utils.format_num_class_credit(class_credit_dict)} required'
+
+  try:
+    if class_credit_dict['pseudo']:
+      return_str += ' (nominal)'
+  except KeyError:
+    pass
+  return_str += '</p>'
+  if label_str:
+    return_str += '</details>'
+
+  return return_str
 
 
 # _format_maxclass_head()
@@ -417,7 +434,7 @@ def _nop(nop_dict: dict) -> str:
 
 # dispatch_table {}
 # -------------------------------------------------------------------------------------------------
-dispatch_table = {'class_credit_head': _format_class_credit,
+dispatch_table = {'header_class_credit': _format_class_credit,
                   'conditional': _format_conditional,
                   'lastres_head': _nop,
                   'maxclass_head': _format_maxclass_head,
