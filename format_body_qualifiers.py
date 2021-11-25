@@ -191,7 +191,7 @@ def format_mingpa(mingpa_dict: dict) -> str:
     print(f'*** format_mingpa({mingpa_dict=})', file=sys.stderr)
 
   number = float(mingpa_dict.pop('number'))
-  mingpa_str = f'<p>A GPA of at least {number:0.2f}'
+  mingpa_str = f'<p>A GPA of at least {number:0.2f} is required'
 
   # Possible display text
   try:

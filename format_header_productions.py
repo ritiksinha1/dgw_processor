@@ -27,6 +27,7 @@ import sys
 
 import Any
 
+import format_body_rules
 import format_body_qualifiers
 import format_utils
 
@@ -93,6 +94,70 @@ def _format_class_credit(class_credit_dict: dict) -> str:
     return_str += '</details>'
 
   return return_str
+
+
+# _format_lastres()
+# -------------------------------------------------------------------------------------------------
+def _format_lastres(header_lastres_dict: dict) -> str:
+  """
+  """
+
+  try:
+    label_str = header_lastres_dict['label']
+  except KeyError:
+    label_str = None
+
+  lastres_dict = header_lastres_dict['lastres']
+
+  try:
+    course_list_str = format_utils.format_course_list(lastres_dict)
+  except KeyError:
+    course_list_str = ''
+
+  class_credit = lastres_dict['class_or_credit']
+  number = float(lastres_dict['number'])
+
+  try:
+    of_number = float(lastres_dict['of_number'])
+    # m of n format
+    match (class_credit, course_list_str):
+      case ['class', '']:
+        lastres_str = (f'<p>At least {number} of the last {of_number} classes must be taken in '
+                       f'residence</p>')
+      case ['credit', '']:
+        lastres_str = (f'<p>At least {number:.2f} of the last {of_number:.2f} credits must be '
+                       f'taken in residence</p>')
+      case ['class', class_str]:
+        lastres_str = (f'<p>At least {number} of the last {of_number} of these classes must be '
+                       f'taken in residence:</p>{class_str}')
+      case ['credit', credit_str]:
+        lastres_str = (f'<p>At least {number:/2f} of the last {of_number:.2f} credits in these '
+                       f'classes must be taken in residence:</p>{credit_str}')
+
+  except KeyError:
+    # m-only format
+    match (class_credit, course_list_str):
+      case ['class', '']:
+        lastres_str = (f'<p>At least {number} classes must be taken in residence</p>')
+      case ['credit', '']:
+        lastres_str = (f'<p>At least {number:.2f} credits must be taken in residence</p>')
+      case ['class', class_str]:
+        lastres_str = (f'<p>At least {number} of these classes must be taken in residence:</p>'
+                       f'{class_str}')
+      case ['credit', credit_str]:
+        lastres_str = (f'<p>At least {number:/2f} credits in these classes must be taken in '
+                       f'residence:</p>{credit_str}')
+
+  # display is for student-specific info: ignore it
+  # try:
+  #   display_str = f'<p>{lastres_dict['display']}</p>'
+  # except KeyError:
+  #   display_str = ''
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{lastres_str}</display>'
+  else:
+   return lastres_str
 
 
 # _format_maxclass_head()
@@ -218,6 +283,40 @@ def _format_maxperdisc_head(maxperdisc_head_dict: dict) -> str:
     return f'<p>{maxperdisc_info}</p>'
 
 
+# _format_maxterm_head()
+# -------------------------------------------------------------------------------------------------
+def _format_maxterm_head(maxterm_head_dict: dict) -> str:
+  """ No course list in the header
+  """
+
+  try:
+    label_str = maxterm_head_dict['label']
+  except KeyError:
+    label_str = None
+
+  maxterm_dict = maxterm_head_dict['maxterm']
+
+  class_credit = maxterm_dict['class_or_credit']
+  number = int(maxterm_dict['number'])
+  try:
+    number_str = format_utils.number_names[number]
+  except IndexError:
+    number_str = f'{number}'
+
+  suffix = '' if number == 1 else 's'
+  maxterm_str = f'<p>No more than {number_str} {class_credit}{suffix} may be taken each term'
+  try:
+    course_list_str = format_utils.format_course_list(maxterm_dict['course_list'])
+    maxterm_str += f' in the following courses:</p>{course_list_str}'
+  except KeyError:
+    maxterm_str += ' for this requirement</p>'
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{maxterm_str}</details>'
+  else:
+    return maxterm_str
+
+
 # _format_maxtransfer()
 # -------------------------------------------------------------------------------------------------
 def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
@@ -234,9 +333,12 @@ def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
   maxtransfer_dict = maxtransfer_head_dict['maxtransfer']
   maxtransfer_info = format_body_qualifiers.format_maxtransfer(maxtransfer_dict)
 
-  if courses_str := format_utils.format_course_list(maxtransfer_dict['course_list']):
+  try:
+    courses_str = format_utils.format_course_list(maxtransfer_dict['course_list'])
     maxtransfer_info = maxtransfer_info.replace('</p>', ' in these courses:</p>')
     maxtransfer_info += courses_str
+  except KeyError:
+    pass
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxtransfer_info}<details>'
@@ -400,6 +502,14 @@ def _format_minres_head(minres_head_dict: dict) -> str:
     return f'{display_str}{minres_info}'
 
 
+# _format_optional()
+# -------------------------------------------------------------------------------------------------
+def _format_optional(optional_dict: dict) -> str:
+  """
+  """
+  return '<p>These requirements are optional.</p>'
+
+
 # _format_share_head()
 # -------------------------------------------------------------------------------------------------
 def _format_share_head(share_head_dict: dict) -> str:
@@ -423,6 +533,18 @@ def _format_share_head(share_head_dict: dict) -> str:
     return f'<p>{share_info}</p>'
 
 
+# _format_standalone()
+# -------------------------------------------------------------------------------------------------
+def _format_standalone(standalone_dict: dict) -> str:
+  """
+  """
+  return """
+  <p>
+    Credits used to satisfy these requirements may also be used for any other requirements.
+  </p>
+  """
+
+
 # _nop()
 # -------------------------------------------------------------------------------------------------
 def _nop(nop_dict: dict) -> str:
@@ -436,24 +558,24 @@ def _nop(nop_dict: dict) -> str:
 # -------------------------------------------------------------------------------------------------
 dispatch_table = {'header_class_credit': _format_class_credit,
                   'conditional': _format_conditional,
-                  'lastres_head': _nop,
-                  'maxclass_head': _format_maxclass_head,
-                  'maxcredit_head': _format_maxcredit_head,
-                  'maxpassfail_head': _format_maxpassfail_head,
-                  'maxperdisc_head': _format_maxperdisc_head,
-                  'maxterm_head': _nop,
-                  'maxtransfer_head': _format_maxtransfer_head,
-                  'minclass_head': _format_minclass_head,
-                  'mincredit_head': _format_mincredit_head,
-                  'mingpa_head': _format_mingpa_head,
-                  'mingrade_head': _format_mingrade_head,
-                  'minperdisc_head': _format_minperdisc_head,
-                  'minres_head': _format_minres_head,
-                  'optional': _nop,
-                  'proxy_advice': _nop,
-                  'remark': _nop,
-                  'share_head': _format_share_head,
-                  'standalone': _nop,
+                  'header_lastres': _format_lastres,
+                  'header_maxclass': _format_maxclass_head,
+                  'header_maxcredit': _format_maxcredit_head,
+                  'header_maxpassfail': _format_maxpassfail_head,
+                  'header_maxperdisc': _format_maxperdisc_head,
+                  'header_maxterm': _format_maxterm_head,
+                  'header_maxtransfer': _format_maxtransfer_head,
+                  'header_minclass': _format_minclass_head,
+                  'header_mincredit': _format_mincredit_head,
+                  'header_mingpa': _format_mingpa_head,
+                  'header_mingrade': _format_mingrade_head,
+                  'header_minperdisc': _format_minperdisc_head,
+                  'header_minres': _format_minres_head,
+                  'optional': _format_optional,
+                  'proxy_advice': format_body_rules.format_proxy_advice,
+                  'remark': format_body_rules.format_remark,
+                  'header_share': _format_share_head,
+                  'standalone': _format_standalone,
                   'under': _nop
                   }
 

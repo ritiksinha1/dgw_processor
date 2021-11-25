@@ -58,10 +58,10 @@ def format_block(block_dict: dict) -> str:
       parse_tree = cursor.fetchone().parse_tree
       print(f'{len(parse_tree)=}')
       if parse_tree == {}:
-        parse_results = f'<p>No information available for this block at this time.</p>'
+        parse_results = f'<p class="error">No information currently available for this block.</p>'
       elif 'error' in parse_tree.keys():
         err_msg = parse_tree['error']
-        parse_results = f'<p>There was an error processing this block: {err_msg}</p>'
+        parse_results = f'<p>There was an error when this block was parsed: {err_msg}</p>'
       else:
         try:
           parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
@@ -388,9 +388,9 @@ def format_proxy_advice(proxy_advice_dict: dict) -> str:
   """ Ignoring proxy advice
   """
 
-  proxy_advice_str = '<p class="error">proxy_advice not implemented (yet)</p>'
+  proxy_advice_str = ''
 
-  return ''
+  return proxy_advice_str
 
 
 # format_remark()

@@ -666,8 +666,8 @@ def header_maxperdisc(ctx, institution, requirement_id):
 # maxterm()
 # -------------------------------------------------------------------------------------------------
 def maxterm(ctx, institution, requirement_id):
-  """
-      maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
+  """ maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
+      But the course_list is optional in the body.
   """
   if DEBUG:
     print(f'*** maxterm({class_name(ctx)}, {institution}, {requirement_id})',
@@ -683,8 +683,7 @@ def maxterm(ctx, institution, requirement_id):
 # header_maxterm()
 # -------------------------------------------------------------------------------------------------
 def header_maxterm(ctx, institution, requirement_id):
-  """
-      header_maxterm    : maxterm label?;
+  """ header_maxterm    : maxterm label?;
   """
   if DEBUG:
     print(f'*** maxterm({class_name(ctx)}, {institution}, {requirement_id})',
@@ -702,8 +701,7 @@ def header_maxterm(ctx, institution, requirement_id):
 # maxtransfer()
 # -------------------------------------------------------------------------------------------------
 def maxtransfer(ctx, institution, requirement_id):
-  """
-      maxtransfer      : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
+  """ maxtransfer      : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
   """
   if DEBUG:
     print(f'*** maxtransfer({class_name(ctx)}, {institution}, {requirement_id})',
