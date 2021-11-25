@@ -2,15 +2,17 @@
 """ Extract both the context (the label structure) and the specificity (how many alternatives there
     are) for each course.
 
-    Block, blocktype, copy_rules, noncourse, and remarks are all irrelevant for present purposes.
+    Block and CopyRules augment the top-level document when encountered.
+    BlockType, noncourse, and Remarks are all irrelevant for present purposes.
+
+    For Conditionals, the condition string serves as the name of the requirements; for bare Else
+    clauses, the complement of the If clause's condition serves as the name.
+
     Specificity depends on the structure of the course_list, the group (and area) structure, and
     conditional factors.
 
-    This code is modeled on htmlificization.
-
-    Assumes that the parse_tree dict from the database is up to date. Trees with an 'error' key are
-    ignored. The --force argument determines whether to force parsing if the dict is empty, or to
-    ignore those, too.
+    Assumes that all parse_trees for the institution are up to date.
+    Ignores blocks that are not current and trees with an 'error' key.
 """
 
 import os
