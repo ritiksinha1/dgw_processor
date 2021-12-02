@@ -655,10 +655,7 @@ def header_maxperdisc(ctx, institution, requirement_id):
   return_dict = {'label': get_label(ctx)}
 
   maxperdisc_ctx = ctx.maxperdisc()
-
-  return_dict = {'number': maxperdisc_ctx.NUMBER().getText().strip(),
-                 'class_or_credit': class_or_credit(maxperdisc_ctx.class_or_credit())}
-  return_dict['disciplines'] = [discp.getText().upper() for discp in maxperdisc_ctx.SYMBOL()]
+  return_dict.update(maxperdisc(maxperdisc_ctx, institution, requirement_id))
 
   return {'header_maxperdisc': return_dict}
 

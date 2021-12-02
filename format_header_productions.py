@@ -68,6 +68,7 @@ def _format_conditional(conditional_dict: dict) -> str:
       else_details += '\n'.join([item for item in dispatch_header_productions(rule_dict)])
     else_details += '</details>'
     return_str += else_details
+
   return return_str + '</details>'
 
 
@@ -273,9 +274,12 @@ def _format_maxperdisc_head(maxperdisc_head_dict: dict) -> str:
   maxperdisc_dict = maxperdisc_head_dict['maxperdisc']
   maxperdisc_info = format_body_qualifiers.format_maxperdisc(maxperdisc_dict)
 
-  if courses_str := format_utils.format_course_list(maxperdisc_dict['course_list']):
+  try:
+    courses_str = format_utils.format_course_list(maxperdisc_dict['course_list'])
     maxperdisc_info = maxperdisc_info.replace('</p>', ' in these courses:</p>')
     maxperdisc_info += courses_str
+  except KeyError:
+    pass
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxperdisc_info}<details>'
@@ -600,6 +604,7 @@ def dispatch_header_productions(node: dict) -> list:
   """
   if DEBUG:
     print(f'*** dispatch_header_productions(keys: {list(node.keys())}', file=sys.stderr)
+
   production_strings = []
   for key, value in node.items():
     if production_info := _dispatch_production(key, value):
