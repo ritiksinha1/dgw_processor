@@ -1,5 +1,10 @@
 #! /usr/local/bin/python3
-""" Extract both the context (the label structure) and the specificity (how many alternatives there
+""" Populate tables of program requirements and mappings of courses to those requirements.
+    A "program" is a requirement block with a block_type of MAJOR, MINOR, or CONC, but these blocks
+    may reference OTHER blocks. DEGREE, LIBL, REQUISITE, and SCHOOL blocks are not handled here.
+    [There are eight active LIBL blocks at Baruch, one active REQUISITE block at Baruch, and one
+    active SCHOOL block ("Hold for future use") at BMCC.]
+    Extract both the context (the label structure) and the specificity (how many alternatives there
     are) for each course.
 
     Block and CopyRules augment the top-level document when encountered.
@@ -32,7 +37,6 @@ from quarantine_manager import QuarantineManager
 from pprint import pprint
 
 DEBUG = os.getenv('DEBUG_REQUIREMENT_MAPPINGS')
-log_file = open('./course_requirement_mappings.log', 'w')
 
 quarantined_dict = QuarantineManager()
 number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
@@ -185,7 +189,7 @@ def emit(requirement: Requirement, program_qualifiers: list, context: list) -> N
         row = cursor.fetchone()
         if row.course_qualifiers != course_qualifiers:
           print(f'{institution} {requirement_id} “{requirement.requirement_name}” '
-                f'{row.course_qualifiers=} <> {course_qualifiers=}', file=log_file)
+                f'{row.course_qualifiers=} <> {course_qualifiers=}', file=sys.stderr)
       else:
         print(f'Impossible situation: {cursor.rowcount} rows in course_requirement_keys with'
               f'same {institution=}, {requirement_id=} {requirement.requirement_name=}',
