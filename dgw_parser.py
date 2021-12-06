@@ -198,7 +198,9 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
         augmented_tree['header_list'] = header_list
         augmented_tree['body_list'] = body_list
         elapsed_time = round((time.time() - start_time), 3)
+        error_msg = 'Parsed ok; DB not updated.'
         if update_db:
+          error_msg = ' Parsed OK; DB updated.'
           try:
             update_cursor.execute(f"""
             update requirement_blocks set parse_tree = %s, dgw_seconds = %s
@@ -212,9 +214,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
               print(f'\n{row.institution} {row.requirement_id}\n--------------'
                     f'JSON tree is {len(json.dumps(augmented_tree)):,} bytes', file=tree_too_large)
               print(augmented_tree, file=tree_too_large)
-            err_msg = 'Parse tree too large for database'
-            if progress:
-              print(f': {err_msg}*')
+            err_msg = 'Parse tree too large for database!'
             augmented_tree = {'error': err_msg, 'header_list': [], 'body_list': []}
             update_cursor.execute(f'rollback')
             update_cursor.execute(f"""
@@ -230,7 +230,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
 
         if progress:
           # End the progress line
-          print('.')
+          print(f' {error_msg}')
 
         if DEBUG:
           print('\n*** HEADER LIST ***', file=debug_file)
@@ -241,7 +241,7 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
       except Exception as err:
         print(f'{row.institution} {row.requirement_id}: {err}', file=sys.stderr)
         if progress:
-          print('*')  # instead of a period.
+          print(' failed*')  # instead of a period.
         if is_quarantined:
           explanation = quarantined_dict.explanation((row.institution, row.requirement_id))
           augmented_tree['error'] = f'Quarantined: {explanation}'
@@ -277,16 +277,48 @@ if __name__ == '__main__':
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
+  parser.add_argument('-new', '--new', action='store_true')
   parser.add_argument('-np', '--progress', action='store_false')
   parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='current')
   parser.add_argument('-q', '--do_quarantined', action='store_true')
   parser.add_argument('-ra', '--requirement_id')
   parser.add_argument('-ti', '--timelimit', type=int, default=30)
-  parser.add_argument('-nu', '--update_db', action='store_false')
+  parser.add_argument('--update_db', dest='update_db', action='store_true')
+  parser.add_argument('--no_update_db', dest='update_db', action='store_false')
+  parser.set_defaults(update_db=True)
 
   # Parse args
   args = parser.parse_args()
+
+  if args.new:
+    conn = PgConnection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    select institution, requirement_id, block_type, block_value
+    from requirement_blocks
+    where period_start ~* '^9'
+    and parse_tree::text = '{}'
+    order by institution, requirement_id;
+    """)
+    num_blocks = cursor.rowcount
+    block_num = 0
+    for row in cursor.fetchall():
+      block_num += 1
+      print(f'{block_num}/{num_blocks}',
+            row.institution, row.requirement_id, row.block_type, row.block_value, end='')
+      dgw_parser(row.institution,
+                 'block_type',   # Not used
+                 'block_value',  # Not used
+                 period_range=args.period,
+                 progress=args.progress,
+                 update_db=args.update_db,
+                 requirement_id=row.requirement_id,
+                 do_quarantined=args.do_quarantined,
+                 timelimit=args.timelimit)
+    exit()
+
   if args.requirement_id:
+
     institution = args.institutions[0].strip('10').upper() + '01'
     requirement_id = args.requirement_id.strip('AaRr')
     if not requirement_id.isdecimal():
