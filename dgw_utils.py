@@ -8,10 +8,8 @@ import os
 import sys
 
 from collections import namedtuple
-from icecream import ic
 from traceback import print_stack
 from typing import List, Set, Dict, Tuple, Optional, Union, Any
-
 
 from Any import ANY
 
@@ -280,21 +278,20 @@ def get_scribed_courses(first_course, other_courses=None) -> list:
 
       For analysis purposes, with clauses should be logged, but are not.
 
-      course_list     : course_item (and_list | or_list)? (except_list | include_list)*
-                        proxy_advice? label?;
-      full_course     : discipline catalog_number with_clause*;   // Used only in expressions
-      course_item     : area_start? discipline? catalog_number with_clause* area_end?;
-      and_list        : (list_and area_end? course_item)+ ;
-      or_list         : (list_or area_end? course_item)+ ;
-      except_list     : EXCEPT course_item (and_list | or_list)?;     // Always OR
-      include_list    : INCLUDING course_item (and_list | or_list)?;  // Always AND
-      catalog_number  : symbol | NUMBER | CATALOG_NUMBER | WILD;
-      discipline      : symbol
-                      | string // For "SPEC." at BKL
-                      | WILD
-                      // Include keywords that appear as discipline names
-                      | BLOCK
-                      | IS;
+course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
+full_course     : discipline catalog_number with_clause*;   // Used only in expressions
+course_item     : area_start? discipline? catalog_number with_clause* area_end?;
+and_list        : (list_and area_end? course_item)+ ;
+or_list         : (list_or area_end? course_item)+ ;
+except_list     : EXCEPT course_item (and_list | or_list)?;     // Always OR
+include_list    : INCLUDING course_item (and_list | or_list)?;  // Always AND
+catalog_number  : symbol | NUMBER | CATALOG_NUMBER | WILD;
+discipline      : symbol
+                | string // For "SPEC." at BKL
+                | WILD
+                // Include keywords that appear as discipline names at CUNY
+                | BLOCK
+                | IS;
   """
   if DEBUG:
     print(f'*** get_scribed_courses({class_name(first_course)}, {other_courses} list items)',
@@ -653,34 +650,46 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
       except_list     : EXCEPT course_item (and_list | or_list)?;     // Always OR
       include_list    : INCLUDING course_item (and_list | or_list)?;  // Always AND
 
+      2021-12-09
+      This is the parser: there is no reason to look up courses here. That task is deferred to
+      applications that use the parsed blocks as input (htmlificization and course-requirement
+      mappings). So this process becomes much simpler: no active/inactive/missing course lists;
+      no counts of attributes (bkcr and wric). Some of the old code for handling course lookups
+      is left here as comments, but those comments should be removed once the new htmlificization
+      app shows how to handle that issue.
+
       The returned dict has the following structure:
 
-        scribed_courses     List of all (discipline, catalog_number, with_clause) tuples in the list
-                            after distributing disciplines across catalog_numbers. (Show "BIOL 1, 2"
-                            as "BIOL 1, BIOL 2")
-        active_courses      Catalog information and WITH clause (if any) for all active courses that
-                            match the scribed_courses list after expanding wildcards and
-                            catalog_number ranges.
-        inactive_courses    Catalog information for all inactive courses that match the scribed
-                            course list after wildcard and range expansions.
-        missing_courses     Explicitly-scribed courses that do not exist in CUNYfirst.
+        scribed_courses     List of course tuples (discipline, catalog_number, with_clause) after
+                            catalog numbers are distributed across disciplines, but with wildcards
+                            (@) remaining. To handle course areas, this is a two-dimensional list;
+                            where there are no areas, the entire list will be in area zero.
+        # active_courses      Catalog information and WITH clause (if any) for all active courses
+        #                     that match the scribed_courses list after expanding wildcards and
+        #                     catalog_number ranges.  This is a dict with the following keys:
+        #                       num_courses   int
+        #                       num_bkcr      int
+        #                       num_wric      int
+        #                       course_tuples []  # (course_id, offer_nbr, with_clause)
+
+        # missing_courses     Explicitly-scribed courses that do not exist in CUNYfirst.
         qualifiers          Qualifiers that apply to all courses in the list
-        label               The name of the property (head) or requirement (body)
-        course_areas        List of active_courses divided into distribution areas; presumably the
-                            full course list will have a MinArea qualifier, but this is not checked
-                            here. Omit inactive, missing, and except courses because they are
-                            handled in the full course list.
+        # label               The name of the property (head) or requirement (body)
+        # course_areas        List of active_courses divided into distribution areas; presumably the
+        #                     full course list will have a MinArea qualifier, but this is not
+        #                     checked here. Omit inactive, missing, and except courses because they
+        #                     are handled in the full course list.
         except_courses      Scribed list used for culling from active_courses.
         include_courses     Like except_courses, except this list is not actually used for anything
                             in this method.
 
         list_type           'AND' or 'OR'
-        attributes          List of all attribute values the active courses list have in common,
-                            currently limited to WRIC and BKCR
+        # attributes          List of all attribute values the active courses list have in common,
+        #                     currently limited to WRIC and BKCR
 
-      Missing courses: Any explicitly-scribed course that fails course catalog lookup. Obviously,
-      wildcard-expanded lists will find only active and inactive courses, and thus will never add
-      to the missing courses list
+      # Missing courses: Any explicitly-scribed course that fails course catalog lookup. Obviously,
+      # wildcard-expanded lists will find only active and inactive courses, and thus will never add
+      # to the missing courses list
 
       The except_courses list is an OR list no matter how it is scribed. (Ellucian accepts either
       conjunction, even though documentation says AND is illegal.)
@@ -706,33 +715,37 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     return {}
 
   # The dict to be returned:
-  return_dict = {'scribed_courses': [],
+  return_dict = {'scribed_courses': [[]],
                  'list_type': None,
-                 'label': None,
-                 'active_courses': [],
-                 'inactive_courses': [],
+                 # 'label': None,
+                 # 'active_courses': {'num_courses': 0,
+                 #                    'num_bkcr': 0,
+                 #                    'num_wric': 0,
+                 #                    'course_tuples': []},
+                 # 'inactive_courses': [],
                  'except_courses': [],
-                 'include_courses': [],
-                 'course_areas': [],
-                 'missing_courses': [],
-                 'attributes': []}
+                 'include_courses': []}
+  #              'course_areas': [],
+  #              'missing_courses': [],
+  #              'attributes': []}
   # Shortcuts to the lists in return_dict
-  scribed_courses = return_dict['scribed_courses']
-  active_courses = return_dict['active_courses']
-  inactive_courses = return_dict['inactive_courses']
-  except_courses = return_dict['except_courses']
-  include_courses = return_dict['include_courses']
-  missing_courses = return_dict['missing_courses']
-  attributes = return_dict['attributes']
+  # scribed_courses = return_dict['scribed_courses']
+  # active_courses = return_dict['active_courses']
+  # inactive_courses = return_dict['inactive_courses']
+  # except_courses = return_dict['except_courses']
+  # include_courses = return_dict['include_courses']
+  # missing_courses = return_dict['missing_courses']
+  # attributes = return_dict['attributes']
 
-  # get context of the required first_course and list of optional additional first_courses.
+  # Add the parse tree context path to the dict for checking during development.
   return_dict['context_path'] = context_path(ctx)
 
   # Pick up the label, if there is one
   #   A course list has no label, but a course_list_rule can (should) have one, and so also should
-  #   xxx_head productions, where the label is attached to the production, not the list. Leaving
-  #   this note here in the hope of finding it the next time the question of whether to look for a
-  #   label here comes up.
+  #   xxx_head productions, where the label is attached to the production, not the list.
+  #
+  #   Leaving this note here in the hope of finding it the next time the question of whether or not
+  #   to look for a label here comes up.
   # if label_str := get_label(ctx):
   #   return_dict['label'] = label_str
 
@@ -741,7 +754,8 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
       print(f'*** qualifiers in build_course_list: {qualifiers}', file=sys.stderr)
     return_dict['qualifiers'] = qualifiers
 
-  # The Scribe context in which the list appeared
+  # Determine the list structure and, if specified, whether it is disjunctive or conjunctive.
+  return_dict['list_type'] = other_courses = None
   first_course = ctx.course_item()
   if ctx.and_list():
     return_dict['list_type'] = 'AND'
@@ -749,22 +763,30 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   elif ctx.or_list():
     return_dict['list_type'] = 'OR'
     other_courses = ctx.or_list()
-  else:
-    return_dict['list_type'] = None
-    other_courses = None
 
-  list_type = return_dict['list_type']
+  # Get the one-dimensional list of tuples and area delimiters; convert to a two-dimensional areas
+  # list. To handle imbalanced area_start/area_end pairs, ignore area ends and just start a new
+  # area area for each area_start (unless the current area is empty).
+  return_dict['scribed_courses'] = [[]]
+  current_area = 0
+  for item in get_scribed_courses(first_course, other_courses):
+    if isinstance(item, tuple):
+      return_dict['scribed_courses'][current_area].append(item)
+    elif (item == 'area_start') and (len(return_dict['scribed_courses'][current_area]) > 0):
+      return_dict['scribed_courses'].append([])
+      current_area += 1
 
-  scribed_courses += get_scribed_courses(first_course, other_courses)
-  if len(scribed_courses) > 1 and list_type is None:
-    # This would be a grammar/parser error. But see the active_course list check at the end of this
-    # function.
-    print(f'{institution} {requirement_id} {list_type=} {len(scribed_courses)=}', file=sys.stderr)
+  if ((num_tuples := len(return_dict['scribed_courses'][0])) > 1
+     and return_dict['list_type'] is None):
+    # This would be a grammar/parser error.
+    print(f'{institution} {requirement_id} {list_type=} {num_tuples=}', file=sys.stderr)
 
-  # Sublists (except and/or include)
-  # course_list : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
-  # The grammar allows them to be in either order, but to do that they show up as lists. Expect
-  # 0 or 1 element per list, but report cases of more than one.
+  """ Sublists (except and/or include)
+  course_list : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
+  The grammar allows them to be in either order, but to do that they show up as lists. Expect
+  0 or 1 element per list, but report cases of more than one.
+  """
+  # Except List
   if ctx.except_list():
     if list_len := len(ctx.except_list()) > 1:
       print(f'Unexpected: except_list occurs {list_len} times. Only first one processed.',
@@ -777,8 +799,9 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
       other_courses = ctx.except_list()[0].or_list()
     else:
       other_courses = None
-    except_courses += get_scribed_courses(first_course, other_courses)
+    return_dict['except_courses'] = get_scribed_courses(first_course, other_courses)
 
+  # Include List
   if ctx.include_list():
     if list_len := len(ctx.include_list()) > 1:
       print(f'Unexpected: include_list occurs {list_len} times. Only first one processed.',
@@ -791,160 +814,202 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
       other_courses = ctx.include_list()[0].or_list()
     else:
       other_courses = None
-    include_courses += get_scribed_courses(first_course, other_courses)
+    return_dict['include_courses'] += get_scribed_courses(first_course, other_courses)
 
-  if (len(scribed_courses) == 1) and \
-     (scribed_courses[0][0] == '@') and \
-     (scribed_courses[0][1] == '@'):
-     # Construct an active_courses list that captures the essence of @ @
-     scribed_course = scribed_courses[0]
-     active_courses = [000000, 0, 'ANY', 'COURSE', scribed_course[2]]
-  else:
-    # Active Courses (skip if no institution given, such as in a course list qualifier course list)
-    check_missing = True  # Unless there are wildcards or ranges
-    conn = PgConnection()
-    cursor = conn.cursor()
+  # """ Active Courses
+  #     The issue here is that wildcards and ranges can make the list of courses "blow up" without
+  #     serving a useful purpose. So we use ANY for certain discipline/catalog substitutions.
+  #                       Discp   Catalog#    num_active
+  #       @         @     ANY     ANY         # active courses at college
+  #       DISCP[@]  @     DISCP   ANY         # active courses in discipline(s)
+  #       DISCP     N:N   Expand list         Size of list
+  #       DISCP     0-9@  Expand list         Size of list
+  # """
+  # # Active Courses (skip if no institution given, such as in a course list qualifier course list)
+  # check_missing = True  # Unless there are wildcards or ranges
+  # conn = PgConnection()
+  # cursor = conn.cursor()
 
-    current_area = None
-    for scribed_course in scribed_courses:
+  # current_area = None
+  # for scribed_course in scribed_courses:
+  #   discipline, catalog_number, with_clause = scribed_course
 
-      # Start and end course areas. Active courses will be added to current_area if it exists
-      if scribed_course == 'area_start':
-        current_area = []
-        continue
-      if scribed_course == 'area_end':
-        if current_area and len(current_area) > 0:
-          return_dict['course_areas'].append(current_area)
-        current_area = None
-        continue
+  #   if '@' in discipline or '@' in catalog_number or ':' in catalog_number:
+  #     check_missing = False
 
-      # For display to users
-      display_discipline, display_catalog_number, display_with_clause = scribed_course
-      # For course db query
-      discipline, catalog_number, with_clause = scribed_course
+  #   # Start and end course areas. Active courses will be added to current_area if it exists
+  #   if scribed_course == 'area_start':
+  #     current_area = []
+  #     continue
+  #   if scribed_course == 'area_end':
+  #     if current_area and len(current_area) > 0:
+  #       return_dict['course_areas'].append(current_area)
+  #     current_area = None
+  #     continue
 
-      # discipline part
-      discp_op = '='
+  #   num_courses = num_bkcr = num_wric = 0
+  #   # Handle wildcard substitutions noted above
+  #   if discipline == '@' and catalog_number == '@':
+  #     # The “Any Course” situation
+  #     cursor.execute("""
+  #     select count(*), attributes ~* 'BKCR' as bkcr, attributes ~* 'WRIC' as wric
+  #     from cuny_courses
+  #     where institution ~* %s
+  #       and course_status = 'A'
+  #       and designation not in ('MNL', 'MLA')
+  #     group by bkcr, wric
+  #     """, [institution])
+  #     for row in cursor.fetchall():
+  #       active_courses.num_courses += row.count
+  #       active_courses.num_bkcr += row.count if row.bkcr else 0
+  #       active_courses.num_wric += row.count if row.wric else 0
+  #     active_courses.course_tuples.append((0, 0, with_clause))
 
-      if '@' in discipline:
-        discp_op = '~*'
-        check_missing = False
-        discipline = '^' + discipline.replace('@', '.*') + '$'
+  #   elif catalog_number == '@':
+  #     # The “Any course in a (set of) discipline(s)” situation
+  #     discipline = discipline.replace('@', '.*')
+  #     query = """
+  #     select course_id, catalog_number, , attributes ~* 'BKCR' as bkcr, attributes ~* 'WRIC' as wric
+  #       from cuny_courses
+  #      where institution ~* %s
+  #        and discipline ~* %s
+  #        and course_status = 'A'
+  #        and designation not in ('MNL', 'MLA')
+  #     """
+  #     values = [institution, discipline]
+  #     lookup_courses(cursor, query, values)
 
-      #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
-      #   numbers that start with zero. But other patterns might be used: 1@, for example.
-      catalog_numbers = catalog_number.split(':')
-      if len(catalog_numbers) == 1:
-        if '@' in catalog_numbers[0]:
-          check_missing = False
-          catnum_clause = "catalog_number ~* '^" + catalog_numbers[0].replace('@', '.*') + "$'"
-        else:
-          catnum_clause = f"catalog_number = '{catalog_numbers[0]}'"
-      else:
-        check_missing = False
-        low, high = catalog_numbers
-        #  Assume no wildcards in range ...
-        try:
-          catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
-                               numeric_part(catalog_number) <=' {float(high)}')
-                           """
-        except ValueError:
-          #  ... but it looks like there were.
-          check_missing = False
+  #   elif match := re.match(r'\s*(\d+)@+', catalog_number):
+  #     # Select courses based on level
+  #     level = f'{match.group(1)}.*'
+  #     discipline = discipline.replace('@', '.*')
+  #     cursor.execute("""
+  #     select course_id, catalog_number, , attributes ~* 'BKCR' as bkcr, attributes ~* 'WRIC' as wric
+  #       from cuny_courses
+  #      where institution ~* %s
+  #        and discipline ~* %s
+  #        and catalog_number ~* %s
+  #        and course_status = 'A'
+  #        and designation not in ('MNL', 'MLA')
+  #     """, [institution, discipline, level])
+  #     active_courses.num_courses += cursor.rowcount
+  #     for row in cursor.fetchall():
+  #       if row.bkcr:
+  #         active_courses.num_bkcr += 1
+  #       if row.wric:
+  #         active_courses.num_wric += 1
+  #       active_courses.course_tuples.append((row.course_id, row.offer_nbr, with_clause))
 
-          #  Assume:
-          #    - the range is being used for a range of course levels (1@:3@, for example)
-          #    - catalog numbers are 3 digits (so 1@ means 100 to 199, for example
-          #  Otherwise, 1@ would match 1, 10-19, 100-199, and 1000-1999, which would be strange, or
-          #  at least fragile in the case of Lehman, which uses 2000-level numbers for blanket
-          #  credit courses at the 200 level.
-          matches = re.match('(.*?)@(.*)', low)
-          if matches.group(1).isdigit():
-            low = matches.group(1) + '00'
-            matches = re.match('(.*?)@(.*)', high)
-            if matches.group(1).isdigit():
-              high = matches.group(1) + '99'
-              catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
-                                   numeric_part(catalog_number) <= {float(high)})
-                               """
-          else:
-            # Either low or high is not in the form: \d+@
-            catnum_clause = "catalog_number = ''"  # Will match no courses
-      course_query = f"""
-          select institution, course_id, offer_nbr, discipline, catalog_number, title,
-                 requisites, description, course_status, contact_hours, min_credits, max_credits,
-                 designation,
-                 replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',') as attributes
-            from cuny_courses
-           where institution ~* '{institution}'
-             and discipline {discp_op} '{discipline}'
-             and {catnum_clause}
-             order by discipline, numeric_part(catalog_number)
-                """
-      cursor.execute(course_query)
-      if cursor.rowcount > 0:
-        num_blanket = 0
-        num_writing = 0
+  #   #   0@ means any catalog number < 100 according to the Scribe manual, but CUNY has no catalog
+  #   #   numbers that start with zero. But other patterns might be used: 1@, for example.
+  #   catalog_numbers = catalog_number.split(':')
+  #   if len(catalog_numbers) == 1:
+  #     if '@' in catalog_numbers[0]:
+  #       catnum_clause = "catalog_number ~* '^" + catalog_numbers[0].replace('@', '.*') + "$'"
+  #     else:
+  #       catnum_clause = f"catalog_number = '{catalog_numbers[0]}'"
+  #   else:
+  #     low, high = catalog_numbers
+  #     #  Assume no wildcards in range ...
+  #     try:
+  #       catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
+  #                            numeric_part(catalog_number) <=' {float(high)}')
+  #                        """
+  #     except ValueError:
+  #       #  ... but it looks like there were.
 
-        for row in cursor.fetchall():
-          # skip excluded and zero-credit courses
-          if (row.discipline, row.catalog_number, ANY) in except_courses:
-            continue
-          if row.max_credits < 0.5:  # Allow for "creative" interpretations of zero.
-            continue
-          if row.min_credits == row.max_credits:
-            credits = f'{row.min_credits:0.1f}'
-          else:
-            credits = f'{row.min_credits:0.1f}:{row.max_credits:0.1f}'
-          if row.course_status == 'A':
-            active_course_tuple = (row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
-                                   row.title, credits, with_clause)
-            active_courses.append(active_course_tuple)
+  #       #  Assume:
+  #       #    - the range is being used for a range of course levels (1@:3@, for example)
+  #       #    - catalog numbers are 3 digits (so 1@ means 100 to 199, for example
+  #       #  Otherwise, 1@ would match 1, 10-19, 100-199, and 1000-1999, which would be strange, or
+  #       #  at least fragile in the case of Lehman, which uses 2000-level numbers for blanket
+  #       #  credit courses at the 200 level.
+  #       matches = re.match('(.*?)@(.*)', low)
+  #       if matches.group(1).isdigit():
+  #         low = matches.group(1) + '00'
+  #         matches = re.match('(.*?)@(.*)', high)
+  #         if matches.group(1).isdigit():
+  #           high = matches.group(1) + '99'
+  #           catnum_clause = f"""(numeric_part(catalog_number) >= {float(low)} and
+  #                                numeric_part(catalog_number) <= {float(high)})
+  #                            """
+  #       else:
+  #         # Either low or high is not in the form: \d+@
+  #         catnum_clause = "catalog_number = ''"  # Will match no courses
+  #   course_query = f"""
+  #       select institution, course_id, offer_nbr, discipline, catalog_number, title,
+  #              requisites, description, course_status, contact_hours, min_credits, max_credits,
+  #              designation,
+  #              replace(regexp_replace(attributes, '[A-Z]+:', '', 'g'), ';', ',') as attributes
+  #         from cuny_courses
+  #        where institution ~* '{institution}'
+  #          and discipline {discp_op} '{discipline}'
+  #          and {catnum_clause}
+  #          order by discipline, numeric_part(catalog_number)
+  #             """
+  #   cursor.execute(course_query)
+  #   if cursor.rowcount > 0:
+  #     num_blanket = 0
+  #     num_writing = 0
 
-            # Include only active courses in any course areas
-            if current_area is not None:
-              current_area.append(active_course_tuple)
+  #     for row in cursor.fetchall():
+  #       # skip excluded and zero-credit courses
+  #       if (row.discipline, row.catalog_number, ANY) in except_courses:
+  #         continue
+  #       if row.max_credits < 0.5:  # Allow for "creative" interpretations of zero.
+  #         continue
+  #       if row.min_credits == row.max_credits:
+  #         credits = f'{row.min_credits:0.1f}'
+  #       else:
+  #         credits = f'{row.min_credits:0.1f}:{row.max_credits:0.1f}'
+  #       if row.course_status == 'A':
+  #         active_course_tuple = (row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
+  #                                row.title, credits, with_clause)
+  #         active_courses.append(active_course_tuple)
 
-            # Check BKCR and WRIC only for active courses
-            if 'BKCR' in row.attributes:
-              # if num_blanket:
-              #   print(f'*** wet blanket: {row.course_id} {row.discipline} {row.catalog_number} '
-              #         f'{row.max_credits} {row.attributes}', file=sys.stderr)
-              num_blanket += 1
-            if 'WRIC' in row.attributes:
-              num_writing += 1
-          else:
-            inactive_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
-                                     row.title, credits, with_clause))
+  #         # Include only active courses in any course areas
+  #         if current_area is not None:
+  #           current_area.append(active_course_tuple)
 
-        if (num_active := len(active_courses)) > 0:
-          if num_blanket == num_active:
-            attributes.append('Blanket Credit')
-          if num_writing == num_active:
-            attributes.append('Writing Intensive')
-    conn.close()
+  #         # Check BKCR and WRIC only for active courses
+  #         if 'BKCR' in row.attributes:
+  #           # if num_blanket:
+  #           #   print(f'*** wet blanket: {row.course_id} {row.discipline} {row.catalog_number} '
+  #           #         f'{row.max_credits} {row.attributes}', file=sys.stderr)
+  #           num_blanket += 1
+  #         if 'WRIC' in row.attributes:
+  #           num_writing += 1
+  #       else:
+  #         inactive_courses.append((row.course_id, row.offer_nbr, row.discipline, row.catalog_number,
+  #                                  row.title, credits, with_clause))
 
-    # Clean out any (area_start and area_end) strings from the scribed_courses list
-    return_dict['scribed_courses'] = [item for item in return_dict['scribed_courses']
-                                      if isinstance(item, tuple)]
+  #     if (num_active := len(active_courses)) > 0:
+  #       if num_blanket == num_active:
+  #         attributes.append('Blanket Credit')
+  #       if num_writing == num_active:
+  #         attributes.append('Writing Intensive')
+  # conn.close()
 
-    # Make sure each scribed course was found. Check only if there were no wildcards scribed.
-    if check_missing:
-      found_courses = [(course[2], course[3]) for course in active_courses]
-      found_courses += [(course[2], course[3]) for course in inactive_courses]
-      for scribed_course in return_dict['scribed_courses']:
-        if (scribed_course[0], scribed_course[1]) not in found_courses:
-          missing_courses.append(scribed_course)
+  # # Clean out any (area_start and area_end) strings from the scribed_courses list
+  # return_dict['scribed_courses'] = [item for item in return_dict['scribed_courses']
+  #                                   if isinstance(item, tuple)]
 
-    # Check there is a list_type when multiple active courses. This happens when there is just one
-    # scribed course, thus no and_list or or_list, but it expanded to  multiple active courses because
-    # of wildcard(s). It’s an OR list.
-    if len(active_courses) > 1 and list_type is None:
-      return_dict['list_type'] = 'OR'
+  # # Make sure each scribed course was found. Check only if there were no wildcards scribed.
+  # if check_missing:
+  #   found_courses = [(course[2], course[3]) for course in active_courses]
+  #   found_courses += [(course[2], course[3]) for course in inactive_courses]
+  #   for scribed_course in return_dict['scribed_courses']:
+  #     if (scribed_course[0], scribed_course[1]) not in found_courses:
+  #       missing_courses.append(scribed_course)
+
+  # # Check there is a list_type when multiple active courses. This happens when there is just one
+  # # scribed course, thus no and_list or or_list, but it expanded to  multiple active courses because
+  # # of wildcard(s). It’s an OR list.
+  # if len(active_courses) > 1 and list_type is None:
+  #   return_dict['list_type'] = 'OR'
 
   if DEBUG:
     print(f'    course_list: {return_dict}', file=sys.stderr)
-
   return {'course_list': return_dict}
 
 
