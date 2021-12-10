@@ -418,7 +418,7 @@ if __name__ == '__main__':
           if args.progress:
             print(f'{institution_count:2} / {num_institutions:2};  {types_count} / {num_types}; '
                   f'{values_count:3} / {num_values:3} {institution} {requirement_id} {block_type:6}'
-                  f' {block_value:8} {args.period}', end='')
+                  f' {block_value:12} {args.period}', end='')
             sys.stdout.flush()
           parse_tree = dgw_parser(institution,
                                   block_type.upper(),
