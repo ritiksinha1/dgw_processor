@@ -272,12 +272,11 @@ if __name__ == '__main__':
       for each block parsed.
   """
   # Command line args
-  parser = argparse.ArgumentParser(description='Test DGW Parser')
+  parser = argparse.ArgumentParser(description='Parse DGW Scribe Blocks')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
   parser.add_argument('-v', '--block_values', nargs='+', default=['CSCI-BS'])
   parser.add_argument('-d', '--debug', action='store_true', default=False)
   parser.add_argument('-i', '--institutions', nargs='*', default=['QNS01'])
-  parser.add_argument('-new', '--new', action='store_true')
   parser.add_argument('-np', '--progress', action='store_false')
   parser.add_argument('-p', '--period', choices=['all', 'current', 'latest'], default='current')
   parser.add_argument('-q', '--do_quarantined', action='store_true')
@@ -289,33 +288,6 @@ if __name__ == '__main__':
 
   # Parse args
   args = parser.parse_args()
-
-  if args.new:
-    conn = PgConnection()
-    cursor = conn.cursor()
-    cursor.execute("""
-    select institution, requirement_id, block_type, block_value
-    from requirement_blocks
-    where period_start ~* '^9'
-    and parse_tree::text = '{}'
-    order by institution, requirement_id;
-    """)
-    num_blocks = cursor.rowcount
-    block_num = 0
-    for row in cursor.fetchall():
-      block_num += 1
-      print(f'{block_num}/{num_blocks}',
-            row.institution, row.requirement_id, row.block_type, row.block_value, end='')
-      dgw_parser(row.institution,
-                 'block_type',   # Not used
-                 'block_value',  # Not used
-                 period_range=args.period,
-                 progress=args.progress,
-                 update_db=args.update_db,
-                 requirement_id=row.requirement_id,
-                 do_quarantined=args.do_quarantined,
-                 timelimit=args.timelimit)
-    exit()
 
   if args.requirement_id:
 
