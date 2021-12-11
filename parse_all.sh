@@ -21,13 +21,13 @@ do
   shift
 done
 
-# Option to use an environment variable to specify a timeout interval different from the built-in
-# default of 30 sec.
+# Option to use an environment variable to specify a timeout interval different from the default of
+# 120 sec.
 if [[ $TIMEOUT_INTERVAL ]]
 then timeout_arg="-ti $TIMEOUT_INTERVAL"
      echo "Timeout interval is $TIMEOUT_INTERVAL seconds"
-else timeout_arg=''
-     echo "Timeout interval is default value (30 sec)"
+else timeout_arg='-ti 120'
+     echo "Timeout interval is default value (120 sec)"
 fi
 
 # Truncate pre-existing out and err files if this is a "full run"
