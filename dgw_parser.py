@@ -198,15 +198,16 @@ def dgw_parser(institution: str, block_type: str = None, block_value: str = None
         augmented_tree['header_list'] = header_list
         augmented_tree['body_list'] = body_list
         elapsed_time = round((time.time() - start_time), 3)
+        timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime())
         error_msg = 'Parsed ok; DB not updated.'
         if update_db:
           error_msg = ' Parsed OK; DB updated.'
           try:
             update_cursor.execute(f"""
-            update requirement_blocks set parse_tree = %s, dgw_seconds = %s
+            update requirement_blocks set parse_tree = %s, dgw_seconds = %s, dgw_timestamp = %s
             where institution = '{row.institution}'
             and requirement_id = '{row.requirement_id}'
-            """, (json.dumps(augmented_tree), elapsed_time))
+            """, (json.dumps(augmented_tree), elapsed_time, timestamp))
 
           # Deal with giant parse trees that exceed Postgres limit for jsonb data
           except psycopg.errors.ProgramLimitExceeded:
