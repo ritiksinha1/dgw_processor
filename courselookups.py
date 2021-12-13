@@ -156,12 +156,12 @@ if __name__ == '__main__':
 
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
-      if args.institutions[0].lower == 'all':
+      if args.institutions[0].lower() == 'all':
         cursor.execute('select code from cuny_institutions')
         institutions = [row.code for row in cursor]
       else:
         institutions = [f"{i.strip('01').upper()}01" for i in args.institutions]
-      for institution in institutions:
+      for institution in sorted(institutions):
         if args.requirement_id is not None:
           requirement_id = f"RA{int(args.requirement_id.strip('RAra')):06}"
           print(institution, requirement_id, end='')
@@ -187,4 +187,34 @@ if __name__ == '__main__':
                                  tuple(scribed_tuples[area]),  # jsonb cpnverted them to lists
                                  course_list['course_list']['except_courses']))
         else:
-          print('please stand by')
+
+          if 'all' in args.block_types:
+            block_types = ['CONC', 'MAJOR', 'MINOR', 'DEGREE', 'OTHER']
+          else:
+            block_types = args.block_types
+          block_types_clause = (f' and block_type in ('
+                                + ','.join(f"'{t.upper()}'" for t in block_types) + ')')
+
+          if 'all' in args.block_values:
+            block_values_clause = ''
+          else:
+            block_values_clause = (f'and block_value in ('
+                                   + ','.join(f"'{v.upper()}'" for v in args.block_values) + ')')
+
+          query = f"""
+          select institution, requirement_id, block_type, block_value, parse_tree
+            from requirement_blocks
+           where institution = %s
+             and period_stop ~* '^9'
+             {block_types_clause}
+             {block_values_clause}
+             and not block_value ~* '^\\d+$'
+             order by institution, block_type, block_value
+          """
+          cursor.execute(query, (institution,))
+          row_number = 0
+          for row in cursor:
+            print(f'{row.institution=}, {row.block_type=}, {row.block_value=}')
+          #   row_number += 1
+          #   print(f'\r      {row_number}/{cursor.rowcount}', end='')
+          # print()
