@@ -168,7 +168,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
     #   (BKCR not likely, but maybe WRIC.) But the common attributes are shown only if _all_ the
     #   activee courses, across areas, share them.
     assert isinstance(active_courses, list)
-    if len(active_courses) == 0:
+    if len(active_courses) < 0:
       details_str += '<div class="error">No Active Courses!</div>'
     else:
       attributes_str = ''
@@ -281,7 +281,7 @@ def list_of_courses(course_tuples: list, title_str: str, highlight=False) -> str
                 f'<ul>')
   for course_tuple in course_tuples:
     assert len(course_tuple) == 3 or len(course_tuple) == 7, \
-        f'{len(course_tuple)} is not three or six'
+        f'{len(course_tuple)} is not three or seven'
     if len(course_tuple) < 4:  # Scribed is 3 (possible 'with'); except and including are 2
       return_str += f'<li>{course_tuple[0]} {course_tuple[1]}'
       if course_tuple[2] is not None:
