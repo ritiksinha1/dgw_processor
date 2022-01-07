@@ -12,7 +12,6 @@
 
 import argparse
 import csv
-import functiontrace
 import os
 import sys
 
@@ -22,14 +21,7 @@ from collections import namedtuple
 from course_lookup import lookup_course
 
 import html_utils
-# html_utils.dict_to_html
-# html_utils.list_to_html
-# html_utils.to_html
 import format_utils
-# format_utils.class_credit_to_str
-# format_utils.format_num_class_credit
-# format_utils.format_course_list
-# format_utils.list_of_courses
 
 from format_body_qualifiers import dispatch_body_qualifiers
 from format_header_productions import dispatch_header_productions
