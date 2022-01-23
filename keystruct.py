@@ -221,9 +221,10 @@ if __name__ == "__main__":
                             order by institution
                        """, (institution, requirement_id))
       else:
-        block_type = args.type.upper()
-        if block_type == 'ALL':
+        block_type = [args.type.upper()]
+        if 'ALL' in block_type:
           block_type = ['MAJOR', 'MINOR', 'CONC']
+
 
         block_value = args.value.upper()
         if block_value == 'ALL':
