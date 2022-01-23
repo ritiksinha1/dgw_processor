@@ -222,7 +222,9 @@ if __name__ == "__main__":
                        """, (institution, requirement_id))
       else:
         block_type = args.type.upper()
-        assert block_type in ['MAJOR', 'MINOR', 'CONC'], f'{args.type} is not MAJOR, MINOR, or CONC'
+        if block_type == 'ALL':
+          block_type = ['MAJOR', 'MINOR', 'CONC']
+
         block_value = args.value.upper()
         if block_value == 'ALL':
           block_value = '^.*$'
@@ -237,11 +239,12 @@ if __name__ == "__main__":
                                   parse_tree
                              from requirement_blocks
                             where institution {institution_op} %s
-                              and block_type = %s
+                              and block_type =  Any(%s)
                               and block_value {value_op} %s
                               and period_stop ~* '^9'
                               and parse_tree::text != {empty_tree}
-                            order by institution, block_value""", (institution, block_type, block_value))
+                            order by institution, block_type, block_value""",
+                       (institution, block_type, block_value))
 
       suffix = '' if cursor.rowcount == 1 else 's'
       print(f'{cursor.rowcount} parse tree{suffix}')
