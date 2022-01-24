@@ -16,6 +16,8 @@ BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type bloc
 log_file = open(f'{__file__.replace(".py", ".log")}', 'w')
 
 
+# letter_grade()
+# -------------------------------------------------------------------------------------------------
 def letter_grade(grade_point: float) -> str:
   """ Convert a passing grade_point value to a passing letter grade.
       Treat anything less than 1.0 as "Any" passing grade, and anything above 4.3 as "A+"
@@ -42,6 +44,8 @@ def letter_grade(grade_point: float) -> str:
   return letter + suffix
 
 
+# write_log()
+# -------------------------------------------------------------------------------------------------
 def write_log(block_info: namedtuple, message: str):
   """ Write a message to the logfile
   """
@@ -49,6 +53,8 @@ def write_log(block_info: namedtuple, message: str):
         f'{block_info.block_value:10}', message, file=log_file)
 
 
+# key_struct()
+# -------------------------------------------------------------------------------------------------
 def key_struct(arg, depth=0):
   """ Treewalk, where the tree structure is implemented using nested dicts, but nodes can be lists.
   """
@@ -74,16 +80,33 @@ def key_struct(arg, depth=0):
         print(f' {value}')
 
 
+# traverse_body()
+# -------------------------------------------------------------------------------------------------
+def traverse_body(block_info: namedtuple) -> None:
+  """ Extract Requirement names and course lists from body rules.
+  """
+
+  try:
+    body_list = block_info.parse_tree['body_list']
+  except KeyError:
+    write_log(block_info, f'No body list in parse tree')
+    return
+
+  for body_item in body_list:
+    pass
+
+
+# traverse_header()
+# -------------------------------------------------------------------------------------------------
 def traverse_header(block_info: namedtuple) -> None:
   """ Extract program-wide qualifiers: MinGrade (but not MinGPA) and residency requirements,
   """
 
-  return_list = []
-
   try:
     header_list = block_info.parse_tree['header_list']
   except KeyError:
-    return return_list
+    write_log(block_info, f'No header list in parse tree')
+    return
 
   for header_item in header_list:
     if not isinstance(header_item, dict):
@@ -112,6 +135,7 @@ def traverse_header(block_info: namedtuple) -> None:
                 max_classes = int(value['max_classes'])
                 block_info.class_credits = f'{min_classes:5}-{max_classes} Classes'
             else:
+              # *** THERE IS AN AND LIST WITH BOTH CLASSES AND CREDITS ***
               write_log(block_info, f'Class/Credit: {value}')
 
           case 'conditional':
@@ -121,8 +145,10 @@ def traverse_header(block_info: namedtuple) -> None:
           case 'header_lastres':
             pass
           case 'header_maxclass':
+            # THERE WOULD BE A COURSE LIST HERE
             pass
           case 'header_maxcredit':
+            # THERE WOULD BE A COURSE LIST HERE
             pass
           case 'header_maxpassfail':
             pass
@@ -142,8 +168,10 @@ def traverse_header(block_info: namedtuple) -> None:
               block_info.max_transfer = f'{int(number)} class{suffix}'
 
           case 'header_minclass':
+            # THERE WOULD BE A COURSE LIST HERE
             pass
           case 'header_mincredit':
+            # THERE WOULD BE A COURSE LIST HERE
             pass
           case 'header_mingpa':
             pass
@@ -183,6 +211,8 @@ def traverse_header(block_info: namedtuple) -> None:
   return
 
 
+# main()
+# -------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
   """ Get a parse tree from the requirements_table and walk it.
   """
@@ -225,7 +255,6 @@ if __name__ == "__main__":
         if 'ALL' in block_type:
           block_type = ['MAJOR', 'MINOR', 'CONC']
 
-
         block_value = args.value.upper()
         if block_value == 'ALL':
           block_value = '^.*$'
@@ -258,6 +287,7 @@ if __name__ == "__main__":
                 f'{block_info.block_type:6} {block_info.block_value:10} {block_info.class_credits};'
                 f' Min Grade: {block_info.min_grade:3}; Max Transfer: '
                 f'{block_info.max_transfer}')
+          traverse_body(block_info)
         except KeyError:
           print(f'No header_list for', institution, requirement_id, block_type, block_value,
                 title, file=sys.stderr)
