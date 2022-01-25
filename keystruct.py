@@ -82,7 +82,7 @@ def key_struct(arg, depth=0):
 
 # traverse_body()
 # -------------------------------------------------------------------------------------------------
-def traverse_body(block_info: namedtuple) -> None:
+def traverse_body(block_info: namedtuple, context: list) -> None:
   """ Extract Requirement names and course lists from body rules.
   """
 
@@ -93,7 +93,12 @@ def traverse_body(block_info: namedtuple) -> None:
     return
 
   for body_item in body_list:
-    pass
+    if isinstance(body_item, list):
+      pass
+    elif isinstance(body_item, dict):
+      pass
+    else:
+      pass
 
 
 # traverse_header()
@@ -147,12 +152,16 @@ def traverse_header(block_info: namedtuple) -> None:
           case 'header_maxclass':
             # THERE WOULD BE A COURSE LIST HERE
             pass
+
           case 'header_maxcredit':
-            # THERE WOULD BE A COURSE LIST HERE
+            # THERE ARE 641 OF THESE; THEY HAVE COURSE LISTS
+            # write_log(block_info, f'MaxCredit: {value}')
             pass
+
           case 'header_maxpassfail':
             pass
           case 'header_maxperdisc':
+            # THERE WOULD BE A COURSE LIST HERE
             pass
           case 'header_maxterm':
             pass
@@ -202,11 +211,8 @@ def traverse_header(block_info: namedtuple) -> None:
           case 'header_share':
             pass
 
-          case 'header_maxcredit':
-            write_log(block_info, f'MaxCredit: {value}')
           case _:
-
-            pass
+            write_log(block_info, f'Unexpected {key} in header')
 
   return
 
@@ -287,7 +293,7 @@ if __name__ == "__main__":
                 f'{block_info.block_type:6} {block_info.block_value:10} {block_info.class_credits};'
                 f' Min Grade: {block_info.min_grade:3}; Max Transfer: '
                 f'{block_info.max_transfer}')
-          traverse_body(block_info)
+          traverse_body(block_info, [])
         except KeyError:
           print(f'No header_list for', institution, requirement_id, block_type, block_value,
                 title, file=sys.stderr)
