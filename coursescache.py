@@ -49,12 +49,12 @@ def courses_cache(idc_tuple: tuple) -> dict:
           _courses_cache[row.institution][row.discipline][row.catalog_number] = info
 
   # Simple Case
-  if not ('@' in discipline or '@' in catalog_number):
+  if not ('@' in discipline or '@' in catalog_number or ':' in catalog_number):
     try:
       return ({f'{discipline} {catalog_number}':
               _courses_cache[institution][discipline][catalog_number]})
     except KeyError:
-      return []
+      return {}
 
   # Generate list of matching disciplines
   if '@' in discipline:
@@ -64,19 +64,57 @@ def courses_cache(idc_tuple: tuple) -> dict:
     disciplines = [discipline]
 
   # For each discipline, look up all the courses with matching catalog numbers.
+
+  # Handle range of catalog numbers
+  #   "A range of course numbers is indicated by separating two course numbers with a colon. The
+  #    course numbers cannot contain any letters or wildcards. The lower bound (left side) must be
+  #    less than or equal to the upper bound (right side)."
+  if ':' in catalog_number:
+    l, h = [int(x) for x in catalog_number.split(':')]
+    cat_num_range = range(l, h + 1)
+  else:
+    cat_num_range = None
   regex = f'^{catalog_number}$'.replace('@', '.+')
+
   return_dict = {}
   for discipline in disciplines:
-    for catalog_number in _courses_cache[institution][discipline].keys():
-      if re.match(regex, catalog_number):
-        return_dict[f'{discipline} {catalog_number}'] = (_courses_cache[institution][discipline]
-                                                         [catalog_number])
+    for cat_num in _courses_cache[institution][discipline].keys():
+      if ((cat_num_range and cat_num.isdecimal() and int(cat_num) in cat_num_range)
+         or re.match(regex, cat_num)):
+        return_dict[f'{discipline} {cat_num}'] = _courses_cache[institution][discipline][cat_num]
+
   return return_dict
 
 
 # main()
 # -------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
-  print(courses_cache(('QNS01', 'CSCI', '101')))
-  for course, info in courses_cache(('QNS01', 'C@', '1@1')).items():
-    print(f'{course:10}', info.title)
+  """ Interactive test of courses_cache()
+  """
+  institution = 'QNS01'
+  discipline = 'CSCI'
+  catalog_number = '101'
+  print('? ', end='')
+  while command := input():
+    if command == '' or command[0].lower() == 'q':
+      exit()
+    command = command.replace(' ', '=').replace('-', '=')
+    cmd, value = command.split('=')
+    match cmd[0].lower():
+      case 'i':
+        institution = value.upper().strip('01') + '01'
+      case 'd':
+        discipline = value.upper()
+      case 'c':
+        catalog_number = value
+      case q:
+        break
+
+    if institution and discipline and catalog_number:
+      print(institution, discipline, catalog_number)
+      try:
+        for course, value in courses_cache((institution, discipline, catalog_number)).items():
+          print(f'{course:10}: {value.title}')
+      except ValueError as ve:
+        print(ve)
+      print('\n? ', end='')
