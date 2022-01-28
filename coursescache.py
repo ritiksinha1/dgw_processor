@@ -21,7 +21,7 @@ def dict_factory():
 
 
 _courses_cache = defaultdict(dict_factory)
-CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title career')
+CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits career')
 
 
 # courses_cache()
@@ -36,7 +36,8 @@ def courses_cache(idc_tuple: tuple) -> dict:
     with psycopg.connect('dbname=cuny_curriculum') as conn:
       with conn.cursor(row_factory=namedtuple_row) as cursor:
         cursor.execute("""
-          select institution, course_id, offer_nbr, discipline, catalog_number, title, career
+          select institution, course_id, offer_nbr,
+                discipline, catalog_number, title, max_credits as credits, career
             from cuny_courses
            where institution = %s
              and course_status = 'A'
@@ -45,7 +46,11 @@ def courses_cache(idc_tuple: tuple) -> dict:
            order by discipline, numeric_part(catalog_number)
         """, (institution, ))
         for row in cursor:
-          info = CourseTuple._make([row.course_id, row.offer_nbr, row.title, row.career])
+          info = CourseTuple._make([row.course_id,
+                                    row.offer_nbr,
+                                    row.title,
+                                    row.credits,
+                                    row.career])
           _courses_cache[row.institution][row.discipline][row.catalog_number] = info
 
   # Simple Case
