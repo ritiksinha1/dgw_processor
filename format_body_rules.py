@@ -553,5 +553,5 @@ def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
   try:
     return _dispatch_table[dict_key](rule_dict)
   except KeyError as ke:
-    # print(f'No _dispatch_table[{ke}]', file=sys.stderr)
+    print(f'No _dispatch_table[{ke}]', file=sys.stderr)
     return None

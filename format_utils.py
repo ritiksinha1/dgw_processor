@@ -11,10 +11,11 @@
 import os
 import sys
 
-from traceback import print_stack
-
 import format_body_qualifiers
 import html_utils
+
+from collections import namedtuple, defaultdict
+from coursescache import courses_cache, CourseTuple
 
 if os.getenv('DEBUG_FORMAT_UTILS'):
   DEBUG = True
@@ -99,12 +100,12 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
         scribed_courses     List of all (discipline, catalog_number, with_clause) tuples in the list
                             after distributing disciplines across catalog_numbers. (Show "BIOL 1, 2"
                             as "BIOL 1, BIOL 2")
-        active_courses      Catalog information and WITH clause (if any) for all active courses that
-                            match the scribed_courses list after expanding wildcards and
-                            catalog_number ranges.
-        inactive_courses    Catalog information for all inactive courses that match the scribed
-                            course list after wildcard and range expansions.
-        missing_courses     Explicitly-scribed courses that do not exist in CUNYfirst.
+        # active_courses      Catalog information and WITH clause (if any) for all active courses
+        #                     that match the scribed_courses list after expanding wildcards and
+        #                     catalog_number ranges.
+        # inactive_courses    Catalog information for all inactive courses that match the scribed
+        #                     course list after wildcard and range expansions.
+        # missing_courses     Explicitly-scribed courses that do not exist in CUNYfirst.
         qualifiers          Qualifiers that apply to all courses in the list
         label               The name of the property (head) or requirement (body)
         course_areas        List of active_courses divided into distribution areas; presumably the
@@ -126,104 +127,113 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
     print(f'*** format_course_list({info.keys()})', file=sys.stderr)
   assert isinstance(info, dict), f'{type(info)} is not dict'
 
-  # This is the HTML string that will be returned, possibly embedded in a details element.
+  # Construct the body of a HTML details element
+  # -----------------------------------------------------------------------------------------------
   details_str = ''
 
   try:
-    # Allow for missing or empty label
-    summary = None
-    if label_str := info['label']:
-      summary = f'<summary>{label_str}</summary>'
-  except KeyError:
-    # Label is optional
-    pass
 
-  scribed_courses = info['scribed_courses']
-  active_courses = info['active_courses']
-  course_areas = info['course_areas']
-  num_areas = len(course_areas)
-  try:
-    list_type = info['list_type']
-    assert isinstance(scribed_courses, list)
-    scribed_text = ''.join([str(sc) for sc in scribed_courses])
-    if len(scribed_courses) > 1 or ':' in scribed_text or '@' in scribed_text:
-      if (list_type == 'OR') and (num_areas == 0):
-        if len(scribed_courses) == 2:
-          details_str += f'<p>Either of these courses</p>'
-        else:
-          details_str += f'<p>Any of these courses</p>'
-      elif num_areas == 0:
-        details_str += f'<p>All of these courses</p>'
+    # If there are any qualifiers, show them first.
+    if qualifiers_list := format_body_qualifiers.dispatch_body_qualifiers(info):
+      details_str += '\n'.join(qualifiers_list)
 
-    details_str += list_of_courses(scribed_courses, 'Scribed Course')
-
-    # We can infer that if there are any qualifiers, this course_list is in the body.
-    if qualifiers := format_body_qualifiers.dispatch_body_qualifiers(info):
-      details_str += '\n'.join(qualifiers)
-      print(f'xxxx THIS IS OK: got qualifiers in format_course_list: {qualifiers}', file=sys.stderr)
-
-    # The active courses may be divided into "course areas." If so the same courses appear in both
-    # lists. So either the active list or the areas list gets displayed, not both.
-    #   It's possible that all courses within an area have a common attribute
-    #   (BKCR not likely, but maybe WRIC.) But the common attributes are shown only if _all_ the
-    #   activee courses, across areas, share them.
-    assert isinstance(active_courses, list)
-    if len(active_courses) < 0:
-      details_str += '<div class="error">No Active Courses!</div>'
-    else:
-      attributes_str = ''
-      try:
-        if attributes := info['attributes']:
-          attributes_str = '<span class="error">' + and_list(attributes) + '</span> '
-      except KeyError as ke:
-        pass
-      if (num_areas := len(course_areas)) > 0:
-        suffix = '' if num_areas == 1 else 's'
-        if num_areas < len(number_names):
-          num_areas = number_names[num_areas].lower()
-        if num_areas_required < len(number_names):
-          num_areas_required = number_names[num_areas_required].lower()
-        details_str += (f'<p>The active courses that satisfy this requirement are divided into the '
-                        f'following {num_areas} area{suffix}. Courses must be taken from a minimum '
-                        f'of {num_areas_required} of these areas to satisfy this requirement.</p>')
-        for index, area_courses in enumerate(course_areas):
-          area_id = to_roman(index + 1)
-          area_summary = f'<summary>Area {area_id}</summary>'
-          area_details = list_of_courses(area_courses, f'Active {attributes_str}Course')
-          details_str += f'<details>{area_summary}{area_details}</details>'
-      else:
-        details_str += list_of_courses(active_courses, f'Active {attributes_str}Course')
-
-    include_courses = info['include_courses']
-    assert isinstance(include_courses, list)
-    if len(include_courses) > 0:
-      details_str += list_of_courses(include_courses, 'Must-include Course')
-
+    institution = info['institution']
+    scribed_courses = info['scribed_courses']
     except_courses = info['except_courses']
-    assert isinstance(except_courses, list)
-    if len(except_courses) > 0:
-      details_str += list_of_courses(except_courses, 'Except Course')
+    include_courses = info['include_courses']
 
-    inactive_courses = info['inactive_courses']
-    assert isinstance(inactive_courses, list)
-    if len(inactive_courses) > 0:
-      details_str += list_of_courses(inactive_courses, 'Inactive Course')
+    # Any exclude courses will be filtered out, but include courses need to be displayed.
+    if len(include_courses) > 0:
+      suffix = ' is' if len(include_courses) == 1 else 's are'
+      include_clause = ' and '.join([f'{c[0]} {c[1]}' for c in except_courses])
+      details_str += f'<p>Note: The following course{suffix} must be included: {include_clause}</p>'
 
-    missing_courses = info['missing_courses']
-    assert isinstance(missing_courses, list)
-    if len(missing_courses) > 0:
-      details_str += list_of_courses(missing_courses, 'Not-Found-in-CUNYfirst Course',
-                                     highlight=True)
+    # Display all the scribed courses, with areas if appropriate, and with active course information
+    """ Area I
+          CSCI 101 title credits {min_grade no_transfer is_graduate}
+          CSCI 1@: 21 active courses
+            CSCI 101: title credits is_graduate
+          CSCI 1@: No active courses
+    """
+    has_areas = len(scribed_courses) > 1
+    total_courses = 0
+    for area_index in range(len(scribed_courses)):
+      if has_areas:
+        if area_index > 0:
+          details_str += '</details>'
+        details_str += f'<details><summary>Area {to_roman(area_index + 1)}</summary>'
+
+      for scribed_course in scribed_courses[area_index]:
+        discipline, catalog_number, with_clause = scribed_course
+        course_str = f'{discipline} {catalog_number}'
+
+        # Look for residency/grade restriction in with_clause
+        residency_req = grade_req = ''
+        if with_clause is not None:
+          expressions = with_clause.split(',')
+          for expression in expressions:
+            try:
+              lhs, op, rhs = expression.split(' ')
+              match lhs.lower():
+                case 'dwresident':
+                  assert op == '=' and rhs.lower() == 'y', f'Bad residency expression: {expression}'
+                  residency_req = ' <em>Must take at {institution[0:3]}.</em>'
+                case 'dwgrade':
+                  grade_req = f' <em>Minimum grade {op} {rhs} required.</em>'
+                case _:
+                  pass
+            except ValueError:
+              continue
+
+        # A scribed course could expand to 0, 1, or multiple active, non-administrative courses
+        active_courses = courses_cache((institution, discipline, catalog_number))
+        num_courses = len(active_courses)
+        total_courses += num_courses
+        match num_courses:
+
+          case 0:
+            if '@' in discipline or '@' in catalog_number or ':' in catalog_number:
+              suffix = 's'
+            else:
+              suffix = ''
+            details_str += (f'<p>{course_str}: <span class="error">No credit-bearing, currently-'
+                            f'active, non-administrative course{suffix} found.</span></p>')
+
+          case 1:
+            key, value = active_courses.popitem()
+            match value.career:
+              case 'UGRD':
+                career_str = ''
+              case 'GRAD':
+                career_str = f' <em class="error">Graduate course</em>'
+              case _:
+                career_str = f' <em class="error">{value.career} course</em>'
+            details_str += (f'<p>{course_str}: <em>“{value.title}”</em> {value.credits} cr.'
+                            f'{grade_req}{residency_req}{career_str}</p>')
+
+          case _:
+            details_str += f'<details><summary>{num_courses:,} {course_str} courses</summary>'
+            for key, value in active_courses.items():
+              match value.career:
+                case 'UGRD':
+                  career_str = ''
+                case 'GRAD':
+                  career_str = f' <em class="error">Graduate course</em>'
+                case _:
+                  career_str = f' <em class="error">{value.career} course</em>'
+              details_str += (f'<p>{key}: <em>“{value.title}”</em> {value.credits} cr.'
+                              f'{grade_req}{residency_req}{career_str}</p>')
+            details_str += '</details>'
+
+    if has_areas:
+      details_str += '<details>'
 
   except KeyError as ke:
     error_msg = f'Error: invalid course list: missing key is {ke}'
     details_str = f'<p class="error">{error_msg}</p>' + details_str
     print(error_msg, info, file=sys.stderr)
 
-  if summary is not None:
-    return f'<details>{summary}{details_str}</details>'
-  else:
-    return details_str
+  return details_str
 
 
 # format_number()

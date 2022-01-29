@@ -71,7 +71,8 @@ def dict_to_html(info: dict, section=None) -> str:
   """
   if section == 'header':
     # Format all top-level dicts in the Header
-    return '\n'.join([element for element in dispatch_header_productions(info)])
+    return_str = '\n'.join([element for element in dispatch_header_productions(info)])
+    return return_str
   elif section == 'body':
     body_rules = []
     for key, value in info.items():
@@ -79,7 +80,8 @@ def dict_to_html(info: dict, section=None) -> str:
         body_rules.append(html_str)
       else:
         body_rules.append(f'<p class="error">{key} not dispatchable from body_list')
-    return '\n'.join(body_rules)
+    return_str = '\n'.join(body_rules)
+    return return_str
 
   # All other dicts
   # -----------------------------------------------------------------------------------------------
@@ -87,7 +89,7 @@ def dict_to_html(info: dict, section=None) -> str:
   invocations get handled here.
   """
 
-  print(f'Recursive dict_to_html(): {list(info.keys())}')
+  print(f'*** Recursive dict_to_html(): {list(info.keys())}')
 
   summary = None
   try:
@@ -119,46 +121,26 @@ def dict_to_html(info: dict, section=None) -> str:
 
   # Extract any header productions from the dict.
   header_productions = '\n'.join(format_header_productions(info))
-  print('keys', list(info.keys()))
+
   for key, value in info.items():
-    print(f'key: {key}')
+
     if key == 'conditional':  # Special case for conditional dicts
       return conditional_to_details_element(info['conditional'], label)
+
     elif key == 'subset':
       return subset_to_details_element(info['subset'], label)
+
     elif key == 'group_requirements':
       return_str = ''
       for group_requirement in info['group_requirements']:
         return_str += group_requirement_to_details_elements(group_requirement, label)
       return return_str
+
     elif key == 'course_list':
-      label_str, course_list = format_course_list(info['course_list'])
-      if label:
-        if label_str:
-          return f"""
-          <details>
-            <summary>{label}</summary>
-            <details>
-              <summary>{label_str}</summary>
-              {course_list}
-            </details>
-          </details
-          """
-        else:
-          return f"""
-          <details>
-            <summary>{label}</summary>
-            {course_list}
-          </details>
-          """
-      else:
-        label_str = label_str if label_str else '<span class="error">Unnamed requirement</span>'
-        return f"""
-        <details>
-          <summary>{label_str}</summary>
-          {course_list}
-        </details>
-        """
+      course_list = format_course_list(info['course_list'])
+      label_str = label if label else '<span class="error">Unnamed requirement</span>'
+      return f'<details> <summary>{label_str}</summary> {course_list} </details>'
+
     elif key == 'rule_complete':
       rule_complete_dict = info['rule_complete']
       label_str = rule_complete_dict['label']
@@ -168,6 +150,7 @@ def dict_to_html(info: dict, section=None) -> str:
       return f'<p><strong>{label_str}</strong>: Requirement <em>{is_isnot}</em> satisfied</p>'
 
     # Class lists and their qualifiers.
+    # ---------------------------------------------------------------------------------------------
     cr_str = format_utils.format_num_class_credit(info)
     if cr_str is None:
       cr_str = ''
@@ -191,19 +174,13 @@ def dict_to_html(info: dict, section=None) -> str:
     if 'course_list' in info.keys():
       if DEBUG:
         print('    From dict_to_html()')
-      label_str, course_list = format_course_list(info['course_list'])
+      course_list = format_course_list(info['course_list'])
       # If there is a non-empty label, use it as the summary of a complete details element
       if label_str:
         course_list = f'<details><summary>{label_str}</summary>{course_list}</details>'
 
     # All else
-    print(f'xxxx all else: {key} {value}')
-    # if isinstance(value, dict):
-    #   return f'<details>{summary}{dict_to_html(value)}</details>'
-    # elif isinstance(value, list):
-    #   return f'<details>{summary}{list_to_html(value)}</details>'
-    # else:
-    #   return f'<details>{summary}{to_html(value)}</details>'
+    print(f'**** all else: {key} {value}', file=sys.stderr)
 
     # Development aid
     context_path = ''
@@ -283,7 +260,7 @@ def list_to_html(info: list, section=None, is_area=False) -> str:
     details = ''
     for item in info:
       # These lists contain only dicts.
-      assert isinstance(item, dict), f'{type(item)} is not dict'
+      assert isinstance(item, dict), f'{type(item)} is not dict in {section}_list'
       details += dict_to_html(item, section)
     return f'<details>{summary}{details}</details>'
 
