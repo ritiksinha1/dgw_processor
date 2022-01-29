@@ -24,10 +24,10 @@ from pgconnection import PgConnection
 # Need psycopg for error handling
 import psycopg
 
-from quarantine_manager import QuarantineManager
+from catalogyears import catalog_years
 from dgw_filter import dgw_filter
 from dgw_handlers import dispatch
-from catalogyears import catalog_years
+from quarantine_manager import QuarantineManager
 
 DEBUG = os.getenv('DEBUG_PARSER')
 

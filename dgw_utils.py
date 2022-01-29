@@ -12,7 +12,6 @@ from traceback import print_stack
 from typing import List, Set, Dict, Tuple, Optional, Union, Any
 
 from Any import ANY
-
 from pgconnection import PgConnection
 
 import dgw_handlers
@@ -660,6 +659,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
 
       The returned dict has the following structure:
 
+        institution         Needed for subsequent course lookups
         scribed_courses     List of course tuples (discipline, catalog_number, with_clause) after
                             catalog numbers are distributed across disciplines, but with wildcards
                             (@) remaining. To handle course areas, this is a two-dimensional list;
@@ -715,7 +715,8 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
     return {}
 
   # The dict to be returned:
-  return_dict = {'scribed_courses': [[]],
+  return_dict = {'institution': institution,
+                 'scribed_courses': [[]],
                  'list_type': None,
                  # 'label': None,
                  # 'active_courses': {'num_courses': 0,
@@ -725,7 +726,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
                  # 'inactive_courses': [],
                  'except_courses': [],
                  'include_courses': []}
-  #              'course_areas': [],
+  #              'course_areas': []}
   #              'missing_courses': [],
   #              'attributes': []}
   # Shortcuts to the lists in return_dict
@@ -779,7 +780,8 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   if ((num_tuples := len(return_dict['scribed_courses'][0])) > 1
      and return_dict['list_type'] is None):
     # This would be a grammar/parser error.
-    print(f'{institution} {requirement_id} {list_type=} {num_tuples=}', file=sys.stderr)
+    print(f'Grammar/Parser Error: {institution} {requirement_id} {list_type=} {num_tuples=}',
+          file=sys.stderr)
 
   """ Sublists (except and/or include)
   course_list : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
@@ -837,15 +839,15 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   #   if '@' in discipline or '@' in catalog_number or ':' in catalog_number:
   #     check_missing = False
 
-  #   # Start and end course areas. Active courses will be added to current_area if it exists
-  #   if scribed_course == 'area_start':
-  #     current_area = []
-  #     continue
-  #   if scribed_course == 'area_end':
-  #     if current_area and len(current_area) > 0:
-  #       return_dict['course_areas'].append(current_area)
-  #     current_area = None
-  #     continue
+    # # Start and end course areas. Active courses will be added to current_area if it exists
+    # if scribed_course == 'area_start':
+    #   current_area = []
+    #   continue
+    # if scribed_course == 'area_end':
+    #   if current_area and len(current_area) > 0:
+    #     return_dict['course_areas'].append(current_area)
+    #   current_area = None
+    #   continue
 
   #   num_courses = num_bkcr = num_wric = 0
   #   # Handle wildcard substitutions noted above
@@ -1007,6 +1009,8 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
   # # of wildcard(s). It’s an OR list.
   # if len(active_courses) > 1 and list_type is None:
   #   return_dict['list_type'] = 'OR'
+  if return_dict['list_type'] is None:
+    return_dict['list_type'] = 'OR'
 
   if DEBUG:
     print(f'    course_list: {return_dict}', file=sys.stderr)
