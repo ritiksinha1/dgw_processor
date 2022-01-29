@@ -43,6 +43,7 @@ def courses_cache(idc_tuple: tuple) -> dict:
              and course_status = 'A'
              and designation not in ('MNL', 'MLA')
              and attributes !~* 'BKCR'
+             and max_credits > 0.0
            order by discipline, numeric_part(catalog_number)
         """, (institution, ))
         for row in cursor:
