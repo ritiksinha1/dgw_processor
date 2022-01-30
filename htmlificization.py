@@ -13,9 +13,9 @@
 import argparse
 import csv
 import os
+import psycopg
 import sys
 
-from pprint import pprint
 from collections import namedtuple
 
 from course_lookup import lookup_course
@@ -29,7 +29,7 @@ from format_header_productions import dispatch_header_productions
 from quarantine_manager import QuarantineManager
 from dgw_parser import dgw_parser, catalog_years
 
-from pgconnection import PgConnection
+from psycopg.rows import namedtuple_row
 
 DEBUG = os.getenv('DEBUG_HTML')
 
@@ -37,10 +37,10 @@ DEBUG = os.getenv('DEBUG_HTML')
 # =================================================================================================
 
 # Dict of CUNY college names
-conn = PgConnection()
-cursor = conn.cursor()
-cursor.execute('select code, name from cuny_institutions')
-college_names = {row.code: row.name for row in cursor.fetchall()}
+with psycopg.connect('dbname=cuny_curriculum') as conn:
+  with conn.cursor(row_factory=namedtuple_row) as cursor:
+    cursor.execute('select code, name from cuny_institutions')
+    college_names = {row.code: row.name for row in cursor}
 conn.close()
 
 # Dict of quarantined requirement_blocks
@@ -278,6 +278,25 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
 # __main__
 # =================================================================================================
 if __name__ == '__main__':
-  """ Testing is done by running dgw_parser.py, and viewing the results in the website.
+  """ Generate and discard all parse_trees(), looking for printed messages.
   """
-  exit('Command line invocation not supported.')
+  with psycopg.connect('dbname=cuny_curriculum') as conn:
+    with conn.cursor(row_factory=namedtuple_row) as cursor:
+      for college, name in college_names.items():
+        cursor.execute("""
+        select institution, requirement_id, block_type, block_value, parse_tree
+          from requirement_blocks
+         where institution = %s
+           and period_stop ~* '^9'
+         """, (college, ))
+        print(f'\n{cursor.rowcount:5,} {name}')
+        for row in cursor:
+          print(f'\r  {cursor.rownumber:5,} {row.requirement_id} {row.block_type:10} {row.block_value}')
+          if row.parse_tree == {}:
+            continue
+          parse_results = html_utils.list_to_html(row.parse_tree['header_list'], section='header')
+          parse_results += html_utils.list_to_html(row.parse_tree['body_list'], section='body')
+
+
+
+

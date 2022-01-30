@@ -56,7 +56,6 @@ def format_block(block_dict: dict) -> str:
       block_str += f'<p class="error">Multiple matching Requirement Blocks found!</p>'
     else:
       parse_tree = cursor.fetchone().parse_tree
-      print(f'{len(parse_tree)=}')
       if parse_tree == {}:
         parse_results = f'<p class="error">No information currently available for this block.</p>'
       elif 'error' in parse_tree.keys():
@@ -71,7 +70,7 @@ def format_block(block_dict: dict) -> str:
       block_str += parse_results
 
     conn.close()
-  print('{block_str=}')
+
   if summary:
     return f'<details>{summary}{block_str}</details>'
   else:

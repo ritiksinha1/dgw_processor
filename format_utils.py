@@ -125,6 +125,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
       html_str += '\n'.join(qualifiers_list)
 
     institution = info['institution']
+    requirement_id = info['requirement_id']
     scribed_courses = info['scribed_courses']
     except_courses = info['except_courses']
     include_courses = info['include_courses']
@@ -132,7 +133,10 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
     # Create list of actual courses that will be excluded, if any. This will be used as a filter
     # when the scribed_courses are looked up.
     exclude_courses = []
-    for discipline, catalog_number in except_courses:
+    for discipline, catalog_number, with_clause in except_courses:
+      # Log with_clauses
+      if with_clause is not None:
+        print(f'{institution} {requirement_id}: Except with ({with_clause})', file=sys.stderr)
       exclude_courses += [f'k[0] k[1]'
                           for k in courses_cache((institution, discipline, catalog_number))]
 
@@ -170,7 +174,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
               lhs, op, rhs = expression.split(' ')
               match lhs.lower():
                 case 'dwresident':
-                  assert op == '=' and rhs.lower() == 'y', f'Bad residency expression: {expression}'
+                  assert op == '=' and rhs.lower() in 'yn', f'Bad expression: {expression}'
                   residency_req = ' <em>Must take at {institution[0:3]}.</em>'
                 case 'dwgrade':
                   grade_req = f' <em>Minimum grade {op} {rhs} required.</em>'
