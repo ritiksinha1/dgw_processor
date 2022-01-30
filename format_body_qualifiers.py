@@ -20,7 +20,7 @@
 import os
 import sys
 
-import Any
+from typing import Any
 
 from traceback import print_stack
 from format_utils import format_num_class_credit, format_course_list

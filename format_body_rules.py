@@ -2,19 +2,20 @@
 """ Functions to format the dicts that can appear in the body section
 """
 
+import html_utils
 import os
 import sys
-from traceback import print_stack
 
-import Any
-import html_utils
 from pgconnection import PgConnection
+from traceback import print_stack
+from typing import Any
 
 if os.getenv('DEBUG_BODY_RULES'):
   DEBUG = True
 else:
   DEBUG = False
 
+# The sequence of the following imports matters
 from format_body_qualifiers import dispatch_body_qualifiers
 import format_utils
 
@@ -553,4 +554,5 @@ def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
     return _dispatch_table[dict_key](rule_dict)
   except KeyError as ke:
     print(f'No _dispatch_table[{ke}]', file=sys.stderr)
+    print_stack(file=sys.stderr)
     return None

@@ -25,7 +25,7 @@
 import os
 import sys
 
-import Any
+from typing import Any
 
 import format_body_rules
 import format_body_qualifiers
