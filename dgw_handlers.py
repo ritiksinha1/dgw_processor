@@ -742,8 +742,8 @@ def minclass(ctx, institution, requirement_id):
     print(f'*** minclass({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  return_dict = {'number': ctx.NUMBER().getText(),
-                 'courses': build_course_list(ctx.course_list(), institution, requirement_id)}
+  return_dict = {'number': ctx.NUMBER().getText()}
+  return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
   if ctx.display():
     return_dict['display'] = get_display(ctx)

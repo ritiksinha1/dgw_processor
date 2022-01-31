@@ -1,7 +1,6 @@
 Institution,Requirement ID,Block Type,Catalog,Year,Explanation,Can Ellucian
 BAR01,RA000625,MAJOR,GRAD,Current,Empty block (all comments),No
 BCC01,RA000597,MAJOR,UGRD,Current,Invalid credit range (1-2) on line 85,Yes
-BKL01,RA003399,MAJOR,UGRD,Current,Missing comma in course list on line 99,Yes
 BMC01,RA000289,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Unknown
 BMC01,RA000291,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000321,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
