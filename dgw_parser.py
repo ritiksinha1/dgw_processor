@@ -231,10 +231,14 @@ if __name__ == '__main__':
 
       for row in cursor:
         is_quarantined = quarantined_dict.is_quarantined((row.institution, row.requirement_id))
+        quarantined_status = '(Quarantined)' if is_quarantined else ''
         if is_quarantined and not args.do_quarantined:
+          print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} {row.institution} '
+                f'{row.requirement_id} Skip (Quarantined)', end='')
           continue
-        print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} {row.institution} {row.requirement_id}',
-              end='')
+
+        print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} {row.institution} {row.requirement_id}'
+              f' {quarantined_status}', end='')
         try:
           parse_tree = parse_block(row.institution,
                                    row.requirement_id,
@@ -245,22 +249,11 @@ if __name__ == '__main__':
 
           try:
             error_msg = parse_tree['error']
-            if is_quarantined:
-              print(f'{row.institution} {row.requirement_id}: Failed (already_quarantined) '
-                    f'{error_msg}', file=sys.stderr)
-            else:
-              quarantined_dict[(row.institution, row.requirement_id)] = [error_msg, 'Unknown']
-              print(f'{row.institution} {row.requirement_id}: Failed and quarantined: {error_msg}',
-                    file=sys.stderr)
+            print(f' Failed: {error_msg}', end='')
 
           except KeyError:
-            if is_quarantined:
-              # Quarantined block now parses without error
-              del quarantined_dict[(row.institution, row.requirement_id)]
-              print(f'{row.institution} {row.requirement_id}: OK (no longer quarantined)',
-                    file=sys.stderr)
-            else:
-              print(f'{row.institution} {row.requirement_id}: OK', file=sys.stderr)
+            print(f' OK', end='')
 
         except DGWError as dwe:
-            print(f'{row.institution} {row.requirement_id}: {dwe}', file=sys.stderr)
+            print(f' Failed: {dwe}', end='')
+  print()
