@@ -228,21 +228,20 @@ if __name__ == '__main__':
   if args.debug:
     print(query_str, file=sys.stderr)
 
-  with psycopg.connect('dbname=cuny_curriculum') as conn:
-    with conn.cursor(row_factory=namedtuple_row) as cursor:
-      cursor.execute(query_str)
+  log_file_name = __file__.replace('.py', '.log')
+  with open(log_file_name, 'w') as log_file:
+    with psycopg.connect('dbname=cuny_curriculum') as conn:
+      with conn.cursor(row_factory=namedtuple_row) as cursor:
+        cursor.execute(query_str)
 
-      for row in cursor:
-        is_quarantined = quarantined_dict.is_quarantined((row.institution, row.requirement_id))
-        quarantined_status = '(Quarantined)' if is_quarantined else ''
-        if is_quarantined and not args.do_quarantined:
-          print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} {row.institution} '
-                f'{row.requirement_id} Skip (Quarantined)', end='')
-          continue
+        for row in cursor:
+          is_quarantined = quarantined_dict.is_quarantined((row.institution, row.requirement_id))
+          if is_quarantined and not args.do_quarantined:
+            print(f'{row.institution} {row.requirement_id} Quarantined', file=log_file)
+            continue
 
-        print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} {row.institution} {row.requirement_id}'
-              f' {quarantined_status}', end='')
-        try:
+          print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} '
+                f'{row.institution} {row.requirement_id}', end='')
           parse_tree = parse_block(row.institution,
                                    row.requirement_id,
                                    row.period_start,
@@ -252,11 +251,11 @@ if __name__ == '__main__':
 
           try:
             error_msg = parse_tree['error']
-            print(f' Failed: {error_msg}', end='')
+            print(f' Error      ', end='')
+            print(f'{row.institution} {row.requirement_id} Error: {error_msg}', file=log_file)
 
           except KeyError:
-            print(f' OK', end='')
+            print(f'    OK      ', end='')
+            print(f'{row.institution} {row.requirement_id} OK', file=log_file)
 
-        except DGWError as dwe:
-            print(f' Failed: {dwe}', end='')
-  print()
+    print()
