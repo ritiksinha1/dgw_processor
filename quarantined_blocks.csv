@@ -6,12 +6,6 @@ BMC01,RA000291,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000321,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000335,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000360,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,No
-CSI01,RA000365,MAJOR,UGRD,Current,“18 Credits in  10 @@” on line 32,Yes
-CSI01,RA000465,MAJOR,UGRD,Current,“26 Credits in  10 @@” on line 30,Yes
-CSI01,RA000575,MAJOR,UGRD,Current,“20 Credits in  10 @@” on line 54,Yes
-CSI01,RA000594,MAJOR,UGRD,Current,“20 Credits in  10 @@” on line 54,Yes
-CSI01,RA000606,MAJOR,UGRD,Current,“18 Credits in  10 @@” on line 32,Yes
-CSI01,RA000611,MAJOR,UGRD,Current,“26 Credits in  10 @@” on line 29,Yes
 JJC01,RA000617,OTHER,UGRD,Current,Fractional number of classes (not credits) on line 45.,Unknown
 KCC01,RA001147,OTHER,UGRD,Current,"Missing BeginIf/EndIf around lines 18-20. (Probably lines 23-26, too.)",Unknown
 KCC01,RA001158,OTHER,UGRD,Current,"Missing BeginIf/EndIf around lines 24-26. (Probably lines 29-32, too.)",Unknown
