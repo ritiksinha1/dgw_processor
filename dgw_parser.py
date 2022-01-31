@@ -59,7 +59,7 @@ class DGW_ErrorListener(ErrorListener):
 # timeout_manager()
 # -------------------------------------------------------------------------------------------------
 @contextmanager
-def timeout_manager(seconds):
+def timeout_manager(seconds: int):
 
   def alarm_handler(signum, frame):
     suffix = '' if seconds == 1 else 's'
@@ -88,61 +88,64 @@ def parse_block(institution: str,
   if DEBUG:
     print(f'*** parse_block({institution=}, {requirement_id=}, {timelimit=})', file=sys.stderr)
 
-  catalog_years_text = catalog_years(row.period_start, row.period_stop).text
+  catalog_years_text = catalog_years(period_start, period_stop).text
 
   # All processing for a requirement_block must complete within timelimit seconds. If not, the
   # returned augmented tree will contain an 'error' key and empty header/body lists.
-  augmented_tree = {'header_list': [], 'body_list': []}
+  parse_tree = {'header_list': [], 'body_list': []}
+
   with timeout_manager(timelimit):
     start_time = time.time()
+    try:
+      # Filter out everything after END, plus hide-related tokens (but not hidden content).
+      text_to_parse = dgw_filter(requirement_text)
 
-    # Filter out everything after END, plus hide-related tokens (but not hidden content).
-    text_to_parse = dgw_filter(requirement_text)
+      # Generate the parse tree from the Antlr4 parser generator.
+      input_stream = InputStream(text_to_parse)
+      lexer = ReqBlockLexer(input_stream)
+      token_stream = CommonTokenStream(lexer)
+      parser = ReqBlockParser(token_stream)
+      parser.removeErrorListeners()
+      parser.addErrorListener(DGW_ErrorListener())
+      antlr_tree = parser.req_block()
 
-    # Generate the parse tree from the Antlr4 parser generator.
-    input_stream = InputStream(text_to_parse)
-    lexer = ReqBlockLexer(input_stream)
-    token_stream = CommonTokenStream(lexer)
-    parser = ReqBlockParser(token_stream)
-    parser.removeErrorListeners()
-    parser.addErrorListener(DGW_ErrorListener())
-    parse_tree = parser.req_block()
+      # Walk the header and body parts of the parse tree, interpreting the parts to be saved.
+      header_list = []
+      if DEBUG:
+        print('\n*** PARSE HEAD ***', file=sys.stderr)
 
-    # Walk the header and body parts of the parse tree, interpreting the parts to be saved.
-    header_list = []
-    if DEBUG:
-      print('\n*** PARSE HEAD ***', file=sys.stderr)
+      head_ctx = antlr_tree.header()
+      if head_ctx:
+        for child in head_ctx.getChildren():
+          obj = dispatch(child, institution, requirement_id)
+          if obj != {}:
+            header_list.append(obj)
 
-    head_ctx = parse_tree.header()
-    if head_ctx:
-      for child in head_ctx.getChildren():
-        obj = dispatch(child, institution, row.requirement_id)
-        if obj != {}:
-          header_list.append(obj)
+      body_list = []
+      if DEBUG:
+        print('\n*** PARSE BODY ***', file=sys.stderr)
+      body_ctx = antlr_tree.body()
+      if body_ctx:
+        for child in body_ctx.getChildren():
+          obj = dispatch(child, institution, requirement_id)
+          if obj != {}:
+            body_list.append(obj)
 
-    body_list = []
-    if DEBUG:
-      print('\n*** PARSE BODY ***', file=sys.stderr)
-    body_ctx = parse_tree.body()
-    if body_ctx:
-      for child in body_ctx.getChildren():
-        obj = dispatch(child, institution, row.requirement_id)
-        if obj != {}:
-          body_list.append(obj)
+      parse_tree['header_list'] = header_list
+      parse_tree['body_list'] = body_list
+      elapsed_time = round((time.time() - start_time), 3)
+      timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime())
+      with psycopg.connect('dbname=cuny_curriculum') as conn:
+        with conn.cursor() as cursor:
+          cursor.execute("""
+          update requirement_blocks set parse_tree = %s, dgw_seconds = %s, dgw_timestamp = %s
+          where institution = %s
+          and requirement_id = %s
+          """, (json.dumps(parse_tree), elapsed_time, timestamp, institution, requirement_id))
+    except (DGWError, ValueError) as err:
+      parse_tree = {'error': f' {err}'}
 
-    augmented_tree['header_list'] = header_list
-    augmented_tree['body_list'] = body_list
-    elapsed_time = round((time.time() - start_time), 3)
-    timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime())
-    with psycopg.connect('dbname=cuny_curriculum') as conn:
-      with conn.cursor() as cursor:
-        cursor.execute(f"""
-        update requirement_blocks set parse_tree = %s, dgw_seconds = %s, dgw_timestamp = %s
-        where institution = '{row.institution}'
-        and requirement_id = '{row.requirement_id}'
-        """, (json.dumps(augmented_tree), elapsed_time, timestamp))
-
-  return augmented_tree
+  return parse_tree
 
 
 # __main__
