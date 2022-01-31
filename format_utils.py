@@ -69,7 +69,7 @@ def format_num_class_credit(cc_dict: dict):
           suffix = '' if min_classes == 1 else 'es'
           num_classes_str = f'{min_classes} class{suffix}'
       else:
-        num_classes_str = f'Between {min_classes} and {maxclasses} classes'
+        num_classes_str = f'Between {min_classes} and {max_classes} classes'
 
     num_credits_str = ''
     if cc_dict['min_credits'] is not None:
@@ -172,9 +172,10 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
           for expression in expressions:
             try:
               lhs, op, rhs = expression.split(' ')
+              rhs = rhs.lower().strip('"')
               match lhs.lower():
                 case 'dwresident':
-                  assert op == '=' and rhs.lower() in 'yn', f'Bad expression: {expression}'
+                  assert op == '=' and rhs in 'yn', f'Bad expression: {expression}'
                   residency_req = ' <em>Must take at {institution[0:3]}.</em>'
                 case 'dwgrade':
                   grade_req = f' <em>Minimum grade {op} {rhs} required.</em>'

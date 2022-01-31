@@ -20,9 +20,10 @@
 import os
 import sys
 
+from pprint import pprint
+from traceback import print_stack
 from typing import Any
 
-from traceback import print_stack
 from format_utils import format_num_class_credit, format_course_list
 
 DEBUG = os.getenv('DEBUG_QUALIFIERS')
@@ -159,11 +160,17 @@ def format_minclass(minclass_dict: dict) -> str:
     print(f'*** format_minclass({minclass_dict=})', file=sys.stderr)
 
   try:
-    number = int(minclass_dict.pop('number'))
+    number = int(minclass_dict['number'])
     if number < 1:
       raise ValueError('MinClass with minimum less than 1.')
     suffix = '' if number == 1 else 'es'
-    return f'<p>At least  {number} class{suffix} required.</p>'
+    return_str = f'<p>At least  {number} class{suffix} required'
+    try:
+      course_list_str = format_course_list(minclass_dict['courses']['course_list'])
+      print(course_list_str)
+      exit()
+    except KeyError:
+      return_str += '.</p>'
   except ValueError as ve:
     return f'<p class="error"> Invalid MinClass {ve} {minclass_dict=}.</p>'
   except KeyError as ke:

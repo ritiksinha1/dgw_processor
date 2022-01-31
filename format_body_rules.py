@@ -250,9 +250,12 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
     cursor.execute(f"""
       select parse_tree, title
         from requirement_blocks
-       where institution = %s and requirement_id= %s""", [institution, requirement_id])
+       where institution = %s
+         and requirement_id= %s
+         and period_stop ~* '^9'
+       """, [institution, requirement_id])
     if cursor.rowcount != 1:
-      copy_rules_str = (f'<p class="error">No parse tree found for {institution} '
+      copy_rules_str = (f'<p class="error">No current parse tree found for {institution} '
                         f'{requirement_id}</p>')
     else:
       row = cursor.fetchone()
@@ -553,6 +556,5 @@ def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
   try:
     return _dispatch_table[dict_key](rule_dict)
   except KeyError as ke:
-    print(f'No _dispatch_table[{ke}]', file=sys.stderr)
-    print_stack(file=sys.stderr)
+    # print(f'No _dispatch_table[{ke}]', file=sys.stderr)
     return None

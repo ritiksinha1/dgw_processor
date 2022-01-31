@@ -10,7 +10,6 @@
 
 """
 
-import argparse
 import csv
 import os
 import psycopg
@@ -278,10 +277,49 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
 # __main__
 # =================================================================================================
 if __name__ == '__main__':
-  """ Generate and discard all parse_trees(), looking for printed messages.
+  """ Default: Generate and discard all parse_trees(), looking for printed messages.
+      Optional: Specifiy and institution and requirement_id on the command line, and just that one
+                will be done. The pretty-printed parse_tree, scribe block, and html will be written
+                to the extracts directory.
   """
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
+      if len(sys.argv) == 3:
+        zero, institution, requirement_id = sys.argv
+        institution = institution.upper().strip('01') + '01'
+        requirement_id = 'RA' + f'{int(requirement_id):06}'
+        cursor.execute("""
+        select institution, requirement_id,
+               block_type, block_value, period_stop,
+               requirement_text, parse_tree
+          from requirement_blocks
+         where institution = %s
+           and requirement_id = %s
+        """, (institution, requirement_id))
+        if cursor.rowcount == 0:
+          exit(f'\u001b[35m{institution} {requirement_id} not found')
+        for row in cursor:
+          print(row.institution, row.requirement_id, row.block_type, row.block_value,
+                row.period_stop)
+          if row.parse_tree == {}:
+            exit('Empty parse tree')
+
+          with open(f'./extracts/{institution[0:3]}_{requirement_id}.scribe', 'w') as scribe_file:
+            print(row.requirement_text, file=scribe_file)
+
+          with open(f'./extracts/{institution[0:3]}_{requirement_id}.txt', 'w') as json_file:
+            print('HEADER', file=json_file)
+            print(row.parse_tree['header_list'], file=json_file)
+            print('BODY', file=json_file)
+            print(row.parse_tree['body_list'], file=json_file)
+
+          parse_results = html_utils.list_to_html(row.parse_tree['header_list'], section='header')
+          parse_results += html_utils.list_to_html(row.parse_tree['body_list'], section='body')
+          with open(f'./extracts/{institution[0:3]}_{requirement_id}.html', 'w') as html_file:
+            print(parse_results, file=html_file)
+
+        exit()
+
       for college, name in college_names.items():
         cursor.execute("""
         select institution, requirement_id, block_type, block_value, parse_tree
@@ -291,12 +329,9 @@ if __name__ == '__main__':
          """, (college, ))
         print(f'\n{cursor.rowcount:5,} {name}')
         for row in cursor:
-          print(f'\r  {cursor.rownumber:5,} {row.requirement_id} {row.block_type:10} {row.block_value}')
+          print(f'\r  {cursor.rownumber:5,} {row.requirement_id} {row.block_type:10} '
+                f'{row.block_value}')
           if row.parse_tree == {}:
             continue
           parse_results = html_utils.list_to_html(row.parse_tree['header_list'], section='header')
           parse_results += html_utils.list_to_html(row.parse_tree['body_list'], section='body')
-
-
-
-

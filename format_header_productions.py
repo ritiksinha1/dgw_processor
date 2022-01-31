@@ -366,9 +366,9 @@ def _format_minclass_head(minclass_head_dict: dict) -> str:
   minclass_dict = minclass_head_dict['minclass']
   minclass_info = format_body_qualifiers.format_minclass(minclass_dict)
 
-  if courses_str := format_utils.format_course_list(minclass_dict['course_list']):
-    minclass_info = minclass_info.replace('</p>', ' in these courses:</p>')
-    minclass_info += courses_str
+  # if courses_str := format_utils.format_course_list(minclass_dict['course_list']):
+  #   minclass_info = minclass_info.replace('</p>', ' in these courses:</p>')
+  #   minclass_info += courses_str
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{minclass_info}<details>'
