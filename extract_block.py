@@ -35,8 +35,7 @@ if __name__ == '__main__':
   # Look up the block type and value
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
-      cursor.execute(f'select block_type, block_value, requirement_text, requirement_html,'
-                     f'       parse_tree'
+      cursor.execute(f'select block_type, block_value, requirement_text, parse_tree'
                      f'  from requirement_blocks'
                      f" where institution = '{institution}'"
                      f"   and requirement_id = '{requirement_id}'")
@@ -61,14 +60,11 @@ if __name__ == '__main__':
     header_list = body_list = {}
 
   print(base_name)
-  with open(f'./extracts/{base_name}.html', 'w') as html_file:
-    print(row.requirement_html, file=html_file)
-
   with open(f'./extracts/{base_name}.scribe', 'w') as scribe_block:
     print(row.requirement_text, file=scribe_block)
 
   with open(f'./extracts/{base_name}.json', 'w') as json_file:
-    print(json.dumps(parse_tree), file=json_file)
+    print(json.dumps(parse_tree, indent=2), file=json_file)
 
   with open(f'./extracts/{base_name}.py', 'w') as parsed:
     print('HEADER = (', file=parsed)
