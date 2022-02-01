@@ -12,7 +12,9 @@ log_file=${_this/.sh/}.log
 err_file=${_this/.sh/}.err
 
 num_todo=`ack Timeout $1 |wc -l`
-echo "$num_todo Timeouts"
+suffix='s'
+[[ $num_todo = 1 ]] && suffix=''
+echo "$num_todo Timeout${suffix} requirement block to parse."
 let $(( num_done = 0 ))
 
 timeout=1800
@@ -23,9 +25,9 @@ echo "Timeout Interval is $timeout seconds" >$log_file 2>$err_file
 
 SECONDS=0
 max_time=0
-while read institution requirement_id reason remainder
+while read institution requirement_id remainder
 do
-  if [[ ${reason} == Timeout ]]
+  if [[ ${remainder} =~ Timeout ]]
   then
     start=$SECONDS
     let $(( num_done += 1 ))
@@ -39,4 +41,4 @@ do
   fi
 done < $1
 
-echo -e "\nThat took $SECONDS seconds; max was $max_time sec."  > $log_file
+echo -e "\nThat took $SECONDS seconds; max was $max_time sec."  >> $log_file
