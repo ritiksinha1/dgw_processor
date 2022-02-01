@@ -132,7 +132,7 @@ def _format_lastres(header_lastres_dict: dict) -> str:
         lastres_str = (f'<p>At least {number} of the last {of_number} of these classes must be '
                        f'taken in residence:</p>{class_str}')
       case ['credit', credit_str]:
-        lastres_str = (f'<p>At least {number:/2f} of the last {of_number:.2f} credits in these '
+        lastres_str = (f'<p>At least {number:2f} of the last {of_number:.2f} credits in these '
                        f'classes must be taken in residence:</p>{credit_str}')
 
   except KeyError:

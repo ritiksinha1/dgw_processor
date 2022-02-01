@@ -26,7 +26,7 @@ from format_body_qualifiers import dispatch_body_qualifiers
 from format_header_productions import dispatch_header_productions
 
 from quarantine_manager import QuarantineManager
-from dgw_parser import dgw_parser, catalog_years
+from dgw_parser import catalog_years
 
 from psycopg.rows import namedtuple_row
 

@@ -159,15 +159,19 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
   # except KeyError:
   #   pass
 
-  # Qualifiers: Expect list of html paragraphs, but it might be empty
-  if qualifiers_str := dispatch_body_qualifiers(class_credit_dict):
-    class_credit_str += '\n'.join(qualifiers_str)
-
-  # If there is a list of courses, it gets shown as a display element.
   try:
+    # Qualifiers: Expect list of html paragraphs, but it might be empty
+    if qualifiers_str := dispatch_body_qualifiers(class_credit_dict):
+      class_credit_str += '\n'.join(qualifiers_str)
+
+    # If there is a list of courses, it gets shown as a display element.
     if courses_str := format_utils.format_course_list(class_credit_dict['course_list'],
                                                       num_areas_required):
       class_credit_str += courses_str
+  except TypeError:
+    print(class_credit_dict)
+    print_stack()
+    exit()
   except KeyError:
     pass
 
