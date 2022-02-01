@@ -133,17 +133,18 @@ def parse_block(institution: str,
 
       parse_tree['header_list'] = header_list
       parse_tree['body_list'] = body_list
-      elapsed_time = round((time.time() - start_time), 3)
-      timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime())
-      with psycopg.connect('dbname=cuny_curriculum') as conn:
-        with conn.cursor() as cursor:
-          cursor.execute("""
-          update requirement_blocks set parse_tree = %s, dgw_seconds = %s, dgw_timestamp = %s
-          where institution = %s
-          and requirement_id = %s
-          """, (json.dumps(parse_tree), elapsed_time, timestamp, institution, requirement_id))
     except (DGWError, ValueError) as err:
-      parse_tree = {'error': f' {err}'}
+      parse_tree = {'error': f'{err}'}
+
+    elapsed_time = round((time.time() - start_time), 3)
+    timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime())
+    with psycopg.connect('dbname=cuny_curriculum') as conn:
+      with conn.cursor() as cursor:
+        cursor.execute("""
+        update requirement_blocks set parse_tree = %s, dgw_seconds = %s, dgw_timestamp = %s
+        where institution = %s
+        and requirement_id = %s
+        """, (json.dumps(parse_tree), elapsed_time, timestamp, institution, requirement_id))
 
   return parse_tree
 
@@ -228,8 +229,9 @@ if __name__ == '__main__':
   if args.debug:
     print(query_str, file=sys.stderr)
 
-  log_file_name = __file__.replace('.py', '.log')
-  with open(log_file_name, 'w') as log_file:
+  logfile_name = __file__.replace('.py', '.log')
+  with open(logfile_name, 'w') as logfile:
+
     with psycopg.connect('dbname=cuny_curriculum') as conn:
       with conn.cursor(row_factory=namedtuple_row) as cursor:
         cursor.execute(query_str)
@@ -237,7 +239,7 @@ if __name__ == '__main__':
         for row in cursor:
           is_quarantined = quarantined_dict.is_quarantined((row.institution, row.requirement_id))
           if is_quarantined and not args.do_quarantined:
-            print(f'{row.institution} {row.requirement_id} Quarantined', file=log_file)
+            print(f'{row.institution} {row.requirement_id} Quarantined', file=logfile)
             continue
 
           print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} '
@@ -250,12 +252,17 @@ if __name__ == '__main__':
                                    args.timelimit)
 
           try:
-            error_msg = parse_tree['error']
-            print(f' Error      ', end='')
-            print(f'{row.institution} {row.requirement_id} Error: {error_msg}', file=log_file)
+            error_msg = parse_tree['error'].strip('\n')
+            if 'Timeout in error_msg':
+              print(' Timeout', end='')
+            elif 'Quarantine' in error_msg:
+              print(' Quarantined', end='')
+            else:
+              print(f' Error:      ', end='')
+            print(f'{row.institution} {row.requirement_id} Error: {error_msg}', file=logfile)
 
           except KeyError:
             print(f'    OK      ', end='')
-            print(f'{row.institution} {row.requirement_id} OK', file=log_file)
+            print(f'{row.institution} {row.requirement_id} OK', file=logfile)
 
     print()
