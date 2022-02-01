@@ -14,7 +14,7 @@ err_file=${_this/.sh/}.err
 num_todo=`ack Timeout $1 |wc -l`
 suffix='s'
 [[ $num_todo = 1 ]] && suffix=''
-echo "$num_todo Timeout${suffix} requirement block to parse."
+echo "$num_todo Timeout requirement block${suffix} to parse."
 let $(( num_done = 0 ))
 
 timeout=1800
