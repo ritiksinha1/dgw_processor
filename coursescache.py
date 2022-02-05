@@ -77,19 +77,26 @@ def courses_cache(idc_tuple: tuple) -> dict:
   #    less than or equal to the upper bound (right side)."
   if ':' in catalog_number:
     # CUNY policy says decimal points aren't allowed in catalog numbers. But they do occur, so treat
-    # them as floats.
-    l, h = [float(x) for x in catalog_number.split(':')]
-    cat_num_range = range(l, h + 1)
+    # them as floats, which we can't do a simple 'in range' check because ranges are ints.
+    low_val, hi_val = [float(x) for x in catalog_number.split(':')]
   else:
-    cat_num_range = None
+    low_val = hi_val = None
+
   regex = f'^{catalog_number}$'.replace('@', '.+')
 
   return_dict = {}
   for discipline in disciplines:
     for cat_num in _courses_cache[institution][discipline].keys():
-      if ((cat_num_range and cat_num.isdecimal() and int(cat_num) in cat_num_range)
-         or re.match(regex, cat_num)):
+      if re.match(regex, cat_num):
         return_dict[f'{discipline} {cat_num}'] = _courses_cache[institution][discipline][cat_num]
+      elif low_val is not None:
+        try:
+          cat_num_val = float(cat_num)
+          if cat_num_val >= low_val and cat_num_val <= hi_val:
+            return_dict[f'{discipline} {cat_num}'] = \
+                _courses_cache[institution][discipline][cat_num]
+        except ValueError:
+          pass
 
   return return_dict
 
