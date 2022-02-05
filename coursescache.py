@@ -76,7 +76,9 @@ def courses_cache(idc_tuple: tuple) -> dict:
   #    course numbers cannot contain any letters or wildcards. The lower bound (left side) must be
   #    less than or equal to the upper bound (right side)."
   if ':' in catalog_number:
-    l, h = [int(x) for x in catalog_number.split(':')]
+    # CUNY policy says decimal points aren't allowed in catalog numbers. But they do occur, so treat
+    # them as floats.
+    l, h = [float(x) for x in catalog_number.split(':')]
     cat_num_range = range(l, h + 1)
   else:
     cat_num_range = None
