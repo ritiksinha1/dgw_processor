@@ -10,7 +10,7 @@ import sys
 import time
 
 from contextlib import contextmanager
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 from ReqBlockLexer import ReqBlockLexer
 from ReqBlockParser import ReqBlockParser
@@ -229,27 +229,48 @@ if __name__ == '__main__':
   if args.debug:
     print(query_str, file=sys.stderr)
 
-  logfile_name = __file__.replace('.py', '.log')
-  with open(logfile_name, 'w') as logfile:
+  LongTime = namedtuple('LongTime', 'institution requirement_id block_value time')
 
+  def longtime_factory():
+    """ Record max parsing time, by block_type.
+    """
+    return LongTime._make(['UNK', 'RA000000', 'Unknown', 0])
+
+  longest_times = defaultdict(longtime_factory)
+  logfile_name = __file__.replace('.py', '.log')
+  with open(logfile_name, 'w') as log_file:
     with psycopg.connect('dbname=cuny_curriculum') as conn:
       with conn.cursor(row_factory=namedtuple_row) as cursor:
         cursor.execute(query_str)
 
+        process_start = time.time()
+        institution_start = process_start
+        current_institution = None
         for row in cursor:
+          if row.institution != current_institution:
+            if current_institution is not None:
+              print(f'{current_institution} took {(time.time() - institution_start):,.1f} sec',
+                    file=log_file)
+            current_institution = row.institution
+            institution_start = time.time()
           is_quarantined = quarantined_dict.is_quarantined((row.institution, row.requirement_id))
           if is_quarantined and not args.do_quarantined:
-            print(f'{row.institution} {row.requirement_id} Quarantined', file=logfile)
+            print(f'{row.institution} {row.requirement_id} Quarantined', file=log_file)
             continue
 
           print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} '
                 f'{row.institution} {row.requirement_id}', end='')
+          parsing_start = time.time()
           parse_tree = parse_block(row.institution,
                                    row.requirement_id,
                                    row.period_start,
                                    row.period_stop,
                                    row.requirement_text,
                                    args.timelimit)
+          parsing_time = time.time() - parsing_start
+          if parsing_time > longest_times[row.block_type].time:
+            longest_times[row.block_type] = LongTime._make([row.institution, row.requirement_id,
+                                                            row.block_value, parsing_time])
 
           try:
             error_msg = parse_tree['error'].strip('\n')
@@ -259,10 +280,17 @@ if __name__ == '__main__':
               print(' Quarantined', end='')
             else:
               print(f' Error:      ', end='')
-            print(f'{row.institution} {row.requirement_id} Error: {error_msg}', file=logfile)
+            print(f'{row.institution} {row.requirement_id} Error: {error_msg}', file=log_file)
 
           except KeyError:
             print(f'    OK      ', end='')
-            print(f'{row.institution} {row.requirement_id} OK', file=logfile)
+            print(f'{row.institution} {row.requirement_id} OK', file=log_file)
 
-    print()
+    print(f'{current_institution} took {(time.time() - institution_start):,.1f} sec',
+          file=log_file)
+
+    print(f'\nTotal time: {(time.time() - process_start):,.1f} sec\nMax times by block type:',
+          file=log_file)
+    for block_type, value in longest_times.items():
+      print(f'{block_type:10} {value.time:4.1f} {value.institution[0:3]} {value.block_value}',
+            file=log_file)
