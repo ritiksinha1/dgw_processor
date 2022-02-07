@@ -15,22 +15,27 @@ import os
 import psycopg
 import sys
 
-from collections import namedtuple
-
-from course_lookup import lookup_course
-
 import html_utils
 import format_utils
 
+from collections import namedtuple, defaultdict
+from psycopg.rows import namedtuple_row
+from time import perf_counter
+
+from course_lookup import lookup_course
+from dgw_parser import catalog_years
 from format_body_qualifiers import dispatch_body_qualifiers
 from format_header_productions import dispatch_header_productions
-
 from quarantine_manager import QuarantineManager
-from dgw_parser import catalog_years
-
-from psycopg.rows import namedtuple_row
 
 DEBUG = os.getenv('DEBUG_HTML')
+
+LongTime = namedtuple('LongTime', 'institution requirement_id block_value time')
+
+
+def longtime_factory():
+  return LongTime._make(['UNK', 'RA000000', 'Unknown', 0])
+
 
 # Module Initialization
 # =================================================================================================
@@ -279,15 +284,14 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
 if __name__ == '__main__':
   """ Default: Generate and discard all parse_trees(), looking for printed messages.
       Optional: Specifiy and institution and requirement_id on the command line, and just that one
-                will be done. The pretty-printed parse_tree, scribe block, and html will be written
-                to the extracts directory.
+                will be done.
   """
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
       if len(sys.argv) == 3:
-        zero, institution, requirement_id = sys.argv
+        _, institution, requirement_id = sys.argv
         institution = institution.upper().strip('01') + '01'
-        requirement_id = 'RA' + f'{int(requirement_id):06}'
+        requirement_id = 'RA' + f"{int(requirement_id.strip('RA')):06}"
         cursor.execute("""
         select institution, requirement_id,
                block_type, block_value, period_stop,
@@ -303,6 +307,8 @@ if __name__ == '__main__':
                 row.period_stop)
           if row.parse_tree == {}:
             exit('Empty parse tree')
+          elif 'error' in row.parse_tree.keys():
+            exit('Error:', row.parse_tree['error'])
 
           with open(f'./extracts/{institution[0:3]}_{requirement_id}.scribe', 'w') as scribe_file:
             print(row.requirement_text, file=scribe_file)
@@ -320,18 +326,40 @@ if __name__ == '__main__':
 
         exit()
 
-      for college, name in college_names.items():
-        cursor.execute("""
-        select institution, requirement_id, block_type, block_value, parse_tree
-          from requirement_blocks
-         where institution = %s
-           and period_stop ~* '^9'
-         """, (college, ))
-        print(f'\n{cursor.rowcount:5,} {name}')
-        for row in cursor:
-          print(f'\r  {cursor.rownumber:5,} {row.requirement_id} {row.block_type:10} '
-                f'{row.block_value}')
-          if row.parse_tree == {}:
-            continue
-          parse_results = html_utils.list_to_html(row.parse_tree['header_list'], section='header')
-          parse_results += html_utils.list_to_html(row.parse_tree['body_list'], section='body')
+      longest_times = defaultdict(longtime_factory)
+      cursor.execute("""
+      select institution, requirement_id, block_type, block_value, parse_tree
+        from requirement_blocks
+       where period_stop ~* '^9'
+       order by institution, block_type, block_value, requirement_id
+       """)
+      num_blocks = cursor.rowcount
+      initial_time = perf_counter()
+      for row in cursor:
+        print(f'\r  {cursor.rownumber:5,} {row.institution} {row.requirement_id} '
+              f'{row.block_type:10} {row.block_value} ')
+        if quarantined_dict.is_quarantined((row.institution, row.requirement_id)):
+          print(f'{row.institution} {row.requirement_id}: Quarantined', file=sys.stderr)
+          continue
+        if row.parse_tree == {}:
+          print(f'{row.institution} {row.requirement_id}: Empty Tree', file=sys.stderr)
+          continue
+        elif 'error' in row.parse_tree.keys():
+          print(f'{row.institution} {row.requirement_id}: Error Block', file=sys.stderr)
+          continue
+        start_time = perf_counter()
+        parse_results = html_utils.list_to_html(row.parse_tree['header_list'], section='header')
+        parse_results += html_utils.list_to_html(row.parse_tree['body_list'], section='body')
+        elapsed = perf_counter() - start_time
+        if elapsed > longest_times[row.block_type].time:
+          longest_times[row.block_type] = LongTime._make([row.institution,
+                                                          row.requirement_id,
+                                                          row.block_value,
+                                                          elapsed])
+      total_time = perf_counter() - initial_time
+      print(f'{num_blocks:,} in {total_time:.1f} sec ({(total_time / num_blocks):0.1f} sec per '
+            f'block)')
+  print('Longest Times')
+  for block_type, longest_time in longest_times.items():
+    print(f'{block_type:6} {longest_time.time:5.1f} {longest_time.institution[0:3]} '
+          f'{longest_time.requirement_id} {longest_time.block_value}')

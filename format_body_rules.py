@@ -4,11 +4,13 @@
 
 import html_utils
 import os
+import psycopg
 import sys
 
-from pgconnection import PgConnection
+from psycopg.rows import namedtuple_row
 from traceback import print_stack
 from typing import Any
+
 
 if os.getenv('DEBUG_BODY_RULES'):
   DEBUG = True
@@ -22,9 +24,15 @@ import format_utils
 
 # format_block()
 # -------------------------------------------------------------------------------------------------
-def format_block(block_dict: dict) -> str:
+def format_block(block_list_arg: Any) -> str:
   """
   """
+
+  if isinstance(block_list_arg, list):
+    block_dict = block_list_arg[0]
+  else:
+    block_dict = block_list_arg
+
   try:
     label_str = block_dict['label']
     summary = f'<summary>{label_str}</summary>'
@@ -33,44 +41,42 @@ def format_block(block_dict: dict) -> str:
 
   number = int(block_dict['number'])
   if number != 1:
-    block_str = ('<p class="error">Number of blocks other than one ({number} encountered) '
+    block_str = (f'<p class="error">Number of blocks other than one ({number}) encountered) '
                  f'not implemented yet</p>')
   else:
     block_type = block_dict['block_type']
     block_value = block_dict['block_value'].upper()
     institution = block_dict['institution']
     # Get the block
-    conn = PgConnection()
-    cursor = conn.cursor()
-    cursor.execute(f"""
-      select parse_tree from requirement_blocks
-      where institution = %s
-      and block_type ~* %s
-      and block_value ~* %s
-      and period_stop ~* '^9'
-      """, [institution, block_type, f'^{block_value}$'])
-    block_type_str = 'Concentration'if block_type.lower() == 'conc' else block_type.title()
-    block_str = f'<p>{block_value} {block_type_str.title()} Requirements:</p>'
-    if cursor.rowcount == 0:
-      block_str += f'<p class="error">Requirement Block not found!</p>'
-    elif cursor.rowcount > 1:
-      block_str += f'<p class="error">Multiple matching Requirement Blocks found!</p>'
-    else:
-      parse_tree = cursor.fetchone().parse_tree
-      if parse_tree == {}:
-        parse_results = f'<p class="error">No information currently available for this block.</p>'
-      elif 'error' in parse_tree.keys():
-        err_msg = parse_tree['error']
-        parse_results = f'<p>There was an error when this block was parsed: {err_msg}</p>'
-      else:
-        try:
-          parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
-          parse_results += html_utils.list_to_html(parse_tree['body_list'], section='body')
-        except Exception as e:
-          print(f'{e=}')
-      block_str += parse_results
-
-    conn.close()
+    with psycopg.connect('dbname=cuny_curriculum') as conn:
+      with conn.cursor(row_factory=namedtuple_row) as cursor:
+        cursor.execute(f"""
+          select parse_tree from requirement_blocks
+          where institution = %s
+          and block_type ~* %s
+          and block_value ~* %s
+          and period_stop ~* '^9'
+          """, [institution, block_type, f'^{block_value}$'])
+        block_type_str = 'Concentration'if block_type.lower() == 'conc' else block_type.title()
+        block_str = f'<p>{block_value} {block_type_str.title()} Requirements:</p>'
+        if cursor.rowcount == 0:
+          block_str += f'<p class="error">Requirement Block not found!</p>'
+        elif cursor.rowcount > 1:
+          block_str += f'<p class="error">Multiple matching Requirement Blocks found!</p>'
+        else:
+          parse_tree = cursor.fetchone().parse_tree
+          if parse_tree == {}:
+            parse_results = f'<p class="error">No parse tree available for this block.</p>'
+          elif 'error' in parse_tree.keys():
+            err_msg = parse_tree['error']
+            parse_results = f'<p>There was an error when this block was parsed: {err_msg}</p>'
+          else:
+            try:
+              parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
+              parse_results += html_utils.list_to_html(parse_tree['body_list'], section='body')
+            except Exception as e:
+              print(f'{e=}')
+          block_str += parse_results
 
   if summary:
     return f'<details>{summary}{block_str}</details>'
@@ -80,9 +86,14 @@ def format_block(block_dict: dict) -> str:
 
 # format_blocktype()
 # -------------------------------------------------------------------------------------------------
-def format_blocktype(blocktype_dict: dict) -> str:
+def format_blocktype(blocktype_arg: Any) -> str:
   """
   """
+
+  if isinstance(blocktype_arg, list):
+    blocktype_dict = blocktype_arg[0]
+  else:
+    blocktype_dict = blocktype_arg
 
   try:
     label_str = blocktype_dict['label']
@@ -153,24 +164,28 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     pass
 
   # display is student-specific
-  # try:
-  #   if display_str := class_credit_dict['display']:
-  #     class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
-  # except KeyError:
-  #   pass
+  try:
+    if display_str := class_credit_dict['display']:
+      class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
+      print('Examine this display_str in format_class_credit. Is it student-specific?:', display_str)
+      exit()
+  except KeyError:
+    pass
 
   try:
+    # print('dispatching body qualifiers')
     # Qualifiers: Expect list of html paragraphs, but it might be empty
     if qualifiers_str := dispatch_body_qualifiers(class_credit_dict):
       class_credit_str += '\n'.join(qualifiers_str)
-
+    # print('ok so far')
     # If there is a list of courses, it gets shown as a display element.
     if courses_str := format_utils.format_course_list(class_credit_dict['course_list'],
                                                       num_areas_required):
       class_credit_str += courses_str
-  except TypeError:
+    # print('no prob w/ class_credit_dict')
+  except TypeError as te:
+    print()
     print(class_credit_dict)
-    print_stack()
     exit()
   except KeyError:
     pass
@@ -232,49 +247,52 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
   """
 
   try:
-    label_str = copy_rules_dict['label']
-    summary = f'<summary>{label_str}</summary>'
-  except KeyError:
-    summary = None
+    try:
+      label_str = copy_rules_dict['label']
+      summary = f'<summary>{label_str}</summary>'
+    except KeyError:
+      summary = None
 
-  institution = copy_rules_dict['institution']
-  requirement_id = copy_rules_dict['requirement_id']
-  block_type = copy_rules_dict['block_type']
-  block_type = 'Concentration' if block_type == 'CONC' else block_type.title()
-  block_value = copy_rules_dict['block_value']
-  copy_rules_str = ''
-  # Check that the block exists and is current
-  if 'error' in copy_rules_dict.keys():
-    error_msg = copy_rules_dict['error']
-    copy_rules_str = f'<p class="error">{error_msg}</p>'
-  else:
-    # Get the parse_tree (this was not done by dgw_parser to avoid bloating the db)
-    conn = PgConnection()
-    cursor = conn.cursor()
-    cursor.execute(f"""
-      select parse_tree, title
-        from requirement_blocks
-       where institution = %s
-         and requirement_id= %s
-         and period_stop ~* '^9'
-       """, [institution, requirement_id])
-    if cursor.rowcount != 1:
-      copy_rules_str = (f'<p class="error">No current parse tree found for {institution} '
-                        f'{requirement_id}</p>')
+    institution = copy_rules_dict['institution']
+    requirement_id = copy_rules_dict['requirement_id']
+    block_type = copy_rules_dict['block_type']
+    block_type = 'Concentration' if block_type == 'CONC' else block_type.title()
+    block_value = copy_rules_dict['block_value']
+    copy_rules_str = ''
+    # Check that the block exists and is current
+    if 'error' in copy_rules_dict.keys():
+      error_msg = copy_rules_dict['error']
+      copy_rules_str = f'<p class="error">{error_msg}</p>'
     else:
-      row = cursor.fetchone()
-      copy_rules_str += f'<p>“{row.title}” Requirements</p>'
-      body_list = row.parse_tree['body_list']
-      for body_element in body_list:
-        for key, value in body_element.items():
-          copy_rules_str += dispatch_body_rule(key, value)
+      # Get the parse_tree (this was not done by dgw_parser to avoid bloating the db)
+      with psycopg.connect('dbname=cuny_curriculum') as conn:
+        with conn.cursor(row_factory=namedtuple_row) as cursor:
+          cursor.execute(f"""
+            select parse_tree, title
+              from requirement_blocks
+             where institution = %s
+               and requirement_id= %s
+               and period_stop ~* '^9'
+             """, [institution, requirement_id])
+          if cursor.rowcount != 1:
+            copy_rules_str = (f'<p class="error">No current parse tree found for {institution} '
+                              f'{requirement_id}</p>')
+          else:
+            row = cursor.fetchone()
+            copy_rules_str += f'<p>“{row.title}” Requirements</p>'
+            body_list = row.parse_tree['body_list']
+            for body_element in body_list:
+              for key, value in body_element.items():
+                copy_rules_str += dispatch_body_rule(key, value)
 
-    conn.close()
+    if summary:
+      return f'<details>{summary}{copy_rules_str}</details>'
+    else:
+      return copy_rules_str
 
-  if summary:
-    return f'<details>{summary}{copy_rules_str}</details>'
-  else:
-    return copy_rules_str
+  except psycopg.OperationalError as err:
+    print(f'CopyRules from {institution} {requirement_id} Failed', file=sys.stderr)
+    return(f'<p class="error">CopyRules Failed. Circular block reference?</p>')
 
 
 # format_course_list_rule()
@@ -362,32 +380,40 @@ def format_group_requirements(group_requirements: list) -> str:
 
 # format_noncourse()
 # -------------------------------------------------------------------------------------------------
-def format_noncourse(noncourse_dict: dict) -> str:
+def format_noncourse(noncourse_list: Any) -> str:
   """
   """
 
-  try:
-    label_str = noncourse_dict['label']
-    summary = f'<summary>{label_str}</summary>'
-  except KeyError:
-    summary = None
+  # Seeing cases where it's a list, others where it's a single dict.
+  if isinstance(noncourse_list, dict):
+    noncourse_list = [noncourse_list]
 
-  number = int(noncourse_dict['number'])
-  suffix = '' if number == 1 else 's'
-  if number < len(format_utils.number_names):
-    number_str = format_utils.number_names[number].title()
-  else:
-    number_str = f'{number:,}'
+  return_str = ''
+  for noncourse_dict in noncourse_list:
+    assert isinstance(noncourse_dict, dict)
+    try:
+      label_str = noncourse_dict['label']
+      summary = f'<summary>{label_str}</summary>'
+    except KeyError:
+      summary = None
 
-  expression = noncourse_dict['expression']
-  # Not interpreting the expression yet
-  noncourse_str = f'<p>{number_str} ({expression}){suffix}) required'
+    number = int(noncourse_dict['number'])
+    suffix = '' if number == 1 else 's'
+    if number < len(format_utils.number_names):
+      number_str = format_utils.number_names[number].title()
+    else:
+      number_str = f'{number:,}'
 
-  if summary:
-    return f'<details>{summary}{noncourse_str}</details>'
-  else:
-    return noncourse_str
+    expression = noncourse_dict['expression']
+    # Not interpreting the expression yet
+    noncourse_str = f'<p>{number_str} ({expression}){suffix}) required'
 
+    if summary:
+      return_str += f'<details>{summary}{noncourse_str}</details>'
+    else:
+      return_str += noncourse_str
+
+  return return_str
 
 # format_proxy_advice()
 # -------------------------------------------------------------------------------------------------
@@ -475,7 +501,7 @@ def format_subset(subset_dict: dict) -> str:
 
 # Is this a non-course requirement?
   try:
-    if noncource_dict := subset_dict['noncourse']:
+    if noncourse_dict := subset_dict['noncourse']:
       subset_str += format_noncourse(noncourse_dict)
   except KeyError:
     pass

@@ -90,6 +90,7 @@ def format_num_class_credit(cc_dict: dict):
     return f'{num_classes_str}{conjunction_str}{num_credits_str}'
 
   except (KeyError, ValueError) as err:
+    print(f'Ignore class/credit dict: {cc_dict}', file=sys.stderr)
     return None
 
 
@@ -100,6 +101,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
 
       The dict for a course_list has the following structure:
         institution         Which college
+        requirement_id      Requirement_id for debugging
         scribed_courses     A list of course tuples (discipline, catalog_number, with_clause),
                             organized as sublists of course areas. If there were no square-bracketed
                             course areas scribed, all courses will be in scribed_courses[0].

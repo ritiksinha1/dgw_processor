@@ -111,7 +111,7 @@ def _format_lastres(header_lastres_dict: dict) -> str:
   lastres_dict = header_lastres_dict['lastres']
 
   try:
-    course_list_str = format_utils.format_course_list(lastres_dict)
+    course_list_str = format_utils.format_course_list(lastres_dict['course_list'])
   except KeyError:
     course_list_str = ''
 
@@ -120,7 +120,7 @@ def _format_lastres(header_lastres_dict: dict) -> str:
 
   try:
     of_number = float(lastres_dict['of_number'])
-    # m of n format
+    # print('m of n format')
     match (class_credit, course_list_str):
       case ['class', '']:
         lastres_str = (f'<p>At least {number} of the last {of_number} classes must be taken in '
@@ -136,7 +136,7 @@ def _format_lastres(header_lastres_dict: dict) -> str:
                        f'classes must be taken in residence:</p>{credit_str}')
 
   except KeyError:
-    # m-only format
+    # print('m-only format')
     match (class_credit, course_list_str):
       case ['class', '']:
         lastres_str = (f'<p>At least {number} classes must be taken in residence</p>')
@@ -146,14 +146,14 @@ def _format_lastres(header_lastres_dict: dict) -> str:
         lastres_str = (f'<p>At least {number} of these classes must be taken in residence:</p>'
                        f'{class_str}')
       case ['credit', credit_str]:
-        lastres_str = (f'<p>At least {number:/2f} credits in these classes must be taken in '
+        lastres_str = (f'<p>At least {number:.2f} credits in these classes must be taken in '
                        f'residence:</p>{credit_str}')
 
   # display is for student-specific info: ignore it
-  # try:
-  #   display_str = f'<p>{lastres_dict['display']}</p>'
-  # except KeyError:
-  #   display_str = ''
+  try:
+    display_str = f'<p>{lastres_dict["display"]}</p>'
+  except KeyError:
+    display_str = ''
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{lastres_str}</display>'
@@ -453,7 +453,6 @@ def _format_minperdisc_head(minperdisc_head_dict: dict) -> str:
       minperdisc_head : minperdisc label_head?
       minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag?
                         display*;
-
   """
   if DEBUG:
     print(f'_format_minperdisc_head({minperdisc_head_dict}', file=sys.stderr)
@@ -465,10 +464,6 @@ def _format_minperdisc_head(minperdisc_head_dict: dict) -> str:
 
   minperdisc_dict = minperdisc_head_dict['minperdisc']
   minperdisc_info = format_body_qualifiers.format_minperdisc(minperdisc_dict)
-
-  if courses_str := format_utils.format_course_list(minperdisc_dict['course_list']):
-    minperdisc_info = minperdisc_info.replace('</p>', ' in these courses:</p>')
-    minperdisc_info += courses_str
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{minperdisc_info}<details>'

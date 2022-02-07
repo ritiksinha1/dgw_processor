@@ -408,10 +408,11 @@ def dispatch_body_qualifiers(node: dict) -> list:
   qualifier_strings = []
   for qualifier in possible_qualifiers:
     if qualifier in node.keys():
-      qualifier_dict = node.pop(qualifier)
+      qualifier_dict = node['qualifier']
       if qualifier in handled_qualifiers:
+        # print('*** qualifier:', qualifier)
         qualifier_strings.append(_dispatch_qualifier(qualifier, qualifier_dict))
       else:
-        print(f'*** Unhandled body qualifier: {qualifier_dict}', file=sys.stderr)
+        print(f'Unhandled body qualifier: {qualifier_dict}', file=sys.stderr)
 
   return qualifier_strings
