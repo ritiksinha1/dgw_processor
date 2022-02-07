@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-""" This is the entry point for processing a requirement block.
+""" NO LONGER USED, BUT MAINTAINED FOR REFERENCES TO EARLY THINKING ON WITH CLAUSES.
 
     Use command line args to select requirement_block(s) from the db, create a DGW_Processor to
     hold information extracted from each block. Convert the requirement block text to html, then
