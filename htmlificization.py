@@ -359,7 +359,7 @@ if __name__ == '__main__':
       total_time = perf_counter() - initial_time
       print(f'{num_blocks:,} in {total_time:.1f} sec ({(total_time / num_blocks):0.1f} sec per '
             f'block)')
-  print('Longest Times')
+  print('Longest Times By Block Type\n  Type        Sec Clg Req ID   Block Value')
   for block_type, longest_time in longest_times.items():
-    print(f'{block_type:6} {longest_time.time:5.1f} {longest_time.institution[0:3]} '
+    print(f'  {block_type:9} {longest_time.time:5.1f} {longest_time.institution[0:3]} '
           f'{longest_time.requirement_id} {longest_time.block_value}')
