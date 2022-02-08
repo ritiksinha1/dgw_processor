@@ -13,12 +13,22 @@ from collections import namedtuple, defaultdict
 from recordclass import recordclass
 from psycopg.rows import namedtuple_row
 
+from coursescache import courses_cache
+
+from quarantine_manager import QuarantineManager
+
+quarantine_dict = QuarantineManager()
+
 BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type block_value title '
-                        'parse_tree class_credits max_transfer min_grade min_gpa')
+                        'parse_tree class_credits max_transfer min_residency min_grade min_gpa')
 
 
 log_file = open(f'{__file__.replace(".py", ".log")}', 'w')
-csv_file = open(f'{__file__.replace(".py", ".csv")}', 'w')
+csv_file = open(f'{__file__.replace(".py", ".progs.csv")}', 'w')
+map_file = open(f'{__file__.replace(".py", ".map.csv")}', 'w')
+
+writer = csv.writer(csv_file)
+mapper = csv.writer(map_file)
 
 
 def dict_factory():
@@ -67,44 +77,36 @@ def write_log(block_info: namedtuple, message: str):
         f'{block_info.block_value:10}', message, file=log_file)
 
 
-# key_struct()
+# write_map()
 # -------------------------------------------------------------------------------------------------
-def key_struct(arg, depth=0):
-  """ Treewalk, where the tree structure is implemented using nested dicts, but nodes can be lists.
+def write_map(block_info: namedtuple, context_list: list, course_list: dict):
+  """ Write courses and their with clauses to the map file.
+      Object returned by courses_cache():
+        CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits career')
   """
-  # print(f'key_struct({arg=}, {depth=}')
-  leader = f'..' * depth
-  if isinstance(arg, list):
-    print(f'{leader}[{len(arg)}]', end='')
-    for value in arg:
-      if isinstance(value, dict):
-        key_struct(value, 1 + depth)
-      elif isinstance(value, list):
-        for item in value:
-          key_struct(item, 1 + depth)
-      else:
-        print(f' {value}')
-  elif isinstance(arg, dict):
-    for key, value in arg.items():
-      print(f'{leader}{key}:', end='')
-      if isinstance(value, list) or isinstance(value, dict):
-        print()
-        key_struct(value, 1 + depth)
-      else:
-        print(f' {value}')
+  context_str = '\n'.join(context_list)
+  for course_area in range(len(course_list['scribed_courses'])):
+    for course_tuple in course_list['scribed_courses'][course_area]:
+      discipline, catalog_number, with_clause = course_tuple
+      if with_clause is not None:
+        with_clause = f'With ({with_clause})'
+      for key, value in courses_cache((block_info.institution, discipline, catalog_number)).items():
+        mapper.writerow([block_info.institution, block_info.requirement_id, block_info.title,
+                        context_str, f'{value.course_id}:{value.offer_nbr}', value.career,
+                        f'{key}: {value.title}', with_clause])
 
 
 # traverse_body()
 # -------------------------------------------------------------------------------------------------
-def traverse_body(node: Any, context: list) -> None:
-  """ Extract Requirement names and course lists from body rules.
-      Element 0 of the context list is always information about the block, including header
-      restrictions: MaxTransfer and MinGrade. The context list is augmented with requirement names
-      (labels), conditions, and residency/grade requirements during recursion.
+def traverse_body(node: Any, context_list: list) -> None:
+  """ Extract Requirement names and course lists from body rules. Element 0 of the context list is
+      always information about the block, including header restrictions: MaxTransfer, MinResidency,
+      MinGrade, and MinGPA. The context list is augmented with requirement names (labels),
+      conditions, and residency/grade requirements during recursion.
         body_rule       : block
                         | blocktype
-                        | body_class_credit
-                        | body_conditional
+                        | class_credit
+                        | conditional
                         | course_list_rule
                         | copy_rules
                         | group_requirement
@@ -117,10 +119,47 @@ def traverse_body(node: Any, context: list) -> None:
 
   if isinstance(node, list):
     for item in node:
-      pass
+      traverse_body(item, context_list)
 
   elif isinstance(node, dict):
-    pass
+    if len(node.keys()) != 1:
+      print(node, sys.stderr)
+    requirement_type = list(node.keys())[0]
+    if isinstance(node[requirement_type], dict):
+      try:
+        requirement_name = node[requirement_type]['label']
+        if course_list := node[requirement_type]['course_list']:
+          write_map(block_info, context_list + [requirement_name], course_list)
+      except KeyError:
+        pass
+
+    match requirement_type:
+      case 'block':
+        pass
+      case 'blocktype':
+        pass
+      case 'class_credit':
+        pass
+      case 'conditional':
+        pass
+      case 'course_list_rule':
+        pass
+      case 'copy_rules':
+        pass
+      case 'group_requirements':
+        pass
+      case 'noncourse':
+        pass
+      case 'proxy_advice':
+        pass
+      case 'remark':
+        pass
+      case 'rule_complete':
+        pass
+      case 'subset':
+        pass
+      case _:
+        print(f'Unexpected requirement_type: {requirement_type}', file=sys.stderr)
   else:
     pass
 
@@ -225,7 +264,19 @@ def traverse_header(block_info: namedtuple) -> None:
           case 'header_minperdisc':
             pass
           case 'header_minres':
-            pass
+            min_classes = value['minres']['min_classes']
+            min_credits = value['minres']['min_credits']
+            # There must be a better way to do an xor check ...
+            match  (min_classes, min_credits):
+              case [None, None]:
+                print(f'Invalid minres {block_info}', file=sys.stderr)
+              case [None, credits]:
+                block_info.min_residency = f'{float(credits):.1f} credits'
+              case [classes, None]:
+                block_info.min_residency = f'{int(classes)} classes'
+              case _:
+                print(f'Invalid minres {block_info}', file=sys.stderr)
+
           case 'header_minterm':
             pass
           case 'noncourse':
@@ -252,7 +303,7 @@ def traverse_header(block_info: namedtuple) -> None:
 # main()
 # -------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
-  """ Get a parse tree from the requirements_table and walk it.
+  """ Get a parse tree from the requirements_table and walk it. If no
   """
   parser = ArgumentParser()
   parser.add_argument('-i', '--institution', default='qns')
@@ -263,15 +314,23 @@ if __name__ == "__main__":
 
   empty_tree = "'{}'"
 
-  writer = csv.writer(csv_file)
   writer.writerow(['College',
                    'Requirement ID',
                    'Type',
                    'Code',
                    'Total',
                    'Max Transfer',
+                   'Min Residency',
                    'Min Grade',
                    'Min GPA'])
+  mapper.writerow(['Institution',
+                   'Requirement ID',
+                   'Program',
+                   'Requirement',
+                   'Course ID',
+                   'Career',
+                   'Course',
+                   'With'])
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
       if args.institution.upper() == 'ALL':
@@ -326,6 +385,9 @@ if __name__ == "__main__":
       suffix = '' if cursor.rowcount == 1 else 's'
       print(f'{cursor.rowcount} parse tree{suffix}')
       for row in cursor:
+        if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
+          continue
+
         # If this is the first time this instution has been encountered, create a dict mapping
         # courses to their course_id:offer_nbr values
         if row.institution not in courses_by_institution:
@@ -340,11 +402,15 @@ if __name__ == "__main__":
              order by discipline, numeric_part(catalog_number)
             """, (row.institution, ))
             for course in course_cursor:
+              institution, discipline, catalog_number = (course.institution,
+                                                         course.discipline,
+                                                         course.catalog_number)
               value = (course.course_id, course.offer_nbr, course.career)
-              courses_by_institution[course.institution][course.discipline][course.catalog_number] = value
+              courses_by_institution[institution][discipline][catalog_number] = value
 
-        # Augment db info with default values for class_credits max_transfer min_grade min_gpa
-        block_info = BlockInfo._make(row + ('', '', '', ''))
+        # Augment db info with default values for class_credits max_transfer min_residency min_grade
+        # min_gpa
+        block_info = BlockInfo._make(row + ('', '', '', '', ''))
         try:
           traverse_header(block_info)
 
@@ -354,6 +420,7 @@ if __name__ == "__main__":
                            f'{block_info.block_value}',
                            f'{block_info.class_credits}',
                            f'{block_info.max_transfer}',
+                           f'{block_info.min_residency}',
                            f'{block_info.min_grade}',
                            f'{block_info.min_gpa}'])
 
@@ -361,8 +428,10 @@ if __name__ == "__main__":
           print(f'No header_list for', institution, requirement_id, block_type, block_value,
                 title, file=sys.stderr)
         try:
+
           body_list = block_info.parse_tree['body_list']
-          traverse_body(body_list, [block_info])
-        except KeyError:
-          print(f'No body_list for', institution, requirement_id, block_type, block_value,
-                title, file=sys.stderr)
+          traverse_body(body_list, [])
+        except KeyError as ke:
+          print(ke, block_info.institution, block_info.requirement_id,
+                block_info.block_type, block_info.block_value,
+                block_info.title, file=sys.stderr)
