@@ -117,17 +117,26 @@ def traverse_body(node: Any, context_list: list) -> None:
                         | subset
   """
 
+  institution, requirement_id, block_type, block_value = (block_info.institution,
+                                                          block_info.requirement_id,
+                                                          block_info.block_type,
+                                                          block_info.block_value)
   if isinstance(node, list):
     for item in node:
       traverse_body(item, context_list)
 
   elif isinstance(node, dict):
-    if len(node.keys()) != 1:
-      print(node, sys.stderr)
-    requirement_type = list(node.keys())[0]
+    node_keys = list(node.keys())
+    if num_keys := len(node_keys) != 1:
+      print(f'Node with {num_keys} keys: {node_keys}', sys.stderr)
+    requirement_type = node_keys[0]
     if isinstance(node[requirement_type], dict):
       try:
         requirement_name = node[requirement_type]['label']
+      except KeyError:
+        print(f'{requirement_type} with no label', file=sys.stderr)
+        return
+      try:
         if course_list := node[requirement_type]['course_list']:
           write_map(block_info, context_list + [requirement_name], course_list)
       except KeyError:
@@ -323,6 +332,7 @@ if __name__ == "__main__":
                    'Min Residency',
                    'Min Grade',
                    'Min GPA'])
+
   mapper.writerow(['Institution',
                    'Requirement ID',
                    'Program',
