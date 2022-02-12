@@ -79,21 +79,61 @@ def write_log(block_info: namedtuple, message: str):
 
 # write_map()
 # -------------------------------------------------------------------------------------------------
-def write_map(block_info: namedtuple, context_list: list, course_list: dict):
-  """ Write courses and their with clauses to the map file.
+def write_map(institution, requirement_id, title, context_list: list, course_list: dict):
+  """ Write courses and their With clauses to the map file.
       Object returned by courses_cache():
         CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits career')
   """
   context_str = '\n'.join(context_list)
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
+      # Unless there is a With clause, skip "any course" wildcards (@ @)
+      if ['@', '@', None] == course_tuple:
+        continue
       discipline, catalog_number, with_clause = course_tuple
       if with_clause is not None:
         with_clause = f'With ({with_clause})'
-      for key, value in courses_cache((block_info.institution, discipline, catalog_number)).items():
-        mapper.writerow([block_info.institution, block_info.requirement_id, block_info.title,
-                        context_str, f'{value.course_id}:{value.offer_nbr}', value.career,
+      for key, value in courses_cache((institution, discipline, catalog_number)).items():
+        mapper.writerow([institution, requirement_id, title,
+                        context_str, f'{value.course_id:06}:{value.offer_nbr}', value.career,
                         f'{key}: {value.title}', with_clause])
+
+
+# process_block()
+# -------------------------------------------------------------------------------------------------
+def process_block(row: namedtuple, context_list: list = []):
+  """ Given (parts of) a requirement_blocks row, traverse the header and body lists.
+  """
+  # Augment db info with default values for class_credits max_transfer min_residency min_grade
+  # min_gpa
+  (institution, requirement_id, block_type, block_value, title, parse_tree) = row
+  block_info = BlockInfo._make(row + ('', '', '', '', ''))
+  try:
+    traverse_header(block_info)
+
+    writer.writerow([f'{block_info.institution[0:3]}',
+                     f'{block_info.requirement_id}',
+                     f'{block_info.block_type}',
+                     f'{block_info.block_value}',
+                     f'{block_info.class_credits}',
+                     f'{block_info.max_transfer}',
+                     f'{block_info.min_residency}',
+                     f'{block_info.min_grade}',
+                     f'{block_info.min_gpa}'])
+  except KeyError:
+    print(f'No header_list for', institution, requirement_id, block_type, block_value,
+          title, file=sys.stderr)
+
+  try:
+
+    body_list = block_info.parse_tree['body_list']
+
+    # Use context_list[0] for debugging; context_list[1] is the name of the block
+    traverse_body(body_list, context_list + [f'{institution} {requirement_id}', title])
+
+  except KeyError as ke:
+    print('No body_list for', institution, requirement_id, block_type, block_value, title,
+          file=sys.stderr)
 
 
 # traverse_body()
@@ -101,8 +141,15 @@ def write_map(block_info: namedtuple, context_list: list, course_list: dict):
 def traverse_body(node: Any, context_list: list) -> None:
   """ Extract Requirement names and course lists from body rules. Element 0 of the context list is
       always information about the block, including header restrictions: MaxTransfer, MinResidency,
-      MinGrade, and MinGPA. The context list is augmented with requirement names (labels),
-      conditions, and residency/grade requirements during recursion.
+      MinGrade, and MinGPA. (See traverse_header(), which set this up.)
+
+      If there is a label, that becomes the requirement_name to add to the context_list when
+      entering sub-dicts.
+
+      Block, Conditional, CopyRules, Groups, and Subsets all have to be handled individually here.
+
+      If a node's subdict has a course_list, that becomes an output.
+
         body_rule       : block
                         | blocktype
                         | class_credit
@@ -116,61 +163,251 @@ def traverse_body(node: Any, context_list: list) -> None:
                         | rule_complete
                         | subset
   """
+  # Debugging Info
+  institution, requirement_id = context_list[0].split()
+  title = context_list[1]
 
-  institution, requirement_id, block_type, block_value = (block_info.institution,
-                                                          block_info.requirement_id,
-                                                          block_info.block_type,
-                                                          block_info.block_value)
+  # Handle lists
   if isinstance(node, list):
     for item in node:
       traverse_body(item, context_list)
 
+  # A dict should have one key that identifies the requirement type, and a sub-dict that gives the
+  # details about that requirement, including the label that gives it its name.
   elif isinstance(node, dict):
     node_keys = list(node.keys())
     if num_keys := len(node_keys) != 1:
       print(f'Node with {num_keys} keys: {node_keys}', sys.stderr)
-    requirement_type = node_keys[0]
-    if isinstance(node[requirement_type], dict):
-      try:
-        requirement_name = node[requirement_type]['label']
-      except KeyError:
-        print(f'{requirement_type} with no label', file=sys.stderr)
-        return
-      try:
-        if course_list := node[requirement_type]['course_list']:
-          write_map(block_info, context_list + [requirement_name], course_list)
-      except KeyError:
-        pass
 
-    match requirement_type:
-      case 'block':
-        pass
-      case 'blocktype':
-        pass
-      case 'class_credit':
-        pass
-      case 'conditional':
-        pass
-      case 'course_list_rule':
-        pass
-      case 'copy_rules':
-        pass
-      case 'group_requirements':
-        pass
-      case 'noncourse':
-        pass
-      case 'proxy_advice':
-        pass
-      case 'remark':
-        pass
-      case 'rule_complete':
-        pass
-      case 'subset':
-        pass
-      case _:
-        print(f'Unexpected requirement_type: {requirement_type}', file=sys.stderr)
+    requirement_type = node_keys[0]
+    requirement_value = node[requirement_type]
+    if isinstance(requirement_value, dict):
+      if requirement_type not in ['conditional', 'copy_rules']:
+        try:
+          requirement_name = node[requirement_type].pop('label')
+        except KeyError:
+          print(f'{requirement_type} with no label', file=sys.stderr)
+          requirement_name = None
+
+    if isinstance(requirement_value, dict):
+
+      match requirement_type:
+
+        case 'block':
+          # The number has to be 1
+          number = int(requirement_value['number'])
+          # No instances of the following found
+          # if number != 1:
+          #   print(f'{institution} {requirement_id}: Block requirement w/ number ({number}) ne 1',
+          #         file=log_file)
+
+          institution = requirement_value['institution']
+          block_type = requirement_value['block_type']
+          block_value = requirement_value['block_value']
+          with psycopg.connect('dbname=cuny_curriculum') as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cursor:
+              blocks = cursor.execute("""
+              select institution, requirement_id, block_type, block_value, title, parse_tree
+                from requirement_blocks
+               where institution = %s
+                 and block_type = %s
+                 and block_value = %s
+                 and period_stop ~* '^9'
+              """, (institution, block_type, block_value))
+              if cursor.rowcount != number:
+                # HOW TO HANDLE THIS?
+                suffix = '' if cursor.rowcount == 1 else 's'
+                print(f'{institution} {requirement_id}: Block requirement found '
+                      f'{cursor.rowcount} row{suffix} ({number} needed)', file=log_file)
+                return
+              for row in cursor:
+                process_block(row, context_list + [requirement_name])
+          return
+
+        case 'blocktype':
+          # No observed cases where the number of blocks is other than one and the type of block is
+          # other than Concentration. But in two cases (LEH 1298 and 1300), the containing block
+          # type is CONC instead of MAJOR. (The exclamation point in the log message is to make
+          # these cases easier to find! It's not excitement!!)
+          number = int(node[requirement_type]['number'])
+          suffix = '' if number == 1 else 's'
+          req_type = node[requirement_type]['block_type']
+          req_type = 'Concentration' if req_type.upper() == 'CONC' else req_type.title()
+          print(f'{institution} {requirement_id} “{requirement_name}”: {number} '
+                f'{req_type}{suffix} required.', file=log_file)
+          return
+
+        case 'class_credit':
+          # This is where course lists turn up, in general.
+          try:
+            if course_list := node[requirement_type]['course_list']:
+              write_map(institution, requirement_id, title,
+                        context_list + [requirement_name], course_list)
+          except KeyError:
+            # Course List is an optional part of ClassCredit
+            return
+
+        case 'conditional':
+          # Use the condition as the pseudo-name of this requirement
+          # UNABLE TO HANDLE RULE_COMPLETE UNTIL THE CONDITION IS EVALUATED
+          condition = node[requirement_type]['condition']
+          for if_true_dict in node[requirement_type]['if_true']:
+            traverse_body(if_true_dict, context_list + ['IF ' + condition])
+          try:
+            for if_false_dict in node[requirement_type]['if_false']:
+              traverse_body(if_true_dict, context_list + ['IF NOT ' + condition])
+          except KeyError:
+            # Scribe Else clause is optional
+            pass
+          return
+
+        case 'copy_rules':
+          # Use the title of the block as the label.
+          with psycopg.connect('dbname=cuny_curriculum') as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cursor:
+              cursor.execute("""
+              select institution, requirement_id, block_type, block_value, title, parse_tree
+                from requirement_blocks
+               where institution = %s
+                 and requirement_id = %s
+                 and period_stop ~* '^9'
+              """, (node[requirement_type]['institution'],
+                    node[requirement_type]['requirement_id']))
+              if cursor.rowcount != 1:
+                print(f'{institution} {requirement_id}: Copy Rules found {cursor.rowcount} current '
+                      f'blocks.', file=sys.stderr)
+                return
+              row = cursor.fetchone()
+              if f'{row.institution} {row.requirement_id}' in context_list:
+                print(f'{context_list[0]}: Circular Copy Rules', file=sys.stderr)
+              else:
+                process_block(row, context_list)
+          return
+
+        case 'course_list_rule':
+          # There might be a remark associated with the course list
+          local_context_list = [requirement_name]
+          try:
+            local_context_list.append(node[requirement_type]['remark'])
+          except KeyError:
+            pass
+
+          try:
+            if course_list := node[requirement_type]['course_list']:
+              write_map(institution, requirement_id, title,
+                        context_list + local_context_list, course_list)
+          except KeyError:
+            # Can't have a Course List Rule w/o a course list
+            print(f'{institution} {requirement_id}: Course List Rule w/o a Course List',
+                  file=sys.stderr)
+          return
+
+        case 'group_requirements':
+          # A list of group requirements, each of which contains a list of groups, each of which
+          # contains a list of requirements, each of which contains a list of courses. :-)
+          assert isinstance(node[requirement_type], list)
+          for group_requirement in node[requirement_type]:
+            try:
+              label_str = group_requirement['label']
+              number = int(group_requirement['number'])
+              group_list = group_requirement['group_list']
+              num_groups = len(group_list)
+            except (KeyError, ValueError) as err:
+              exit(f'{institution} {requirement_id}: missing/invalid {err}\n{node}')
+            for index, group in enumerate(group_list):
+              print(label_str, number, num_groups, index, list(groupkeys()))
+            exit()  # Looks like these happen only inside subsets (???)
+
+        case 'rule_complete':
+          # is_complete may be T/F
+          # rule_tag is followed by a name-value pair. If the name is RemarkJump, the value is a URL
+          # for more info. Otherwise, the name-value pair is used to control formatting of the rule.
+          # This happens only inside conditionals, where the idea will be to look at what whether
+          # it's in the true or false leg, what the condition is, and whether this is True or False
+          # to infer what requirement must or must not be met. We're looking at YOU, Lehman ACC-BA.
+          print(f'Rule Complete: {institution} {requirement_id}', context_list, file=log_file)
+
+        case 'subset':
+          # Process the valid rules in the subset; ignore qualifiers for now.
+
+          try:
+            transfer_dict = node[requirement_type].pop('maxtransfer')
+            number = float(transfer_dict['number'])
+            match transfer_dict['class_or_credit']:
+              case 'class':
+                suffix = 'es' if number != 1 else ''
+                max_transfer_restriction = f'{int(number)} class{suffix}'
+              case 'credit':
+                suffix = 's' if number != 1.0 else ''
+                max_transfer_restriction = f'{number:02f} credit{suffix}'
+            try:
+              max_transfer_types = ','.join(max_transfer_dict['transfer_types'])
+              max_transfer_restriction += f' ({max_transfer_types})'
+            except KeyError:
+              pass
+          except KeyError:
+            max_transfer_restriction = None
+
+          for key, value in node[requirement_type].items():
+
+            match key:
+
+              case 'conditional':
+                pass
+
+              case 'block':
+                for block_dict in value:
+                  assert isinstance(block_dict, dict)
+                return
+
+              case 'blocktype':
+                pass
+
+              case 'class_credit_list':
+                for class_credit_item in value:
+                  try:
+                    local_requirement_name = class_credit_item.pop('label')
+                  except KeyError:
+                    local_requirement_name = None
+                  local_context = [] if requirement_name is None else [requirement_name]
+                  if local_requirement_name:
+                    local_context.append(local_requirement_name)
+                  if len(local_context) == 0:
+                    print(f'{institution} {requirement_id}: Subset with no name.', file=sys.stderr)
+                  traverse_body(class_credit_item, context_list + local_context)
+                return
+
+              case 'copy_rules':
+                pass
+
+              case 'course_list_rule':
+                pass
+
+              case 'group_requirements':
+                pass
+
+              case 'noncourse':
+                pass
+
+              case 'rule_complete':
+                pass
+
+              case _:
+                # Qualifier
+                pass
+            print(f'Unhandled Subset key: {key:20} {str(type(value)):10} {len(value)}')
+          return
+
+        # Ignore These
+        case 'noncourse' | 'proxy_advice' | 'remark':
+          return
+
+        case _:
+          print(f'Unexpected requirement_type: {requirement_type}', file=sys.stderr)
+
   else:
-    pass
+    # Not a dict or list
+    print(f'Unexpected node of type {type(node)} ({node})', file=sys.stderr)
 
 
 # traverse_header()
@@ -276,7 +513,7 @@ def traverse_header(block_info: namedtuple) -> None:
             min_classes = value['minres']['min_classes']
             min_credits = value['minres']['min_credits']
             # There must be a better way to do an xor check ...
-            match  (min_classes, min_credits):
+            match (min_classes, min_credits):
               case [None, None]:
                 print(f'Invalid minres {block_info}', file=sys.stderr)
               case [None, credits]:
@@ -418,30 +655,4 @@ if __name__ == "__main__":
               value = (course.course_id, course.offer_nbr, course.career)
               courses_by_institution[institution][discipline][catalog_number] = value
 
-        # Augment db info with default values for class_credits max_transfer min_residency min_grade
-        # min_gpa
-        block_info = BlockInfo._make(row + ('', '', '', '', ''))
-        try:
-          traverse_header(block_info)
-
-          writer.writerow([f'{block_info.institution[0:3]}',
-                           f'{block_info.requirement_id}',
-                           f'{block_info.block_type}',
-                           f'{block_info.block_value}',
-                           f'{block_info.class_credits}',
-                           f'{block_info.max_transfer}',
-                           f'{block_info.min_residency}',
-                           f'{block_info.min_grade}',
-                           f'{block_info.min_gpa}'])
-
-        except KeyError:
-          print(f'No header_list for', institution, requirement_id, block_type, block_value,
-                title, file=sys.stderr)
-        try:
-
-          body_list = block_info.parse_tree['body_list']
-          traverse_body(body_list, [])
-        except KeyError as ke:
-          print(ke, block_info.institution, block_info.requirement_id,
-                block_info.block_type, block_info.block_value,
-                block_info.title, file=sys.stderr)
+        process_block(row)
