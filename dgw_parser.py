@@ -289,8 +289,9 @@ if __name__ == '__main__':
     print(f'{current_institution} took {(time.time() - institution_start):,.1f} sec',
           file=log_file)
 
-    print(f'\nTotal time: {(time.time() - process_start):,.1f} sec\nMax times by block type:',
+    print(f'\nTotal time: {(time.time() - process_start):,.1f} sec\nMax times by block type:\n'
+          f'Block Type   Sec Clg Value',
           file=log_file)
     for block_type, value in longest_times.items():
-      print(f'{block_type:10} {value.time:4.1f} {value.institution[0:3]} {value.block_value}',
+      print(f'{block_type:10} {value.time:5.1f} {value.institution[0:3]} {value.block_value}',
             file=log_file)
