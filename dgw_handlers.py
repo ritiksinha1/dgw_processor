@@ -44,7 +44,8 @@ def block(ctx, institution, requirement_id):
 
   return_dict = {'label': get_label(ctx)}
 
-  return_dict['number'] = ctx.NUMBER().getText()
+  return_dict['number'] = int(ctx.NUMBER().getText())
+  assert return_dict['number'] == 1, f'Block with number ne 1'
 
   for context in ctx.expression().getChildren():
     if class_name(context) == 'Expression':
@@ -230,8 +231,8 @@ def header_conditional(ctx, institution, requirement_id):
 # body_conditional()
 # -------------------------------------------------------------------------------------------------
 def body_conditional(ctx, institution, requirement_id):
-  """ Just like header_conditional, except the rule or rule_group can be followed by requirements that
-      apply to the rule or rule group.
+  """ Just like header_conditional, except the rule or rule_group can be followed by requirements
+      that apply to the rule or rule group.
 
       body_conditional  : IF expression THEN (body_rule | body_rule_group) body_else? ;
       body_else         : ELSE (body_rule | body_rule_group);
