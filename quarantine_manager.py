@@ -10,13 +10,15 @@
 """
 
 import csv
+import json
+import psycopg
 import sys
 
 from collections import namedtuple
 from pprint import pprint, pformat
 
 from catalogyears import catalog_years
-from pgconnection import PgConnection
+from psycopg.rows import namedtuple_row
 
 # Module-level variables
 _quarantined_dict = None
@@ -64,17 +66,16 @@ class QuarantineManager(dict):
     """
     assert len(v) == 2, f'Two strings (explanation, can_ellucian) expected; {len(v)} received.'
     global _quarantined_dict
-    conn = PgConnection()
-    cursor = conn.cursor()
-    cursor.execute(f"""
-    select block_type, period_start, period_stop
-      from requirement_blocks
-     where institution = '{k[0]}'
-       and requirement_id = '{k[1]}'
-    """)
-    assert cursor.rowcount == 1
-    row = cursor.fetchone()
-    conn.close()
+    with psycopg.connect('dbname=cuny_curriculum') as conn:
+      with conn.cursor(row_factory=namedtuple_row) as cursor:
+        cursor.execute(f"""
+        select block_type, period_start, period_stop
+          from requirement_blocks
+         where institution = '{k[0]}'
+           and requirement_id = '{k[1]}'
+        """)
+        assert cursor.rowcount == 1
+        row = cursor.fetchone()
 
     block_type = row.block_type.upper()
     catalog_info = catalog_years(row.period_start, row.period_stop)
@@ -118,10 +119,12 @@ class QuarantineManager(dict):
     return pformat(_quarantined_dict)
 
 
-# Testing
+# Testing/Managing
 # -------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
   """ View the dict, with command to toggle whether a test block (Baruch 185) is quarantined or not.
+      2022-02-13: new feature to make the parse_trees show all quarantined parse_trees correctly.
+      This is just a fixup for some accidental dgw_parser runs that overwrote the error messages.
   """
   quarantined_dict = QuarantineManager()
   if len(sys.argv) > 1:
@@ -131,7 +134,8 @@ if __name__ == '__main__':
   test_key = _Key._make(('BAR01', 'RA000185'))
   choice = 'd'
   try:
-    while choice.lower()[0] in ['d', 'f', 'r', 't']:
+    while choice.lower()[0] in ['d', 'f', 'r', 't', 'w']:
+
       if choice.lower().startswith('f'):
         # Display the file
         print('File:')
@@ -157,6 +161,21 @@ if __name__ == '__main__':
         else:
           quarantined_dict[test_key] = ['Because I said so', 'Unknown']
 
+      elif choice.lower().startswith('w'):
+        with psycopg.connect('dbname=cuny_curriculum') as conn:
+          with conn.cursor(row_factory=namedtuple_row) as cursor:
+            for key, value in quarantined_dict.items():
+              parse_tree = json.dumps({'error': f'Quarantined: {value[3]}'})
+              institution, requirement_id = key
+              cursor.execute(f"""
+              update requirement_blocks
+                 set parse_tree = '{parse_tree}'
+               where institution = %s
+                 and requirement_id = %s
+              """, key)
+              assert cursor.rowcount == 1
+              print(f'{institution} {requirement_id}')
+
       # show the status of the test block
       if quarantined_dict.is_quarantined(test_key):
         print(f'---\n({test_key.institution}, {test_key.requirement_id}) IS quarantined:',
@@ -164,7 +183,7 @@ if __name__ == '__main__':
       else:
         print(f'---\n({test_key.institution}, {test_key.requirement_id}) is NOT quarantined')
 
-      choice = input('dict | file | redo | toggle: ')
+      choice = input('dict | file | redo | toggle | write: ')
 
   except IndexError as ie:
     exit()
