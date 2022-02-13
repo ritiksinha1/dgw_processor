@@ -19,6 +19,7 @@ from quarantine_manager import QuarantineManager
 
 quarantine_dict = QuarantineManager()
 
+Restrictions = namedtuple('Restrictions', 'min_grade_restriction, max_transfer_restriction')
 BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type block_value title '
                         'parse_tree class_credits max_transfer min_residency min_grade min_gpa')
 
@@ -97,6 +98,46 @@ def write_map(institution, requirement_id, title, context_list: list, course_lis
         mapper.writerow([institution, requirement_id, title,
                         context_str, f'{value.course_id:06}:{value.offer_nbr}', value.career,
                         f'{key}: {value.title}', with_clause])
+
+
+# get_restrictions()
+# -------------------------------------------------------------------------------------------------
+def get_restrictions(node: dict) -> namedtuple:
+  """ Return qualifiers that might affect transferability.
+  """
+
+  assert isinstance(node, dict)
+
+  # The maxtransfer restriction puts a limit on the number of classes or credits that can be
+  # transferred, possibly with a list of disciplines for which the limit applies.
+  try:
+    transfer_dict = node.pop('maxtransfer')
+    number = float(transfer_dict['number'])
+    match transfer_dict['class_or_credit']:
+      case 'class':
+        suffix = 'es' if number != 1 else ''
+        max_transfer_restriction = f'{int(number)} class{suffix}'
+      case 'credit':
+        suffix = 's' if number != 1.0 else ''
+        max_transfer_restriction = f'{number:02f} credit{suffix}'
+    try:
+      max_transfer_types = ','.join(transfer_dict['transfer_types'])
+      max_transfer_restriction += f' ({max_transfer_types})'
+    except KeyError:
+      pass
+  except KeyError:
+    max_transfer_restriction = None
+
+  # The mingrade restriction puts a limit on the minimum required grade for all courses in a course
+  # list. It’s a float (like a GPA) in Scribe, but is returned as a letter grade here.
+  try:
+    mingpa_dict = node.pop('mingrade')
+    number = float(mingpa_dict['number'])
+    min_grade_restriction = letter_grade(number)
+  except KeyError:
+    min_grade_restriction = None
+
+  return Restrictions._make([min_grade_restriction, max_transfer_restriction])
 
 
 # process_block()
@@ -328,25 +369,12 @@ def traverse_body(node: Any, context_list: list) -> None:
           print(f'Rule Complete: {institution} {requirement_id}', context_list, file=log_file)
 
         case 'subset':
-          # Process the valid rules in the subset; ignore qualifiers for now.
+          # Process the valid rules in the subset
 
-          try:
-            transfer_dict = node[requirement_type].pop('maxtransfer')
-            number = float(transfer_dict['number'])
-            match transfer_dict['class_or_credit']:
-              case 'class':
-                suffix = 'es' if number != 1 else ''
-                max_transfer_restriction = f'{int(number)} class{suffix}'
-              case 'credit':
-                suffix = 's' if number != 1.0 else ''
-                max_transfer_restriction = f'{number:02f} credit{suffix}'
-            try:
-              max_transfer_types = ','.join(max_transfer_dict['transfer_types'])
-              max_transfer_restriction += f' ({max_transfer_types})'
-            except KeyError:
-              pass
-          except KeyError:
-            max_transfer_restriction = None
+          # Track MaxTransfer and MinGrade restrictions (qualifiers).
+          restrictions = get_restrictions(requirement_value)
+          if restrictions != (None, None):
+            print(f'Subset restrictions: {restrictions}')
 
           for key, value in node[requirement_type].items():
 
