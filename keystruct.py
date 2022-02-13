@@ -119,7 +119,7 @@ def get_restrictions(node: dict) -> namedtuple:
         max_transfer_restriction = f'{int(number)} class{suffix}'
       case 'credit':
         suffix = 's' if number != 1.0 else ''
-        max_transfer_restriction = f'{number:02f} credit{suffix}'
+        max_transfer_restriction = f'{number:0.1f} credit{suffix}'
     try:
       max_transfer_types = ','.join(transfer_dict['transfer_types'])
       max_transfer_restriction += f' ({max_transfer_types})'
@@ -227,8 +227,7 @@ def traverse_body(node: Any, context_list: list) -> None:
         try:
           requirement_name = node[requirement_type].pop('label')
         except KeyError:
-          print(f'{requirement_type} with no label', file=sys.stderr)
-          requirement_name = None
+          requirement_name = ''
 
     if isinstance(requirement_value, dict):
 
@@ -344,6 +343,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'group_requirements':
+          print(institution, requirement_id, 'group_requirements', file=sys.stderr)
           # A list of group requirements, each of which contains a list of groups, each of which
           # contains a list of requirements, each of which contains a list of courses. :-)
           assert isinstance(node[requirement_type], list)
@@ -356,8 +356,9 @@ def traverse_body(node: Any, context_list: list) -> None:
             except (KeyError, ValueError) as err:
               exit(f'{institution} {requirement_id}: missing/invalid {err}\n{node}')
             for index, group in enumerate(group_list):
-              print(label_str, number, num_groups, index, list(groupkeys()))
-            exit()  # Looks like these happen only inside subsets (???)
+              print(institution, requirement_id, 'Group', label_str, number, num_groups, index,
+                    list(groupkeys()), file=log_file)
+            exit('Group Requirements')  # Looks like these happen only inside subsets (???)
 
         case 'rule_complete':
           # is_complete may be T/F
@@ -373,69 +374,60 @@ def traverse_body(node: Any, context_list: list) -> None:
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
           restrictions = get_restrictions(requirement_value)
-          if restrictions != (None, None):
-            print(f'Subset restrictions: {restrictions}')
 
-          for key, value in node[requirement_type].items():
+          for key, rule in node[requirement_type].items():
 
             match key:
 
-              case 'conditional':
-                pass
-
               case 'block':
-                for block_dict in value:
+                for block_dict in rule:
                   assert isinstance(block_dict, dict)
                 return
 
               case 'blocktype':
                 pass
 
-              case 'class_credit_list':
-                for class_credit_item in value:
+              case 'class_credit_list' | 'conditional' | 'course_lists' | 'group_requirements':
+                assert isinstance(rule, list)
+                for rule_dict in rule:
                   try:
-                    local_requirement_name = class_credit_item.pop('label')
+                    local_requirement_name = rule_dict.pop('label')
                   except KeyError:
                     local_requirement_name = None
-                  local_context = [] if requirement_name is None else [requirement_name]
+                  local_context = [] if requirement_name == '' else [requirement_name]
                   if local_requirement_name:
                     local_context.append(local_requirement_name)
-                  if len(local_context) == 0:
-                    print(f'{institution} {requirement_id}: Subset with no name.', file=sys.stderr)
-                  traverse_body(class_credit_item, context_list + local_context)
+                  # if len(local_context) == 0:
+                  #   print(f'{institution} {requirement_id}: Rule with no name.', file=sys.stderr)
+                  traverse_body(rule_dict, context_list + local_context)
                 return
 
               case 'copy_rules':
-                pass
+                print('DEBUG', key, str(type(rule)))
+                return
 
-              case 'course_list_rule':
-                pass
-
-              case 'group_requirements':
-                pass
-
-              case 'noncourse':
-                pass
-
-              case 'rule_complete':
-                pass
+              case 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
+                # Ignored Qualifiers and rules
+                return
 
               case _:
-                # Qualifier
-                pass
-            print(f'Unhandled Subset key: {key:20} {str(type(value)):10} {len(value)}')
-          return
+                print(f'Unhandled Subset key: {key:20} {str(type(rule)):10} {len(rule)}',
+                      file=sys.stderr)
+                return
+            print(institution, requirement_id, f'Unimplemented {key}', file=sys.stderr)
 
-        # Ignore These
         case 'noncourse' | 'proxy_advice' | 'remark':
+          # Ignore These
           return
 
         case _:
-          print(f'Unexpected requirement_type: {requirement_type}', file=sys.stderr)
+          print(f'Unhandled requirement_type: {requirement_type}', file=sys.stderr)
+          return
 
   else:
     # Not a dict or list
-    print(f'Unexpected node of type {type(node)} ({node})', file=sys.stderr)
+    print(f'Unhandled node of type {type(node)} ({node})', file=sys.stderr)
+    return
 
 
 # traverse_header()
