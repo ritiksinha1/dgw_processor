@@ -234,6 +234,7 @@ def traverse_body(node: Any, context_list: list) -> None:
       match requirement_type:
 
         case 'block':
+          print(institution, requirement_id, 'block', file=log_file)
           # The number has to be 1
           number = int(requirement_value['number'])
           # No instances of the following found
@@ -265,6 +266,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'blocktype':
+          print(institution, requirement_id, 'blocktype', file=log_file)
           # No observed cases where the number of blocks is other than one and the type of block is
           # other than Concentration. But in two cases (LEH 1298 and 1300), the containing block
           # type is CONC instead of MAJOR. (The exclamation point in the log message is to make
@@ -278,6 +280,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'class_credit':
+          print(institution, requirement_id, 'class_credit', file=log_file)
           # This is where course lists turn up, in general.
           try:
             if course_list := node[requirement_type]['course_list']:
@@ -288,6 +291,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             return
 
         case 'conditional':
+          print(institution, requirement_id, 'conditional', file=log_file)
           # Use the condition as the pseudo-name of this requirement
           # UNABLE TO HANDLE RULE_COMPLETE UNTIL THE CONDITION IS EVALUATED
           condition = node[requirement_type]['condition']
@@ -302,6 +306,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'copy_rules':
+          print(institution, requirement_id, 'copy_rules', file=log_file)
           # Use the title of the block as the label.
           with psycopg.connect('dbname=cuny_curriculum') as conn:
             with conn.cursor(row_factory=namedtuple_row) as cursor:
@@ -325,6 +330,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'course_list_rule':
+          print(institution, requirement_id, 'course_list_rule', file=log_file)
           # There might be a remark associated with the course list
           local_context_list = [requirement_name]
           try:
@@ -361,13 +367,23 @@ def traverse_body(node: Any, context_list: list) -> None:
             exit('Group Requirements')  # Looks like these happen only inside subsets (???)
 
         case 'rule_complete':
+          print(institution, requirement_id, 'rule_complete', file=sys.stderr)
           # is_complete may be T/F
           # rule_tag is followed by a name-value pair. If the name is RemarkJump, the value is a URL
           # for more info. Otherwise, the name-value pair is used to control formatting of the rule.
           # This happens only inside conditionals, where the idea will be to look at what whether
           # it's in the true or false leg, what the condition is, and whether this is True or False
           # to infer what requirement must or must not be met. We're looking at YOU, Lehman ACC-BA.
-          print(f'Rule Complete: {institution} {requirement_id}', context_list, file=log_file)
+          print(f'{institution} {requirement_id} Rule Complete:', context_list, file=log_file)
+          return
+
+        case 'course_list':
+          print(institution, requirement_id, 'course_list', file=sys.stderr)
+          return
+
+        case 'group_requirement':
+          print(institution, requirement_id, 'group_requirement', file=sys.stderr)
+          return
 
         case 'subset':
           # Process the valid rules in the subset
@@ -403,7 +419,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 return
 
               case 'copy_rules':
-                print('DEBUG', key, str(type(rule)))
+                assert isinstance(rule, dict)
                 return
 
               case 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
@@ -414,6 +430,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 print(f'Unhandled Subset key: {key:20} {str(type(rule)):10} {len(rule)}',
                       file=sys.stderr)
                 return
+
             print(institution, requirement_id, f'Unimplemented {key}', file=sys.stderr)
 
         case 'noncourse' | 'proxy_advice' | 'remark':
