@@ -23,13 +23,25 @@ Restrictions = namedtuple('Restrictions', 'min_grade_restriction, max_transfer_r
 BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type block_value title '
                         'parse_tree class_credits max_transfer min_residency min_grade min_gpa')
 
+""" Output Files
+      debug_file:         Info written during debugging (to avoid stdout/stderr)
+      log_file:           Record of requirements processed successfully. Bigger is better!
+      todo_file:          Record of known requirements not yet handled. Smaller is better!
+      programs_file:      Spreadsheet of info about majors, minors, and concentrations
+      requirements_file:  Spreadsheet of program requirement names
+      mapping_file        Spreadsheet of course-to-requirements mappings
 
+    During development, the requirements file doesn't exist: write_map() writes the program name
+    with each mapped course to the mapping file.
+"""
+debug_file = open(f'{__file__.replace(".py", ".debug.txt")}', 'w')
 log_file = open(f'{__file__.replace(".py", ".log")}', 'w')
-csv_file = open(f'{__file__.replace(".py", ".progs.csv")}', 'w')
-map_file = open(f'{__file__.replace(".py", ".map.csv")}', 'w')
+todo_file = open(f'{__file__.replace(".py", ".todo.txt")}', 'w')
+programs_file = open(f'{__file__.replace(".py", ".progs.csv")}', 'w')
+mapping_file = open(f'{__file__.replace(".py", ".maps.csv")}', 'w')
 
-writer = csv.writer(csv_file)
-mapper = csv.writer(map_file)
+programs_writer = csv.writer(programs_file)
+map_writer = csv.writer(mapping_file)
 
 
 def dict_factory():
@@ -72,7 +84,7 @@ def letter_grade(grade_point: float) -> str:
 # write_log()
 # -------------------------------------------------------------------------------------------------
 def write_log(block_info: namedtuple, message: str):
-  """ Write a message to the logfile.
+  """ Log a message about a requirement block.
   """
   print(f'{block_info.institution} {block_info.requirement_id} {block_info.block_type:6} '
         f'{block_info.block_value:10}', message, file=log_file)
@@ -95,9 +107,9 @@ def write_map(institution, requirement_id, title, context_list: list, course_lis
       if with_clause is not None:
         with_clause = f'With ({with_clause})'
       for key, value in courses_cache((institution, discipline, catalog_number)).items():
-        mapper.writerow([institution, requirement_id, title,
-                        context_str, f'{value.course_id:06}:{value.offer_nbr}', value.career,
-                        f'{key}: {value.title}', with_clause])
+        map_writer.writerow([institution, requirement_id, title, context_str,
+                             f'{value.course_id:06}:{value.offer_nbr}', value.career,
+                             f'{key}: {value.title}', with_clause])
 
 
 # get_restrictions()
@@ -152,21 +164,20 @@ def process_block(row: namedtuple, context_list: list = []):
   try:
     traverse_header(block_info)
 
-    writer.writerow([f'{block_info.institution[0:3]}',
-                     f'{block_info.requirement_id}',
-                     f'{block_info.block_type}',
-                     f'{block_info.block_value}',
-                     f'{block_info.class_credits}',
-                     f'{block_info.max_transfer}',
-                     f'{block_info.min_residency}',
-                     f'{block_info.min_grade}',
-                     f'{block_info.min_gpa}'])
+    programs_writer.writerow([f'{block_info.institution[0:3]}',
+                              f'{block_info.requirement_id}',
+                              f'{block_info.block_type}',
+                              f'{block_info.block_value}',
+                              f'{block_info.class_credits}',
+                              f'{block_info.max_transfer}',
+                              f'{block_info.min_residency}',
+                              f'{block_info.min_grade}',
+                              f'{block_info.min_gpa}'])
   except KeyError:
     print(f'No header_list for', institution, requirement_id, block_type, block_value,
           title, file=sys.stderr)
 
   try:
-
     body_list = block_info.parse_tree['body_list']
 
     # Use context_list[0] for debugging; context_list[1] is the name of the block
@@ -180,9 +191,13 @@ def process_block(row: namedtuple, context_list: list = []):
 # traverse_body()
 # -------------------------------------------------------------------------------------------------
 def traverse_body(node: Any, context_list: list) -> None:
-  """ Extract Requirement names and course lists from body rules. Element 0 of the context list is
-      always information about the block, including header restrictions: MaxTransfer, MinResidency,
-      MinGrade, and MinGPA. (See traverse_header(), which set this up.)
+  """ Extract Requirement names and course lists from body rules. Unlike traverse_header(), which
+      makes a single pass over all the elements in the header list for a Scribe Block, this is a
+      recursive function to handle nested requirements.
+
+      Element 0 of the context list is always information about the block, including header
+      restrictions: MaxTransfer, MinResidency, MinGrade, and MinGPA. (See traverse_header(), which
+      set this up.)
 
       If there is a label, that becomes the requirement_name to add to the context_list when
       entering sub-dicts.
@@ -229,18 +244,13 @@ def traverse_body(node: Any, context_list: list) -> None:
         except KeyError:
           requirement_name = ''
 
-    if isinstance(requirement_value, dict):
-
       match requirement_type:
 
         case 'block':
           print(institution, requirement_id, 'block', file=log_file)
           # The number has to be 1
           number = int(requirement_value['number'])
-          # No instances of the following found
-          # if number != 1:
-          #   print(f'{institution} {requirement_id}: Block requirement w/ number ({number}) ne 1',
-          #         file=log_file)
+          assert number == 1
 
           institution = requirement_value['institution']
           block_type = requirement_value['block_type']
@@ -259,7 +269,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 # HOW TO HANDLE THIS?
                 suffix = '' if cursor.rowcount == 1 else 's'
                 print(f'{institution} {requirement_id}: Block requirement found '
-                      f'{cursor.rowcount} row{suffix} ({number} needed)', file=log_file)
+                      f'{cursor.rowcount} row{suffix} ({number} needed)', file=todo_file)
                 return
               for row in cursor:
                 process_block(row, context_list + [requirement_name])
@@ -276,7 +286,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           req_type = node[requirement_type]['block_type']
           req_type = 'Concentration' if req_type.upper() == 'CONC' else req_type.title()
           print(f'{institution} {requirement_id} “{requirement_name}”: {number} '
-                f'{req_type}{suffix} required.', file=log_file)
+                f'{req_type}{suffix} required.', file=todo_file)
           return
 
         case 'class_credit':
@@ -349,7 +359,8 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'group_requirements':
-          print(institution, requirement_id, 'group_requirements', file=sys.stderr)
+          # Group requirements is a list, so it should not show up here.
+          exit(f'{institution} {requirement_id}: Group Requirements')
           # A list of group requirements, each of which contains a list of groups, each of which
           # contains a list of requirements, each of which contains a list of courses. :-)
           assert isinstance(node[requirement_type], list)
@@ -363,29 +374,29 @@ def traverse_body(node: Any, context_list: list) -> None:
               exit(f'{institution} {requirement_id}: missing/invalid {err}\n{node}')
             for index, group in enumerate(group_list):
               print(institution, requirement_id, 'Group', label_str, number, num_groups, index,
-                    list(groupkeys()), file=log_file)
-            exit('Group Requirements')  # Looks like these happen only inside subsets (???)
+                    list(groupkeys()), file=debug_file)
 
         case 'rule_complete':
-          print(institution, requirement_id, 'rule_complete', file=sys.stderr)
+          print(institution, requirement_id, 'rule_complete', file=log_file)
           # is_complete may be T/F
           # rule_tag is followed by a name-value pair. If the name is RemarkJump, the value is a URL
           # for more info. Otherwise, the name-value pair is used to control formatting of the rule.
           # This happens only inside conditionals, where the idea will be to look at what whether
           # it's in the true or false leg, what the condition is, and whether this is True or False
           # to infer what requirement must or must not be met. We're looking at YOU, Lehman ACC-BA.
-          print(f'{institution} {requirement_id} Rule Complete:', context_list, file=log_file)
+          print(f'{institution} {requirement_id} Rule Complete:', context_list, file=todo_file)
           return
 
         case 'course_list':
-          print(institution, requirement_id, 'course_list', file=sys.stderr)
+          print(institution, requirement_id, 'course_list', file=todo_file)
           return
 
         case 'group_requirement':
-          print(institution, requirement_id, 'group_requirement', file=sys.stderr)
+          print(institution, requirement_id, 'group_requirement', file=todo_file)
           return
 
         case 'subset':
+          print(institution, requirement_id, 'group_requirement', file=log_file)
           # Process the valid rules in the subset
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
@@ -396,14 +407,17 @@ def traverse_body(node: Any, context_list: list) -> None:
             match key:
 
               case 'block':
+                print(f'{institution} {requirement_id}" Subset block', file=todo_file)
                 for block_dict in rule:
                   assert isinstance(block_dict, dict)
                 return
 
               case 'blocktype':
-                pass
+                print(f'{institution} {requirement_id}" Subset blocktype', file=todo_file)
+                return
 
               case 'class_credit_list' | 'conditional' | 'course_lists' | 'group_requirements':
+                print(f'{institution} {requirement_id} Subset {key}', file=log_file)
                 assert isinstance(rule, list)
                 for rule_dict in rule:
                   try:
@@ -419,6 +433,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 return
 
               case 'copy_rules':
+                print(f'{institution} {requirement_id}" Subset copy_rules', file=todo_file)
                 assert isinstance(rule, dict)
                 return
 
@@ -453,22 +468,25 @@ def traverse_header(block_info: namedtuple) -> None:
   """ Extract program-wide qualifiers: MinGrade (but not MinGPA) and residency requirements,
   """
 
+  institution, requirement_id, *_ = (block_info)
   try:
     header_list = block_info.parse_tree['header_list']
   except KeyError:
-    write_log(block_info, f'No header list in parse tree')
+    print(f'{institution} {requirement_id}: No header list in parse tree', file=sys.stderr)
     return
 
   for header_item in header_list:
+
     if not isinstance(header_item, dict):
-      print(header_item, 'is not a dict')
+      print(header_item, 'is not a dict', file=sys.stderr)
+
     else:
       for key, value in header_item.items():
         match key:
           case 'header_class_credit':
             if label_str := value['label']:
-              write_log(block_info, f'Class/Credit label: {label_str}')
-
+              print(f'{institution} {requirement_id}: Class/Credit label: {label_str}',
+                    file=debug_file)
             min_classes = None if value['min_classes'] is None else int(value['min_classes'])
             min_credits = None if value['min_credits'] is None else float(value['min_credits'])
             max_classes = None if value['max_classes'] is None else int(value['max_classes'])
@@ -492,27 +510,30 @@ def traverse_header(block_info: namedtuple) -> None:
             block_info.class_credits = ' and '.join(class_credit_list)
 
           case 'conditional':
+            # There could be a block requirement and/or a class_credit requirement; perhaps others.
+            print(f'{institution} {requirement_id}: Conditional in header ignored', file=todo_file)
             pass
+
           case 'copy_rules':
+            print(f'{institution} {requirement_id}: Copy Rules in header ignored', file=debug_file)
             pass
           case 'header_lastres':
             pass
           case 'header_maxclass':
             # THERE WOULD BE A COURSE LIST HERE
+            print(f'{institution} {requirement_id}: Max Classes in header', file=todo_file)
             pass
 
           case 'header_maxcredit':
             # THERE ARE 641 OF THESE; THEY HAVE COURSE LISTS
-            # write_log(block_info, f'MaxCredit: {value}')
+            print(f'{institution} {requirement_id}: Max Credits in header', file=todo_file)
             pass
 
           case 'header_maxpassfail':
             pass
           case 'header_maxperdisc':
             # THERE WOULD BE A COURSE LIST HERE
-            pass
-
-          case 'header_maxterm':
+            print(f'{institution} {requirement_id}: Max PerDisc in header', file=todo_file)
             pass
 
           case 'header_maxtransfer':
@@ -528,9 +549,11 @@ def traverse_header(block_info: namedtuple) -> None:
 
           case 'header_minclass':
             # THERE WOULD BE A COURSE LIST HERE
+            print(f'{institution} {requirement_id}: Min Classes in header', file=todo_file)
             pass
           case 'header_mincredit':
             # THERE WOULD BE A COURSE LIST HERE
+            print(f'{institution} {requirement_id}: Min Credits in header', file=todo_file)
             pass
 
           case 'header_mingpa':
@@ -560,25 +583,13 @@ def traverse_header(block_info: namedtuple) -> None:
               case _:
                 print(f'Invalid minres {block_info}', file=sys.stderr)
 
-          case 'header_minterm':
-            pass
-          case 'noncourse':
-            pass
-          case 'optional':
-            pass
-          case 'proxy_advice':
-            pass
-          case 'remark':
-            pass
-          case 'rule_complete':
-            pass
-          case 'standalone':
-            pass
-          case 'header_share':
+          case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | 'proxy_advice' | \
+               'remark' | 'rule_complete' | 'standalone' | 'header_share':
+            # Intentionally ignored
             pass
 
           case _:
-            write_log(block_info, f'Unexpected {key} in header')
+            print(f'{institution} {requirement_id}: Unexpected {key} in header', file=sys.stderr)
 
   return
 
@@ -597,24 +608,24 @@ if __name__ == "__main__":
 
   empty_tree = "'{}'"
 
-  writer.writerow(['College',
-                   'Requirement ID',
-                   'Type',
-                   'Code',
-                   'Total',
-                   'Max Transfer',
-                   'Min Residency',
-                   'Min Grade',
-                   'Min GPA'])
+  programs_writer.writerow(['College',
+                            'Requirement ID',
+                            'Type',
+                            'Code',
+                            'Total',
+                            'Max Transfer',
+                            'Min Residency',
+                            'Min Grade',
+                            'Min GPA'])
 
-  mapper.writerow(['Institution',
-                   'Requirement ID',
-                   'Program',
-                   'Requirement',
-                   'Course ID',
-                   'Career',
-                   'Course',
-                   'With'])
+  map_writer.writerow(['Institution',
+                       'Requirement ID',
+                       'Program',
+                       'Requirement',
+                       'Course ID',
+                       'Career',
+                       'Course',
+                       'With'])
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
       if args.institution.upper() == 'ALL':
