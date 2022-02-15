@@ -29,6 +29,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#first_course.
+    def visitFirst_course(self, ctx:ReqBlockParser.First_courseContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#full_course.
     def visitFull_course(self, ctx:ReqBlockParser.Full_courseContext):
         return self.visitChildren(ctx)

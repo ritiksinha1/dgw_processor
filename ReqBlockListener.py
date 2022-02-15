@@ -44,6 +44,15 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#first_course.
+    def enterFirst_course(self, ctx:ReqBlockParser.First_courseContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#first_course.
+    def exitFirst_course(self, ctx:ReqBlockParser.First_courseContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#full_course.
     def enterFull_course(self, ctx:ReqBlockParser.Full_courseContext):
         pass
