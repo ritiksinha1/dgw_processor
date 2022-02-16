@@ -329,12 +329,12 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, (node[requirement_type]['institution'],
                     node[requirement_type]['requirement_id']))
               if cursor.rowcount != 1:
-                print(f'{institution} {requirement_id}: Copy Rules found {cursor.rowcount} current '
-                      f'blocks.', file=sys.stderr)
+                print(f'{institution} {requirement_id} Copy Rules found {cursor.rowcount} current '
+                      f'blocks.', file=log_file)
                 return
               row = cursor.fetchone()
               if f'{row.institution} {row.requirement_id}' in context_list:
-                print(f'{context_list[0]}: Circular Copy Rules', file=sys.stderr)
+                print(f'{context_list[0]} Circular Copy Rules', file=log_file)
               else:
                 process_block(row, context_list)
           return
@@ -384,7 +384,8 @@ def traverse_body(node: Any, context_list: list) -> None:
           # This happens only inside conditionals, where the idea will be to look at what whether
           # it's in the true or false leg, what the condition is, and whether this is True or False
           # to infer what requirement must or must not be met. We're looking at YOU, Lehman ACC-BA.
-          print(f'{institution} {requirement_id} Rule Complete:', context_list, file=todo_file)
+
+          print(f'{institution} {requirement_id} rule_complete:', file=todo_file)
           return
 
         case 'course_list':
@@ -551,6 +552,7 @@ def traverse_header(block_info: namedtuple) -> None:
             # THERE WOULD BE A COURSE LIST HERE
             print(f'{institution} {requirement_id}: Min Classes in header', file=todo_file)
             pass
+
           case 'header_mincredit':
             # THERE WOULD BE A COURSE LIST HERE
             print(f'{institution} {requirement_id}: Min Credits in header', file=todo_file)
@@ -678,7 +680,7 @@ if __name__ == "__main__":
                        (institution, block_type, block_value))
 
       suffix = '' if cursor.rowcount == 1 else 's'
-      print(f'{cursor.rowcount} parse tree{suffix}')
+      print(f'{cursor.rowcount:,} parse tree{suffix}')
       for row in cursor:
         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
           continue
