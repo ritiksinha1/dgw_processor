@@ -1002,15 +1002,19 @@ def header_minterm(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def noncourse(ctx, institution, requirement_id):
   """
-      noncourse       : NUMBER NONCOURSE LP expression RP label?;
+      noncourse       : NUMBER NONCOURSE (LP expression RP)? label?;
   """
   if DEBUG:
     print(f'*** noncourse({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
   return_dict = {'label': get_label(ctx),
-                 'number': ctx.NUMBER().getText(),
-                 'expression': ctx.expression().getText()}
+                 'number': ctx.NUMBER().getText()}
+
+  try:
+    return_dict['expression'] = ctx.expression().getText()
+  except AttributeError:
+    return_dict['expression'] = None
 
   return {'noncourse': return_dict}
 

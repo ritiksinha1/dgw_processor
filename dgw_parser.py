@@ -24,6 +24,7 @@ from psycopg.rows import namedtuple_row
 
 from catalogyears import catalog_years
 from dgw_filter import dgw_filter
+from scriberror import ScribeError
 from dgw_handlers import dispatch
 from quarantine_manager import QuarantineManager
 
@@ -32,12 +33,6 @@ DEBUG = os.getenv('DEBUG_PARSER')
 sys.setrecursionlimit(10**6)
 
 quarantined_dict = QuarantineManager()
-
-
-# Parser Exceptions: syntax errors and timeouts
-# -------------------------------------------------------------------------------------------------
-class ScribeError(Exception):
-  pass
 
 
 # Replacement for ANTLR Error listener
@@ -274,16 +269,16 @@ if __name__ == '__main__':
 
           try:
             error_msg = parse_tree['error'].strip('\n')
-            if 'Timeout in error_msg':
-              print(' Timeout', end='')
+            if 'Timeout' in error_msg:
+              print(' Timeout      ', end='')
             elif 'Quarantine' in error_msg:
-              print(' Quarantined', end='')
+              print(' Quarantined  ', end='')
             else:
-              print(f' Error:      ', end='')
+              print(f' Error       ', end='')
             print(f'{row.institution} {row.requirement_id} Error: {error_msg}', file=log_file)
 
           except KeyError:
-            print(f'    OK      ', end='')
+            print(f'    OK         ', end='')
             print(f'{row.institution} {row.requirement_id} OK', file=log_file)
 
     print(f'{current_institution} took {(time.time() - institution_start):,.1f} sec',

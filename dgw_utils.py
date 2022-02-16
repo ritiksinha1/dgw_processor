@@ -15,6 +15,7 @@ from typing import List, Set, Dict, Tuple, Optional, Union, Any
 from psycopg.rows import namedtuple_row
 
 import dgw_handlers
+from scriberror import ScribeError
 
 DEBUG = os.getenv('DEBUG_UTILS')
 
@@ -24,12 +25,6 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
     cursor.execute('select code, name from cuny_institutions')
     college_names = {row.code: row.name for row in cursor.fetchall()}
 conn.close()
-
-
-# Class ScribeError()
-# -------------------------------------------------------------------------------------------------
-def ScribeError(Exception):
-  pass
 
 
 # _with_clause()
@@ -330,8 +325,13 @@ discipline      : symbol
     if catalog_number == '@':
       discipline = '@'
     else:
+      print('\n', dir(first_course), '\n')
+      for child in first_course.getChildren():
+        print(class_name(child), child.getText())
+      print('end')
       raise ScribeError(f'Invalid first course item, “{catalog_number}”, at '
                         f'{context_path(first_course)}')
+
   try:
     with_list = first_course.with_clause()
     for with_ctx in with_list:
