@@ -126,7 +126,6 @@ def format_blocktype(blocktype_arg: Any) -> str:
 def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
   """
   """
-
   if isinstance(class_credit_arg, list):
     if len(class_credit_arg) > 1:
       return '<p class="error"> More than one class/credit requirement not expected.</p>'
@@ -167,7 +166,8 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
   try:
     if display_str := class_credit_dict['display']:
       class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
-      print('Examine this display_str in format_class_credit. Is it student-specific?:', display_str)
+      print('Examine this display_str in format_class_credit. Is it student-specific?:',
+            display_str)
       exit()
   except KeyError:
     pass
@@ -187,7 +187,7 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     print()
     print(class_credit_dict)
     exit()
-  except KeyError:
+  except KeyError as ke:
     pass
 
   if summary:
@@ -586,5 +586,5 @@ def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
   try:
     return _dispatch_table[dict_key](rule_dict)
   except KeyError as ke:
-    # print(f'No _dispatch_table[{ke}]', file=sys.stderr)
+    # ++print(f'No _dispatch_table[{ke}]', file=sys.stderr)
     return None
