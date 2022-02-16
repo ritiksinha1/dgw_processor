@@ -64,6 +64,11 @@ class QuarantineManager(dict):
         dict entry, insert it into the dict; update the CSV file, and return the inserted entry as
         a dict.
     """
+    assert len(k) == 2, f'Key should be (institution, requirement_id): {k} received'
+    if not isinstance(k, _Key):
+      # We can deal with that
+      k = _Key._make(k)
+
     assert len(v) == 2, f'Two strings (explanation, can_ellucian) expected; {len(v)} received.'
     global _quarantined_dict
     with psycopg.connect('dbname=cuny_curriculum') as conn:
@@ -122,19 +127,16 @@ class QuarantineManager(dict):
 # Testing/Managing
 # -------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
-  """ View the dict, with command to toggle whether a test block (Baruch 185) is quarantined or not.
-      2022-02-13: new feature to make the parse_trees show all quarantined parse_trees correctly.
-      This is just a fixup for some accidental dgw_parser runs that overwrote the error messages.
+  """ Accept commands for viewing/adding blocks to the quarantine list.
   """
   quarantined_dict = QuarantineManager()
   if len(sys.argv) > 1:
     print(quarantined_dict.explanation((sys.argv[1], sys.argv[2])))
     exit()
-  # (BAR01, RA000185) is used for testing.
-  test_key = _Key._make(('BAR01', 'RA000185'))
+
   choice = 'd'
   try:
-    while choice.lower()[0] in ['d', 'f', 'r', 't', 'w']:
+    while choice.lower()[0] in ['a', 'd', 'f', 'w']:
 
       if choice.lower().startswith('f'):
         # Display the file
@@ -148,18 +150,6 @@ if __name__ == '__main__':
         for key, value in quarantined_dict.items():
           print(f'{key.institution}, {key.requirement_id}: '
                 f'{quarantined_dict.explanation((key.institution, key.requirement_id))}')
-
-      elif choice.lower().startswith('r'):
-        # Emit commands for re-parsing all quarantined blocks
-        for key in quarantined_dict.keys():
-          print(f'dgw_parser.py -i {key[0]} -ra {key[1]} -q')
-
-      elif choice.lower().startswith('t'):
-        # Toggle the quarantinedness of the sample block
-        if quarantined_dict.is_quarantined(test_key):
-          del quarantined_dict[test_key]
-        else:
-          quarantined_dict[test_key] = ['Because I said so', 'Unknown']
 
       elif choice.lower().startswith('w'):
         with psycopg.connect('dbname=cuny_curriculum') as conn:
@@ -175,15 +165,23 @@ if __name__ == '__main__':
               """, key)
               assert cursor.rowcount == 1
               print(f'{institution} {requirement_id}')
+      elif choice.lower().startswith('a'):
+        try:
+          # add institution requirement_id reason...
+          cmd, institution, requirement_id, *reason = choice.split()
+          institution = institution[0:3].upper() + '01'
+          requirement_id = int(requirement_id.lower().strip('ra'))
+          requirement_id = f'RA{requirement_id:06}'
+          reason = ' '.join(reason)
+          key = (institution, requirement_id)
+          if quarantined_dict.is_quarantined(key):
+            print(f'\n{institution} {requirement_id} is already quarantined')
+          else:
+            quarantined_dict[key] = [reason, 'unknown']
+        except Exception:
+          print('Command line deficiency detected')
 
-      # show the status of the test block
-      if quarantined_dict.is_quarantined(test_key):
-        print(f'---\n({test_key.institution}, {test_key.requirement_id}) IS quarantined:',
-              quarantined_dict[test_key])
-      else:
-        print(f'---\n({test_key.institution}, {test_key.requirement_id}) is NOT quarantined')
-
-      choice = input('dict | file | redo | toggle | write: ')
+      choice = input('add | dict | file | write: ')
 
   except IndexError as ie:
     exit()

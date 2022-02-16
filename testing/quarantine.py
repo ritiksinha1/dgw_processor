@@ -16,8 +16,8 @@ from quarantine_manager import QuarantineManager
 
 quarantined_dict = QuarantineManager()
 
-# Intengrity Check: the rows in the quarantined_dict must match the files in the test_data.quarantine
-# dir.
+# Intengrity Check: the rows in the quarantined_dict must match the files in the
+# test_data.quarantine dir.
 quarantine_dir = Path('./test_data.quarantine')
 # for file in quarantine_dir.glob('*'):
 #   institution, requirement_id, block_type = file.name.split('_')
@@ -27,7 +27,7 @@ quarantine_dir = Path('./test_data.quarantine')
 #   institution, requirement_id, block_type = (key + (value[0],))
 #   if not Path(quarantine_dir, f'{institution}_{requirement_id}_{block_type}').is_file():
 #     sys.exit(f'Fix quarantines: {institution}_{requirement_id}_{block_type} is not in '
-             # f'./test_data.quarantine')
+#              f'./test_data.quarantine')
 
 # Now test that the test data hasn't already been quarantined
 try:
