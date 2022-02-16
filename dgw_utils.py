@@ -325,10 +325,6 @@ discipline      : symbol
     if catalog_number == '@':
       discipline = '@'
     else:
-      print('\n', dir(first_course), '\n')
-      for child in first_course.getChildren():
-        print(class_name(child), child.getText())
-      print('end')
       raise ScribeError(f'Invalid first course item, “{catalog_number}”, at '
                         f'{context_path(first_course)}')
 
