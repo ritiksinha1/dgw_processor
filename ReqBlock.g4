@@ -65,9 +65,8 @@ body        : body_rule* ;
  *
  * The trick is to determine where each type of bracket might appear.
  */
-course_list     : first_course (and_list | or_list)? (except_list | include_list)* proxy_advice?;
-first_course    : area_start? full_course area_end? ;
-full_course     : discipline catalog_number with_clause*;
+course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
+full_course     : discipline catalog_number with_clause*; //  Used in expressions (which one(s)?)
 course_item     : area_start? discipline? catalog_number with_clause* area_end?;
 and_list        : (list_and area_end? course_item)+ ;
 or_list         : (list_or area_end? course_item)+ ;

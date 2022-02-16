@@ -36,14 +36,14 @@ quarantined_dict = QuarantineManager()
 
 # Parser Exceptions: syntax errors and timeouts
 # -------------------------------------------------------------------------------------------------
-class DGWError(Exception):
+class ScribeError(Exception):
   pass
 
 
 # Replacement for ANTLR Error listener
 class DGW_ErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise DGWError(f'Syntax Error on line {line}, column {column}')
+        raise ScribeError(f'Syntax Error on line {line}, column {column}')
 
     def reportAmbiguity(self, recognizer, dfa, startIndex, stopIndex, exact, ambigAlts, configs):
         pass  # print(f'Ambiguity between {startIndex} and {stopIndex}')
@@ -63,7 +63,7 @@ def timeout_manager(seconds: int):
 
   def alarm_handler(signum, frame):
     suffix = '' if seconds == 1 else 's'
-    raise DGWError(f'Timeout after {seconds} second{suffix}')
+    raise ScribeError(f'Timeout after {seconds} second{suffix}')
 
   signal.signal(signal.SIGALRM, alarm_handler)
   signal.alarm(seconds)
@@ -133,7 +133,7 @@ def parse_block(institution: str,
 
       parse_tree['header_list'] = header_list
       parse_tree['body_list'] = body_list
-    except (DGWError, ValueError) as err:
+    except (ScribeError, ValueError) as err:
       parse_tree = {'error': f'{err}'}
 
     elapsed_time = round((time.time() - start_time), 3)

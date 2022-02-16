@@ -26,6 +26,12 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
 conn.close()
 
 
+# Class ScribeError()
+# -------------------------------------------------------------------------------------------------
+def ScribeError(Exception):
+  pass
+
+
 # _with_clause()
 # -------------------------------------------------------------------------------------------------
 def _with_clause(ctx):
@@ -293,11 +299,12 @@ discipline      : symbol
                 | IS;
   """
   if DEBUG:
-    print(f'*** get_scribed_courses({class_name(first_course)}, {other_courses} list items)',
-          file=sys.stderr)
+    print(f'\n*** get_scribed_courses({class_name(first_course)}, {class_name(other_courses)})',
+          end='', file=sys.stderr)
 
   try:
-    assert class_name(first_course) == 'Course_item', (f'Assertion Error: {class_name(ctx)} is not '
+    assert class_name(first_course) == 'Course_item', (f'Assertion Error: '
+                                                       f'{class_name(first_course)} is not '
                                                        f'Course_item in get_scribed_courses')
     if other_courses is not None:
       assert class_name(other_courses).endswith('_list'), (f'Other courses is not And_list or '
@@ -309,17 +316,22 @@ discipline      : symbol
   # The list of (discipline: str, catalog_number: str, with_clause: str) tuples to return.
   scribed_courses = []
 
-  # The first_course at the start of the list has to start with both a discipline and catalog
-  # number, but sometimes just a wildcard is given. It may be preceded by an area_start token.
   discipline, catalog_number, with_clause = (None, None, None)
-  catalog_number = first_course.catalog_number().getText().strip()
 
-  # The next two might be absent
+  # The first_course of the list should start with both a discipline and catalog number, but
+  # sometimes just a wildcard is given, which will be recognized as a catalog number. But if there
+  # is no discipline, and the catalog_number is not the wildcard (@), it's an error that the grammar
+  # didn't catch.
+
+  catalog_number = first_course.catalog_number().getText().strip()
   try:
     discipline = first_course.discipline().getText()
-  except AttributeError as ae:
-    discipline = '@'
-
+  except AttributeError:
+    if catalog_number == '@':
+      discipline = '@'
+    else:
+      raise ScribeError(f'Invalid first course item, “{catalog_number}”, at '
+                        f'{context_path(first_course)}')
   try:
     with_list = first_course.with_clause()
     for with_ctx in with_list:
