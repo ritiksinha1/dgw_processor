@@ -267,7 +267,7 @@ minres          : MINRES (num_classes | num_credits) display* proxy_advice? tag?
 minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 
-noncourse       : NUMBER NONCOURSE LP expression RP proxy_advice? rule_tag? label?;
+noncourse       : NUMBER NONCOURSE (LP expression RP)? proxy_advice? rule_tag? label?;
 num_classes     : NUMBER CLASS allow_clause?;
 num_credits     : NUMBER CREDIT allow_clause?;
 nv_pair         : SYMBOL '=' (STRING | SYMBOL);
@@ -393,7 +393,7 @@ MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss];
 MINSPREAD       : [Mm][Ii][Nn][Ss][Pp][Rr][Ee][Aa][Dd];
 MINTERM         : [Mm][Ii][Nn][Tt][Ee][Rr][Mm];
 
-NONCOURSE       : [Nn][Oo][Nn][Cc][Oo][Uu][Rr][Ss][Ee][Ss]?;
+NONCOURSE       : [Nn][Oo][Nn] CLASS;
 OPTIONAL        : [Oo][Pp][Tt][Ii][Oo][Nn][Aa][Ll];
 OF              : [Oo][Ff];
 PROXY_ADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee];
