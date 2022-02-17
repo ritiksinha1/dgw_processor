@@ -128,7 +128,8 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
   """
   if isinstance(class_credit_arg, list):
     if len(class_credit_arg) > 1:
-      return '<p class="error"> More than one class/credit requirement not expected.</p>'
+      print(f'Multiple class_credit requirements not expected {class_credit_arg}', file=sys.stderr)
+      return '<p class="error"> Multiple class/credit requirements not expected.</p>'
     else:
       class_credit_dict = class_credit_arg[0]
   else:
@@ -167,16 +168,15 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     if display_str := class_credit_dict['display']:
       class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
       print('Examine this display_str in format_class_credit. Is it student-specific?:',
-            display_str)
-      exit()
+            display_str, file=sys.stderr)
   except KeyError:
     pass
 
   try:
     # print('dispatching body qualifiers')
     # Qualifiers: Expect list of html paragraphs, but it might be empty
-    if qualifiers_str := dispatch_body_qualifiers(class_credit_dict):
-      class_credit_str += '\n'.join(qualifiers_str)
+    if qualifiers_list := dispatch_body_qualifiers(class_credit_dict):
+      class_credit_str += '\n'.join(qualifiers_list)
     # print('ok so far')
     # If there is a list of courses, it gets shown as a display element.
     if courses_str := format_utils.format_course_list(class_credit_dict['course_list'],
@@ -184,7 +184,8 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
       class_credit_str += courses_str
     # print('no prob w/ class_credit_dict')
   except TypeError as te:
-    print()
+    # This isn't supposed to happen
+    print(te)
     print(class_credit_dict)
     exit()
   except KeyError as ke:

@@ -167,7 +167,7 @@ def dict_to_html(info: dict, section=None) -> str:
     if key[0:3].lower() in ['max', 'min', 'num']:
       numerics += f'<p><strong>{key.replace("_", " ").title()}: </strong>{value}</p>'
     if numerics:
-      print('xxxx numerics not shown', numerics)
+      print(f'Unexpected numerics item in {key}:', numerics, file=sys.stderr)
 
     # course_list part of a multi-key dict
     course_list = ''

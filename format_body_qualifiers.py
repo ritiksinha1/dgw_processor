@@ -20,7 +20,6 @@
 import os
 import sys
 
-from pprint import pprint
 from traceback import print_stack
 from typing import Any
 
@@ -167,8 +166,6 @@ def format_minclass(minclass_dict: dict) -> str:
     return_str = f'<p>At least  {number} class{suffix} required'
     try:
       course_list_str = format_course_list(minclass_dict['courses']['course_list'])
-      print(course_list_str)
-      exit()
     except KeyError:
       return_str += '.</p>'
   except ValueError as ve:
@@ -411,7 +408,8 @@ def dispatch_body_qualifiers(node: dict) -> list:
       qualifier_dict = node[qualifier]
       if qualifier in handled_qualifiers:
         # print('*** qualifier:', qualifier)
-        qualifier_strings.append(_dispatch_qualifier(qualifier, qualifier_dict))
+        if qualifier_str := _dispatch_qualifier(qualifier, qualifier_dict):
+          qualifier_strings.append(qualifier_str)
       else:
         print(f'Unhandled body qualifier: {qualifier_dict}', file=sys.stderr)
 
