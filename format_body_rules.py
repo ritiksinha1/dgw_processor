@@ -532,6 +532,14 @@ def format_subset(subset_dict: dict) -> str:
   except KeyError:
     pass
 
+# Course lists
+  try:
+    course_lists = subset_dict['course_lists']
+    for course_list in course_lists:
+      subset_str += format_utils.format_course_list(course_list['course_list'])
+  except KeyError:
+    pass
+
 # this leaves conditional, group, and class_credit_list
   try:
     if conditioinal_dict := subset_dict['conditinal']:
