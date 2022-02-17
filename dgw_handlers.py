@@ -1313,7 +1313,6 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
     print(f'No dispatch method for “{key_error}”{nested}: '
           f'{institution=}; {requirement_id=}; {which_part=}', file=sys.stderr)
     print_stack()
-    exit('xxxx')
     return {'Dispatch_Error':
             {'method': f'“{key_error}”{nested}',
              'institution': institution,
