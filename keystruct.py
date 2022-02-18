@@ -147,9 +147,10 @@ def get_restrictions(node: dict) -> str:
   assert isinstance(node, dict)
 
   # The maxtransfer restriction puts a limit on the number of classes or credits that can be
-  # transferred, possibly with a list of disciplines for which the limit applies.
+  # transferred, possibly with a list of "types" for which the limit applies. I think the type names
+  # have to come from a dgw table somewhere.
   try:
-    max_xfer_str = 'Max xfer '
+    max_xfer_str = ''
     transfer_dict = node.pop('maxtransfer')
     number = float(transfer_dict['number'])
     match transfer_dict['class_or_credit']:
@@ -165,18 +166,20 @@ def get_restrictions(node: dict) -> str:
     except KeyError:
       pass
   except KeyError:
-    max_xfer_restriction = 'Xfer OK'
+    max_xfer_str = None
 
   # The mingrade restriction puts a limit on the minimum required grade for all courses in a course
   # list. It’s a float (like a GPA) in Scribe, but is returned as a letter grade here.
   try:
     mingpa_dict = node.pop('mingrade')
     number = float(mingpa_dict['number'])
-    min_grade_str = f'At least {letter_grade(number)}'
+    min_grade_str = letter_grade(number)
   except KeyError:
-    min_grade_str = 'Any grade'
-
-  return f'[{min_grade_str}; {max_xfer_str}]'
+    min_grade_str = None
+  if max_xfer_str or min_grade_str:
+    return f'[{min_grade_str}] [{max_xfer_str}]'
+  else:
+    return None
 
 
 # process_block()
@@ -412,11 +415,19 @@ def traverse_body(node: Any, context_list: list) -> None:
     requirement_type = node_keys[0]
     requirement_value = node[requirement_type]
     if isinstance(requirement_value, dict):
-      if requirement_type not in ['conditional', 'copy_rules']:
-        try:
-          requirement_name = node[requirement_type].pop('label')
-        except KeyError:
-          requirement_name = ''
+      try:
+        requirement_name = node[requirement_type].pop('label')
+      except KeyError:
+        requirement_name = None
+      requirement_restrictions = get_restrictions(node)
+      if requirement_name is None and requirement_restrictions is None:
+        requirement_context = []
+      else:
+        if requirement_name is None:
+          requirement_name = 'No Name'
+        if requirement_restrictions is None:
+          requirement_restrictions = '[None] [None]'
+        requirement_context = [f'{requirement_name} {requirement_restrictions}']
 
       match requirement_type:
 
@@ -468,7 +479,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           try:
             if course_list := node[requirement_type]['course_list']:
               map_courses(institution, requirement_id, title,
-                          context_list + [requirement_name], course_list)
+                          context_list + requirement_context, course_list)
           except KeyError:
             # Course List is an optional part of ClassCredit
             return
@@ -574,8 +585,11 @@ def traverse_body(node: Any, context_list: list) -> None:
           # Process the valid rules in the subset
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
-          restrictions = get_restrictions(requirement_value)
-
+          subset_name = requirement_name
+          if (subset_restrictions := get_restrictions(requirement_value)) is None:
+            subset_restrictions = '[None] [None]'
+          subset_context = [f'{subset_name} {subset_restrictions}']
+          print(f'Subset context: {subset_context}')
           for key, rule in node[requirement_type].items():
 
             match key:
@@ -598,12 +612,12 @@ def traverse_body(node: Any, context_list: list) -> None:
                     local_requirement_name = rule_dict.pop('label')
                   except KeyError:
                     local_requirement_name = None
-                  local_context = [] if requirement_name == '' else [requirement_name]
-                  if local_requirement_name:
-                    local_context.append(local_requirement_name + restrictions)
-                  # if len(local_context) == 0:
-                  #   print(f'{institution} {requirement_id}: Rule with no name.', file=sys.stderr)
-                  traverse_body(rule_dict, context_list + local_context)
+                  local_requirement_restrictions = get_restrictions(rule_dict)
+                  if local_requirement_name is None and local_requirement_restrictions is None:
+                    local_context = []
+                  else:
+                    local_context = [f'{local_requirement_name} {local_requirement_restrictions}']
+                  traverse_body(rule_dict, context_list + subset_context + local_context)
                 return
 
               case 'copy_rules':
