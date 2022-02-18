@@ -19,7 +19,6 @@ from quarantine_manager import QuarantineManager
 
 quarantine_dict = QuarantineManager()
 
-Restrictions = namedtuple('Restrictions', 'min_grade_restriction, max_transfer_restriction')
 BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type block_value title '
                         'parse_tree class_credits max_transfer min_residency min_grade min_gpa')
 
@@ -31,16 +30,16 @@ BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type bloc
       requirements_file:  Spreadsheet of program requirement names
       mapping_file        Spreadsheet of course-to-requirements mappings
 
-    During development, the requirements file doesn't exist: write_map() writes the program name
-    with each mapped course to the mapping file.
 """
 debug_file = open(f'{__file__.replace(".py", ".debug.txt")}', 'w')
 log_file = open(f'{__file__.replace(".py", ".log")}', 'w')
 todo_file = open(f'{__file__.replace(".py", ".todo.txt")}', 'w')
-programs_file = open(f'{__file__.replace(".py", ".progs.csv")}', 'w')
-mapping_file = open(f'{__file__.replace(".py", ".maps.csv")}', 'w')
+programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w')
+requirements_file = open(f'{__file__.replace(".py", ".requirements.csv")}', 'w')
+mapping_file = open(f'{__file__.replace(".py", ".course_mappings.csv")}', 'w')
 
 programs_writer = csv.writer(programs_file)
+requirements_writer = csv.writer(requirements_file)
 map_writer = csv.writer(mapping_file)
 
 
@@ -51,6 +50,10 @@ def dict_factory():
 
 
 courses_by_institution = defaultdict(dict_factory)
+requirement_keys = []
+
+
+# =================================================================================================
 
 
 # letter_grade()
@@ -90,14 +93,37 @@ def write_log(block_info: namedtuple, message: str):
         f'{block_info.block_value:10}', message, file=log_file)
 
 
-# write_map()
+# map_courses()
 # -------------------------------------------------------------------------------------------------
-def write_map(institution, requirement_id, title, context_list: list, course_list: dict):
+def map_courses(institution: str, requirement_id: str, requirement_name: str, context_list: list,
+                course_list: dict):
   """ Write courses and their With clauses to the map file.
       Object returned by courses_cache():
         CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits career')
+
+      Each program requirement has a unique key based on institution, requirement_id, title, and
+      context list.
+
+Programs: Handled by process_block()
+Institution, Requirement ID, Type, Code, Total, Max Transfer, Min Residency, Min Grade, Min GPA
+
+Requirements: Handled here
+Institution, Requirement ID, Requirement Key, Name, Context, Grade Restriction, Transfer Restriction
+
+Course Mappings: Handled here
+Requirement Key, Course ID, Career, Course, With
+
   """
-  context_str = '\n'.join(context_list)
+  # Make the requirement_key a “nice hexadecimal string” (a lot of this is dealing with negative
+  # hash values)
+  h = int(hash((institution, requirement_id, requirement_name) + tuple(context_list)))
+  mask = int(int((h.bit_length() + 3) / 4) * 'F', 16)  # enough hex digits to include leading bits
+  requirement_key = f'{(h & mask):0X}'
+  if requirement_key not in requirement_keys:
+    requirement_keys.append(requirement_key)
+    requirements_writer.writerow([institution, requirement_id, requirement_key, requirement_name,
+                                  '\n'.join(context_list[2:])])
+
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
       # Unless there is a With clause, skip "any course" wildcards (@ @)
@@ -107,14 +133,14 @@ def write_map(institution, requirement_id, title, context_list: list, course_lis
       if with_clause is not None:
         with_clause = f'With ({with_clause})'
       for key, value in courses_cache((institution, discipline, catalog_number)).items():
-        map_writer.writerow([institution, requirement_id, title, context_str,
+        map_writer.writerow([requirement_key,
                              f'{value.course_id:06}:{value.offer_nbr}', value.career,
                              f'{key}: {value.title}', with_clause])
 
 
 # get_restrictions()
 # -------------------------------------------------------------------------------------------------
-def get_restrictions(node: dict) -> namedtuple:
+def get_restrictions(node: dict) -> str:
   """ Return qualifiers that might affect transferability.
   """
 
@@ -123,44 +149,49 @@ def get_restrictions(node: dict) -> namedtuple:
   # The maxtransfer restriction puts a limit on the number of classes or credits that can be
   # transferred, possibly with a list of disciplines for which the limit applies.
   try:
+    max_xfer_str = 'Max xfer '
     transfer_dict = node.pop('maxtransfer')
     number = float(transfer_dict['number'])
     match transfer_dict['class_or_credit']:
       case 'class':
         suffix = 'es' if number != 1 else ''
-        max_transfer_restriction = f'{int(number)} class{suffix}'
+        max_xfer_str += f'{int(number)} class{suffix}'
       case 'credit':
         suffix = 's' if number != 1.0 else ''
-        max_transfer_restriction = f'{number:0.1f} credit{suffix}'
+        max_xfer_str += f'{number:0.1f} credit{suffix}'
     try:
-      max_transfer_types = ','.join(transfer_dict['transfer_types'])
-      max_transfer_restriction += f' ({max_transfer_types})'
+      max_xfer_types = ', '.join(transfer_dict['transfer_types'])
+      max_xfer_str += f' of type {max_xfer_types}'
     except KeyError:
       pass
   except KeyError:
-    max_transfer_restriction = None
+    max_xfer_restriction = 'Xfer OK'
 
   # The mingrade restriction puts a limit on the minimum required grade for all courses in a course
   # list. It’s a float (like a GPA) in Scribe, but is returned as a letter grade here.
   try:
     mingpa_dict = node.pop('mingrade')
     number = float(mingpa_dict['number'])
-    min_grade_restriction = letter_grade(number)
+    min_grade_str = f'At least {letter_grade(number)}'
   except KeyError:
-    min_grade_restriction = None
+    min_grade_str = 'Any grade'
 
-  return Restrictions._make([min_grade_restriction, max_transfer_restriction])
+  return f'[{min_grade_str}; {max_xfer_str}]'
 
 
 # process_block()
 # -------------------------------------------------------------------------------------------------
 def process_block(row: namedtuple, context_list: list = []):
-  """ Given (parts of) a requirement_blocks row, traverse the header and body lists.
+  """ Given (parts of) a row from the requirement_blocks db table, traverse the header and body
+      lists.
   """
   # Augment db info with default values for class_credits max_transfer min_residency min_grade
   # min_gpa
   (institution, requirement_id, block_type, block_value, title, parse_tree) = row
   block_info = BlockInfo._make(row + ('', '', '', '', ''))
+
+  # traverse_header() is a one-pass procedure that extracts the header_list from the parse_tree that
+  # it gets from the block_info passed to it.
   try:
     traverse_header(block_info)
 
@@ -177,15 +208,158 @@ def process_block(row: namedtuple, context_list: list = []):
     print(f'No header_list for', institution, requirement_id, block_type, block_value,
           title, file=sys.stderr)
 
+  # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
+  # to be primed with the root node of the body tree: the body_list. process_block() itself may be
+  # invoked from within traverse_body() to handle block and copy_rules constructs.
   try:
     body_list = block_info.parse_tree['body_list']
 
     # Use context_list[0] for debugging; context_list[1] is the name of the block
-    traverse_body(body_list, context_list + [f'{institution} {requirement_id}', title])
+    local_context_list = [f'{institution} {requirement_id}',
+                          f'{title}']
+    traverse_body(body_list, context_list + local_context_list)
 
   except KeyError as ke:
     print('No body_list for', institution, requirement_id, block_type, block_value, title,
           file=sys.stderr)
+
+
+# traverse_header()
+# -------------------------------------------------------------------------------------------------
+def traverse_header(block_info: namedtuple) -> None:
+  """ Extract program-wide qualifiers: MinGrade (but not MinGPA) and residency requirements,
+  """
+
+  institution, requirement_id, *_ = (block_info)
+  try:
+    header_list = block_info.parse_tree['header_list']
+  except KeyError:
+    print(f'{institution} {requirement_id}: No header list in parse tree', file=sys.stderr)
+    return
+
+  for header_item in header_list:
+
+    if not isinstance(header_item, dict):
+      print(header_item, 'is not a dict', file=sys.stderr)
+
+    else:
+      for key, value in header_item.items():
+        match key:
+
+          case 'header_class_credit':
+            if label_str := value['label']:
+              print(f'{institution} {requirement_id}: Class/Credit label: {label_str}',
+                    file=debug_file)
+            min_classes = None if value['min_classes'] is None else int(value['min_classes'])
+            min_credits = None if value['min_credits'] is None else float(value['min_credits'])
+            max_classes = None if value['max_classes'] is None else int(value['max_classes'])
+            max_credits = None if value['max_credits'] is None else float(value['max_credits'])
+            assert not (min_credits and max_credits is None), f'{min_credits} {max_credits}'
+            assert not (min_credits is None and max_credits), f'{min_credits} {max_credits}'
+            assert not (min_classes and max_classes is None), f'{min_classes} {max_classes}'
+            assert not (min_classes is None and max_classes), f'{min_classes} {max_classes}'
+            class_credit_list = []
+            if min_classes and max_classes:
+              if min_classes == max_classes:
+                class_credit_list.append(f'{max_classes} classes')
+              else:
+                class_credit_list.append(f'{min_classes}-{max_classes} classes')
+
+            if min_credits and max_credits:
+              if min_credits == max_credits:
+                class_credit_list.append(f'{max_credits:.1f} credits')
+              else:
+                class_credit_list.append(f'{min_credits:.1f}-{max_credits:.1f} credits')
+            block_info.class_credits = ' and '.join(class_credit_list)
+
+          case 'conditional':
+            # There could be a block requirement and/or a class_credit requirement; perhaps others.
+            print(f'{institution} {requirement_id} Conditional in header', file=todo_file)
+            pass
+
+          case 'copy_rules':
+            print(f'{institution} {requirement_id}: Copy Rules in header', file=todo_file)
+            pass
+
+          case 'header_lastres':
+            pass
+
+          case 'header_maxclass':
+            # THERE WOULD BE A COURSE LIST HERE
+            print(f'{institution} {requirement_id} Max Classes in header', file=todo_file)
+            pass
+
+          case 'header_maxcredit':
+            # THERE ARE 1357 OF THESE; THEY HAVE COURSE LISTS
+            print(f'{institution} {requirement_id} Max Credits in header', file=todo_file)
+            pass
+
+          case 'header_maxpassfail':
+            pass
+
+          case 'header_maxperdisc':
+            # THERE WOULD BE A COURSE LIST HERE
+            print(f'{institution} {requirement_id} Max PerDisc in header', file=todo_file)
+            pass
+
+          case 'header_maxtransfer':
+            if label_str := value['label']:
+              write_log(block_info, f'MaxTransfer label: {label_str}')
+            number = float(value['maxtransfer']['number'])
+            class_or_credit = value['maxtransfer']['class_or_credit']
+            if class_or_credit == 'credit':
+              block_info.max_transfer = f'{number:3.1f} credits'
+            else:
+              suffix = '' if int(number) == 1 else 'es'
+              block_info.max_transfer = f'{int(number):3} class{suffix}'
+
+          case 'header_minclass':
+            # THERE WOULD BE A COURSE LIST HERE
+            print(f'{institution} {requirement_id} Min Classes in header', file=todo_file)
+            pass
+
+          case 'header_mincredit':
+            # THERE WOULD BE A COURSE LIST HERE
+            print(f'{institution} {requirement_id} Min Credits in header', file=todo_file)
+            pass
+
+          case 'header_mingpa':
+            if label_str := value['label']:
+              write_log(block_info, f'MinGPA label: {label_str}')
+            mingpa = float(value['mingpa']['number'])
+            block_info.min_gpa = f'{mingpa:4.2f}'
+
+          case 'header_mingrade':
+            if label_str := value['label']:
+              write_log(block_info, f'MinGrade label: {label_str}')
+            block_info.min_grade = letter_grade(float(value['mingrade']['number']))
+
+          case 'header_minperdisc':
+            pass
+
+          case 'header_minres':
+            min_classes = value['minres']['min_classes']
+            min_credits = value['minres']['min_credits']
+            # There must be a better way to do an xor check ...
+            match (min_classes, min_credits):
+              case [None, None]:
+                print(f'Invalid minres {block_info}', file=sys.stderr)
+              case [None, credits]:
+                block_info.min_residency = f'{float(credits):.1f} credits'
+              case [classes, None]:
+                block_info.min_residency = f'{int(classes)} classes'
+              case _:
+                print(f'Invalid minres {block_info}', file=sys.stderr)
+
+          case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | 'proxy_advice' | \
+               'remark' | 'rule_complete' | 'standalone' | 'header_share':
+            # Intentionally ignored
+            pass
+
+          case _:
+            print(f'{institution} {requirement_id}: Unexpected {key} in header', file=sys.stderr)
+
+  return
 
 
 # traverse_body()
@@ -268,7 +442,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               if cursor.rowcount != number:
                 # HOW TO HANDLE THIS?
                 suffix = '' if cursor.rowcount == 1 else 's'
-                print(f'{institution} {requirement_id}: Block requirement found '
+                print(f'{institution} {requirement_id} Block requirement found '
                       f'{cursor.rowcount} row{suffix} ({number} needed)', file=todo_file)
                 return
               for row in cursor:
@@ -285,8 +459,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           suffix = '' if number == 1 else 's'
           req_type = node[requirement_type]['block_type']
           req_type = 'Concentration' if req_type.upper() == 'CONC' else req_type.title()
-          print(f'{institution} {requirement_id} “{requirement_name}”: {number} '
-                f'{req_type}{suffix} required.', file=todo_file)
+          print(f'{institution} {requirement_id} BlockType {req_type} in body', file=todo_file)
           return
 
         case 'class_credit':
@@ -294,8 +467,8 @@ def traverse_body(node: Any, context_list: list) -> None:
           # This is where course lists turn up, in general.
           try:
             if course_list := node[requirement_type]['course_list']:
-              write_map(institution, requirement_id, title,
-                        context_list + [requirement_name], course_list)
+              map_courses(institution, requirement_id, title,
+                          context_list + [requirement_name], course_list)
           except KeyError:
             # Course List is an optional part of ClassCredit
             return
@@ -350,8 +523,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
           try:
             if course_list := node[requirement_type]['course_list']:
-              write_map(institution, requirement_id, title,
-                        context_list + local_context_list, course_list)
+              map_courses(institution, requirement_id, title,
+                          context_list + local_context_list, course_list)
           except KeyError:
             # Can't have a Course List Rule w/o a course list
             print(f'{institution} {requirement_id}: Course List Rule w/o a Course List',
@@ -385,19 +558,19 @@ def traverse_body(node: Any, context_list: list) -> None:
           # it's in the true or false leg, what the condition is, and whether this is True or False
           # to infer what requirement must or must not be met. We're looking at YOU, Lehman ACC-BA.
 
-          print(f'{institution} {requirement_id} rule_complete:', file=todo_file)
+          print(f'{institution} {requirement_id} rule_complete in body', file=todo_file)
           return
 
         case 'course_list':
-          print(institution, requirement_id, 'course_list', file=todo_file)
+          print(institution, requirement_id, 'course_list in body', file=todo_file)
           return
 
         case 'group_requirement':
-          print(institution, requirement_id, 'group_requirement', file=todo_file)
+          print(institution, requirement_id, 'group_requirement in body', file=todo_file)
           return
 
         case 'subset':
-          print(institution, requirement_id, 'group_requirement', file=log_file)
+          print(institution, requirement_id, 'Subset', file=log_file)
           # Process the valid rules in the subset
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
@@ -408,13 +581,13 @@ def traverse_body(node: Any, context_list: list) -> None:
             match key:
 
               case 'block':
-                print(f'{institution} {requirement_id}" Subset block', file=todo_file)
+                print(f'{institution} {requirement_id} Subset block', file=todo_file)
                 for block_dict in rule:
                   assert isinstance(block_dict, dict)
                 return
 
               case 'blocktype':
-                print(f'{institution} {requirement_id}" Subset blocktype', file=todo_file)
+                print(f'{institution} {requirement_id} Subset blocktype', file=todo_file)
                 return
 
               case 'class_credit_list' | 'conditional' | 'course_lists' | 'group_requirements':
@@ -427,14 +600,14 @@ def traverse_body(node: Any, context_list: list) -> None:
                     local_requirement_name = None
                   local_context = [] if requirement_name == '' else [requirement_name]
                   if local_requirement_name:
-                    local_context.append(local_requirement_name)
+                    local_context.append(local_requirement_name + restrictions)
                   # if len(local_context) == 0:
                   #   print(f'{institution} {requirement_id}: Rule with no name.', file=sys.stderr)
                   traverse_body(rule_dict, context_list + local_context)
                 return
 
               case 'copy_rules':
-                print(f'{institution} {requirement_id}" Subset copy_rules', file=todo_file)
+                print(f'{institution} {requirement_id} Subset copy_rules', file=todo_file)
                 assert isinstance(rule, dict)
                 return
 
@@ -463,139 +636,6 @@ def traverse_body(node: Any, context_list: list) -> None:
     return
 
 
-# traverse_header()
-# -------------------------------------------------------------------------------------------------
-def traverse_header(block_info: namedtuple) -> None:
-  """ Extract program-wide qualifiers: MinGrade (but not MinGPA) and residency requirements,
-  """
-
-  institution, requirement_id, *_ = (block_info)
-  try:
-    header_list = block_info.parse_tree['header_list']
-  except KeyError:
-    print(f'{institution} {requirement_id}: No header list in parse tree', file=sys.stderr)
-    return
-
-  for header_item in header_list:
-
-    if not isinstance(header_item, dict):
-      print(header_item, 'is not a dict', file=sys.stderr)
-
-    else:
-      for key, value in header_item.items():
-        match key:
-          case 'header_class_credit':
-            if label_str := value['label']:
-              print(f'{institution} {requirement_id}: Class/Credit label: {label_str}',
-                    file=debug_file)
-            min_classes = None if value['min_classes'] is None else int(value['min_classes'])
-            min_credits = None if value['min_credits'] is None else float(value['min_credits'])
-            max_classes = None if value['max_classes'] is None else int(value['max_classes'])
-            max_credits = None if value['max_credits'] is None else float(value['max_credits'])
-            assert not (min_credits and max_credits is None), f'{min_credits} {max_credits}'
-            assert not (min_credits is None and max_credits), f'{min_credits} {max_credits}'
-            assert not (min_classes and max_classes is None), f'{min_classes} {max_classes}'
-            assert not (min_classes is None and max_classes), f'{min_classes} {max_classes}'
-            class_credit_list = []
-            if min_classes and max_classes:
-              if min_classes == max_classes:
-                class_credit_list.append(f'{max_classes} classes')
-              else:
-                class_credit_list.append(f'{min_classes}-{max_classes} classes')
-
-            if min_credits and max_credits:
-              if min_credits == max_credits:
-                class_credit_list.append(f'{max_credits:.1f} credits')
-              else:
-                class_credit_list.append(f'{min_credits:.1f}-{max_credits:.1f} credits')
-            block_info.class_credits = ' and '.join(class_credit_list)
-
-          case 'conditional':
-            # There could be a block requirement and/or a class_credit requirement; perhaps others.
-            print(f'{institution} {requirement_id}: Conditional in header ignored', file=todo_file)
-            pass
-
-          case 'copy_rules':
-            print(f'{institution} {requirement_id}: Copy Rules in header ignored', file=debug_file)
-            pass
-          case 'header_lastres':
-            pass
-          case 'header_maxclass':
-            # THERE WOULD BE A COURSE LIST HERE
-            print(f'{institution} {requirement_id}: Max Classes in header', file=todo_file)
-            pass
-
-          case 'header_maxcredit':
-            # THERE ARE 641 OF THESE; THEY HAVE COURSE LISTS
-            print(f'{institution} {requirement_id}: Max Credits in header', file=todo_file)
-            pass
-
-          case 'header_maxpassfail':
-            pass
-          case 'header_maxperdisc':
-            # THERE WOULD BE A COURSE LIST HERE
-            print(f'{institution} {requirement_id}: Max PerDisc in header', file=todo_file)
-            pass
-
-          case 'header_maxtransfer':
-            if label_str := value['label']:
-              write_log(block_info, f'MaxTransfer label: {label_str}')
-            number = float(value['maxtransfer']['number'])
-            class_or_credit = value['maxtransfer']['class_or_credit']
-            if class_or_credit == 'credit':
-              block_info.max_transfer = f'{number:3.1f} credits'
-            else:
-              suffix = '' if int(number) == 1 else 'es'
-              block_info.max_transfer = f'{int(number):3} class{suffix}'
-
-          case 'header_minclass':
-            # THERE WOULD BE A COURSE LIST HERE
-            print(f'{institution} {requirement_id}: Min Classes in header', file=todo_file)
-            pass
-
-          case 'header_mincredit':
-            # THERE WOULD BE A COURSE LIST HERE
-            print(f'{institution} {requirement_id}: Min Credits in header', file=todo_file)
-            pass
-
-          case 'header_mingpa':
-            if label_str := value['label']:
-              write_log(block_info, f'MinGPA label: {label_str}')
-            mingpa = float(value['mingpa']['number'])
-            block_info.min_gpa = f'{mingpa:4.2f}'
-
-          case 'header_mingrade':
-            if label_str := value['label']:
-              write_log(block_info, f'MinGrade label: {label_str}')
-            block_info.min_grade = letter_grade(float(value['mingrade']['number']))
-
-          case 'header_minperdisc':
-            pass
-          case 'header_minres':
-            min_classes = value['minres']['min_classes']
-            min_credits = value['minres']['min_credits']
-            # There must be a better way to do an xor check ...
-            match (min_classes, min_credits):
-              case [None, None]:
-                print(f'Invalid minres {block_info}', file=sys.stderr)
-              case [None, credits]:
-                block_info.min_residency = f'{float(credits):.1f} credits'
-              case [classes, None]:
-                block_info.min_residency = f'{int(classes)} classes'
-              case _:
-                print(f'Invalid minres {block_info}', file=sys.stderr)
-
-          case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | 'proxy_advice' | \
-               'remark' | 'rule_complete' | 'standalone' | 'header_share':
-            # Intentionally ignored
-            pass
-
-          case _:
-            print(f'{institution} {requirement_id}: Unexpected {key} in header', file=sys.stderr)
-
-  return
-
-
 # main()
 # -------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
@@ -610,24 +650,28 @@ if __name__ == "__main__":
 
   empty_tree = "'{}'"
 
-  programs_writer.writerow(['College',
+  programs_writer.writerow(['Institution',
                             'Requirement ID',
                             'Type',
-                            'Code',
+                            'Code Credits',
                             'Total',
                             'Max Transfer',
                             'Min Residency',
                             'Min Grade',
                             'Min GPA'])
 
-  map_writer.writerow(['Institution',
-                       'Requirement ID',
-                       'Program',
-                       'Requirement',
+  requirements_writer.writerow(['Insteitution',
+                                'Requirement ID',
+                                'Requirement Key',
+                                'Program Name',
+                                'Context'])
+
+  map_writer.writerow(['Requirement Key',
                        'Course ID',
                        'Career',
                        'Course',
                        'With'])
+
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
       if args.institution.upper() == 'ALL':
