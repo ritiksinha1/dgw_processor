@@ -216,15 +216,14 @@ def process_block(row: namedtuple, context_list: list = []):
   # invoked from within traverse_body() to handle block and copy_rules constructs.
   try:
     body_list = block_info.parse_tree['body_list']
-
-    # Use context_list[0] for debugging; context_list[1] is the name of the block
-    local_context_list = [f'{institution} {requirement_id}',
-                          f'{title}']
-    traverse_body(body_list, context_list + local_context_list)
-
   except KeyError as ke:
     print('No body_list for', institution, requirement_id, block_type, block_value, title,
           file=sys.stderr)
+
+  # Use context_list[0] for debugging; context_list[1] is the name of the block
+  local_context_list = [f'{institution} {requirement_id}',
+                        f'{title}']
+  traverse_body(body_list, context_list + local_context_list)
 
 
 # traverse_header()
@@ -525,7 +524,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'course_list_rule':
           print(institution, requirement_id, 'course_list_rule', file=log_file)
-          # There might be a remark associated with the course list
+          # There might be a remark associated with the course list (ignored, but could be added to
+          # context)
 
           try:
             if course_list := requirement_value['course_list']:
@@ -539,22 +539,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'group_requirements':
           # Group requirements is a list, so it should not show up here.
-          exit(f'{institution} {requirement_id} Error: unexpected group_requirements')
-
-          # # A list of group requirements, each of which contains a list of groups, each of which
-          # # contains a list of requirements, each of which contains a list of courses. :-)
-          # assert isinstance(node[requirement_type], list)
-          # for group_requirement in node[requirement_type]:
-          #   try:
-          #     label_str = group_requirement['label']
-          #     number = int(group_requirement['number'])
-          #     group_list = group_requirement['group_list']
-          #     num_groups = len(group_list)
-          #   except (KeyError, ValueError) as err:
-          #     exit(f'{institution} {requirement_id}: missing/invalid {err}\n{node}')
-          #   for index, group in enumerate(group_list):
-          #     print(institution, requirement_id, 'Group', label_str, number, num_groups, index,
-          #           list(groupkeys()), file=debug_file)
+          exit(f'{institution} {requirement_id} Error: unexpected group_requirements',
+               file=sys.stderr)
 
         case 'rule_complete':
           print(institution, requirement_id, 'rule_complete', file=log_file)
@@ -569,7 +555,8 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'course_list':
-          print(institution, requirement_id, 'course_list in body', file=todo_file)
+          print(institution, requirement_id, 'course_list in body', file=log_file)
+          map_courses(institution, requirement_id, title, context_list, requirement_value)
           return
 
         case 'group_requirement':
@@ -701,8 +688,46 @@ def traverse_body(node: Any, context_list: list) -> None:
                 return
 
               case 'copy_rules':
-                print(f'{institution} {requirement_id} Subset copy_rules', file=todo_file)
-                assert isinstance(rule, dict)
+                try:
+                  block_type = rule['block_type']
+                  block_value = rule['block_value']
+                except KeyError as ke:
+                  print(f'Missing key {ke} in Subset copy_rules')
+                else:
+                  with psycopg.connect('dbname=cuny_curriculum') as conn:
+                    with conn.cursor(row_factory=namedtuple_row) as cursor:
+                      cursor.execute("""
+                      select institution,
+                             requirement_id,
+                             block_type,
+                             block_value,
+                             title,
+                             parse_tree
+                        from requirement_blocks
+                       where institution = %s
+                         and block_type = %s
+                         and block_value = %s
+                         and period_stop ~* '^9'
+                      """, [institution, block_type, block_value])
+                      if cursor.rowcount != 1:
+                        print(f'{institution} {requirement_id} Subset copy_rules found '
+                              f'{cursor.rowcount} matching blocks',
+                              file=log_file)
+                      else:
+                        row = cursor.fetchone()
+                        parse_tree = row.parse_tree
+                        try:
+                          body_list = parse_tree['body_list']
+                        except KeyError as ke:
+                          print(f'{institution} {requirement_id} Subset copy_rules no body_list in '
+                                f'{row.requirement_id}', file=log_file)
+                        else:
+                          local_context = [f'{row.institution} {row.requirement_id}', row.title]
+                          traverse_body(body_list,
+                                        context_list + requirement_context + local_context)
+                          print(f'{institution} {requirement_id} Subset copy_rules found '
+                                f'{row.requirement_id}', file=log_file)
+
                 return
 
               case 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
@@ -824,7 +849,7 @@ if __name__ == "__main__":
           continue
 
         # If this is the first time this instution has been encountered, create a dict mapping
-        # courses to their course_id:offer_nbr values
+        # this institution's courses to their course_id:offer_nbr values
         if row.institution not in courses_by_institution:
           with conn.cursor(row_factory=namedtuple_row) as course_cursor:
             course_cursor.execute("""
