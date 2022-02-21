@@ -14,6 +14,7 @@ from recordclass import recordclass
 from psycopg.rows import namedtuple_row
 
 from coursescache import courses_cache
+from dgw_parser import parse_block
 
 from quarantine_manager import QuarantineManager
 
@@ -25,6 +26,7 @@ BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type bloc
 """ Output Files
       debug_file:         Info written during debugging (to avoid stdout/stderr)
       log_file:           Record of requirements processed successfully. Bigger is better!
+      fail_file:          Blocks that failed for one reason or another
       todo_file:          Record of known requirements not yet handled. Smaller is better!
       programs_file:      Spreadsheet of info about majors, minors, and concentrations
       requirements_file:  Spreadsheet of program requirement names
@@ -32,8 +34,10 @@ BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type bloc
 
 """
 debug_file = open(f'{__file__.replace(".py", ".debug.txt")}', 'w')
-log_file = open(f'{__file__.replace(".py", ".log")}', 'w')
+log_file = open(f'{__file__.replace(".py", ".log.txt")}', 'w')
+fail_file = open(f'{__file__.replace(".py", ".fail.txt")}', 'w')
 todo_file = open(f'{__file__.replace(".py", ".todo.txt")}', 'w')
+
 programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w')
 requirements_file = open(f'{__file__.replace(".py", ".requirements.csv")}', 'w')
 mapping_file = open(f'{__file__.replace(".py", ".course_mappings.csv")}', 'w')
@@ -82,15 +86,6 @@ def letter_grade(grade_point: float) -> str:
   letter = ['D', 'C', 'B', 'A'][min(int(letter_index), 3)]
   suffix = ['-', '', '+'][min(int(suffix_index / 3), 2)]
   return letter + suffix
-
-
-# write_log()
-# -------------------------------------------------------------------------------------------------
-def write_log(block_info: namedtuple, message: str):
-  """ Log a message about a requirement block.
-  """
-  print(f'{block_info.institution} {block_info.requirement_id} {block_info.block_type:6} '
-        f'{block_info.block_value:10}', message, file=log_file)
 
 
 # map_courses()
@@ -183,7 +178,7 @@ def get_restrictions(node: dict) -> str:
 
 
 # process_block()
-# -------------------------------------------------------------------------------------------------
+# =================================================================================================
 def process_block(row: namedtuple, context_list: list = []):
   """ Given (parts of) a row from the requirement_blocks db table, traverse the header and body
       lists.
@@ -227,7 +222,7 @@ def process_block(row: namedtuple, context_list: list = []):
 
 
 # traverse_header()
-# -------------------------------------------------------------------------------------------------
+# =================================================================================================
 def traverse_header(block_info: namedtuple) -> None:
   """ Extract program-wide qualifiers: MinGrade (but not MinGPA) and residency requirements,
   """
@@ -306,7 +301,7 @@ def traverse_header(block_info: namedtuple) -> None:
 
           case 'header_maxtransfer':
             if label_str := value['label']:
-              write_log(block_info, f'MaxTransfer label: {label_str}')
+              print(f'{institution} {requirement_id} Label in header MaxTransfer', file=todo_file)
             number = float(value['maxtransfer']['number'])
             class_or_credit = value['maxtransfer']['class_or_credit']
             if class_or_credit == 'credit':
@@ -327,13 +322,13 @@ def traverse_header(block_info: namedtuple) -> None:
 
           case 'header_mingpa':
             if label_str := value['label']:
-              write_log(block_info, f'MinGPA label: {label_str}')
+              print(f'{institution} {requirement_id} Label in header MinGPA', file=todo_file)
             mingpa = float(value['mingpa']['number'])
             block_info.min_gpa = f'{mingpa:4.2f}'
 
           case 'header_mingrade':
             if label_str := value['label']:
-              write_log(block_info, f'MinGrade label: {label_str}')
+              print(f'{institution} {requirement_id} Label in header MainGrade', file=todo_file)
             block_info.min_grade = letter_grade(float(value['mingrade']['number']))
 
           case 'header_minperdisc':
@@ -365,7 +360,7 @@ def traverse_header(block_info: namedtuple) -> None:
 
 
 # traverse_body()
-# -------------------------------------------------------------------------------------------------
+# =================================================================================================
 def traverse_body(node: Any, context_list: list) -> None:
   """ Extract Requirement names and course lists from body rules. Unlike traverse_header(), which
       makes a single pass over all the elements in the header list for a Scribe Block, this is a
@@ -513,11 +508,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                     node[requirement_type]['requirement_id']))
               if cursor.rowcount != 1:
                 print(f'{institution} {requirement_id} Copy Rules found {cursor.rowcount} current '
-                      f'blocks.', file=log_file)
+                      f'blocks.', file=fail_file)
                 return
               row = cursor.fetchone()
               if f'{row.institution} {row.requirement_id}' in context_list:
-                print(f'{context_list[0]} Circular Copy Rules', file=log_file)
+                print(f'{context_list[0]} Circular Copy Rules', file=fail_file)
               else:
                 process_block(row, context_list)
           return
@@ -555,15 +550,11 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'course_list':
-          print(institution, requirement_id, 'course_list in body', file=log_file)
+          print(institution, requirement_id, 'course_list', file=log_file)
           map_courses(institution, requirement_id, title, context_list, requirement_value)
           return
 
         case 'group_requirement':
-          # print('\n', institution, requirement_id, title)
-          # print('context_list', context_list)
-          # print('requirement_context', requirement_context)
-          # print('requirement_value keys', list(requirement_value.keys()))
           group_requirement_context = requirement_context
           number = int(requirement_value['number'])
           groups = requirement_value['group_list']['groups']
@@ -649,7 +640,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'subset':
-          print(institution, requirement_id, 'Subset', file=log_file)
+          # ---------------------------------------------------------------------------------------
           # Process the valid rules in the subset
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
@@ -657,14 +648,37 @@ def traverse_body(node: Any, context_list: list) -> None:
           if (subset_restrictions := get_restrictions(requirement_value)) is None:
             subset_restrictions = '[None] [None]'
           subset_context = [f'{subset_name} {subset_restrictions}']
+
           for key, rule in requirement_value.items():
 
             match key:
 
               case 'block':
-                print(f'{institution} {requirement_id} Subset block', file=todo_file)
+                # label number type value
                 for block_dict in rule:
-                  assert isinstance(block_dict, dict)
+                  num_required = int(block_dict['block']['number'])
+                  block_label = block_dict['block']['label']
+                  required_block_type = block_dict['block']['block_type']
+                  required_block_value = block_dict['block']['block_value']
+                  with psycopg.connect('dbname=cuny_curriculum') as conn:
+                    with conn.cursor(row_factory=namedtuple_row) as cursor:
+                      cursor.execute("""
+                      select institution, requirement_id, block_type, block_value, title, parse_tree
+                        from requirement_blocks
+                       where institution = %s
+                         and block_type = %s
+                         and block_value = %s
+                         and period_stop ~* '^9'
+                      """, [institution, required_block_type, required_block_value])
+                      if cursor.rowcount != num_required:
+                        suffix = '' if cursor.rowcount == 1 else 's'
+                        print(f'{institution} {requirement_id} Subset block found {cursor.rowcount}'
+                              f' active block{suffix} for {num_required} required', file=fail_file)
+                      else:
+                        local_context = [block_label]
+                        for row in cursor:
+                          process_block(row, context_list + subset_context + local_context)
+                          print(f'{institution} {requirement_id} Subset block', file=log_file)
                 return
 
               case 'blocktype':
@@ -689,44 +703,53 @@ def traverse_body(node: Any, context_list: list) -> None:
 
               case 'copy_rules':
                 try:
-                  block_type = rule['block_type']
-                  block_value = rule['block_value']
+
+                  target_requirement_id = rule['requirement_id']
                 except KeyError as ke:
                   print(f'Missing key {ke} in Subset copy_rules')
                 else:
-                  with psycopg.connect('dbname=cuny_curriculum') as conn:
-                    with conn.cursor(row_factory=namedtuple_row) as cursor:
-                      cursor.execute("""
-                      select institution,
-                             requirement_id,
-                             block_type,
-                             block_value,
-                             title,
-                             parse_tree
-                        from requirement_blocks
-                       where institution = %s
-                         and block_type = %s
-                         and block_value = %s
-                         and period_stop ~* '^9'
-                      """, [institution, block_type, block_value])
-                      if cursor.rowcount != 1:
-                        print(f'{institution} {requirement_id} Subset copy_rules found '
-                              f'{cursor.rowcount} matching blocks',
-                              file=log_file)
-                      else:
-                        row = cursor.fetchone()
-                        parse_tree = row.parse_tree
-                        try:
-                          body_list = parse_tree['body_list']
-                        except KeyError as ke:
-                          print(f'{institution} {requirement_id} Subset copy_rules no body_list in '
-                                f'{row.requirement_id}', file=log_file)
-                        else:
-                          local_context = [f'{row.institution} {row.requirement_id}', row.title]
-                          traverse_body(body_list,
-                                        context_list + requirement_context + local_context)
+                  target_block = f'{institution} {target_requirement_id}'
+                  if target_block in requirement_context:
+                    print(target_block, 'Subset copy_rules: Circular target', file=fail_file)
+                  else:
+                    with psycopg.connect('dbname=cuny_curriculum') as conn:
+                      with conn.cursor(row_factory=namedtuple_row) as cursor:
+                        cursor.execute("""
+                        select institution,
+                               requirement_id,
+                               block_type,
+                               block_value,
+                               title,
+                               period_start,
+                               period_stop,
+                               parse_tree
+                          from requirement_blocks
+                         where institution = %s
+                           and requirement_id = %s
+                           and period_stop ~* '^9'
+                        """, [institution, target_requirement_id])
+                        if cursor.rowcount != 1:
                           print(f'{institution} {requirement_id} Subset copy_rules found '
-                                f'{row.requirement_id}', file=log_file)
+                                f'{cursor.rowcount} active blocks',
+                                file=fail_file)
+                        else:
+                          row = cursor.fetchone()
+                          parse_tree = row.parse_tree
+                          if parse_tree == '{}':
+                            print(f'Parsing {row.institution} {row.requirement_id}')
+                            parse_tree = parse_block(row.institution, row.requirement_id,
+                                                     row.period_start, row.period_stop)
+                          try:
+                            body_list = parse_tree['body_list']
+                          except KeyError as ke:
+                            print(f'{institution} {requirement_id} Subset copy_rules target, '
+                                  f'{row.requirement_id}, has no body_list', file=fail_file)
+                          else:
+                            local_context = [target_block, row.title]
+                            traverse_body(body_list,
+                                          context_list + requirement_context + local_context)
+                            print(f'{institution} {requirement_id} Subset copy_rules',
+                                  file=log_file)
 
                 return
 
