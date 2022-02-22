@@ -753,7 +753,7 @@ def traverse_body(node: Any, context_list: list) -> None:
 
                 return
 
-              case 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
+              case 'maxpassfail' | 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
                 # Ignored Qualifiers and rules
                 return
 
