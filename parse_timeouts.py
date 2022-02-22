@@ -5,6 +5,7 @@
 import argparse
 import os
 import psycopg
+import sys
 import time
 
 from dgw_parser import parse_block
@@ -40,6 +41,7 @@ if __name__ == "__main__":
       """)
       for row in cursor:
         print(f'{row.institution} {row.requirement_id}', end='')
+        sys.stdout.flush()
         if 'Timeout' in row.error:
           start = time.time()
           parse_tree = parse_block(row.institution,

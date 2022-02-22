@@ -507,7 +507,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, (node[requirement_type]['institution'],
                     node[requirement_type]['requirement_id']))
               if cursor.rowcount != 1:
-                print(f'{institution} {requirement_id} Copy Rules found {cursor.rowcount} current '
+                print(f'{institution} {requirement_id} Copy Rules found {cursor.rowcount} active '
                       f'blocks.', file=fail_file)
                 return
               row = cursor.fetchone()
@@ -758,8 +758,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                 return
 
               case _:
-                print(f'Unhandled Subset key: {key:20} {str(type(rule)):10} {len(rule)}',
-                      file=sys.stderr)
+                print(f'{institution} {requirement_id} Unhandled Subset key: {key:20} '
+                      f'{str(type(rule)):10} {len(rule)}', file=sys.stderr)
                 return
 
             print(institution, requirement_id, f'Unexpected Subset: {key}', file=sys.stderr)
