@@ -742,8 +742,15 @@ def traverse_body(node: Any, context_list: list) -> None:
                           try:
                             body_list = parse_tree['body_list']
                           except KeyError as ke:
+                            if 'error' in parse_tree.keys():
+                              problem = 'compile error'
+                            else:
+                              problem = 'no body_list'
+                            print(f'{institution} {requirement_id} Subset copy_rules target: '
+                                  f'{problem}', file=fail_file)
                             print(f'{institution} {requirement_id} Subset copy_rules target, '
-                                  f'{row.requirement_id}, has no body_list', file=fail_file)
+                                  f'{row.requirement_id}, compile error: {parse_tree["error"]} ',
+                                  file=debug_file)
                           else:
                             local_context = [target_block, row.title]
                             traverse_body(body_list,
