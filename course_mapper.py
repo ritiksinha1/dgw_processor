@@ -54,7 +54,8 @@ def dict_factory():
 
 
 courses_by_institution = defaultdict(dict_factory)
-requirement_keys = []
+
+requirement_index = 0
 
 
 # =================================================================================================
@@ -109,15 +110,11 @@ Course Mappings: Handled here
 Requirement Key, Course ID, Career, Course, With
 
   """
-  # Make the requirement_key a “nice hexadecimal string” (a lot of this is dealing with negative
-  # hash values)
-  h = int(hash((institution, requirement_id, requirement_name) + tuple(context_list)))
-  mask = int(int((h.bit_length() + 3) / 4) * 'F', 16)  # enough hex digits to include leading bits
-  requirement_key = f'{(h & mask):0X}'
-  if requirement_key not in requirement_keys:
-    requirement_keys.append(requirement_key)
-    requirements_writer.writerow([institution, requirement_id, requirement_key, requirement_name,
-                                  '\n'.join(context_list[2:])])
+  # The requirement_index is used to join the requirements and the courses that map to them.
+  global requirement_index
+  requirement_index += 1
+  requirements_writer.writerow([institution, requirement_id, requirement_index, requirement_name,
+                                '\n'.join(context_list[2:])])
 
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
@@ -128,7 +125,7 @@ Requirement Key, Course ID, Career, Course, With
       if with_clause is not None:
         with_clause = f'With ({with_clause})'
       for key, value in courses_cache((institution, discipline, catalog_number)).items():
-        map_writer.writerow([requirement_key,
+        map_writer.writerow([requirement_index,
                              f'{value.course_id:06}:{value.offer_nbr}', value.career,
                              f'{key}: {value.title}', with_clause])
 
