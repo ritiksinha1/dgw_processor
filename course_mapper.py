@@ -443,9 +443,8 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, (institution, block_type, block_value))
               if cursor.rowcount != number:
                 # HOW TO HANDLE THIS?
-                suffix = '' if cursor.rowcount == 1 else 's'
-                print(f'{institution} {requirement_id} Block requirement found '
-                      f'{cursor.rowcount} row{suffix} ({number} needed)', file=todo_file)
+                print(f'{institution} {requirement_id} Block type={block_type} value={block_value} '
+                      f'returned {cursor.rowcount} rows', file=todo_file)
                 return
               for row in cursor:
                 process_block(row, context_list + requirement_context)
@@ -787,7 +786,10 @@ def traverse_body(node: Any, context_list: list) -> None:
 if __name__ == "__main__":
   """ Get a parse tree from the requirements_table and walk it. If no
   """
+  global subplans
+
   parser = ArgumentParser()
+  parser.add_argument('-a', '--all', action='store_true')
   parser.add_argument('-i', '--institution', default='qns')
   parser.add_argument('-r', '--requirement_id')
   parser.add_argument('-t', '--type', default='major')
@@ -820,7 +822,15 @@ if __name__ == "__main__":
 
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
-      if args.institution.upper() == 'ALL':
+      # Create dict of programs, their subplans, and their populations
+      subplans = defaultdict()
+      cursor.execute("""
+      select * from subplans
+      """)
+      for row in cursor:
+        subplans[(row.institution, row.academic_plan, row.subplan)] = int(row.count)
+
+      if args.all or args.institution.upper() == 'ALL':
         institution = '^.*$'
         institution_op = '~*'
       else:
@@ -845,11 +855,11 @@ if __name__ == "__main__":
                        """, (institution, requirement_id))
       else:
         block_type = [args.type.upper()]
-        if 'ALL' in block_type:
+        if args.all or 'ALL' in block_type:
           block_type = ['MAJOR', 'MINOR', 'CONC']
 
         block_value = args.value.upper()
-        if block_value == 'ALL':
+        if args.all or block_value == 'ALL':
           block_value = '^.*$'
           value_op = '~*'
         else:
