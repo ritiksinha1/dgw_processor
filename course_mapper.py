@@ -806,7 +806,7 @@ if __name__ == "__main__":
                             'Min Grade',
                             'Min GPA'])
 
-  requirements_writer.writerow(['Insteitution',
+  requirements_writer.writerow(['Institution',
                                 'Requirement ID',
                                 'Requirement Key',
                                 'Program Name',
