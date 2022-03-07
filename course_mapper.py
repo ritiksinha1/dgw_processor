@@ -786,8 +786,6 @@ def traverse_body(node: Any, context_list: list) -> None:
 if __name__ == "__main__":
   """ Get a parse tree from the requirements_table and walk it. If no
   """
-  global subplans
-
   parser = ArgumentParser()
   parser.add_argument('-a', '--all', action='store_true')
   parser.add_argument('-i', '--institution', default='qns')
@@ -822,13 +820,6 @@ if __name__ == "__main__":
 
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
-      # Create dict of programs, their subplans, and their populations
-      subplans = defaultdict()
-      cursor.execute("""
-      select * from subplans
-      """)
-      for row in cursor:
-        subplans[(row.institution, row.academic_plan, row.subplan)] = int(row.count)
 
       if args.all or args.institution.upper() == 'ALL':
         institution = '^.*$'
