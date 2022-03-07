@@ -114,7 +114,7 @@ Requirement Key, Course ID, Career, Course, With
   global requirement_index
   requirement_index += 1
   requirements_writer.writerow([institution, requirement_id, requirement_index, requirement_name,
-                                '\n'.join(context_list[2:])])
+                                '$'.join(context_list[2:])])
 
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
