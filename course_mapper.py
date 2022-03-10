@@ -3,6 +3,7 @@
 """
 
 import csv
+import json
 import os
 import psycopg
 import sys
@@ -38,9 +39,9 @@ log_file = open(f'{__file__.replace(".py", ".log.txt")}', 'w')
 fail_file = open(f'{__file__.replace(".py", ".fail.txt")}', 'w')
 todo_file = open(f'{__file__.replace(".py", ".todo.txt")}', 'w')
 
-programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w')
-requirements_file = open(f'{__file__.replace(".py", ".requirements.csv")}', 'w')
-mapping_file = open(f'{__file__.replace(".py", ".course_mappings.csv")}', 'w')
+programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w', newline='')
+requirements_file = open(f'{__file__.replace(".py", ".requirements.csv")}', 'w', newline='')
+mapping_file = open(f'{__file__.replace(".py", ".course_mappings.csv")}', 'w', newline='')
 
 programs_writer = csv.writer(programs_file)
 requirements_writer = csv.writer(requirements_file)
@@ -114,7 +115,7 @@ Requirement Key, Course ID, Career, Course, With
   global requirement_index
   requirement_index += 1
   requirements_writer.writerow([institution, requirement_id, requirement_index, requirement_name,
-                                '$'.join(context_list[2:])])
+                                json.dumps(context_list[2:])])
 
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
@@ -132,7 +133,7 @@ Requirement Key, Course ID, Career, Course, With
 
 # get_restrictions()
 # -------------------------------------------------------------------------------------------------
-def get_restrictions(node: dict) -> str:
+def get_restrictions(node: dict) -> dict:
   """ Return qualifiers that might affect transferability.
   """
 
@@ -141,37 +142,27 @@ def get_restrictions(node: dict) -> str:
   # The maxtransfer restriction puts a limit on the number of classes or credits that can be
   # transferred, possibly with a list of "types" for which the limit applies. I think the type names
   # have to come from a dgw table somewhere.
+  transfer_dict = {}
   try:
-    max_xfer_str = ''
     transfer_dict = node.pop('maxtransfer')
-    number = float(transfer_dict['number'])
-    match transfer_dict['class_or_credit']:
-      case 'class':
-        suffix = 'es' if number != 1 else ''
-        max_xfer_str += f'{int(number)} class{suffix}'
-      case 'credit':
-        suffix = 's' if number != 1.0 else ''
-        max_xfer_str += f'{number:0.1f} credit{suffix}'
-    try:
-      max_xfer_types = ', '.join(transfer_dict['transfer_types'])
-      max_xfer_str += f' of type {max_xfer_types}'
-    except KeyError:
-      pass
   except KeyError:
-    max_xfer_str = None
+    pass
 
   # The mingrade restriction puts a limit on the minimum required grade for all courses in a course
-  # list. It’s a float (like a GPA) in Scribe, but is returned as a letter grade here.
+  # list. It’s a float (like a GPA) in Scribe, but is replaced with a letter grade here.
+  mingrade_dict = {}
   try:
-    mingpa_dict = node.pop('mingrade')
-    number = float(mingpa_dict['number'])
-    min_grade_str = letter_grade(number)
+    mingrade_dict = node.pop('mingrade')
+    number = float(mingrade_dict['number'])
+    mingrade_dict['letter_grade'] = letter_grade(number)
+    del mingrade_dict['number']
   except KeyError:
-    min_grade_str = None
-  if max_xfer_str or min_grade_str:
-    return f'[{min_grade_str}] [{max_xfer_str}]'
+    pass
+  returnDict = transfer_dict.update(mingrade_dict)
+  if returnDict is None:
+    return {}
   else:
-    return None
+    return returnDict
 
 
 # process_block()
@@ -409,16 +400,9 @@ def traverse_body(node: Any, context_list: list) -> None:
       try:
         requirement_name = node[requirement_type].pop('label')
       except KeyError:
-        requirement_name = None
+        requirement_name = 'No Name'
       requirement_restrictions = get_restrictions(node)
-      if requirement_name is None and requirement_restrictions is None:
-        requirement_context = []
-      else:
-        if requirement_name is None:
-          requirement_name = 'No Name'
-        if requirement_restrictions is None:
-          requirement_restrictions = '[None] [None]'
-        requirement_context = [f'{requirement_name} {requirement_restrictions}']
+      requirement_context = [requirement_restrictions.update({'name': requirement_name})]
 
       match requirement_type:
 
@@ -641,9 +625,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
           subset_name = requirement_name
-          if (subset_restrictions := get_restrictions(requirement_value)) is None:
-            subset_restrictions = '[None] [None]'
-          subset_context = [f'{subset_name} {subset_restrictions}']
+          subset_restrictions = get_restrictions(requirement_value)
+          subset_context = [subset_restrictions.update({'name': subset_name})]
 
           for key, rule in requirement_value.items():
 
@@ -686,14 +669,14 @@ def traverse_body(node: Any, context_list: list) -> None:
                 assert isinstance(rule, list)
                 for rule_dict in rule:
                   try:
-                    local_requirement_name = rule_dict.pop('label')
+                    local_name = rule_dict.pop('label')
                   except KeyError:
-                    local_requirement_name = None
-                  local_requirement_restrictions = get_restrictions(rule_dict)
-                  if local_requirement_name is None and local_requirement_restrictions is None:
-                    local_context = []
-                  else:
-                    local_context = [f'{local_requirement_name} {local_requirement_restrictions}']
+                    local_name = 'No Name'
+                  local_restrictions = get_restrictions(rule_dict)
+                  # if local_requirement_name is None and local_requirement_restrictions is None:
+                  #   local_context = []
+                  # else:
+                  local_context = [local_restrictions.update({'name': local_name})]
                   traverse_body(rule_dict, context_list + subset_context + local_context)
                 return
 
