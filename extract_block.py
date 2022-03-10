@@ -25,11 +25,9 @@ if __name__ == '__main__':
 
   # # Parse args
   # args = parser.parse_args()
-
-  if len(sys.argv) != 3:
-    exit(f'Usage: {sys.argv[0]} institution requirement_id')
-  institution = f'{sys.argv[1][0:3].upper()}01'
-  requirement_id = int(sys.argv[2].strip('RA'))
+  args = ' '.join(sys.argv[1:]).replace(',', ' ').replace('_', ' ').split(' ')
+  institution = f'{args[0][0:3].upper()}01'
+  requirement_id = int(args[1].strip('RA'))
   requirement_id = f'RA{requirement_id:06}'
 
   # Look up the block type and value
