@@ -115,7 +115,7 @@ Requirement Key, Course ID, Career, Course, With
   global requirement_index
   requirement_index += 1
   requirements_writer.writerow([institution, requirement_id, requirement_index, requirement_name,
-                                json.dumps(context_list[2:])])
+                                json.dumps(context_list, ensure_ascii=False)])
 
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
@@ -138,13 +138,13 @@ def get_restrictions(node: dict) -> dict:
   """
 
   assert isinstance(node, dict)
-
+  return_dict = dict()
   # The maxtransfer restriction puts a limit on the number of classes or credits that can be
   # transferred, possibly with a list of "types" for which the limit applies. I think the type names
   # have to come from a dgw table somewhere.
-  transfer_dict = {}
   try:
     transfer_dict = node.pop('maxtransfer')
+    return_dict['maxtransfer'] = transfer_dict
   except KeyError:
     pass
 
@@ -154,15 +154,12 @@ def get_restrictions(node: dict) -> dict:
   try:
     mingrade_dict = node.pop('mingrade')
     number = float(mingrade_dict['number'])
-    mingrade_dict['letter_grade'] = letter_grade(number)
-    del mingrade_dict['number']
+    grade_str = letter_grade(number)
+    return_dict['mingrade'] = grade_str
   except KeyError:
     pass
-  returnDict = transfer_dict.update(mingrade_dict)
-  if returnDict is None:
-    return {}
-  else:
-    return returnDict
+
+  return return_dict
 
 
 # process_block()
@@ -204,8 +201,8 @@ def process_block(row: namedtuple, context_list: list = []):
           file=sys.stderr)
 
   # Use context_list[0] for debugging; context_list[1] is the name of the block
-  local_context_list = [f'{institution} {requirement_id}',
-                        f'{title}']
+  local_context_list = [{'requirement_block': f'{institution} {requirement_id}'},
+                        {'name': title}]
   traverse_body(body_list, context_list + local_context_list)
 
 
@@ -379,8 +376,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                         | subset
   """
   # Debugging Info
-  institution, requirement_id = context_list[0].split()
-  title = context_list[1]
+  institution, requirement_id = context_list[0]['requirement_block'].split()
+  title = context_list[1]['name']
 
   # Handle lists
   if isinstance(node, list):
@@ -397,12 +394,16 @@ def traverse_body(node: Any, context_list: list) -> None:
     requirement_type = node_keys[0]
     requirement_value = node[requirement_type]
     if isinstance(requirement_value, dict):
+      context_dict = get_restrictions(node[requirement_type])
       try:
         requirement_name = node[requirement_type].pop('label')
       except KeyError:
-        requirement_name = 'No Name'
-      requirement_restrictions = get_restrictions(node)
-      requirement_context = [requirement_restrictions.update({'name': requirement_name})]
+        requirement_name = None
+      if context_dict:
+        context_dict['name'] = requirement_name
+        requirement_context = [context_dict]
+      else:
+        requirement_context = []
 
       match requirement_type:
 
@@ -464,10 +465,14 @@ def traverse_body(node: Any, context_list: list) -> None:
           # UNABLE TO HANDLE RULE_COMPLETE UNTIL THE CONDITION IS EVALUATED
           condition = node[requirement_type]['condition']
           for if_true_dict in node[requirement_type]['if_true']:
-            traverse_body(if_true_dict, context_list + ['IF ' + condition])
+            condition_dict = {'name': 'if_true', 'condition': condition}
+            condition_list = [condition_dict]
+            traverse_body(if_true_dict, context_list + condition_list)
           try:
             for if_false_dict in node[requirement_type]['if_false']:
-              traverse_body(if_true_dict, context_list + ['IF NOT ' + condition])
+              condition_dict = {'name': 'if_false', 'condition': condition}
+              condition_list = [condition_dict]
+              traverse_body(if_true_dict, context_list + condition_list)
           except KeyError:
             # Scribe Else clause is optional
             pass
@@ -491,9 +496,15 @@ def traverse_body(node: Any, context_list: list) -> None:
                       f'blocks.', file=fail_file)
                 return
               row = cursor.fetchone()
-              if f'{row.institution} {row.requirement_id}' in context_list:
-                print(f'{context_list[0]} Circular Copy Rules', file=fail_file)
-              else:
+              is_circular = False
+              for context_dict in context_list:
+                try:
+                  if f'{row.institution} {row.requirement_id}' == context_dict['requirement_block']:
+                    print(institution, requirement_id, 'Circular Copy Rules', file=fail_file)
+                    is_circular = True
+                except KeyError:
+                  pass
+              if not is_circular:
                 process_block(row, context_list)
           return
 
@@ -535,17 +546,20 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'group_requirement':
-          group_requirement_context = requirement_context
           number = int(requirement_value['number'])
           groups = requirement_value['group_list']['groups']
           num_groups = len(groups)
-          suffix = '' if num_groups == 1 else 's'
           group_num = 0
           for group in groups:
             group_num += 1
             group_name = group.pop('label')
-            group_context = [f'Group {group_num} of {num_groups} goup{suffix} ({number} required): '
-                             f'{group_name}']
+            context_dict = {'name': group_name}
+            context_dict['group_number'] = group_num
+            context_dict['num_groups'] = num_groups
+            context_dict['num_required'] = number
+            group_context = [context_dict]
+            group_context = requirement_context + group_context
+
             assert len(list(group.keys())) == 1
             key, value = group.popitem()
             match key:
@@ -625,8 +639,9 @@ def traverse_body(node: Any, context_list: list) -> None:
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
           subset_name = requirement_name
-          subset_restrictions = get_restrictions(requirement_value)
-          subset_context = [subset_restrictions.update({'name': subset_name})]
+          context_dict = get_restrictions(requirement_value)
+          context_dict['name'] = subset_name
+          subset_context = [context_dict]
 
           for key, rule in requirement_value.items():
 
@@ -654,7 +669,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         print(f'{institution} {requirement_id} Subset block found {cursor.rowcount}'
                               f' active block{suffix} for {num_required} required', file=fail_file)
                       else:
-                        local_context = [block_label]
+                        local_context = [{'name': block_label}]
                         for row in cursor:
                           process_block(row, context_list + subset_context + local_context)
                           print(f'{institution} {requirement_id} Subset block', file=log_file)
@@ -668,15 +683,16 @@ def traverse_body(node: Any, context_list: list) -> None:
                 print(f'{institution} {requirement_id} Subset {key}', file=log_file)
                 assert isinstance(rule, list)
                 for rule_dict in rule:
+                  local_dict = get_restrictions(rule_dict)
                   try:
                     local_name = rule_dict.pop('label')
                   except KeyError:
-                    local_name = 'No Name'
-                  local_restrictions = get_restrictions(rule_dict)
-                  # if local_requirement_name is None and local_requirement_restrictions is None:
-                  #   local_context = []
-                  # else:
-                  local_context = [local_restrictions.update({'name': local_name})]
+                    local_name = None
+                  if local_dict:
+                    local_dict['name'] = local_name
+                    local_context = [local_dict]
+                  else:
+                    local_context = []
                   traverse_body(rule_dict, context_list + subset_context + local_context)
                 return
 
@@ -731,7 +747,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                                   f'{row.requirement_id}, compile error: {parse_tree["error"]} ',
                                   file=debug_file)
                           else:
-                            local_context = [target_block, row.title]
+                            local_dict = {'requirement_block': target_block, 'name': row.title}
+                            local_context = [local_dict]
                             traverse_body(body_list,
                                           context_list + requirement_context + local_context)
                             print(f'{institution} {requirement_id} Subset copy_rules',
