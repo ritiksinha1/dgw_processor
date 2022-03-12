@@ -3,7 +3,6 @@
 """
 
 import csv
-import json
 import os
 import psycopg
 import sys
@@ -93,7 +92,7 @@ def letter_grade(grade_point: float) -> str:
 # map_courses()
 # -------------------------------------------------------------------------------------------------
 def map_courses(institution: str, requirement_id: str, requirement_name: str, context_list: list,
-                course_list: dict):
+                requirement_dict: dict):
   """ Write courses and their With clauses to the map file.
       Object returned by courses_cache():
         CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits career')
@@ -115,8 +114,14 @@ Requirement Key, Course ID, Career, Course, With
   global requirement_index
   requirement_index += 1
   requirements_writer.writerow([institution, requirement_id, requirement_index, requirement_name,
-                                json.dumps(context_list, ensure_ascii=False)])
+                                {'context': context_list,
+                                 'requirement': requirement_dict}])
 
+  try:
+    course_list = requirement_dict['course_list']
+  except KeyError:
+    course_list = requirement_dict
+    print(institution, requirement_id, f'Requirement_dict is course_list', file=todo_file)
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
       # Unless there is a With clause, skip "any course" wildcards (@ @)
@@ -454,7 +459,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           try:
             if course_list := node[requirement_type]['course_list']:
               map_courses(institution, requirement_id, title,
-                          context_list + requirement_context, course_list)
+                          context_list + requirement_context, node[requirement_type])
           except KeyError:
             # Course List is an optional part of ClassCredit
             return
@@ -516,7 +521,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           try:
             if course_list := requirement_value['course_list']:
               map_courses(institution, requirement_id, title,
-                          context_list + requirement_context, course_list)
+                          context_list + requirement_context, requirement_value)
           except KeyError:
             # Can't have a Course List Rule w/o a course list
             print(f'{institution} {requirement_id}: Course List Rule w/o a Course List',
@@ -609,7 +614,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 try:
                   course_list = group['course_list']
                   map_courses(institution, requirement_id, title,
-                              context_list + group_context, course_list)
+                              context_list + group_context, group)
                 except KeyError:
                   # Course List is an optional part of ClassCredit
                   return
