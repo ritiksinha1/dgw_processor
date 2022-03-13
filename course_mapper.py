@@ -175,6 +175,11 @@ def process_block(row: namedtuple, context_list: list = []):
   """
   # Augment db info with default values for class_credits max_transfer min_residency min_grade
   # min_gpa
+  try:
+    enrollment = active_blocks[(row.institution, row.requirement_id)]
+  except KeyError:
+    print(row.institution, row.requirement_id, 'Not an active block', file=fail_file)
+    return
   (institution, requirement_id, block_type, block_value, title, parse_tree) = row
   block_info = BlockInfo._make(row + ('', '', '', '', ''))
 
@@ -825,6 +830,14 @@ if __name__ == "__main__":
 
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
+      cursor.execute("""
+      select institution, requirement_id, sum(total_students) as total_students
+      from ra_counts where active_term >= 1172
+       and total_students > 4
+      group by institution, requirement_id
+      order by institution, requirement_id
+      """)
+      active_blocks = {(row.institution, row.requirement_id): row.total_students for row in cursor}
 
       if args.all or args.institution.upper() == 'ALL':
         institution = '^.*$'
@@ -877,8 +890,16 @@ if __name__ == "__main__":
 
       suffix = '' if cursor.rowcount == 1 else 's'
       print(f'{cursor.rowcount:,} parse tree{suffix}')
+      quarantine_count = 0
+      inactive_count = 0
       for row in cursor:
         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
+          quarantine_count += 1
+          continue
+        try:
+          enrollment = active_blocks[(row.institution, row.requirement_id)]
+        except KeyError:
+          inactive_count += 1
           continue
 
         # If this is the first time this instution has been encountered, create a dict mapping
@@ -902,3 +923,4 @@ if __name__ == "__main__":
               courses_by_institution[institution][discipline][catalog_number] = value
 
         process_block(row)
+  print(f'{quarantine_count:5,} Quarantined\n{inactive_count:5,} Inactive')
