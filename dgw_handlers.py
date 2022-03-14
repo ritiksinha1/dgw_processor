@@ -4,6 +4,7 @@
 """
 
 import os
+import psycopg
 import sys
 
 from typing import Any
@@ -24,7 +25,7 @@ from dgw_utils import class_name,\
 from traceback import print_stack
 from pprint import pprint
 
-from pgconnection import PgConnection
+from psycopg.rows import namedtuple_row
 
 DEBUG = os.getenv('DEBUG_HANDLERS')
 
@@ -309,27 +310,26 @@ def copy_rules(ctx, institution, requirement_id):
       return_dict['requirement_id'] = f'{context.getText().strip().upper()}'
 
   # Look up the block_type and block_value, and build a link to the specified block if possible.
-  conn = PgConnection()
-  cursor = conn.cursor()
-  cursor.execute(f"""
-  select block_type, block_value, period_stop
-    from requirement_blocks
-   where institution = '{institution}'
-     and requirement_id = '{requirement_id}'
-  """)
-  if cursor.rowcount == 0:
-    return_dict['error'] = (f'“Missing {requirement_id}” for {institution}')
-  else:
-    row = cursor.fetchone()  # There cannot be mnore than one requrement block per requirement id
-    block_type = row.block_type
-    block_value = row.block_value
-    if row.period_stop.startswith('9'):
-      return_dict['block_type'] = block_type
-      return_dict['block_value'] = block_value
-    else:
-      return_dict['error'] = (f'{requirement_id} {block_type} {block_block} not current for '
-                              f'{institution}')
-  conn.close()
+  with psycopg.connect('dbname=cuny_curriculum') as conn:
+    with conn.cursor(row_factory=namedtuple_row) as cursor:
+      cursor.execute(f"""
+      select block_type, block_value, period_stop
+        from requirement_blocks
+       where institution = '{institution}'
+         and requirement_id = '{requirement_id}'
+      """)
+      if cursor.rowcount == 0:
+        return_dict['error'] = (f'“Missing {requirement_id}” for {institution}')
+      else:
+        row = cursor.fetchone()  # There cannot be mnore than one requrement block per requirement id
+        block_type = row.block_type
+        block_value = row.block_value
+        if row.period_stop.startswith('9'):
+          return_dict['block_type'] = block_type
+          return_dict['block_value'] = block_value
+        else:
+          return_dict['error'] = (f'{requirement_id} {block_type} {block_block} not current for '
+                                  f'{institution}')
 
   return {'copy_rules': return_dict}
 
