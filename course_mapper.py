@@ -37,6 +37,7 @@ debug_file = open(f'{__file__.replace(".py", ".debug.txt")}', 'w')
 log_file = open(f'{__file__.replace(".py", ".log.txt")}', 'w')
 fail_file = open(f'{__file__.replace(".py", ".fail.txt")}', 'w')
 todo_file = open(f'{__file__.replace(".py", ".todo.txt")}', 'w')
+no_courses_file = open(f'{__file__.replace(".py", ".no_courses.txt")}', 'w')
 
 programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w', newline='')
 requirements_file = open(f'{__file__.replace(".py", ".requirements.csv")}', 'w', newline='')
@@ -113,15 +114,14 @@ Requirement Key, Course ID, Career, Course, With
   # The requirement_index is used to join the requirements and the courses that map to them.
   global requirement_index
   requirement_index += 1
-  requirements_writer.writerow([institution, requirement_id, requirement_index, requirement_name,
-                                {'context': context_list,
-                                 'requirement': requirement_dict}])
 
   try:
     course_list = requirement_dict['course_list']
   except KeyError:
     course_list = requirement_dict
     print(institution, requirement_id, f'Requirement_dict is course_list', file=todo_file)
+
+  requirement_dict['num_courses'] = 0
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
       # Unless there is a With clause, skip "any course" wildcards (@ @)
@@ -130,10 +130,20 @@ Requirement Key, Course ID, Career, Course, With
       discipline, catalog_number, with_clause = course_tuple
       if with_clause is not None:
         with_clause = f'With ({with_clause})'
-      for key, value in courses_cache((institution, discipline, catalog_number)).items():
+
+      courses_dict = courses_cache((institution, discipline, catalog_number))
+      num_courses = len(courses_dict)
+      for key, value in courses_dict.items():
+        requirement_dict['num_courses'] += 1
         map_writer.writerow([requirement_index,
                              f'{value.course_id:06}:{value.offer_nbr}', value.career,
                              f'{key}: {value.title}', with_clause])
+
+  if requirement_dict['num_courses'] == 0:
+    print(institution, requirement_id, requirement_name, file=no_courses_file)
+  requirements_writer.writerow([institution, requirement_id, requirement_index, requirement_name,
+                                {'context': context_list,
+                                 'requirement': requirement_dict}])
 
 
 # get_restrictions()

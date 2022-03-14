@@ -57,8 +57,8 @@ def courses_cache(idc_tuple: tuple) -> dict:
   # Simple Case
   if not ('@' in discipline or '@' in catalog_number or ':' in catalog_number):
     try:
-      return ({f'{discipline} {catalog_number}':
-              _courses_cache[institution][discipline][catalog_number]})
+      return {f'{discipline} {catalog_number}':
+              _courses_cache[institution][discipline][catalog_number]}
     except KeyError:
       return {}
 
@@ -77,7 +77,7 @@ def courses_cache(idc_tuple: tuple) -> dict:
   #    less than or equal to the upper bound (right side)."
   if ':' in catalog_number:
     # CUNY policy says decimal points aren't allowed in catalog numbers. But they do occur, so treat
-    # them as floats, which we can't do a simple 'in range' check because ranges are ints.
+    # them as floats, which means we can't do a simple 'in range' check because ranges are ints.
     low_val, hi_val = [float(x) for x in catalog_number.split(':')]
   else:
     low_val = hi_val = None
