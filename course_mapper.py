@@ -58,7 +58,6 @@ courses_by_institution = defaultdict(dict_factory)
 
 requirement_index = 0
 
-
 # =================================================================================================
 
 
@@ -111,6 +110,7 @@ Course Mappings: Handled here
 Requirement Key, Course ID, Career, Course, With
 
   """
+
   # The requirement_index is used to join the requirements and the courses that map to them.
   global requirement_index
   requirement_index += 1
@@ -141,9 +141,10 @@ Requirement Key, Course ID, Career, Course, With
 
   if requirement_dict['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
-  requirements_writer.writerow([institution, requirement_id, requirement_index, requirement_name,
-                                {'context': context_list,
-                                 'requirement': requirement_dict}])
+  context_col = str({'context': context_list,
+                     'requirement': requirement_dict}).replace('None', "'None'")
+  data_row = [institution, requirement_id, requirement_index, requirement_name, context_col]
+  requirements_writer.writerow(data_row)
 
 
 # get_restrictions()
@@ -447,9 +448,13 @@ def traverse_body(node: Any, context_list: list) -> None:
                  and period_stop ~* '^9'
               """, (institution, block_type, block_value))
               if cursor.rowcount != number:
-                # HOW TO HANDLE THIS?
-                print(f'{institution} {requirement_id} Block type={block_type} value={block_value} '
-                      f'returned {cursor.rowcount} rows', file=todo_file)
+                if cursor.rowcount == 0:
+                  print(f'{institution} {requirement_id} Block: 0 active blocks',
+                        file=fail_file)
+                else:
+                  # HOW TO HANDLE THIS?
+                  print(f'{institution} {requirement_id} Block: need {number}, found '
+                        f'{cursor.rowcount} active blocks', file=todo_file)
                 return
               for row in cursor:
                 process_block(row, context_list + requirement_context)
@@ -562,7 +567,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'course_list':
           print(institution, requirement_id, 'course_list', file=log_file)
-          map_courses(institution, requirement_id, title, context_list, requirement_value)
+          map_courses(institution, requirement_id, title, context_list + requirement_context,
+                      requirement_value)
           return
 
         case 'group_requirement':
@@ -700,20 +706,22 @@ def traverse_body(node: Any, context_list: list) -> None:
                 return
 
               case 'class_credit_list' | 'conditional' | 'course_lists' | 'group_requirements':
+                # These are lists of class_credit, conditional, course_list, group_requirement
                 print(f'{institution} {requirement_id} Subset {key}', file=log_file)
                 assert isinstance(rule, list)
+
                 for rule_dict in rule:
-                  local_dict = get_restrictions(rule_dict)
-                  try:
-                    local_name = rule_dict.pop('label')
-                  except KeyError:
-                    local_name = None
-                  if local_dict:
-                    local_dict['name'] = local_name
+                  # There is only one item per rule_dict, but this is a convenient way to get it
+                  for k, v in rule_dict.items():
+                    local_dict = get_restrictions(v)
+                    try:
+                      local_dict['name'] = v.pop('label')
+                    except KeyError:
+                      pass
                     local_context = [local_dict]
-                  else:
-                    local_context = []
-                  traverse_body(rule_dict, context_list + subset_context + local_context)
+                    # if institution == 'LEH01' and requirement_id == 'RA001503':
+                    #   print(f'\n{rule_dict=}\n{context_list=}\n{subset_context=}\n{local_context=}')
+                    traverse_body(rule_dict, context_list + subset_context + local_context)
                 return
 
               case 'copy_rules':
