@@ -4,6 +4,7 @@
 
 import csv
 import os
+import json
 import psycopg
 import sys
 
@@ -141,8 +142,8 @@ Requirement Key, Course ID, Career, Course, With
 
   if requirement_dict['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
-  context_col = str({'context': context_list,
-                     'requirement': requirement_dict}).replace('None', "'None'")
+  context_col = json.dumps({'context': context_list,
+                            'requirement': requirement_dict})
   data_row = [institution, requirement_id, requirement_index, requirement_name, context_col]
   requirements_writer.writerow(data_row)
 
