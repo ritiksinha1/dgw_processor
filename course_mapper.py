@@ -143,7 +143,7 @@ Requirement Key, Course ID, Career, Course, With
   if requirement_dict['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
   context_col = json.dumps({'context': context_list,
-                            'requirement': requirement_dict})
+                            'requirement': requirement_dict}, ensure_ascii=False)
   data_row = [institution, requirement_id, requirement_index, requirement_name, context_col]
   requirements_writer.writerow(data_row)
 
