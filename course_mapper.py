@@ -8,11 +8,12 @@ import json
 import psycopg
 import sys
 
-from typing import Any
 from argparse import ArgumentParser
 from collections import namedtuple, defaultdict
-from recordclass import recordclass
+from pprint import pprint
 from psycopg.rows import namedtuple_row
+from recordclass import recordclass
+from typing import Any
 
 from coursescache import courses_cache
 from dgw_parser import parse_block
@@ -116,13 +117,19 @@ Requirement Key, Course ID, Career, Course, With
   global requirement_index
   requirement_index += 1
 
+  # Find the course_list in the requirement_dict.
   try:
     course_list = requirement_dict['course_list']
   except KeyError:
+    # Sometimes the course_list _is_ the requirement. In these cases, all courses in the list are
+    # required.
     course_list = requirement_dict
-    print(institution, requirement_id, f'Requirement_dict is course_list', file=todo_file)
+    # Do we need to add min_classes, and all the other class_credit keys to the requirement_dict?
+    print(institution, requirement_id, f'Requirement is course_list', file=todo_file)
 
-  requirement_dict['num_courses'] = 0
+  # Filter out duplicated courses: people scribe course lists that include the same course(s) more
+  # than once.
+  courses_set = set()
   for course_area in range(len(course_list['scribed_courses'])):
     for course_tuple in course_list['scribed_courses'][course_area]:
       # Unless there is a With clause, skip "any course" wildcards (@ @)
@@ -133,19 +140,22 @@ Requirement Key, Course ID, Career, Course, With
         with_clause = f'With ({with_clause})'
 
       courses_dict = courses_cache((institution, discipline, catalog_number))
-      num_courses = len(courses_dict)
       for key, value in courses_dict.items():
-        requirement_dict['num_courses'] += 1
-        map_writer.writerow([requirement_index,
-                             f'{value.course_id:06}:{value.offer_nbr}', value.career,
-                             f'{key}: {value.title}', with_clause])
+        courses_set.add(f'{value.course_id:06}:{value.offer_nbr}|{value.career}|'
+                        f'{key}: {value.title}|{with_clause}')
+    requirement_dict['num_courses'] = len(courses_set)
+    for course in courses_set:
+      map_writer.writerow([requirement_index] + course.split('|'))
 
   if requirement_dict['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
-  context_col = json.dumps({'context': context_list,
-                            'requirement': requirement_dict}, ensure_ascii=False)
-  data_row = [institution, requirement_id, requirement_index, requirement_name, context_col]
-  requirements_writer.writerow(data_row)
+  else:
+    context_col = {'context': context_list,
+                   'requirement': requirement_dict}
+    # pprint(context_col, stream=debug_file)
+    data_row = [institution, requirement_id, requirement_index, requirement_name,
+                json.dumps(context_col, ensure_ascii=False)]
+    requirements_writer.writerow(data_row)
 
 
 # get_restrictions()
@@ -519,7 +529,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                     node[requirement_type]['requirement_id']))
               if cursor.rowcount != 1:
                 print(f'{institution} {requirement_id} Copy Rules found {cursor.rowcount} active '
-                      f'blocks.', file=fail_file)
+                      f'blocks', file=fail_file)
                 return
               row = cursor.fetchone()
               is_circular = False
@@ -563,7 +573,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           # it's in the true or false leg, what the condition is, and whether this is True or False
           # to infer what requirement must or must not be met. We're looking at YOU, Lehman ACC-BA.
 
-          print(f'{institution} {requirement_id} rule_complete in body', file=todo_file)
+          print(f'{institution} {requirement_id} RuleComplete in body', file=todo_file)
           return
 
         case 'course_list':
@@ -573,6 +583,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case 'group_requirement':
+          print(institution, requirement_id, 'group_requirement', file=log_file)
           number = int(requirement_value['number'])
           groups = requirement_value['group_list']['groups']
           num_groups = len(groups)
@@ -588,10 +599,12 @@ def traverse_body(node: Any, context_list: list) -> None:
             group_context = requirement_context + group_context
 
             assert len(list(group.keys())) == 1
+
             key, value = group.popitem()
             match key:
 
               case 'block':
+                print(institution, requirement_id, 'Group block', file=log_file)
                 try:
                   block_name = value['label']
                   block_num_required = int(value['number'])
@@ -628,23 +641,27 @@ def traverse_body(node: Any, context_list: list) -> None:
                   exit(ke)
 
               case 'blocktype':
+                print(institution, requirement_id, 'Group blocktype', file=todo_file)
                 pass
 
               case 'class_credit':
-                print(institution, requirement_id, 'class_credit', file=log_file)
+                print(institution, requirement_id, 'Group class_credit', file=log_file)
                 # This is where course lists turn up, in general.
                 try:
-                  course_list = group['course_list']
                   map_courses(institution, requirement_id, title,
-                              context_list + group_context, group)
-                except KeyError:
+                              context_list + group_context, value)
+                except KeyError as ke:
                   # Course List is an optional part of ClassCredit
-                  return
+                  pass
+
+                return
 
               case 'course_list_rule':
                 pass
 
               case 'group_requirements':
+                # Don't log this: it's an artifact because group requirements appear as lists even
+                # when there is only one group requirement.
                 assert isinstance(value, list)
                 for group_requirement in value:
                   traverse_body(value, context_list + group_context)
@@ -655,8 +672,10 @@ def traverse_body(node: Any, context_list: list) -> None:
               case 'rule_complete':
                 pass
               case _:
-                print(f'Unexpected Group {key}', file=sys.stderr)
-            print(f'Unhandled Group {key} {type(value)}', file=sys.stderr)
+                exit(f'{institution} {requirement_id} Unexpected Group {key}')
+
+            print(f'{institution} {requirement_id} Unhandled Key {key} {type(value)}',
+                  file=todo_file)
 
           return
 
@@ -693,8 +712,13 @@ def traverse_body(node: Any, context_list: list) -> None:
                       """, [institution, required_block_type, required_block_value])
                       if cursor.rowcount != num_required:
                         suffix = '' if cursor.rowcount == 1 else 's'
-                        print(f'{institution} {requirement_id} Subset block found {cursor.rowcount}'
-                              f' active block{suffix} for {num_required} required', file=fail_file)
+                        if cursor.rowcount == 0:
+                          print(f'{institution} {requirement_id} Subset block: need '
+                                f'{num_required}, found none', file=fail_file)
+                        else:
+                          print(f'{institution} {requirement_id} Subset block: need '
+                                f'{num_required}, found {cursor.rowcount} active block{suffix}',
+                                file=todo_file)
                       else:
                         local_context = [{'name': block_label}]
                         for row in cursor:
