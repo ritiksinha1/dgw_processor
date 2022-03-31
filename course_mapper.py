@@ -22,8 +22,11 @@ from quarantine_manager import QuarantineManager
 
 quarantine_dict = QuarantineManager()
 
-BlockInfo = recordclass('BlockInfo', 'institution requirement_id block_type block_value title '
-                        'parse_tree class_credits max_transfer min_residency min_grade min_gpa')
+BlockInfo = recordclass('BlockInfo',
+                        'institution requirement_id block_type block_value block_title '
+                        'class_credits max_transfer min_residency min_grade min_gpa')
+SubplanInfo = namedtuple('SubplanInfo', 'type description cip_code hegis_code')
+
 
 """ Output Files
       debug_file:         Info written during debugging (to avoid stdout/stderr)
@@ -51,12 +54,13 @@ map_writer = csv.writer(mapping_file)
 
 
 def dict_factory():
-  """ Support for three index levels, as in courses_by_institution.
+  """ Support for three index levels, as in courses_by_institution and subplans_by_institution.
   """
   return defaultdict(dict)
 
 
 courses_by_institution = defaultdict(dict_factory)
+subplans_by_institution = defaultdict(dict_factory)
 
 requirement_index = 0
 
@@ -97,10 +101,10 @@ def map_courses(institution: str, requirement_id: str, requirement_name: str, co
                 requirement_dict: dict):
   """ Write courses and their With clauses to the map file.
       Object returned by courses_cache():
-        CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits career')
+        CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr block_title credits career')
 
-      Each program requirement has a unique key based on institution, requirement_id, title, and
-      context list.
+      Each program requirement has a unique key based on institution, requirement_id, block_title,
+      and context list.
 
 Programs: Handled by process_block()
 Institution, Requirement ID, Type, Code, Total, Max Transfer, Min Residency, Min Grade, Min GPA
@@ -202,55 +206,52 @@ def process_block(row: namedtuple, context_list: list = []):
   except KeyError:
     print(row.institution, row.requirement_id, 'Not an active block', file=fail_file)
     return
-  (institution, requirement_id, block_type, block_value, title, parse_tree) = row
-  block_info = BlockInfo._make(row + ('', '', '', '', ''))
 
-  # traverse_header() is a one-pass procedure that extracts the header_list from the parse_tree that
-  # it gets from the block_info passed to it.
+  block_info = BlockInfo._make(row[0:5] + ('', '', '', '', ''))
+
+  # traverse_header() is a one-pass procedure that updates the block_info record with parameters
+  # found in the header list.
   try:
-    traverse_header(block_info)
-
-    programs_writer.writerow([f'{block_info.institution[0:3]}',
-                              f'{block_info.requirement_id}',
-                              f'{block_info.block_type}',
-                              f'{block_info.block_value}',
-                              f'{block_info.class_credits}',
-                              f'{block_info.max_transfer}',
-                              f'{block_info.min_residency}',
-                              f'{block_info.min_grade}',
-                              f'{block_info.min_gpa}'])
+    header_list = row.parse_tree['header_list']
+    if len(header_list) > 0:
+      traverse_header(block_info, header_list)
+    else:
+      print(row.institution, row.requirement_id, 'Empty Header', file=log_file)
   except KeyError:
-    print(f'No header_list for', institution, requirement_id, block_type, block_value,
-          title, file=sys.stderr)
+    print(row.institution, row.requirement_id, 'Missing Header', file=fail_file)
+
+  programs_writer.writerow([f'{block_info.institution[0:3]}',
+                            f'{block_info.requirement_id}',
+                            f'{block_info.block_type}',
+                            f'{block_info.block_value}',
+                            f'{block_info.block_title}',
+                            f'{block_info.class_credits}',
+                            f'{block_info.max_transfer}',
+                            f'{block_info.min_residency}',
+                            f'{block_info.min_grade}',
+                            f'{block_info.min_gpa}'])
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
-  # invoked from within traverse_body() to handle block and copy_rules constructs.
+  # invoked from within traverse_body() to handle block, blocktype and copy_rules constructs.
   try:
-    body_list = block_info.parse_tree['body_list']
+    body_list = row.parse_tree['body_list']
+    if len(body_list) > 0:
+      # Use block_info as a marker for a new (nested) block
+      traverse_body(body_list, context_list + [{'block_info': block_info._asdict()}])
+    else:
+      print(row.institution, row.requirement_id, 'Empty Body', file=log_file)
   except KeyError as ke:
-    print('No body_list for', institution, requirement_id, block_type, block_value, title,
-          file=sys.stderr)
-
-  # Use context_list[0] for debugging; context_list[1] is the name of the block
-  local_context_list = [{'requirement_block': f'{institution} {requirement_id}'},
-                        {'name': title}]
-  traverse_body(body_list, context_list + local_context_list)
+    print(row.institution, row.requirement_id, 'Missing Body', file=fail_file)
 
 
 # traverse_header()
 # =================================================================================================
-def traverse_header(block_info: namedtuple) -> None:
+def traverse_header(block_info: namedtuple, header_list: list) -> None:
   """ Extract program-wide qualifiers: MinGrade (but not MinGPA) and residency requirements,
   """
 
-  institution, requirement_id, *_ = (block_info)
-  try:
-    header_list = block_info.parse_tree['header_list']
-  except KeyError:
-    print(f'{institution} {requirement_id}: No header list in parse tree', file=sys.stderr)
-    return
-
+  institution, requirement_id, *_ = (block_info.institution, block_info.requirement_id)
   for header_item in header_list:
 
     if not isinstance(header_item, dict):
@@ -407,9 +408,19 @@ def traverse_body(node: Any, context_list: list) -> None:
                         | rule_complete
                         | subset
   """
-  # Debugging Info
-  institution, requirement_id = context_list[0]['requirement_block'].split()
-  title = context_list[1]['name']
+  # Containing Block Context.
+  # Use last block_info item in the context_list
+  for ctx in reversed(context_list):
+    try:
+      block_info = ctx['block_info']
+      institution = block_info['institution']
+      requirement_id = block_info['requirement_id']
+      block_title = block_info['block_title']
+      block_type = block_info['block_type']
+      block_value = block_info['block_value']
+      break
+    except KeyError as ke:
+      continue
 
   # Handle lists
   if isinstance(node, list):
@@ -441,46 +452,59 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'block':
           print(institution, requirement_id, 'block', file=log_file)
-          # The number has to be 1
+
+          # The number of blocks has to be 1
           number = int(requirement_value['number'])
           assert number == 1
 
-          institution = requirement_value['institution']
-          block_type = requirement_value['block_type']
-          block_value = requirement_value['block_value']
+          args = [requirement_value['institution'],
+                  requirement_value['block_type'],
+                  requirement_value['block_value']]
           with psycopg.connect('dbname=cuny_curriculum') as conn:
             with conn.cursor(row_factory=namedtuple_row) as cursor:
               blocks = cursor.execute("""
-              select institution, requirement_id, block_type, block_value, title, parse_tree
+              select institution, requirement_id, block_type, block_value, title as block_title,
+                     parse_tree
                 from requirement_blocks
                where institution = %s
                  and block_type = %s
                  and block_value = %s
                  and period_stop ~* '^9'
-              """, (institution, block_type, block_value))
-              if cursor.rowcount != number:
-                if cursor.rowcount == 0:
-                  print(f'{institution} {requirement_id} Block: 0 active blocks',
-                        file=fail_file)
-                else:
-                  # HOW TO HANDLE THIS?
-                  print(f'{institution} {requirement_id} Block: need {number}, found '
-                        f'{cursor.rowcount} active blocks', file=todo_file)
+              """, args)
+
+              if cursor.rowcount == 0:
+                print(f'{institution} {requirement_id} Block: found no active blocks',
+                      file=fail_file)
                 return
+
+              num_blocks = cursor.rowcount
+              block_num = 0
               for row in cursor:
-                process_block(row, context_list + requirement_context)
+                block_num += 1
+                if num_blocks == 1:
+                  process_block(row, context_list + requirement_context)
+                else:
+                  choice_context = {'choice': {'num_choices': num_blocks,
+                                               'num_required': number,
+                                               'index': block_num,
+                                               'block_type': args[1]}}
+                  print(institution, requirement_id, choice_context, file=debug_file)
+                  process_block(row,
+                                context_list + requirement_context + [choice_context])
           return
 
         case 'blocktype':
           print(institution, requirement_id, 'blocktype', file=log_file)
           # No observed cases where the number of blocks is other than one and the type of block is
           # other than Concentration. But in two cases (LEH 1298 and 1300), the containing block
-          # type is CONC instead of MAJOR. (The exclamation point in the log message is to make
-          # these cases easier to find! It's not excitement!!)
+          # type is CONC instead of MAJOR.
           number = int(node[requirement_type]['number'])
-          suffix = '' if number == 1 else 's'
+          if number != 1:
+            print(institution, requirement_id, f'blocktype with number ({number}) not equal 1',
+                  file=todo_file)
+            return
           req_type = node[requirement_type]['block_type']
-          req_type = 'Concentration' if req_type.upper() == 'CONC' else req_type.title()
+          # print(institution, requirement_id, subplans_by_institution[institution][block_value])
           print(f'{institution} {requirement_id} BlockType {req_type} in body', file=todo_file)
           return
 
@@ -489,7 +513,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           # This is where course lists turn up, in general.
           try:
             if course_list := node[requirement_type]['course_list']:
-              map_courses(institution, requirement_id, title,
+              map_courses(institution, requirement_id, block_title,
                           context_list + requirement_context, node[requirement_type])
           except KeyError:
             # Course List is an optional part of ClassCredit
@@ -520,7 +544,8 @@ def traverse_body(node: Any, context_list: list) -> None:
           with psycopg.connect('dbname=cuny_curriculum') as conn:
             with conn.cursor(row_factory=namedtuple_row) as cursor:
               cursor.execute("""
-              select institution, requirement_id, block_type, block_value, title, parse_tree
+              select institution, requirement_id, block_type, block_value, title as block_title,
+                     parse_tree
                 from requirement_blocks
                where institution = %s
                  and requirement_id = %s
@@ -528,7 +553,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, (node[requirement_type]['institution'],
                     node[requirement_type]['requirement_id']))
               if cursor.rowcount != 1:
-                print(f'{institution} {requirement_id} Copy Rules found {cursor.rowcount} active '
+                print(f'{institution} {requirement_id} CopyRules found {cursor.rowcount} active '
                       f'blocks', file=fail_file)
                 return
               row = cursor.fetchone()
@@ -536,7 +561,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               for context_dict in context_list:
                 try:
                   if f'{row.institution} {row.requirement_id}' == context_dict['requirement_block']:
-                    print(institution, requirement_id, 'Circular Copy Rules', file=fail_file)
+                    print(institution, requirement_id, 'Circular CopyRules', file=fail_file)
                     is_circular = True
                 except KeyError:
                   pass
@@ -551,7 +576,7 @@ def traverse_body(node: Any, context_list: list) -> None:
 
           try:
             if course_list := requirement_value['course_list']:
-              map_courses(institution, requirement_id, title,
+              map_courses(institution, requirement_id, block_title,
                           context_list + requirement_context, requirement_value)
           except KeyError:
             # Can't have a Course List Rule w/o a course list
@@ -578,7 +603,7 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'course_list':
           print(institution, requirement_id, 'course_list', file=log_file)
-          map_courses(institution, requirement_id, title, context_list + requirement_context,
+          map_courses(institution, requirement_id, block_title, context_list + requirement_context,
                       requirement_value)
           return
 
@@ -618,7 +643,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                                   requirement_id,
                                   block_type,
                                   block_value,
-                                  title,
+                                  title as block_title,
                                   parse_tree
                              from requirement_blocks
                             where institution = %s
@@ -648,7 +673,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 print(institution, requirement_id, 'Group class_credit', file=log_file)
                 # This is where course lists turn up, in general.
                 try:
-                  map_courses(institution, requirement_id, title,
+                  map_courses(institution, requirement_id, block_title,
                               context_list + group_context, value)
                 except KeyError as ke:
                   # Course List is an optional part of ClassCredit
@@ -703,7 +728,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                   with psycopg.connect('dbname=cuny_curriculum') as conn:
                     with conn.cursor(row_factory=namedtuple_row) as cursor:
                       cursor.execute("""
-                      select institution, requirement_id, block_type, block_value, title, parse_tree
+                      select institution, requirement_id, block_type, block_value,
+                             title as block_title, parse_tree
                         from requirement_blocks
                        where institution = %s
                          and block_type = %s
@@ -767,7 +793,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                                requirement_id,
                                block_type,
                                block_value,
-                               title,
+                               title as block_title,
                                period_start,
                                period_stop,
                                parse_tree
@@ -800,7 +826,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                                   f'{row.requirement_id}, compile error: {parse_tree["error"]} ',
                                   file=debug_file)
                           else:
-                            local_dict = {'requirement_block': target_block, 'name': row.title}
+                            local_dict = {'requirement_block': target_block,
+                                          'name': row.block_title}
                             local_context = [local_dict]
                             traverse_body(body_list,
                                           context_list + requirement_context + local_context)
@@ -837,7 +864,7 @@ def traverse_body(node: Any, context_list: list) -> None:
 # main()
 # -------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
-  """ Get a parse tree from the requirements_table and walk it. If no
+  """ Get a parse tree from the requirements_table and walk it.
   """
   parser = ArgumentParser()
   parser.add_argument('-a', '--all', action='store_true')
@@ -853,6 +880,7 @@ if __name__ == "__main__":
                             'Requirement ID',
                             'Type',
                             'Code',
+                            'Title',
                             'Total Credits',
                             'Max Transfer',
                             'Min Residency',
@@ -898,7 +926,7 @@ if __name__ == "__main__":
                                   requirement_id,
                                   block_type,
                                   block_value,
-                                  title,
+                                  title as block_title,
                                   parse_tree
                              from requirement_blocks
                             where institution {institution_op} %s
@@ -920,7 +948,7 @@ if __name__ == "__main__":
                                   requirement_id,
                                   block_type,
                                   block_value,
-                                  title,
+                                  title as block_title,
                                   parse_tree
                              from requirement_blocks
                             where institution {institution_op} %s
@@ -964,6 +992,16 @@ if __name__ == "__main__":
                                                          course.catalog_number)
               value = (course.course_id, course.offer_nbr, course.career)
               courses_by_institution[institution][discipline][catalog_number] = value
+
+            # And cache the institution's subplan info
+            course_cursor.execute("""
+            select institution, plan, subplan, subplan_type, description, cip_code, hegis_code
+            from cuny_subplans
+            """)
+            for subplan in course_cursor:
+              subplan_info = SubplanInfo._make([subplan.subplan_type, subplan.description,
+                                                subplan.cip_code, subplan.hegis_code])
+              subplans_by_institution[row.institution][subplan.plan][subplan.subplan] = subplan_info
 
         process_block(row)
   print(f'{quarantine_count:5,} Quarantined\n{inactive_count:5,} Inactive')
