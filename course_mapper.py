@@ -14,6 +14,7 @@ from pprint import pprint
 from psycopg.rows import namedtuple_row
 from recordclass import recordclass
 from typing import Any
+from uuid import uuid4 as uuid  # debugging aid
 
 from coursescache import courses_cache
 from dgw_parser import parse_block
@@ -415,9 +416,9 @@ def traverse_body(node: Any, context_list: list) -> None:
       block_info = ctx['block_info']
       institution = block_info['institution']
       requirement_id = block_info['requirement_id']
-      block_title = block_info['block_title']
       block_type = block_info['block_type']
       block_value = block_info['block_value']
+      block_title = block_info['block_title']
       break
     except KeyError as ke:
       continue
@@ -452,6 +453,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'block':
           print(institution, requirement_id, 'block', file=log_file)
+          id = str(uuid())[0:8].upper()
+          print(f'\nBLOCK {id} ENTER')
 
           # The number of blocks has to be 1
           number = int(requirement_value['number'])
@@ -480,6 +483,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               num_blocks = cursor.rowcount
               block_num = 0
               for row in cursor:
+                print(f'BLOCK {id} FETCH {row.requirement_id}')
                 block_num += 1
                 if num_blocks == 1:
                   process_block(row, context_list + requirement_context)
@@ -491,6 +495,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   print(institution, requirement_id, choice_context, file=debug_file)
                   process_block(row,
                                 context_list + requirement_context + [choice_context])
+          print(f'BLOCK {id} EXIT')
           return
 
         case 'blocktype':
@@ -504,9 +509,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                   file=todo_file)
             return
           req_type = node[requirement_type]['block_type']
-          # print(institution, requirement_id, subplans_by_institution[institution][block_value])
-          print(f'{institution} {requirement_id} BlockType {req_type} in body', file=todo_file)
-          return
+          # if institution == 'LEH01' and requirement_id == 'RA002329':
+          #   print(f'{institution} {requirement_id} {block_type} {block_value}: {req_type}')
+          #   for key, value in subplans_by_institution[institution][block_value].items():
+          #     print(f'{key:12}: {value}')
 
         case 'class_credit':
           print(institution, requirement_id, 'class_credit', file=log_file)
@@ -520,21 +526,33 @@ def traverse_body(node: Any, context_list: list) -> None:
             return
 
         case 'conditional':
+          import pdb; pdb.set_trace()
           print(institution, requirement_id, 'conditional', file=log_file)
+          print('\n', node['conditional'])
+
           # Use the condition as the pseudo-name of this requirement
           # UNABLE TO HANDLE RULE_COMPLETE UNTIL THE CONDITION IS EVALUATED
           condition = node[requirement_type]['condition']
           for if_true_dict in node[requirement_type]['if_true']:
+            id = str(uuid())[0:8].upper()
+            print(f'\nIF_TRUE_DICT {id} ENTER')
+            print(if_true_dict)
             condition_dict = {'name': 'if_true', 'condition': condition}
             condition_list = [condition_dict]
             traverse_body(if_true_dict, context_list + condition_list)
+            print(f'IF_TRUE_DICT {id} RETURN')
           try:
+            id = str(uuid())[0:8].upper()
             for if_false_dict in node[requirement_type]['if_false']:
+              print(f'\nIF_FALSE_DICT {id} ENTER')
+              print(if_false_dict)
               condition_dict = {'name': 'if_false', 'condition': condition}
               condition_list = [condition_dict]
               traverse_body(if_true_dict, context_list + condition_list)
+              print(f'IF_FALSE_DICT {id} RETURN')
           except KeyError:
             # Scribe Else clause is optional
+
             pass
           return
 
@@ -922,7 +940,7 @@ if __name__ == "__main__":
           requirement_id = f'RA{int(args.requirement_id.lower().strip("ra")):06}'
         except ValueError:
           exit(f'{args.requirement_id} is not a valid requirement id')
-        cursor.execute(""" select institution,
+        cursor.execute(f""" select institution,
                                   requirement_id,
                                   block_type,
                                   block_value,
