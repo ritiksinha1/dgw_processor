@@ -38,3 +38,4 @@ Logs/
 /testing/test_results.*/
 /testing/test_timeouts
 /rerun.sh
+/.pdbrc
