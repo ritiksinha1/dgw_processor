@@ -215,7 +215,10 @@ def process_block(row: namedtuple, context_list: list = []):
   try:
     header_list = row.parse_tree['header_list']
     if len(header_list) > 0:
-      traverse_header(block_info, header_list)
+      try:
+        traverse_header(block_info, header_list)
+      except KeyError as ke:
+        exit(f'{row.institution} {row.requirement_id} Header KeyError {ke}')
     else:
       print(row.institution, row.requirement_id, 'Empty Header', file=log_file)
   except KeyError:
@@ -237,13 +240,14 @@ def process_block(row: namedtuple, context_list: list = []):
   # invoked from within traverse_body() to handle block, blocktype and copy_rules constructs.
   try:
     body_list = row.parse_tree['body_list']
-    if len(body_list) > 0:
-      # Use block_info as a marker for a new (nested) block
-      traverse_body(body_list, context_list + [{'block_info': block_info._asdict()}])
-    else:
-      print(row.institution, row.requirement_id, 'Empty Body', file=log_file)
   except KeyError as ke:
     print(row.institution, row.requirement_id, 'Missing Body', file=fail_file)
+    return
+  if len(body_list) > 0:
+    # Use block_info as a marker for a new (nested) block
+    traverse_body(body_list, context_list + [{'block_info': block_info._asdict()}])
+  else:
+    print(row.institution, row.requirement_id, 'Empty Body', file=log_file)
 
 
 # traverse_header()
@@ -777,9 +781,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                 return
 
               case 'conditional':
-                print(f'{institution} {requirement_id} Subset conditional', file=todo_file)
+                print(f'{institution} {requirement_id} Subset conditional', file=log_file)
                 assert isinstance(rule, list)
-                for conditional in rule:
+                for conditional_dict in rule:
+                  conditional = conditional_dict['conditional']
                   # Use the condition as the pseudo-name of this requirement
                   condition = conditional['condition']
                   for if_true_dict in conditional['if_true']:
@@ -908,9 +913,9 @@ def traverse_body(node: Any, context_list: list) -> None:
 if __name__ == "__main__":
   """ Get a parse tree from the requirements_table and walk it.
   """
-  breakpoint()
   parser = ArgumentParser()
   parser.add_argument('-a', '--all', action='store_true')
+  parser.add_argument('-d', '--debug', action='store_true')
   parser.add_argument('-i', '--institution', default='qns')
   parser.add_argument('-r', '--requirement_id')
   parser.add_argument('--no_remarks', action='store_true')
@@ -918,6 +923,9 @@ if __name__ == "__main__":
   parser.add_argument('-v', '--value', default='csci-bs')
   args = parser.parse_args()
   do_remarks = not args.no_remarks
+
+  if args.debug:
+    breakpoint()
 
   empty_tree = "'{}'"
 
@@ -1047,8 +1055,8 @@ if __name__ == "__main__":
               subplan_info = SubplanInfo._make([subplan.subplan_type, subplan.description,
                                                 subplan.cip_code, subplan.hegis_code])
               subplans_by_institution[row.institution][subplan.plan][subplan.subplan] = subplan_info
-        # if row.requirement_id == 'RA000637':
-        #   breakpoint()
+        if row.requirement_id == 'RA000637':
+          breakpoint()
         process_block(row)
         if row.requirement_id == 'RA000637':
           print('FINISHED 637')
