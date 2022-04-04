@@ -779,12 +779,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                           print(institution, requirement_id, f'Subset {cursor.rownumber} of '
                                 f'{cursor.rowcount} required block{suffix}', file=log_file)
                           process_block(row, context_list + subset_context + local_context)
-                # return
                 continue
 
               case 'blocktype':
                 print(f'{institution} {requirement_id} Subset blocktype', file=todo_file)
-                # return
                 continue
 
               case 'conditional':
@@ -806,8 +804,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                   except KeyError:
                     # Scribe Else clause is optional
                     pass
-
-                # return
                 continue
 
               case 'class_credit_list' | 'course_lists' | 'group_requirements':
@@ -831,7 +827,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                     # if institution == 'LEH01' and requirement_id == 'RA001503':
                     #   print(f'\n{rule_dict=}\n{context_list=}\n{subset_context=}\n{local_context=}')
                     traverse_body(rule_dict, context_list + subset_context + local_context)
-                # return
                 continue
 
               case 'copy_rules':
@@ -889,8 +884,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                           local_context = [local_dict]
                           traverse_body(body_list,
                                         context_list + requirement_context + local_context)
-
-                # return
                 continue
 
               case 'maxpassfail' | 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
@@ -900,7 +893,6 @@ def traverse_body(node: Any, context_list: list) -> None:
               case _:
                 print(f'{institution} {requirement_id} Unhandled Subset key: {key:20} '
                       f'{str(type(rule)):10} {len(rule)}', file=sys.stderr)
-                # return
                 continue
 
             print(institution, requirement_id, f'Unexpected Subset: {key}', file=sys.stderr)
