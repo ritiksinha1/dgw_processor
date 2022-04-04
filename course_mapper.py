@@ -457,12 +457,17 @@ def traverse_body(node: Any, context_list: list) -> None:
       context_dict = get_restrictions(requirement_value)
       try:
         requirement_name = requirement_value.pop('label')
-      except KeyError:
-        requirement_name = None
-      if context_dict:
         context_dict['name'] = requirement_name
+      except KeyError:
+        requirement_name = 'No Name'
+        if context_dict:
+          # If there are restrictions but no name, add the placeholder name
+          context_dict['name'] = requirement_name
+
+      if context_dict:
         requirement_context = [context_dict]
       else:
+        # If there are no restrictions and no name, there's nothing to add to the context
         requirement_context = []
 
       match requirement_type:
@@ -774,11 +779,13 @@ def traverse_body(node: Any, context_list: list) -> None:
                           print(institution, requirement_id, f'Subset {cursor.rownumber} of '
                                 f'{cursor.rowcount} required block{suffix}', file=log_file)
                           process_block(row, context_list + subset_context + local_context)
-                return
+                # return
+                continue
 
               case 'blocktype':
                 print(f'{institution} {requirement_id} Subset blocktype', file=todo_file)
-                return
+                # return
+                continue
 
               case 'conditional':
                 print(f'{institution} {requirement_id} Subset conditional', file=log_file)
@@ -800,7 +807,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                     # Scribe Else clause is optional
                     pass
 
-                return
+                # return
+                continue
 
               case 'class_credit_list' | 'course_lists' | 'group_requirements':
                 # These are lists of class_credit, course_list, group_requirement
@@ -823,7 +831,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                     # if institution == 'LEH01' and requirement_id == 'RA001503':
                     #   print(f'\n{rule_dict=}\n{context_list=}\n{subset_context=}\n{local_context=}')
                     traverse_body(rule_dict, context_list + subset_context + local_context)
-                return
+                # return
+                continue
 
               case 'copy_rules':
                 print(institution, requirement_id, 'Subset copy_rules', file=log_file)
@@ -881,16 +890,18 @@ def traverse_body(node: Any, context_list: list) -> None:
                           traverse_body(body_list,
                                         context_list + requirement_context + local_context)
 
-                return
+                # return
+                continue
 
               case 'maxpassfail' | 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
                 # Ignored Qualifiers and rules
-                return
+                continue
 
               case _:
                 print(f'{institution} {requirement_id} Unhandled Subset key: {key:20} '
                       f'{str(type(rule)):10} {len(rule)}', file=sys.stderr)
-                return
+                # return
+                continue
 
             print(institution, requirement_id, f'Unexpected Subset: {key}', file=sys.stderr)
 
@@ -1055,9 +1066,6 @@ if __name__ == "__main__":
               subplan_info = SubplanInfo._make([subplan.subplan_type, subplan.description,
                                                 subplan.cip_code, subplan.hegis_code])
               subplans_by_institution[row.institution][subplan.plan][subplan.subplan] = subplan_info
-        if row.requirement_id == 'RA000637':
-          breakpoint()
         process_block(row)
-        if row.requirement_id == 'RA000637':
-          print('FINISHED 637')
+
   print(f'{quarantine_count:5,} Quarantined\n{inactive_count:5,} Inactive')
