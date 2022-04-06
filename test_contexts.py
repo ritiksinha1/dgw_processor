@@ -1,7 +1,7 @@
 #! /usr/local/bin/python3
 """ Testing Aid
     Display context info for requirements.
-    Give the institution and requirement_id on the command line.
+    Give the institution, requirement_id, and context keys of interest on the command line.
 """
 import csv
 import json
@@ -11,16 +11,37 @@ import sys
 from collections import namedtuple
 from pprint import pprint
 
-if len(sys.argv) != 3:
-  exit(f'Usage: {sys.argv[0]} institution requirement_id')
+if len(sys.argv) < 3:
+  exit(f'Usage: {sys.argv[0]} institution requirement_id [context_key...')
 
 institution = sys.argv[1][0:3].upper() + '01'
 try:
-  requirement_id = f'RA{int(sys.argv[2].upper().strip("RA")):06}'
+  if sys.argv[2].upper() == 'ALL':
+    requirement_id = 'ALL'
+  else:
+    requirement_id = f'RA{int(sys.argv[2].upper().strip("RA")):06}'
 except ValueError as ve:
   exit(f'Invalid requirement_id')
 
-print(f'Requirement Contexts for {institution} {requirement_id}')
+valid_keys = ['all',
+              'dump',  # pprint the whole cell
+              'block_info',
+              'choice',
+              'condition',
+              'max_transfer',
+              'min_grade',
+              'name',
+              'remark',
+              'requirement_block']
+context_keys = []
+for context_key in sys.argv[3:]:
+  for valid_key in valid_keys:
+    if valid_key.startswith(context_key):
+      context_keys.append(valid_key)
+if 'all' in context_keys:
+  context_keys = valid_keys[2:]   # Omit all and dump
+
+print(f'Requirement Contexts for {institution} {requirement_id} [{" ".join(context_keys)}]')
 
 with open('course_mapper.requirements.csv') as csvfile:
   reader = csv.reader(csvfile)
@@ -29,7 +50,18 @@ with open('course_mapper.requirements.csv') as csvfile:
       Row = namedtuple('Row', [col.lower().replace(' ', '_') for col in line])
     else:
       row = Row._make(line)
-      if row.institution == institution and row.requirement_id == requirement_id:
-        print(f'\nRequirement Key {row.requirement_key}')
+      if (institution == 'ALL01' or row.institution == institution) and \
+         (requirement_id == 'ALL' or row.requirement_id == requirement_id):
         context_col = json.loads(row.context)
-        pprint(context_col['context'])
+        if 'dump' in context_keys:
+          print(f'\nRequirement Key {row.requirement_key}')
+          pprint(context_col)
+        else:
+          for ctx in context_col['context']:
+            for key in context_keys:
+              try:
+                obj = ctx[key]
+                print(f'\nRequirement Key {row.requirement_key}')
+                pprint(obj)
+              except KeyError:
+                pass

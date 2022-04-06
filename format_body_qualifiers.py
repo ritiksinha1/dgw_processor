@@ -98,8 +98,8 @@ def format_maxspread(maxspread_dict: dict) -> str:
     print(f'*** format_maxspread({maxspread_dict})', file=sys.stderr)
 
   number = int(maxspread_dict['number'])
-
-  return f'<p>No more than {number} disciplines allowed.</p>'
+  suffix = '' if number == 1 else 's'
+  return f'<p>No more than {number} discipline{suffix} allowed.</p>'
 
 
 # format_maxtransfer()
