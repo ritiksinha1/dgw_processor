@@ -1,5 +1,14 @@
 #! /usr/local/bin/bash
 
+echo "The process of updating requirement blocks is handled by update_requirement_blocks.py "
+echo "in the cuny_programs project. This script was a precursor to that, and is retained for "
+echo "documentation purposes."
+echo
+echo "Now all you need to do in this directory to get the latest test data is simply to run "
+echo "./generate_test_data.py, which is being done for you now:"
+echo
+./generate_test_data.py
+exit
 # This script automates the verification process when updating the requirement_blocks table after a
 # new dataset is downloaded from Tumbleweed. The verification process consists of determining
 # whether any previously-quarantined blocks have been fixed and whether any new blocks fail to
