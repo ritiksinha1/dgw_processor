@@ -41,7 +41,7 @@ for context_key in sys.argv[3:]:
 if 'all' in context_keys:
   context_keys = valid_keys[2:]   # Omit all and dump
 
-print(f'Requirement Contexts for {institution} {requirement_id} [{" ".join(context_keys)}]')
+print(f'Requirement Contexts for {institution[0:3]} {requirement_id} [{" ".join(context_keys)}]')
 
 with open('course_mapper.requirements.csv') as csvfile:
   reader = csv.reader(csvfile)
@@ -58,10 +58,18 @@ with open('course_mapper.requirements.csv') as csvfile:
           pprint(context_col)
         else:
           for ctx in context_col['context']:
+            try:
+              block_info = ctx['block_info']
+              ctx_requirement_id = block_info['requirement_id']
+            except KeyError:
+              pass
             for key in context_keys:
               try:
                 obj = ctx[key]
-                print(f'\nRequirement Key {row.requirement_key}')
-                pprint(obj)
+                if key == 'condition':
+                  print(row.institution, row.requirement_id, ctx_requirement_id, obj.strip(')( '))
+                else:
+                  print(f'Requirement Key {row.requirement_key}', end='')
+                  pprint(obj)
               except KeyError:
                 pass
