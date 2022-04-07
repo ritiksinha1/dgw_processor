@@ -31,22 +31,45 @@ exit
 #     Copy the name of a test_data.{block_type} file to the system clipboard, and use the following
 #     commands to set the TEST_DATA environment variable, and to copy it to/from the temporary file
 #     named t.
-#       function tot
-#       {
-#         export target_filename=`pbpaste`
-#         if [[ -f $TEST_DIR/$target_filename ]]
+#     function tot
+#     {
+#       # Access from test_data.xxx listing in pasteboard
+#       export target_filename=`pbpaste`
+#       if [[ -f $DATA_DIR/$target_filename ]]
+#       then
+#         export saved_t=$DATA_DIR/$target_filename
+#         cp $saved_t ./t.txt
+#         export TEST_DATA=./t.txt
+#         alias fromt='export TEST_DATA=$saved_t'
+#         alias vr='m $RESULT_DIR/$target_filename'
+#         alias rmt='rm -i $RESULT_DIR/$target_filename'
+#         echo $saved_t
+#       else
+#         # Access from command line args or instruction-requirement_id in pasteboard
+#         if [[ $# = 2 ]]
 #         then
-#           export saved_t=$TEST_DIR/$target_filename
-#           cp $saved_t ./t.txt
-#           export TEST_DATA=./t.txt
-#           alias fromt='export TEST_DATA=$saved_t'
-#           alias vr='m $RESULT_DIR/$target_filename'
-#           alias rmt='rm -i $RESULT_DIR/$target_filename'
-#           echo $saved_t
+#           institution=$1
+#           requirement_id=$2
 #         else
-#           echo File does not exist: $TEST_DIR/$target_filename
+#           read <<< `pbpaste` institution requirement_id
 #         fi
-#       }
+#         institution=`echo $institution |cut -c 1-4| tr a-z A-Z`01
+#         requirement_id=$(printf RA%06d $(echo $requirement_id | tr -dc '0-9'))
+#         prefix=${institution}_${requirement_id}
+#         # target_file rather than target_filename is intentional
+#         target_file=`ls test_data*/${prefix}* 2>&1`
+#         if [[ $target_file =~ ls* ]]
+#         then echo $institution $requirement_id not found
+#         else
+#           echo $target_file
+#           export saved_t=$target_file
+#           cp $saved_t ./t.txt
+#           alias fromt='export TEST_DATA=$saved_t'
+#           unalias vr 2> /dev/null
+#           unalias rmt 2> /dev/null
+#         fi
+#       fi
+#     }
 #
 #     Edit the block residing in the file ./t.txt to locate the problem. (subl is an alias for the
 #     programming editor that I use. I delete parts of the Scribe block until I locate what line(s)
