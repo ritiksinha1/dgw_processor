@@ -8,6 +8,7 @@ BMC01,RA000291,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000321,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000335,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000360,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,No
+BMC01,RA000367,OTHER,UGRD,Current,Illegal if-else structure in header,Unknown
 CSI01,RA000365,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 32,unknown
 CSI01,RA000465,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 30,unknown
 CSI01,RA000575,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 54,unknown

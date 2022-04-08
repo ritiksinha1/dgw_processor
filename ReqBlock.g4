@@ -212,7 +212,7 @@ header_class_credit : (num_classes | num_credits)
 
 body_class_credit : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))? course_list_body?
-                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )*
+                  (display | proxy_advice | remark | share | rule_tag | label | tag )*
                   ;
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
