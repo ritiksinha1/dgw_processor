@@ -136,22 +136,30 @@ if __name__ == '__main__':
 
   choice = 'd'
   try:
-    while choice.lower()[0] in ['a', 'd', 'f', 'w']:
+    while choice.lower()[0] in ['?', 'h', 'a', 'd', 'f', 'w']:
+      selection = choice.lower()[0]
+      if selection in ['?', 'h']:
+        print('Add {institution requirement_id reason}')
+        print('Dict list')
+        print('File list')
+        print('Write to database')
 
-      if choice.lower().startswith('f'):
+      elif selection == 'f':
         # Display the file
         print('File:')
         with open(_csv_file) as f:
           print(f.read())
 
-      elif choice.lower().startswith('d'):
+      elif selection == 'd':
         # Display the dict
         print('Dict:')
         for key, value in quarantined_dict.items():
           print(f'{key.institution}, {key.requirement_id}: '
                 f'{quarantined_dict.explanation((key.institution, key.requirement_id))}')
 
-      elif choice.lower().startswith('w'):
+      elif selection == 'w':
+        # Write file to database
+        # Use this when the repo has an updated csv from another machine.
         with psycopg.connect('dbname=cuny_curriculum') as conn:
           with conn.cursor(row_factory=namedtuple_row) as cursor:
             for key, value in quarantined_dict.items():
@@ -165,7 +173,8 @@ if __name__ == '__main__':
               """, key)
               assert cursor.rowcount == 1
               print(f'{institution} {requirement_id}')
-      elif choice.lower().startswith('a'):
+      elif selection == 'a':
+        # Add institution requirement_id reason to quarantine
         try:
           # add institution requirement_id reason...
           cmd, institution, requirement_id, *reason = choice.split()
@@ -181,7 +190,7 @@ if __name__ == '__main__':
         except Exception:
           print('Command line deficiency detected')
 
-      choice = input('add | dict | file | write: ')
+      choice = input('help | add | dict | file | write: ')
 
   except IndexError as ie:
     exit()
