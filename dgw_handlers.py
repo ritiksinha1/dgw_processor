@@ -121,7 +121,7 @@ def body_class_credit(ctx, institution, requirement_id):
   """
 body_class_credit : (num_classes | num_credits)
                   (logical_op (num_classes | num_credits))? course_list_body?
-                  (IS? pseudo | display | proxy_advice | remark | share | rule_tag | label | tag )*
+                  (display | proxy_advice | remark | share | rule_tag | label | tag )*
                   ;
 
       num_classes         : NUMBER CLASS allow_clause?;
@@ -145,8 +145,8 @@ body_class_credit : (num_classes | num_credits)
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
 
-  if ctx.pseudo():
-    return_dict['is_pseudo'] = True
+  # if ctx.pseudo():
+  #   return_dict['is_pseudo'] = True
 
   # display is student-specific
   # if ctx.display():
