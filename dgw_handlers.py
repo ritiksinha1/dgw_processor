@@ -107,10 +107,8 @@ def header_class_credit(ctx, institution, requirement_id):
 
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
-  # Like proxy-advice, display text is student specific, so there is no point in carrying it into
-  # the parse tree
-  # if ctx.display():
-  #   return_dict['display'] = get_display(ctx)
+  if ctx.display():
+    return_dict['display'] = get_display(ctx)
 
   return {'header_class_credit': return_dict}
 
@@ -445,8 +443,8 @@ def header_tag(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def rule_tag(ctx, institution, requirement_id):
   """ rule_tag  : (RULE_TAG nv_pair)+;
-      nv_pair   : SYMBOL '=' (STRING | SYMBOL);
-      Unused function.
+      nv_pair   : nv_lhs '=' nv_rhs;
+
       Rule tags are currently ignored, but this method will handle them if that ever changes!
   """
   if DEBUG:
@@ -459,12 +457,14 @@ def rule_tag(ctx, institution, requirement_id):
     rule_tags = [ctx]
 
   tag_list = []
+
   for rule_tag in rule_tags:
     for pair in rule_tag.nv_pair():
-      name = pair.SYMBOL()[0].getText()
-      value = pair.STRING().getText() if len(pair.SYMBOL()) == 1 else pair.SYMBOL()[1].getText()
-      tag_list.append({'name': name, 'value': value})
-
+      for index in range(len(pair.nv_lhs())):
+        name = pair.nv_lhs()[index].getText()
+        value = pair.nv_rhs()[index].getText()
+        # value = pair.STRING().getText() if len(pair.SYMBOL()) == 1 else pair.SYMBOL()[1].getText()
+        tag_list.append({'name': name, 'value': value})
   return {'ruletag': tag_list}
 
 
@@ -998,6 +998,32 @@ def header_minterm(ctx, institution, requirement_id):
   return {'header_minterm': return_dict}
 
 
+# header_tag()
+# -------------------------------------------------------------------------------------------------
+def header_tag(ctx, institution, requirement_id):
+  """
+      header_tag  : (nv_pair)+;
+      Used for AdviceJump=[url] to link to web page with more info.
+  """
+  if DEBUG:
+    print(f'*** header_tag({class_name(ctx)}, {institution}, {requirement_id})',
+          file=sys.stderr)
+
+  nv_pairs = ctx.nv_pair()
+  if not isinstance(nv_pairs, list):
+    nv_pairs = [nv_pairs]
+
+  // WIP***
+  for nv_pair in nv_pairs:
+    for index, lhs in enumerate(nv_pair.nv_lhs):
+      name = lhs().getText()
+      value = nv_pair.nv_rhs()[index].getText()
+      print(f'{name=} {value=}')
+  return_dict = 'Not implemented'
+
+  return {'header_tag': return_dict}
+
+
 # noncourse()
 # -------------------------------------------------------------------------------------------------
 def noncourse(ctx, institution, requirement_id):
@@ -1257,10 +1283,11 @@ dispatch_header = {'header_class_credit': header_class_credit,
                    'header_minperdisc': header_minperdisc,
                    'header_minres': header_minres,
                    'header_minterm': header_minterm,
+                   'header_share': header_share,
+                   'header_tag': header_tag,
                    'optional': optional,
                    'proxy_advice': proxy_advice,
                    'remark': remark,
-                   'header_share': header_share,
                    'standalone': standalone,
                    'under': under
                    }
@@ -1310,7 +1337,7 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
     key_error = str(key_error).strip('\'')
     nested = f' while processing “{key}”' if key != key_error else ''
     # Missing handler: report it and recover ever so gracefully
-    print(f'No dispatch method for “{key_error}”{nested}: '
+    print(f' NO DISPATCH METHOD for “{key_error}”{nested}: '
           f'{institution=}; {requirement_id=}; {which_part=}', file=sys.stderr)
     print_stack()
     return {'Dispatch_Error':

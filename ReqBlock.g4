@@ -132,13 +132,14 @@ header_rule         : header_class_credit
                     | header_minperdisc
                     | header_minres
                     | header_minterm
+                    | header_share
+                    | header_tag
                     | noncourse
                     | optional
                     | proxy_advice
                     | remark
                     | rule_complete
                     | standalone
-                    | header_share
                     ;
 
 body_conditional  : IF expression THEN (body_rule | body_rule_group) body_else?;
@@ -270,7 +271,9 @@ minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 noncourse       : NUMBER NONCOURSE (LP expression RP)? proxy_advice? rule_tag? label?;
 num_classes     : NUMBER CLASS allow_clause?;
 num_credits     : NUMBER CREDIT allow_clause?;
-nv_pair         : SYMBOL '=' (STRING | SYMBOL);
+nv_pair         : (nv_lhs '=' nv_rhs)+;
+nv_lhs          : SYMBOL;
+nv_rhs          : (STRING | SYMBOL);
 optional        : OPTIONAL;
 proxy_advice    : (PROXY_ADVICE STRING)+;
 pseudo          : PSEUDO | PSUEDO;

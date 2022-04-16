@@ -23,7 +23,7 @@ try:
 except ValueError as ve:
   exit(f'Invalid requirement_id')
 
-valid_keys = ['all',
+valid_keys = ['all',   # block_info, choice, ... requirement_block
               'dump',  # pprint the whole cell
               'block_info',
               'choice',
@@ -35,6 +35,9 @@ valid_keys = ['all',
               'requirement_block']
 context_keys = []
 for context_key in sys.argv[3:]:
+  # Command line aliases: names and labels for 'name'
+  if context_key.startswith('name') or context_key.startswith('label'):
+    context_key = 'name'
   for valid_key in valid_keys:
     if valid_key.startswith(context_key):
       context_keys.append(valid_key)
@@ -69,7 +72,7 @@ with open('course_mapper.requirements.csv') as csvfile:
                 if key == 'condition':
                   print(row.institution, row.requirement_id, ctx_requirement_id, obj.strip(')( '))
                 else:
-                  print(f'Requirement Key {row.requirement_key}', end='')
+                  print(f'Requirement Key {row.requirement_key:>3} ', end='')
                   pprint(obj)
               except KeyError:
                 pass

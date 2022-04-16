@@ -404,6 +404,16 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#nv_lhs.
+    def visitNv_lhs(self, ctx:ReqBlockParser.Nv_lhsContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#nv_rhs.
+    def visitNv_rhs(self, ctx:ReqBlockParser.Nv_rhsContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#optional.
     def visitOptional(self, ctx:ReqBlockParser.OptionalContext):
         return self.visitChildren(ctx)

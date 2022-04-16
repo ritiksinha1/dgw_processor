@@ -21,7 +21,13 @@ JJC01,RA001698,MAJOR,UGRD,Current,“3Credits” is not valid on line 70,unknown
 JJC01,RA001699,MAJOR,UGRD,Current,“3Credits” is not valid on line 72,unknown
 KCC01,RA001147,OTHER,UGRD,Current,"Missing BeginIf/EndIf around lines 18-20. (Probably lines 23-26, too.)",Unknown
 KCC01,RA001158,OTHER,UGRD,Current,"Missing BeginIf/EndIf around lines 24-26. (Probably lines 29-32, too.)",Unknown
+NYT01,RA000666,MAJOR,UGRD,Current,Invalid use of PSEUDO,Unknown
+NYT01,RA000678,MAJOR,UGRD,Current,Invalid use of PSEUDO,Unknown
 NYT01,RA000679,MAJOR,UGRD,Current,Misplaced semicolon on line 96,No
 NYT01,RA000680,MAJOR,UGRD,Current,Misplaced semicolon on line 100,No
 NYT01,RA000681,MAJOR,UGRD,Current,Misplaced semicolon on line 92,No
 NYT01,RA000682,MAJOR,UGRD,Current,Misplaced semicolon on line 107,No
+NYT01,RA000706,MAJOR,UGRD,Current,Invalid use of PSEUDO,Unknown
+NYT01,RA000741,MAJOR,UGRD,Current,Invalid use of PSEUDO,Unknown
+NYT01,RA000743,MAJOR,UGRD,Current,Invalid use of PSEUDO,Unknown
+NYT01,RA000752,MAJOR,UGRD,Current,Invalid use of PSEUDO,Unknown

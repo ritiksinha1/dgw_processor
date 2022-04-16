@@ -719,6 +719,24 @@ class ReqBlockListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ReqBlockParser#nv_lhs.
+    def enterNv_lhs(self, ctx:ReqBlockParser.Nv_lhsContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#nv_lhs.
+    def exitNv_lhs(self, ctx:ReqBlockParser.Nv_lhsContext):
+        pass
+
+
+    # Enter a parse tree produced by ReqBlockParser#nv_rhs.
+    def enterNv_rhs(self, ctx:ReqBlockParser.Nv_rhsContext):
+        pass
+
+    # Exit a parse tree produced by ReqBlockParser#nv_rhs.
+    def exitNv_rhs(self, ctx:ReqBlockParser.Nv_rhsContext):
+        pass
+
+
     # Enter a parse tree produced by ReqBlockParser#optional.
     def enterOptional(self, ctx:ReqBlockParser.OptionalContext):
         pass

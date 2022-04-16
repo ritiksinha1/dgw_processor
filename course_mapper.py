@@ -596,8 +596,6 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'course_list_rule':
           print(institution, requirement_id, 'Body course_list_rule', file=log_file)
-          # There might be a remark associated with the course list (ignored, but could be added to
-          # context)
 
           try:
             if course_list := requirement_value['course_list']:
@@ -626,8 +624,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'course_list':
           print(institution, requirement_id, 'Body course_list', file=todo_file)
-          # map_courses(institution, requirement_id, block_title, context_list + requirement_context,
-          #             requirement_value)
+          map_courses(institution, requirement_id, block_title, context_list + requirement_context,
+                      requirement_value)
           return
 
         case 'group_requirement':
@@ -702,10 +700,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                 except KeyError as ke:
                   # Course List is an optional part of ClassCredit
                   pass
-
                 return
 
               case 'course_list_rule':
+                print(institution, requirement_id, 'Group course_list_rule', file=todo_file)
                 pass
 
               case 'group_requirements':
@@ -718,8 +716,10 @@ def traverse_body(node: Any, context_list: list) -> None:
 
               case 'noncourse':
                 pass
+
               case 'rule_complete':
                 pass
+
               case _:
                 exit(f'{institution} {requirement_id} Unexpected Group {key}')
 
@@ -806,8 +806,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                     pass
                 continue
 
-              case 'class_credit_list' | 'course_lists' | 'group_requirements':
-                # These are lists of class_credit, course_list, group_requirement
+              case 'course_lists':
+                print(f'{institution} {requirement_id} Subset {key}', file=todo_file)
+                continue
+
+              case 'class_credit_list':
                 print(f'{institution} {requirement_id} Subset {key}', file=log_file)
                 assert isinstance(rule, list)
                 for rule_dict in rule:
@@ -824,8 +827,34 @@ def traverse_body(node: Any, context_list: list) -> None:
                       local_context = [local_dict]
                     else:
                       local_context = []
-                    # if institution == 'LEH01' and requirement_id == 'RA001503':
-                    #   print(f'\n{rule_dict=}\n{context_list=}\n{subset_context=}\n{local_context=}')
+                    try:
+                      map_courses(institution, requirement_id, block_title,
+                                  context_list + subset_context + local_context,
+                                  rule_dict['class_credit'])
+                    except KeyError:
+                      print(institution, requirement_id, block_title)
+                      pprint(rule_dict)
+                      exit()
+                continue
+
+              case 'group_requirements':
+                # This is a list of group_requirement dicts
+                print(f'{institution} {requirement_id} Subset {key}', file=log_file)
+                assert isinstance(rule, list)
+                for rule_dict in rule:
+                  # There is only one item per rule_dict, but this is a convenient way to get it
+                  assert len(rule_dict) == 1
+                  for k, v in rule_dict.items():
+                    local_dict = get_restrictions(v)
+                    try:
+                      local_dict['name'] = v.pop('label')
+                    except KeyError as ke:
+                      print(institution, requirement_id, f'Subset {k} with no label',
+                            file=debug_file)
+                    if local_dict:
+                      local_context = [local_dict]
+                    else:
+                      local_context = []
                     traverse_body(rule_dict, context_list + subset_context + local_context)
                 continue
 
