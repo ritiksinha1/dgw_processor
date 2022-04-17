@@ -23,7 +23,7 @@ def elapsed(since: float):
 if __name__ == "__main__":
   arg_parser = argparse.ArgumentParser('Re-parse Scribe Blocks that timed out.')
   arg_parser.add_argument('-d', '--debug', action='store_true')
-  arg_parser.add_argument('-l', '--timelimit', type=int, default=1800)
+  arg_parser.add_argument('-t', '--timelimit', type=int, default=1800)
 
   args = arg_parser.parse_args()
 
@@ -36,29 +36,41 @@ if __name__ == "__main__":
              requirement_text,
              parse_tree->'error' as error
         from requirement_blocks
-       where parse_tree->'error' is not null
+       where period_stop ~* '^9'
+         and parse_tree->'error' is not null
+         and (parse_tree->'error')::text ~* 'Timeout'
        order by institution, requirement_id
       """)
+      num_attempted = cursor.rowcount
+      num_fail = 0
+      num_succeed = 0
+      num_timeout = 0
       for row in cursor:
+
         print(f'{row.institution} {row.requirement_id}', end='')
         sys.stdout.flush()
-        if 'Timeout' in row.error:
-          start = time.time()
-          parse_tree = parse_block(row.institution,
-                                   row.requirement_id,
-                                   row.period_start,
-                                   row.period_stop,
-                                   row.requirement_text,
-                                   args.timelimit)
+        start = time.time()
+        parse_tree = parse_block(row.institution,
+                                 row.requirement_id,
+                                 row.period_start,
+                                 row.period_stop,
+                                 row.requirement_text,
+                                 args.timelimit)
 
-          try:
-            error_msg = parse_tree['error'].strip('\n')
-            if 'Timeout in error_msg':
-              print(' Timeout')
-            else:
-              print(f' {error_msg}')
-          except KeyError:
-            print(f' {elapsed(start)}')
+        try:
+          error_msg = parse_tree['error'].strip('\n')
+          if 'timeout' in error_msg.lower():
+            print(f' Timeout {elapsed(start)}')
+            num_timeout += 1
+          else:
+            print(f' Failed {error_msg}')
+            num_fail += 1
+        except KeyError:
+          print(f' Completed {elapsed(start)}')
+          num_succeed += 1
 
-        else:
-          print(f' Not a Timeout: {row.error}')
+  print(f'Timelimit:{args.timelimit:>7,} sec\n'
+        f'Attempted:{num_attempted:>7,}\n'
+        f'Success:  {num_succeed:>7,}\n'
+        f'Timeout:  {num_timeout:>7,}\n'
+        f'Failed:   {num_fail:>7,}')

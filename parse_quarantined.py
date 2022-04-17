@@ -14,7 +14,9 @@ quarantined_dict = QuarantineManager()
 
 # Convert keys to a list so we can delete from the dict if anything parses correctly now.
 keys = list(quarantined_dict.keys())
-
+num_quarantined = len(keys)
+num_success = 0
+num_fail = 0
 with psycopg.connect('dbname=cuny_curriculum') as conn:
   with conn.cursor(row_factory=namedtuple_row) as cursor:
     for key in keys:
@@ -31,8 +33,14 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
                                row.requirement_text)
       try:
         if error_msg := parse_tree['error']:
-          print(error_msg)
+          print('Failed')
+          num_fail += 1
       except KeyError:
         # Parsed okay: dequarantine it.
         del quarantined_dict[key]
-        print('OK, no longer quarantined')
+        print('OK: No longer quarantined')
+        num_success += 1
+
+print(f'Quarantined:{num_quarantined:>5,}\n'
+      f'Success:    {num_success:>5,}\n'
+      f'Fail:       {num_fail:>5,}')
