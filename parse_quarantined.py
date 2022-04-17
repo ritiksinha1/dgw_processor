@@ -19,7 +19,7 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
   with conn.cursor(row_factory=namedtuple_row) as cursor:
     for key in keys:
       institution, requirement_id = key
-      print(institution, requirement_id, end='')
+      print(f'{institution} {requirement_id} ', end='')
       cursor.execute("""
       select institution, requirement_id, period_start, period_stop, requirement_text
         from requirement_blocks
