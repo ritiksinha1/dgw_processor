@@ -18,6 +18,7 @@ from dgw_utils import class_name,\
     get_display,\
     get_groups,\
     get_label,\
+    get_nv_pairs,\
     get_rules,\
     get_qualifiers,\
     num_class_or_num_credit
@@ -59,6 +60,9 @@ def block(ctx, institution, requirement_id):
   return_dict['block_value'] = symbols[1].upper().strip()
   return_dict['institution'] = institution
 
+  if ctx.rule_tag():
+    return_dict['rule_tag'] = get_nv_pairs(ctx.rule_tag())
+
   return {'block': return_dict}
 
 
@@ -98,7 +102,10 @@ def header_class_credit(ctx, institution, requirement_id):
       num_credits         : NUMBER CREDIT allow_clause?;
       allow_clause        : LP allow NUMBER RP;
 
-      Note: header_tag and allow are used only for audit presentation, and are ignored here.
+      Note: header_tag is presentational, and is included here; allow is used for internal degree
+      audit logic, and is ignored here.
+      And proxy_advice is being ignored, at least for now, because cases where there are template
+      placeholders reference values not available from within the Scribe blocks.
 """
 
   return_dict = {'label': get_label(ctx)}
@@ -106,6 +113,9 @@ def header_class_credit(ctx, institution, requirement_id):
   return_dict.update(num_class_or_num_credit(ctx))
 
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
+
+  if ctx.header_tag():
+    return_dict['header_tag'] = get_nv_pairs(ctx.header_tag())
 
   if ctx.display():
     return_dict['display'] = get_display(ctx)
@@ -128,7 +138,7 @@ body_class_credit : (num_classes | num_credits)
       course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
       course_list_rule  : course_list_body label?;  # (Not actually relevant here)
 
-    Ignore proxy_advice, rule_tag and tag.
+    Ignore proxy_advice and tag.
   """
 
   return_dict = {'label': get_label(ctx)}
@@ -149,6 +159,9 @@ body_class_credit : (num_classes | num_credits)
   # display is student-specific
   # if ctx.display():
   #   return_dict['display'] = get_display(ctx)
+
+  if ctx.rule_tag():
+    return_dict['rule_tag'] = get_nv_pairs(ctx.rule_tag())
 
   if ctx.remark():
     return_dict['remark'] = ' '.join([s.getText().strip(' "')
@@ -424,19 +437,7 @@ def header_tag(ctx, institution, requirement_id):
     print(f'*** header_tag({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  if isinstance(ctx, list):
-    header_tags = ctx
-  else:
-    header_tags = [ctx]
-
-  tag_list = []
-  for header_tag in header_tags:
-    for pair in header_tag.nv_pair():
-      name = pair.SYMBOL()[0].getText()
-      value = pair.STRING().getText() if len(pair.SYMBOL()) == 1 else pair.SYMBOL()[1].getText()
-      tag_list.append({'name': name, 'value': value})
-
-  return {'headertag': tag_list}
+  return {'header_tag': get_nv_pairs(ctx)}
 
 
 # rule_tag()
@@ -451,21 +452,7 @@ def rule_tag(ctx, institution, requirement_id):
     print(f'*** rule_tag({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  if isinstance(ctx, list):
-    rule_tags = ctx
-  else:
-    rule_tags = [ctx]
-
-  tag_list = []
-
-  for rule_tag in rule_tags:
-    for pair in rule_tag.nv_pair():
-      for index in range(len(pair.nv_lhs())):
-        name = pair.nv_lhs()[index].getText()
-        value = pair.nv_rhs()[index].getText()
-        # value = pair.STRING().getText() if len(pair.SYMBOL()) == 1 else pair.SYMBOL()[1].getText()
-        tag_list.append({'name': name, 'value': value})
-  return {'ruletag': tag_list}
+  return {'rule_tag': get_nv_pairs(ctx)}
 
 
 # lastres()
@@ -998,32 +985,6 @@ def header_minterm(ctx, institution, requirement_id):
   return {'header_minterm': return_dict}
 
 
-# header_tag()
-# -------------------------------------------------------------------------------------------------
-def header_tag(ctx, institution, requirement_id):
-  """
-      header_tag  : (nv_pair)+;
-      Used for AdviceJump=[url] to link to web page with more info.
-  """
-  if DEBUG:
-    print(f'*** header_tag({class_name(ctx)}, {institution}, {requirement_id})',
-          file=sys.stderr)
-
-  nv_pairs = ctx.nv_pair()
-  if not isinstance(nv_pairs, list):
-    nv_pairs = [nv_pairs]
-
-  // WIP***
-  for nv_pair in nv_pairs:
-    for index, lhs in enumerate(nv_pair.nv_lhs):
-      name = lhs().getText()
-      value = nv_pair.nv_rhs()[index].getText()
-      print(f'{name=} {value=}')
-  return_dict = 'Not implemented'
-
-  return {'header_tag': return_dict}
-
-
 # noncourse()
 # -------------------------------------------------------------------------------------------------
 def noncourse(ctx, institution, requirement_id):
@@ -1103,7 +1064,7 @@ def rule_complete(ctx, institution, requirement_id):
   return_dict['is_complete'] = True if ctx.RULE_COMPLETE() else False
 
   if ctx.rule_tag():
-    return_dict['rule_tag'] = rule_tag(ctx.rule_tag(), institution, requirement_id)
+    return_dict['rule_tag'] = get_nv_pairs(ctx.rule_tag())
 
   return {'rule_complete': return_dict}
 

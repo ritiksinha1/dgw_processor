@@ -10,6 +10,7 @@ import sys
 
 from collections import namedtuple
 from traceback import print_stack
+from pprint import pprint
 from typing import List, Set, Dict, Tuple, Optional, Union, Any
 
 from psycopg.rows import namedtuple_row
@@ -141,6 +142,59 @@ def concentration_list(condition: str, institution: str, requirement_id: str) ->
                                        f'concentration_list')
   # print(f'*** concentration_list({condition}) not implemented yet', file=sys.stderr)
   return ['Concentration lookup not implemented yet']
+
+
+# get_nv_pairs()
+# -------------------------------------------------------------------------------------------------
+def get_nv_pairs(ctx):
+  """
+      nv_pair         : (nv_lhs '=' nv_rhs)+;
+      nv_lhs          : SYMBOL;
+      nv_rhs          : (STRING | SYMBOL);
+
+      Given a (list of) name-value pairs, create a list of dicts with the names and values. If the
+      name is RemarkJump or AdviceJump, the URL value might span more than one pair, in which case
+      they are concatenated into a single one.
+  """
+  if DEBUG:
+    print(f'*** get_nv_pairs({ctx}', file=sys.stderr)
+
+  contexts = ctx if isinstance(ctx, list) else [ctx]
+  pairs_list = []
+  for context in contexts:
+    nv_pairs = context.nv_pair()
+    last_lhs = None
+    url_str = ''
+    for nv_pair in nv_pairs:
+      lhs = nv_pair.nv_lhs()
+      rhs = nv_pair.nv_rhs()
+      assert isinstance(lhs, list) and isinstance(rhs, list) and len(lhs) == 1 and len(rhs) == 1
+      lhs = lhs[0].getText()
+      rhs = rhs[0].getText()
+      this_lhs = lhs.lower()
+
+      # AdviceJump and RemarkJump have URLs, which might span multiple nv_pairs
+      if this_lhs in ['advicejump', 'remarkjump']:
+        if this_lhs == last_lhs:
+          # Extend URL
+          url_str += rhs.strip('"')
+          continue
+        if url_str:
+          # Complete pending xxxJump item
+          pairs_list.append({last_lhs.title().replace('j', 'J'): url_str})
+        # Start new xxxJump
+        last_lhs = this_lhs
+        url_str = rhs.strip('"')
+        continue
+
+      if url_str:
+        # Complete pending xxxJump
+        pairs_list.append({last_lhs.title().replace('j', 'J'): url_str})
+      pairs_list.append({this_lhs.title(): rhs})
+      last_lhs = this_lhs
+      url_str = ''
+
+  return pairs_list
 
 
 # get_rules()
