@@ -152,6 +152,12 @@ if __name__ == '__main__':
       By default, the requirement_blocks table's head_objects and body_objects fields are updated
       for each block parsed.
   """
+  # Cache college names
+  with psycopg.connect('dbname=cuny_curriculum') as conn:
+    with conn.cursor(row_factory=namedtuple_row) as cursor:
+      cursor.execute('select code, prompt as name from cuny_institutions')
+      college_names = {r.code: r.name for r in cursor}
+
   # Command line args
   parser = argparse.ArgumentParser(description='Parse DGW Scribe Blocks')
   parser.add_argument('-t', '--block_types', nargs='+', default=['MAJOR'])
@@ -244,7 +250,8 @@ if __name__ == '__main__':
         for row in cursor:
           if row.institution != current_institution:
             if current_institution is not None:
-              print(f'{current_institution} took {(time.time() - institution_start):,.1f} sec',
+              print(f'{college_names[current_institution]}: '
+                    f'{(time.time() - institution_start):,.1f} sec',
                     file=log_file)
             current_institution = row.institution
             institution_start = time.time()
