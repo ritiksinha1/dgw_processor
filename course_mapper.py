@@ -151,6 +151,8 @@ Requirement Key, Course ID, Career, Course, With
     requirement_dict['num_courses'] = len(courses_set)
     for course in courses_set:
       map_writer.writerow([requirement_index] + course.split('|'))
+      if args.debug:
+        print(f'{requirement_index:>6}', context_list[-1]['name'], course.split('|'))
 
   if requirement_dict['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
@@ -310,8 +312,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             pass
 
           case 'header_maxcredit':
-            # THERE ARE 1357 OF THESE; THEY HAVE COURSE LISTS
-            print(f'{institution} {requirement_id} header maxcredit', file=todo_file)
+            # THERE ARE 493 OF THESE; THEY HAVE COURSE LISTS
+            print(f'{institution} {requirement_id} Header maxcredit', file=todo_file)
             pass
 
           case 'header_maxpassfail':
@@ -417,6 +419,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         | rule_complete
                         | subset
   """
+
   global do_remarks
 
   # Containing Block Context.
@@ -456,18 +459,19 @@ def traverse_body(node: Any, context_list: list) -> None:
     elif isinstance(requirement_value, dict):
       context_dict = get_restrictions(requirement_value)
       try:
-        requirement_name = requirement_value.pop('label')
-        context_dict['name'] = requirement_name
+        context_dict['name'] = requirement_value['label']
       except KeyError:
-        requirement_name = 'No Name'
         if context_dict:
-          # If there are restrictions but no name, add the placeholder name
-          context_dict['name'] = requirement_name
+          # If there are restrictions but no name, add a placeholder name, and log it
+          print(f'{institution} {requirement_id} Requirement with restrictions but no label',
+                file=debug_file)
 
       if context_dict:
         requirement_context = [context_dict]
       else:
-        # If there are no restrictions and no name, there's nothing to add to the context
+        # If there are no restrictions and no name, there's nothing to add to the context; note it.
+        print(f'{institution} {requirement_id} {requirement_type} Empty requirement_context ',
+              file=log_file)
         requirement_context = []
 
       match requirement_type:
@@ -551,9 +555,13 @@ def traverse_body(node: Any, context_list: list) -> None:
           for if_true_dict in requirement_value['if_true']:
             condition_dict = {'name': 'if_true', 'condition': condition}
             condition_list = [condition_dict]
+            # print(f'\n{institution} {requirement_id} CONDITIONAL if_true_dict {condition}', file=debug_file)
+            # pprint(if_true_dict, stream=debug_file)
             traverse_body(if_true_dict, context_list + condition_list)
           try:
             for if_false_dict in requirement_value['if_false']:
+              # print(f'\n{institution} {requirement_id} CONDITIONAL if_false_dict', file=debug_file)
+              # pprint(if_false_dict, stream=debug_file)
               condition_dict = {'name': 'if_false', 'condition': condition}
               condition_list = [condition_dict]
               traverse_body(if_true_dict, context_list + condition_list)
@@ -634,99 +642,91 @@ def traverse_body(node: Any, context_list: list) -> None:
           number = int(requirement_value['number'])
           groups = requirement_value['group_list']['groups']
           num_groups = len(groups)
-          group_num = 0
-          for group in groups:
-            group_num += 1
-            group_name = group.pop('label')
-            context_dict = {'name': group_name}
+          for group_num, group in enumerate(groups):
             context_dict['group_number'] = group_num
             context_dict['num_groups'] = num_groups
             context_dict['num_required'] = number
-            group_context = [context_dict]
-            group_context = requirement_context + group_context
+            group_context = requirement_context + [context_dict]
 
-            assert len(list(group.keys())) == 1
+            if len(group.keys()) != 1:
+              exit(f'{institution} {requirement_id} {len(group.keys())=}: '
+                   f'{group_num} of {len(groups)}. {group}')
 
-            key, value = group.popitem()
-            match key:
+            for key, value in group.items():
+              match key:
 
-              case 'block':
-                print(institution, requirement_id, 'Group block', file=log_file)
-                try:
-                  block_name = value['label']
-                  block_num_required = int(value['number'])
-                  block_type = value['block_type']
-                  block_value = value['block_value']
-                  block_institution = value['institution']
-                  with psycopg.connect('dbname=cuny_curriculum') as conn:
-                    with conn.cursor(row_factory=namedtuple_row) as cursor:
-                      cursor.execute("""
-                      select institution,
-                                  requirement_id,
-                                  block_type,
-                                  block_value,
-                                  title as block_title,
-                                  parse_tree
-                             from requirement_blocks
-                            where institution = %s
-                              and block_type =  %s
-                              and block_value = %s
-                              and period_stop ~* '^9'
-                      """, [institution, block_type, block_value])
-                      if cursor.rowcount != block_num_required:
-                        # HOW TO HANDLE THIS?
-                        suffix = '' if cursor.rowcount == 1 else 's'
-                        print(f'{institution} {requirement_id} Block requirement found '
-                              f'{cursor.rowcount} row{suffix} ({block_num_required} needed)',
-                              file=todo_file)
-                        return
-                      else:
-                        for row in cursor:
-                          process_block(row, context_list + group_context)
-                        return
-                except KeyError as ke:
-                  exit(ke)
+                case 'block':
+                  try:
+                    block_name = value['label']
+                    block_num_required = int(value['number'])
+                    suffix = '' if block_num_required == 1 else 's'
+                    block_type = value['block_type']
+                    block_value = value['block_value']
+                    block_institution = value['institution']
+                    with psycopg.connect('dbname=cuny_curriculum') as conn:
+                      with conn.cursor(row_factory=namedtuple_row) as cursor:
+                        cursor.execute("""
+                        select institution,
+                                    requirement_id,
+                                    block_type,
+                                    block_value,
+                                    title as block_title,
+                                    parse_tree
+                               from requirement_blocks
+                              where institution = %s
+                                and block_type =  %s
+                                and block_value = %s
+                                and period_stop ~* '^9'
+                        """, [institution, block_type, block_value])
+                        if cursor.rowcount != block_num_required:
+                          # HOW TO HANDLE THIS (if it occurs)?
+                          suffix = '' if cursor.rowcount == 1 else 's'
+                          print(f'{institution} {requirement_id} Group lock found '
+                                f'{cursor.rowcount} row{suffix} ({block_num_required} needed)',
+                                file=todo_file)
+                        else:
+                          for row in cursor:
+                            process_block(row, context_list + group_context)
+                          print(institution, requirement_id,
+                                f'Group block {cursor.rowcount} of '
+                                f'{block_num_required} required block{suffix}',
+                                file=log_file)
+                  except KeyError as ke:
+                    exit(ke)
 
-              case 'blocktype':
-                print(institution, requirement_id, 'Group blocktype', file=todo_file)
-                pass
-
-              case 'class_credit':
-                print(institution, requirement_id, 'Group class_credit', file=log_file)
-                # This is where course lists turn up, in general.
-                try:
-                  map_courses(institution, requirement_id, block_title,
-                              context_list + group_context, value)
-                except KeyError as ke:
-                  # Course List is an optional part of ClassCredit
+                case 'blocktype':
+                  print(institution, requirement_id, 'Group blocktype', file=todo_file)
                   pass
-                return
 
-              case 'course_list_rule':
-                print(institution, requirement_id, 'Group course_list_rule', file=todo_file)
-                pass
+                case 'class_credit':
+                  print(institution, requirement_id, 'Group class_credit', file=log_file)
+                  # This is where course lists turn up, in general.
+                  try:
+                    map_courses(institution, requirement_id, block_title,
+                                context_list + group_context, value)
+                  except KeyError as ke:
+                    # Course List is an optional part of ClassCredit
+                    pass
 
-              case 'group_requirements':
-                # Don't log this: it's an artifact because group requirements appear as lists even
-                # when there is only one group requirement.
-                assert isinstance(value, list)
-                for group_requirement in value:
-                  traverse_body(value, context_list + group_context)
-                return
+                case 'course_list_rule':
+                  print(institution, requirement_id, 'Group course_list_rule', file=todo_file)
+                  pass
 
-              case 'noncourse':
-                pass
+                case 'group_requirements':
+                  # Don't log this: it's an artifact because group requirements appear as lists even
+                  # when there is only one group requirement.
+                  assert isinstance(value, list)
+                  for group_requirement in value:
+                    traverse_body(value, context_list + group_context)
 
-              case 'rule_complete':
-                pass
+                case 'noncourse':
+                  pass
 
-              case _:
-                exit(f'{institution} {requirement_id} Unexpected Group {key}')
+                case 'rule_complete':
+                  pass
 
-            print(f'{institution} {requirement_id} Unhandled Key {key} {type(value)}',
-                  file=todo_file)
-
-          return
+                case _:
+                  exit(f'{institution} {requirement_id} Unexpected Group {key}')
 
         case 'subset':
           print(institution, requirement_id, 'Body subset', file=log_file)
@@ -734,10 +734,16 @@ def traverse_body(node: Any, context_list: list) -> None:
           # Process the valid rules in the subset
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
-          subset_name = requirement_name
           context_dict = get_restrictions(requirement_value)
-          context_dict['name'] = subset_name
-          subset_context = [context_dict]
+          try:
+            context_dict['name'] = requirement_value.pop('label')
+            subset_context = [context_dict]
+          except KeyError:
+            pass
+          if context_dict:
+            subset_context = [context_dict]
+          else:
+            subset_context = []
 
           for key, rule in requirement_value.items():
 
@@ -749,6 +755,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 # label number type value
                 for block_dict in rule:
                   num_required = int(block_dict['block']['number'])
+                  suffix = '' if num_required == 1 else 's'
                   block_label = block_dict['block']['label']
                   required_block_type = block_dict['block']['block_type']
                   required_block_value = block_dict['block']['block_value']
@@ -756,29 +763,45 @@ def traverse_body(node: Any, context_list: list) -> None:
                     with conn.cursor(row_factory=namedtuple_row) as cursor:
                       cursor.execute("""
                       select institution, requirement_id, block_type, block_value,
-                             title as block_title, parse_tree
+                             title as block_title, major1, parse_tree
                         from requirement_blocks
                        where institution = %s
                          and block_type = %s
                          and block_value = %s
                          and period_stop ~* '^9'
                       """, [institution, required_block_type, required_block_value])
-                      if cursor.rowcount != num_required:
+                      if cursor.rowcount < num_required:
                         suffix = '' if cursor.rowcount == 1 else 's'
-                        if cursor.rowcount == 0:
-                          print(f'{institution} {requirement_id} Subset block: need '
-                                f'{num_required}, found none', file=fail_file)
-                        else:
-                          print(f'{institution} {requirement_id} Subset block: need '
-                                f'{num_required}, found {cursor.rowcount} active block{suffix}',
-                                file=todo_file)
+                        print(f'{institution} {requirement_id} Subset block: need '
+                              f'{num_required}, found {cursor.rowcount} active block{suffix}',
+                              file=fail_file)
                       else:
                         local_context = [{'name': block_label}]
-                        suffix = '' if num_required == 1 else 's'
+                        num_found = 0
+                        num_extra = 0
                         for row in cursor:
-                          print(institution, requirement_id, f'Subset {cursor.rownumber} of '
-                                f'{cursor.rowcount} required block{suffix}', file=log_file)
-                          process_block(row, context_list + subset_context + local_context)
+                          # Heuristic: if there are more rows than needed, select just the ones
+                          # where the major1 field matches the referencing block value. Any left
+                          # over are a problem
+                          if cursor.rowcount == num_required or (cursor.rowcount > num_required
+                                                                 and row.major1 == block_value):
+                            num_found += 1
+                            if num_found <= num_required:
+                              process_block(row, context_list + subset_context + local_context)
+                            else:
+                              num_extra += 1
+                        if num_extra:
+                          print(institution, requirement_id, f'Subset block needed {num_required}; '
+                                                             f'found {num_extra} extra',
+                                                             file=todo_file)
+                        elif num_found == num_required:
+                          print(institution, requirement_id, f'Subset block {num_found} of '
+                                f'{num_required} required block{suffix}', file=log_file)
+                        else:
+                          print(institution, requirement_id, f'Subset block {num_required=} '
+                                                             f'{cursor.rowcount=} {num_found=} '
+                                                             f'{num_extr=}', file=debug_file)
+
                 continue
 
               case 'blocktype':
@@ -793,14 +816,12 @@ def traverse_body(node: Any, context_list: list) -> None:
                   # Use the condition as the pseudo-name of this requirement
                   condition = conditional['condition']
                   for if_true_dict in conditional['if_true']:
-                    condition_dict = {'name': 'if_true', 'condition': condition}
-                    condition_list = [condition_dict]
-                    traverse_body(if_true_dict, context_list + condition_list)
+                    condition_list = [{'name': 'if_true', 'condition': condition}]
+                    traverse_body(if_true_dict, context_list + subset_context + condition_list)
                   try:
                     for if_false_dict in conditional['if_false']:
-                      condition_dict = {'name': 'if_false', 'condition': condition}
-                      condition_list = [condition_dict]
-                      traverse_body(if_true_dict, context_list + condition_list)
+                      condition_list = [{'name': 'if_true', 'condition': condition}]
+                      traverse_body(if_true_dict, context_list + subset_context + condition_list)
                   except KeyError:
                     # Scribe Else clause is optional
                     pass
@@ -819,10 +840,19 @@ def traverse_body(node: Any, context_list: list) -> None:
                   for k, v in rule_dict.items():
                     local_dict = get_restrictions(v)
                     try:
-                      local_dict['name'] = v.pop('label')
+                      local_dict['name'] = v['label']
                     except KeyError as ke:
-                      print(institution, requirement_id, f'Subset {k} with no label',
-                            file=debug_file)
+                      print(f'{institution} {requirement_id} '
+                            f'Subset class_credit_list {k} with no label', file=todo_file)
+                      # print(f'\n{institution} {requirement_id} RULE DICT', file=debug_file)
+                      # pprint(rule_dict, stream=debug_file)
+                      # print(f'\n{institution} {requirement_id} CONTEXT LIST', file=debug_file)
+                      # pprint(context_list, stream=debug_file)
+                      # print(f'\n{institution} {requirement_id} SUBSET CONTEXT', file=debug_file)
+                      # pprint(subset_context, stream=debug_file)
+                      # print(f'\n{institution} {requirement_id} LOCAL CONTEXT', file=debug_file)
+                      # pprint([local_dict], stream=debug_file)
+
                     if local_dict:
                       local_context = [local_dict]
                     else:
@@ -831,8 +861,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                       map_courses(institution, requirement_id, block_title,
                                   context_list + subset_context + local_context,
                                   rule_dict['class_credit'])
-                    except KeyError:
-                      print(institution, requirement_id, block_title)
+                    except KeyError as ke:
+                      print(institution, requirement_id, block_title, ke)
                       pprint(rule_dict)
                       exit()
                 continue
@@ -841,21 +871,31 @@ def traverse_body(node: Any, context_list: list) -> None:
                 # This is a list of group_requirement dicts
                 print(f'{institution} {requirement_id} Subset {key}', file=log_file)
                 assert isinstance(rule, list)
-                for rule_dict in rule:
-                  # There is only one item per rule_dict, but this is a convenient way to get it
-                  assert len(rule_dict) == 1
-                  for k, v in rule_dict.items():
-                    local_dict = get_restrictions(v)
-                    try:
-                      local_dict['name'] = v.pop('label')
-                    except KeyError as ke:
-                      print(institution, requirement_id, f'Subset {k} with no label',
-                            file=debug_file)
-                    if local_dict:
-                      local_context = [local_dict]
-                    else:
-                      local_context = []
-                    traverse_body(rule_dict, context_list + subset_context + local_context)
+                for group_requirement in rule:
+                  traverse_body(group_requirement, context_list + subset_context)
+                  # # There is only one item per rule_dict, but this is a convenient way to get it
+                  # assert len(rule_dict) == 1
+                  # for k, v in rule_dict.items():
+                  #   local_dict = get_restrictions(v)
+                  #   try:
+                  #     local_dict['name'] = v['label']
+                  #   except KeyError as ke:
+                  #     print(f'{institution} {requirement_id} '
+                  #           f'Subset group_requirements {k} with no label',
+                  #           file=todo_file)
+                  #     # print(f'\n{institution} {requirement_id} RULE DICT', file=debug_file)
+                  #     # pprint(rule_dict, stream=debug_file)
+                  #     # print(f'\n{institution} {requirement_id} CONTEXT LIST', file=debug_file)
+                  #     # pprint(context_list, stream=debug_file)
+                  #     # print(f'\n{institution} {requirement_id} SUBSET CONTEXT', file=debug_file)
+                  #     # pprint(subset_context, stream=debug_file)
+                  #     # print(f'\n{institution} {requirement_id} LOCAL CONTEXT', file=debug_file)
+                  #     # pprint([local_dict], stream=debug_file)
+                  #   if local_dict:
+                  #     local_context = [local_dict]
+                  #   else:
+                  #     local_context = []
+                  #   traverse_body(rule_dict, context_list + subset_context + local_context)
                 continue
 
               case 'copy_rules':
@@ -931,13 +971,11 @@ def traverse_body(node: Any, context_list: list) -> None:
           return
 
         case _:
-          print(f'Unhandled Requirement Type: {requirement_type}', file=sys.stderr)
-          return
+          exit(f'Unhandled Requirement Type: {requirement_type}')
 
   else:
-    # Not a dict or list
-    print(f'Unhandled node of type {type(node)} ({node})', file=sys.stderr)
-    return
+    # Not a list, str, or dict (??)
+    exit(f'Unhandled node of type {type(node)} ({node})')
 
 
 # main()
@@ -955,9 +993,6 @@ if __name__ == "__main__":
   parser.add_argument('-v', '--value', default='csci-bs')
   args = parser.parse_args()
   do_remarks = not args.no_remarks
-
-  if args.debug:
-    breakpoint()
 
   empty_tree = "'{}'"
 
