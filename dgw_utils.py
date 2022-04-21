@@ -440,17 +440,17 @@ discipline      : symbol
 # -------------------------------------------------------------------------------------------------
 def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
   """ Given a groups ctx, return a list of groups.
-      group_requirement : NUMBER GROUP groups qualifier* label? ;
-      groups            : group (logical_op group)*; // But only OR should occur
-      group             : LP
-                         ( block
-                         | blocktype
-                         | class_credit_body
-                         | course_list_rule
-                         | group_requirement
-                         | noncourse
-                         | rule_complete ) (qualifier tag? | proxy_advice | remark)* label?
-                         RP ;
+        group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark)* label? ;
+        groups            : group (logical_op group)*; // But only OR should occur
+        group             : LP
+                           ( block
+                           | blocktype
+                           | body_class_credit
+                           | course_list_rule
+                           | group_requirement
+                           | noncourse
+                           | rule_complete ) (qualifier tag? | proxy_advice | remark)* label?
+                           RP ;
   """
   if DEBUG:
     print(f'*** getgroups({class_name(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
@@ -467,7 +467,8 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
       if item_class.lower() == 'terminalnodeimpl':
         continue
 
-      group_dict = {'label': get_label(child)}
+      # group_dict = {'label': get_label(child)}
+      group_dict = dict()
       group_dict.update(get_qualifiers(child, institution, requirement_id))
       try:
         group_dict.update(dgw_handlers.remark(child.remark(), institution, requirement_id))

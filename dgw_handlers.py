@@ -380,19 +380,18 @@ def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
 # -------------------------------------------------------------------------------------------------
 def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
   """
-group_requirement : NUMBER GROUP groups qualifier* label? ;
-groups            : group (logical_op group)*; // But only OR should occur
-group             : LP
-                  (block
-                   | blocktype
-                   | course_list
-                   | body_class_credit
-                   | group_requirement
-                   | noncourse
-                   | rule_complete)
-                  qualifier* label?
-                  RP
-                ;
+        group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark)* label? ;
+        groups            : group (logical_op group)*; // But only OR should occur
+        group             : LP
+                           ( block
+                           | blocktype
+                           | body_class_credit
+                           | course_list_rule
+                           | group_requirement
+                           | noncourse
+                           | rule_complete ) (qualifier tag? | proxy_advice | remark)* label?
+                           RP ;
+
   “Qualifiers that must be applied to all rules in the group list must occur after the last right
   parenthesis and before the label at the end of the Group statement. Qualifiers that apply only to
   a specific rule in the group list must appear inside the parentheses for that group item rule.”
