@@ -64,11 +64,11 @@ if __name__ == '__main__':
   with open(f'./extracts/{base_name}.json', 'w') as json_file:
     print(json.dumps(parse_tree, indent=2), file=json_file)
 
-  with open(f'./extracts/{base_name}.py', 'w') as parsed:
-    print('HEADER = (', file=parsed)
-    pprint(header_list, stream=parsed)
-    print(')\nBODY = (', file=parsed)
-    pprint(body_list, stream=parsed)
-    print(')', file=parsed)
+  # with open(f'./extracts/{base_name}.py', 'w') as parsed:
+  #   print('HEADER = (', file=parsed)
+  #   pprint(header_list, stream=parsed)
+  #   print(')\nBODY = (', file=parsed)
+  #   pprint(body_list, stream=parsed)
+  #   print(')', file=parsed)
 
   exit()
