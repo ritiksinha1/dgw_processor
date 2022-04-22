@@ -201,15 +201,23 @@ def process_block(row: namedtuple, context_list: list = []):
   """ Given (parts of) a row from the requirement_blocks db table, traverse the header and body
       lists.
   """
-  # Augment db info with default values for class_credits max_transfer min_residency min_grade
-  # min_gpa
+
+  # Be sure the block is available
+  if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
+    print(row.institution, row.requirement_id, 'Quarantined block', file=fail_file)
+    return
+
+  # Be sure the block is for an active program
   try:
     enrollment = active_blocks[(row.institution, row.requirement_id)]
   except KeyError:
-    print(row.institution, row.requirement_id, 'Not an active block', file=fail_file)
+    print(row.institution, row.requirement_id, 'Not an active program', file=fail_file)
     return
+
   print(row.institution, row.requirement_id, file=blocks_file)
 
+  # Augment db info with default values for class_credits max_transfer min_residency min_grade
+  # min_gpa
   block_info = BlockInfo._make(row[0:5] + ('', '', '', '', ''))
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
@@ -499,7 +507,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, args)
 
               if cursor.rowcount == 0:
-                print(f'{institution} {requirement_id} Block: found no active blocks',
+                print(f'{institution} {requirement_id} Block: no active block',
                       file=fail_file)
                 return
 
@@ -555,13 +563,9 @@ def traverse_body(node: Any, context_list: list) -> None:
           for if_true_dict in requirement_value['if_true']:
             condition_dict = {'name': 'if_true', 'condition': condition}
             condition_list = [condition_dict]
-            # print(f'\n{institution} {requirement_id} CONDITIONAL if_true_dict {condition}', file=debug_file)
-            # pprint(if_true_dict, stream=debug_file)
             traverse_body(if_true_dict, context_list + condition_list)
           try:
             for if_false_dict in requirement_value['if_false']:
-              # print(f'\n{institution} {requirement_id} CONDITIONAL if_false_dict', file=debug_file)
-              # pprint(if_false_dict, stream=debug_file)
               condition_dict = {'name': 'if_false', 'condition': condition}
               condition_list = [condition_dict]
               traverse_body(if_false_dict, context_list + condition_list)
@@ -586,7 +590,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, (requirement_value['institution'],
                     requirement_value['requirement_id']))
               if cursor.rowcount != 1:
-                print(f'{institution} {requirement_id} CopyRules found {cursor.rowcount} active '
+                print(f'{institution} {requirement_id} Copy Rules: {cursor.rowcount} active '
                       f'blocks', file=fail_file)
                 return
               row = cursor.fetchone()
@@ -772,8 +776,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                       """, [institution, required_block_type, required_block_value])
                       if cursor.rowcount < num_required:
                         suffix = '' if cursor.rowcount == 1 else 's'
-                        print(f'{institution} {requirement_id} Subset block: need '
-                              f'{num_required}, found {cursor.rowcount} active block{suffix}',
+                        print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
+                              f'active block{suffix}; {num_required} required ',
                               file=fail_file)
                       else:
                         local_context = [{'name': block_label}]
@@ -925,7 +929,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                          and period_stop ~* '^9'
                       """, [institution, target_requirement_id])
                       if cursor.rowcount != 1:
-                        print(f'{institution} {requirement_id} Subset copy_rules found '
+                        print(f'{institution} {requirement_id} Subset copy_rules: '
                               f'{cursor.rowcount} active blocks',
                               file=fail_file)
                       else:
