@@ -564,7 +564,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               # pprint(if_false_dict, stream=debug_file)
               condition_dict = {'name': 'if_false', 'condition': condition}
               condition_list = [condition_dict]
-              traverse_body(if_true_dict, context_list + condition_list)
+              traverse_body(if_false_dict, context_list + condition_list)
           except KeyError:
             # Scribe Else clause is optional
             pass
