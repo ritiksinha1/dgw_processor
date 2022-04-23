@@ -123,6 +123,42 @@ def expression_to_str(ctx):
   return return_str.strip()
 
 
+# expression_to_dict()
+# -------------------------------------------------------------------------------------------------
+def expression_to_dict(ctx):
+  """ Convert an expression to a dict.
+
+      expression      : expression relational_op expression
+                      | expression logical_op expression
+                      | expression ',' expression
+                      | full_course
+                      | discipline
+                      | NUMBER
+                      | QUESTION_MARK
+                      | SYMBOL
+                      | string
+                      | CATALOG_NUMBER
+                      | LP NONCOURSE? expression RP
+
+    The dict keys are rel_op, log_op, list, noncourse, and string. Children of rel_op and log_op are
+    lhs and rhs.
+  """
+  assert class_name(ctx) == 'Expression', (f'Assertion Error: {class_name(ctx)} is not Expression'
+                                           f' in expression_to_str')
+  return_dict = dict()
+  print(f'\n{ctx.getText()}')
+  for child in ctx.getChildren():
+    match class_name(child):
+      case 'TerminalNodeImpl':
+        print(child.getText())
+      case 'Expression':
+        print([class_name(c) for c in child.getChildren()])
+      case _:
+        print(class_name(child), child.getText())
+
+  return return_dict
+
+
 # concentration_list()
 # -------------------------------------------------------------------------------------------------
 def concentration_list(condition: str, institution: str, requirement_id: str) -> list:

@@ -15,6 +15,7 @@ from dgw_utils import class_name,\
     concentration_list,\
     context_path,\
     expression_to_str,\
+    expression_to_dict,\
     get_display,\
     get_groups,\
     get_label,\
@@ -212,13 +213,8 @@ def header_conditional(ctx, institution, requirement_id):
     print(f'*** header_conditional({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  return_dict = {'condition': expression_to_str(ctx.expression())}
-
-  # # Concentrations not implemented yet
-  # if 'conc' in condition.lower():
-  #   return_dict['concentrations'] = concentration_list(condition,
-  #                                                      institution,
-  #                                                      requirement_id)
+  return_dict = {'condition_str': expression_to_str(ctx.expression())}
+  return_dict['condition_exp'] = expression_to_dict(ctx.expression())
 
   if ctx.header_rule():
     return_dict['if_true'] = get_rules(ctx.header_rule(), institution, requirement_id)
@@ -270,15 +266,9 @@ def body_conditional(ctx, institution, requirement_id):
 
   return_dict = {}
 
-  condition = expression_to_str(ctx.expression())
-  return_dict['condition'] = condition
-
-  # Concentrations in the expression?
-  # concentration_list() is only a stub, so no point in cluttering the dict.
-  # if 'conc' in condition.lower():
-  #   return_dict['concentrations'] = concentration_list(condition,
-  #                                                      institution,
-  #                                                      requirement_id)
+  condition_str = expression_to_str(ctx.expression())
+  return_dict['condition_str'] = condition_str
+  return_dict['condition_exp'] = expression_to_dict(ctx.expression())
 
   if ctx.body_rule():
     return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
