@@ -28,6 +28,7 @@ valid_keys = ['all',   # block_info, choice, ... requirement_block
               'block_info',
               'choice',
               'condition',
+              'keys',
               'max_transfer',
               'min_grade',
               'name',
@@ -56,23 +57,40 @@ with open('course_mapper.requirements.csv') as csvfile:
       if (institution == 'ALL01' or row.institution == institution) and \
          (requirement_id == 'ALL' or row.requirement_id == requirement_id):
         context_col = json.loads(row.context)
+
+        # The 'dump' and 'keys' options are mutually exclusive to other options
         if 'dump' in context_keys:
           print(f'\nRequirement Key {row.requirement_key}')
           pprint(context_col)
-        else:
-          for ctx in context_col['context']:
+          continue
+
+        if 'keys' in context_keys:
+          for index, context in enumerate(context_col['context']):
+            print(row.institution, row.requirement_id, f' {index:>02}', list(context.keys()))
+            continue
+
+        # All other options
+        for index, context in enumerate(context_col['context']):
+          if index == 0:
+            root_block_type = context['block_info']['block_type']
+          try:
+            block_info = context['block_info']
+            this_requirement_id = block_info['requirement_id']
+            this_block_type = block_info['block_type']
+            # sd = 'Same ID' if this_requirement_id == row.requirement_id else 'Diff ID'
+            # print(row.institution, row.requirement_id, f' {index:>02}',
+            #       f'{root_block_type:5} {this_block_type:5} {sd}')
+          except KeyError:
+            pass
+
+          for key in context_keys:
             try:
-              block_info = ctx['block_info']
-              ctx_requirement_id = block_info['requirement_id']
+              obj = context[key]
+              if key == 'condition':
+                print(row.institution, row.requirement_id, this_requirement_id,
+                      f'{this_block_type:5}', f"({obj.strip(')( ')})")
+              else:
+                print(f'Requirement Key {row.requirement_key:>3} ', end='')
+                pprint(obj)
             except KeyError:
               pass
-            for key in context_keys:
-              try:
-                obj = ctx[key]
-                if key == 'condition':
-                  print(row.institution, row.requirement_id, ctx_requirement_id, obj.strip(')( '))
-                else:
-                  print(f'Requirement Key {row.requirement_key:>3} ', end='')
-                  pprint(obj)
-              except KeyError:
-                pass
