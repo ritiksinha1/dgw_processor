@@ -1010,13 +1010,20 @@ def optional(ctx, institution, requirement_id):
 # proxy_advice()
 # -------------------------------------------------------------------------------------------------
 def proxy_advice(ctx, institution, requirement_id):
-  """ Recognizing this, but no plans to do anything with it.
+  """ proxy_advice    : (PROXY_ADVICE STRING)+;
   """
   if DEBUG:
     print(f'*** proxy_advice({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  return {}
+  proxy_contexts = ctx if isinstance(ctx, list) else [ctx]
+  proxy_str = ' '.join([c.getText().strip(' "') for c in proxy_contexts]).replace('  ', ' ')
+  proxy_args = re.findall(r'<.*?>', proxy_str)
+
+  return_dict = {'proxy_advice': {'proxy_str': proxy_str,
+                                  'proxy_args': proxy_args}}
+  print(institution, requirement_id, return_dict)
+  return return_dict
 
 
 # remark()
