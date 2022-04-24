@@ -627,11 +627,17 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
               qualifier_dict.update(dgw_handlers.mingpa(qualifier_ctx, institution, requirement_id))
 
             # proxy_advice    : (PROXY_ADVICE STRING)+;
-            # ruletag         : RULE_TAG expression;
-            # samedisc        : SAME_DISC expression
+            elif valid_qualifier == 'proxy_advice':
+              qualifier_dict.update(dgw_handlers.proxy_advice(qualifier_ctx,
+                                                              institution, requirement_id))
+            # rule_tag         : (RULE_TAG expression)+;
+            elif valid_qualifier == 'rule_tag':
+              qualifier_dict.update(dgw_handlers.rule_tag(qualifier_ctx,
+                                                          institution, requirement_id))
 
-            elif valid_qualifier in ['proxy_advice', 'rule_tag', 'samedisc']:
-              # These are used for managing the audit process and are ignored here
+            # samedisc        : SAME_DISC expression
+            elif valid_qualifier == 'samedisc':
+              # This is used strictly for managing the audit process and is ignored here
               pass
 
             elif valid_qualifier == 'share':
