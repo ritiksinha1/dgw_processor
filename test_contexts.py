@@ -49,6 +49,10 @@ print(f'Requirement Contexts for {institution[0:3]} {requirement_id} [{" ".join(
 
 with open('course_mapper.requirements.csv') as csvfile:
   reader = csv.reader(csvfile)
+  lhs = set()
+  rop = set()
+  rhs = set()
+  lop = set()
   for line in reader:
     if reader.line_num == 1:
       Row = namedtuple('Row', [col.lower().replace(' ', '_') for col in line])
