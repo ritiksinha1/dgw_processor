@@ -126,7 +126,7 @@ def expression_to_str(ctx):
 # expression_to_dict()
 # -------------------------------------------------------------------------------------------------
 def expression_to_dict(ctx):
-  """ Convert an expression to a dict.
+  """ Convert a logical expression to a dict. Expressions separated by logical_op will
 
       expression      : expression relational_op expression
                       | expression logical_op expression
@@ -145,18 +145,53 @@ def expression_to_dict(ctx):
   """
   assert class_name(ctx) == 'Expression', (f'Assertion Error: {class_name(ctx)} is not Expression'
                                            f' in expression_to_str')
-  return_dict = dict()
-  print(f'\n{ctx.getText()}')
-  for child in ctx.getChildren():
-    match class_name(child):
-      case 'TerminalNodeImpl':
-        print(child.getText())
-      case 'Expression':
-        print([class_name(c) for c in child.getChildren()])
-      case _:
-        print(class_name(child), child.getText())
 
+  print(f'\n{ctx.getText()}')
+  children = ctx.children
+  # Clear all levels of top-level outer parens
+  while children[0].getText() == '(':
+    if children[-1].getText() == ')':
+      del children[0]
+      del children[-1]
+    else:
+      break
+
+  # Possible NonCourse expression
+  if children[0].getText().lower() == 'noncourse':
+    assert len(children) == 2
+    assert class_name(children[1]) == 'Expression'
+    return {'noncourse': children[1].getText()}
+
+  # Separate function for recursing through the expression tree.
+  return_dict = condition_tree(children)
+  pprint(return_dict)
   return return_dict
+
+
+# condition_tree()
+# -------------------------------------------------------------------------------------------------
+def condition_tree(node_list: Any) -> dict:
+  """ Given a list of nodes, build a list of lhs rel_op rhs terminal nodes.
+  """
+  nodes = node_list if isinstance(node_list, list) else [node_list]
+  if len(nodes) == 1:
+    if class_name(nodes[0]) == 'Expression':
+      return condition_tree(nodes[0].children)
+    else:
+      # Must be a terminal node
+      return nodes[0].getText()
+  elif len(nodes) == 3:
+    op_type = class_name(nodes[1])
+    op_name = nodes[1].getText()
+    if op_type == 'Relational_op':
+      lhs = nodes[0].getText()
+      rhs = nodes[2].getText()
+      return {op_name: [lhs, rhs]}
+    elif op_type == 'Logical_op':
+      return {op_name: [condition_tree(nodes[0]), condition_tree(nodes[2])]}
+    else:
+      print(f'“{op_type}” is not Relational_op or Logical_op')
+      return {}
 
 
 # concentration_list()

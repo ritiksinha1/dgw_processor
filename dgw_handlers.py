@@ -123,7 +123,7 @@ def header_class_credit(ctx, institution, requirement_id):
     return_dict['display'] = get_display(ctx)
 
   if ctx.proxy_advice():
-    return_dict.update(proxy_advice(ctx.proxy_advice, institution, requirement_id))
+    return_dict.update(proxy_advice(ctx.proxy_advice(), institution, requirement_id))
 
   return {'header_class_credit': return_dict}
 
@@ -1020,15 +1020,16 @@ def proxy_advice(proxy_ctx, institution, requirement_id):
     print(f'*** proxy_advice({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  proxy_contexts = proxy_ctx() if isinstance(proxy_ctx(), list) else [proxy_ctx()]
+  proxy_contexts = proxy_ctx if isinstance(proxy_ctx, list) else [proxy_ctx]
   proxy_str = ''
   for proxy_context in proxy_contexts:
-    proxy_str += ' '.join([ctx.getText().strip(' "') for ctx in proxy_context.STRING()]).replace('  ', ' ')
+    proxy_str += ' '.join([c.getText().strip(' "') for c in proxy_context.STRING()])
+  proxy_str = proxy_str.replace('  ', ' ')
   proxy_args = re.findall(r'<.*?>', proxy_str)
 
   return_dict = {'proxy_advice': {'proxy_str': proxy_str,
                                   'proxy_args': [arg.strip('><') for arg in proxy_args]}}
-
+  # print(return_dict)
   return return_dict
 
 
