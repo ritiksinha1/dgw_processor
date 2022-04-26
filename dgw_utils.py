@@ -20,11 +20,19 @@ from scriberror import ScribeError
 
 DEBUG = os.getenv('DEBUG_UTILS')
 
-# Dict of CUNY college names
+# Dicts of CUNY college names and requirement block block_types
 with psycopg.connect('dbname=cuny_curriculum') as conn:
   with conn.cursor(row_factory=namedtuple_row) as cursor:
     cursor.execute('select code, name from cuny_institutions')
     college_names = {row.code: row.name for row in cursor.fetchall()}
+
+    cursor.execute("""
+    select institution, requirement_id, block_type
+    from requirement_blocks
+    where period_stop ~* '^9'
+    """)
+    block_types = {(row.institution, row.requirement_id): row.block_type
+                   for row in cursor.fetchall()}
 conn.close()
 
 
@@ -123,10 +131,11 @@ def expression_to_str(ctx):
   return return_str.strip()
 
 
-# expression_to_dict()
+# analyze_expression()
 # -------------------------------------------------------------------------------------------------
-def expression_to_dict(ctx):
-  """ Convert a logical expression to a dict. Expressions separated by logical_op will
+def analyze_expression(ctx, institution, requirement_id):
+  """ Analysis report consists of context info (institution, requirement_id, context_path, and
+      a list of rel_op triples (lhs, op, rhs))
 
       expression      : expression relational_op expression
                       | expression logical_op expression
@@ -146,7 +155,12 @@ def expression_to_dict(ctx):
   assert class_name(ctx) == 'Expression', (f'Assertion Error: {class_name(ctx)} is not Expression'
                                            f' in expression_to_str')
 
-  print(f'\n{ctx.getText()}')
+  report = {'instituion': institution,
+            'requirement_id': requirement_id,
+            'block_type': block_types[(institution, requirement_id)],
+            'context_path': context_path(ctx).split(' => ')[0:-1],
+            }
+
   children = ctx.children
   # Clear all levels of top-level outer parens
   while children[0].getText() == '(':
@@ -156,42 +170,28 @@ def expression_to_dict(ctx):
     else:
       break
 
-  # Possible NonCourse expression
-  if children[0].getText().lower() == 'noncourse':
-    assert len(children) == 2
-    assert class_name(children[1]) == 'Expression'
-    return {'noncourse': children[1].getText()}
-
-  # Separate function for recursing through the expression tree.
-  return_dict = condition_tree(children)
-  pprint(return_dict)
-  return return_dict
+  # Use expression_tree to recurse through the expression tree.
+  relop_expressions = set()
+  expression_tree(children, relop_expressions)
+  report['relop_expressions'] = list(relop_expressions)
+  print(json.dumps(report), file=sys.stderr)
 
 
-# condition_tree()
+# expression_tree()
 # -------------------------------------------------------------------------------------------------
-def condition_tree(node_list: Any) -> dict:
-  """ Given a list of nodes, build a list of lhs rel_op rhs terminal nodes.
+def expression_tree(node_list: Any, relop_expressions: set):
+  """ Given a list of nodes, update list of lhs rel_op rhs terminal nodes.
   """
   nodes = node_list if isinstance(node_list, list) else [node_list]
-  if len(nodes) == 1:
-    if class_name(nodes[0]) == 'Expression':
-      return condition_tree(nodes[0].children)
-    else:
-      # Must be a terminal node
-      return nodes[0].getText()
-  elif len(nodes) == 3:
-    op_type = class_name(nodes[1])
-    op_name = nodes[1].getText()
-    if op_type == 'Relational_op':
-      lhs = nodes[0].getText()
-      rhs = nodes[2].getText()
-      return {op_name: [lhs, rhs]}
-    elif op_type == 'Logical_op':
-      return {op_name: [condition_tree(nodes[0]), condition_tree(nodes[2])]}
-    else:
-      print(f'“{op_type}” is not Relational_op or Logical_op')
-      return {}
+  if len(nodes) == 3 and class_name(nodes[1]) == 'Relational_op':
+    lhs = ' '.join([c.getText() for c in nodes[0].children])
+    rel_op = nodes[1].getText()
+    rhs = ' '.join([c.getText() for c in nodes[2].children])
+    relop_expressions.add((lhs, rel_op, rhs))
+  else:
+    for node in nodes:
+      if class_name(node) == 'Expression':
+        expression_tree(node.children, relop_expressions)
 
 
 # concentration_list()
