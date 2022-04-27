@@ -7,17 +7,27 @@ import os
 import sys
 from collections import defaultdict
 
+freq_dist_by_block_type = defaultdict(lambda: defaultdict(int))
+
 lhs = defaultdict(int)
 ops = defaultdict(int)
 rhs = defaultdict(int)
 lines = open('./conditions_report.txt').readlines()
 for line in lines:
   report = json.loads(line)
+
+  # Generate frequency counts of number of relop terms by block_type
+  freq_dist_by_block_type[report['block_type']][len(report['relop_expressions'])] += 1
+
+  # Generate counts of lhs, relop, rhs values
   for relop_expression in report['relop_expressions']:
     lhs[relop_expression[0]] += 1
     ops[relop_expression[1]] += 1
     rhs[relop_expression[2]] += 1
 
+for bt, dist in freq_dist_by_block_type.items():
+  print(bt, dist)
+# Display counts of lhs, relop, rhs values
 print(f'{len(lhs):>9,} Lefthand Side Values')
 d = {k: v for k, v in sorted(lhs.items(), key=lambda item: item[1], reverse=True)}
 for k, v in d.items():
