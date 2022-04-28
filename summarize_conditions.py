@@ -4,8 +4,17 @@
 """
 import json
 import os
+import statistics
 import sys
+
 from collections import defaultdict
+
+
+def stats(dist: list) -> tuple:
+  """
+  """
+  return (len(dist), min(dist), round(statistics.mean(dist), 1), max(dist))
+
 
 freq_dist_by_block_type = defaultdict(lambda: defaultdict(int))
 
@@ -26,19 +35,20 @@ for line in lines:
     rhs[relop_expression[2]] += 1
 
 for bt, dist in freq_dist_by_block_type.items():
-  print(bt, dist)
+  print(bt, stats(dist))
+
 # Display counts of lhs, relop, rhs values
-print(f'{len(lhs):>9,} Lefthand Side Values')
+print(f'\n{len(lhs):>9,} LEFTHAND SIDE VALUES')
 d = {k: v for k, v in sorted(lhs.items(), key=lambda item: item[1], reverse=True)}
 for k, v in d.items():
   print(f'{v:9,} {k}')
 
-print(f'\n{len(ops):>9,} Operators')
+print(f'\n{len(ops):>9,} OPERATORS')
 d = {k: v for k, v in sorted(ops.items(), key=lambda item: item[1], reverse=True)}
 for k, v in d.items():
   print(f'{v:>8,} {k}')
 
-print(f'\n{len(rhs):>9,} Righthand Side Values')
+print(f'\n{len(rhs):>9,} RIGHTHAND SIDE VALUES')
 d = {k: v for k, v in sorted(rhs.items(), key=lambda item: item[1], reverse=True)}
 for k, v in d.items():
   print(f'{v:>8,} {k}')
