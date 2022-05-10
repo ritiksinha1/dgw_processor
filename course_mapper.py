@@ -68,6 +68,18 @@ requirement_index = 0
 # =================================================================================================
 
 
+def get_context_names(context_list: list) -> str:
+  """ Debugging Utility for tracing dispatches
+  """
+  context_names = []
+  for ctx in context_list:
+    try:
+      context_names.append(ctx['name'])
+    except KeyError:
+      pass
+  return ' => '.join(context_names)
+
+
 # letter_grade()
 # -------------------------------------------------------------------------------------------------
 def letter_grade(grade_point: float) -> str:
@@ -151,8 +163,6 @@ Requirement Key, Course ID, Career, Course, With
     requirement_dict['num_courses'] = len(courses_set)
     for course in courses_set:
       map_writer.writerow([requirement_index] + course.split('|'))
-      if args.debug:
-        print(f'{requirement_index:>6}', context_list[-1]['name'], course.split('|'))
 
   if requirement_dict['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
@@ -428,7 +438,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         | subset
   """
 
-  global do_remarks
+  global do_remarks, args
 
   # Containing Block Context.
   # Use last block_info item in the context_list
@@ -463,7 +473,6 @@ def traverse_body(node: Any, context_list: list) -> None:
         context_list += [{requirement_type: requirement_value}]
       else:
         pass
-
     elif isinstance(requirement_value, dict):
       context_dict = get_restrictions(requirement_value)
       try:
@@ -481,6 +490,10 @@ def traverse_body(node: Any, context_list: list) -> None:
         print(f'{institution} {requirement_id} {requirement_type} Empty requirement_context ',
               file=log_file)
         requirement_context = []
+
+      if args.debug:
+        print(f'Dispatch {requirement_type} from Body =>',
+              get_context_names(context_list + requirement_context), file=sys.stderr)
 
       match requirement_type:
 
@@ -509,23 +522,20 @@ def traverse_body(node: Any, context_list: list) -> None:
               if cursor.rowcount == 0:
                 print(f'{institution} {requirement_id} Block: no active block',
                       file=fail_file)
-                return
-
-              num_blocks = cursor.rowcount
-              block_num = 0
-              for row in cursor:
-                block_num += 1
-                if num_blocks == 1:
-                  process_block(row, context_list + requirement_context)
-                else:
-                  choice_context = {'choice': {'num_choices': num_blocks,
-                                               'num_required': number,
-                                               'index': block_num,
-                                               'block_type': args[1]}}
-                  process_block(row,
-                                context_list + requirement_context + [choice_context])
-
-          return
+              else:
+                num_blocks = cursor.rowcount
+                block_num = 0
+                for row in cursor:
+                  block_num += 1
+                  if num_blocks == 1:
+                    process_block(row, context_list + requirement_context)
+                  else:
+                    choice_context = {'choice': {'num_choices': num_blocks,
+                                                 'num_required': number,
+                                                 'index': block_num,
+                                                 'block_type': args[1]}}
+                    process_block(row,
+                                  context_list + requirement_context + [choice_context])
 
         case 'blocktype':
           print(institution, requirement_id, 'Body blocktype', file=log_file)
@@ -536,12 +546,12 @@ def traverse_body(node: Any, context_list: list) -> None:
           if number != 1:
             print(institution, requirement_id, f'blocktype with number ({number}) not equal 1',
                   file=todo_file)
-            return
-          req_type = requirement_value['block_type']
-          # if institution == 'LEH01' and requirement_id == 'RA002329':
-          #   print(f'{institution} {requirement_id} {block_type} {block_value}: {req_type}')
-          #   for key, value in subplans_by_institution[institution][block_value].items():
-          #     print(f'{key:12}: {value}')
+          else:
+            req_type = requirement_value['block_type']
+            # if institution == 'LEH01' and requirement_id == 'RA002329':
+            #   print(f'{institution} {requirement_id} {block_type} {block_value}: {req_type}')
+            #   for key, value in subplans_by_institution[institution][block_value].items():
+            #     print(f'{key:12}: {value}')
 
         case 'class_credit':
           print(institution, requirement_id, 'Body class_credit', file=log_file)
@@ -552,7 +562,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                           context_list + requirement_context, requirement_value)
           except KeyError:
             # Course List is an optional part of ClassCredit
-            return
+            pass
 
         case 'conditional':
           print(institution, requirement_id, 'Body conditional', file=log_file)
@@ -572,8 +582,6 @@ def traverse_body(node: Any, context_list: list) -> None:
           except KeyError:
             # Scribe Else clause is optional
             pass
-
-          return
 
         case 'copy_rules':
           print(institution, requirement_id, 'Body copy_rules', file=log_file)
@@ -604,7 +612,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                   pass
               if not is_circular:
                 process_block(row, context_list)
-          return
 
         case 'course_list_rule':
           print(institution, requirement_id, 'Body course_list_rule', file=log_file)
@@ -617,7 +624,6 @@ def traverse_body(node: Any, context_list: list) -> None:
             # Can't have a Course List Rule w/o a course list
             print(f'{institution} {requirement_id}: Course List Rule w/o a Course List',
                   file=sys.stderr)
-          return
 
         case 'group_requirements':
           # Group requirements is a list, so it should not show up here.
@@ -632,13 +638,11 @@ def traverse_body(node: Any, context_list: list) -> None:
           # This happens only inside conditionals, where the idea will be to look at what whether
           # it's in the true or false leg, what the condition is, and whether this is True or False
           # to infer what requirement must or must not be met. We're looking at YOU, Lehman ACC-BA.
-          return
 
         case 'course_list':
           print(institution, requirement_id, 'Body course_list', file=todo_file)
           map_courses(institution, requirement_id, block_title, context_list + requirement_context,
                       requirement_value)
-          return
 
         case 'group_requirement':
           print(institution, requirement_id, 'Body group_requirement', file=log_file)
@@ -657,6 +661,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                    f'{group_num} of {len(groups)}. {group}')
 
             for key, value in group.items():
+
+              if args.debug:
+                print(f'Dispatch {key} from Group =>',
+                      get_context_names(context_list + group_context), file=sys.stderr)
+
               match key:
 
                 case 'block':
@@ -697,10 +706,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                                 file=log_file)
                   except KeyError as ke:
                     exit(ke)
+                  continue
 
                 case 'blocktype':
                   print(institution, requirement_id, 'Group blocktype', file=todo_file)
-                  pass
+                  continue
 
                 case 'class_credit':
                   print(institution, requirement_id, 'Group class_credit', file=log_file)
@@ -711,10 +721,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                   except KeyError as ke:
                     # Course List is an optional part of ClassCredit
                     pass
+                  continue
 
                 case 'course_list_rule':
                   print(institution, requirement_id, 'Group course_list_rule', file=todo_file)
-                  pass
+                  continue
 
                 case 'group_requirements':
                   # Don't log this: it's an artifact because group requirements appear as lists even
@@ -722,12 +733,13 @@ def traverse_body(node: Any, context_list: list) -> None:
                   assert isinstance(value, list)
                   for group_requirement in value:
                     traverse_body(value, context_list + group_context)
+                  continue
 
                 case 'noncourse':
-                  pass
+                  continue
 
                 case 'rule_complete':
-                  pass
+                  continue
 
                 case _:
                   exit(f'{institution} {requirement_id} Unexpected Group {key}')
@@ -751,11 +763,13 @@ def traverse_body(node: Any, context_list: list) -> None:
 
           for key, rule in requirement_value.items():
 
+            if args.debug:
+              print(f'Dispatch {key} from Subset =>',
+                    get_context_names(context_list + subset_context), file=sys.stderr)
+
             match key:
 
               case 'block':
-                # print(f'{institution} {requirement_id} Subset block', file=log_file)
-
                 # label number type value
                 for block_dict in rule:
                   num_required = int(block_dict['block']['number'])
@@ -805,7 +819,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                           print(institution, requirement_id, f'Subset block {num_required=} '
                                                              f'{cursor.rowcount=} {num_found=} '
                                                              f'{num_extr=}', file=debug_file)
-
                 continue
 
               case 'blocktype':
@@ -848,14 +861,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                     except KeyError as ke:
                       print(f'{institution} {requirement_id} '
                             f'Subset class_credit_list {k} with no label', file=todo_file)
-                      # print(f'\n{institution} {requirement_id} RULE DICT', file=debug_file)
-                      # pprint(rule_dict, stream=debug_file)
-                      # print(f'\n{institution} {requirement_id} CONTEXT LIST', file=debug_file)
-                      # pprint(context_list, stream=debug_file)
-                      # print(f'\n{institution} {requirement_id} SUBSET CONTEXT', file=debug_file)
-                      # pprint(subset_context, stream=debug_file)
-                      # print(f'\n{institution} {requirement_id} LOCAL CONTEXT', file=debug_file)
-                      # pprint([local_dict], stream=debug_file)
 
                     if local_dict:
                       local_context = [local_dict]
@@ -866,8 +871,9 @@ def traverse_body(node: Any, context_list: list) -> None:
                                   context_list + subset_context + local_context,
                                   rule_dict['class_credit'])
                     except KeyError as ke:
-                      print(institution, requirement_id, block_title, ke)
-                      pprint(rule_dict)
+                      print(institution, requirement_id, block_title,
+                            f'{ke} in subset class_credit_list', file=stderr)
+                      pprint(rule_dict, stream=stderr)
                       exit()
                 continue
 
@@ -972,7 +978,7 @@ def traverse_body(node: Any, context_list: list) -> None:
 
         case 'noncourse' | 'proxy_advice' | 'remark':
           # Ignore These
-          return
+          pass
 
         case _:
           exit(f'Unhandled Requirement Type: {requirement_type}')
