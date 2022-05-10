@@ -13,7 +13,10 @@ from collections import defaultdict
 def stats(dist: list) -> tuple:
   """
   """
-  return (len(dist), min(dist), round(statistics.mean(dist), 1), max(dist))
+  return (f'N: {len(dist):3}  '
+          f'Min: {min(dist):3}  '
+          f'Avg: {statistics.mean(dist):4.1f}  '
+          f'Max: {max(dist):3}')
 
 
 freq_dist_by_block_type = defaultdict(lambda: defaultdict(int))
@@ -34,8 +37,9 @@ for line in lines:
     ops[relop_expression[1]] += 1
     rhs[relop_expression[2]] += 1
 
+print('\nRELOPS PER CONDITION')
 for bt, dist in freq_dist_by_block_type.items():
-  print(bt, stats(dist))
+  print(f'{bt:8}', stats(dist))
 
 # Display counts of lhs, relop, rhs values
 print(f'\n{len(lhs):>9,} LEFTHAND SIDE VALUES')
