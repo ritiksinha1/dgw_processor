@@ -1301,7 +1301,7 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
     key_error = str(key_error).strip('\'')
     nested = f' while processing “{key}”' if key != key_error else ''
     # Missing handler: report it and recover ever so gracefully
-    print(f' NO DISPATCH METHOD for “{key_error}”{nested}: '
+    print(f' KEY ERROR “{key_error}”{nested}: '
           f'{institution=}; {requirement_id=}; {which_part=}', file=sys.stderr)
     print_stack()
     return {'Dispatch_Error':

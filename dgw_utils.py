@@ -33,6 +33,8 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
     """)
     block_types = {(row.institution, row.requirement_id): row.block_type
                    for row in cursor.fetchall()}
+    # Special entry for parsing raw scribe blocks
+    block_types[('TST01', 'RA000000')] = 'TESTING'
 conn.close()
 
 
