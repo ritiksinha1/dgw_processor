@@ -176,7 +176,10 @@ def analyze_expression(ctx, institution, requirement_id):
   relop_expressions = set()
   expression_tree(children, relop_expressions)
   report['relop_expressions'] = list(relop_expressions)
-  print(json.dumps(report), file=sys.stderr)
+  with open('relop_expressions.txt', 'a') as relop_report:
+    print(institution, requirement_id, file=relop_report)
+    print(json.dumps(report), file=relop_report)
+  return
 
 
 # expression_tree()
