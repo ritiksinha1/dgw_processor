@@ -263,11 +263,12 @@ def process_block(row: namedtuple, context_list: list = []):
   except KeyError as ke:
     print(row.institution, row.requirement_id, 'Missing Body', file=fail_file)
     return
-  if len(body_list) > 0:
-    # Use block_info as a marker for a new (nested) block
-    traverse_body(body_list, context_list + [{'block_info': block_info._asdict()}])
-  else:
+  if len(body_list) == 0:
     print(row.institution, row.requirement_id, 'Empty Body', file=log_file)
+  else:
+    item_context = context_list + [{'block_info': block_info._asdict()}]
+    for body_item in body_list:
+      traverse_body(body_item, item_context)
 
 
 # traverse_header()
@@ -469,10 +470,16 @@ def traverse_body(node: Any, context_list: list) -> None:
     if isinstance(requirement_value, str):
       # String values are remarks: add to context and continue
       if do_remarks:
-        print(institution, requirement_id, f'{requirement_type.title()}', file=log_file)
+        print(f'{institution} {requirement_id} String value for {requirement_type.title()}',
+              file=log_file)
         context_list += [{requirement_type: requirement_value}]
       else:
         pass
+
+    elif isinstance(requirement_value, list):
+      for thing in requirement_value:
+        traverse_body(thing, context_list)
+
     elif isinstance(requirement_value, dict):
       context_dict = get_restrictions(requirement_value)
       try:
@@ -492,7 +499,7 @@ def traverse_body(node: Any, context_list: list) -> None:
         requirement_context = []
 
       if args.debug:
-        print(f'Dispatch {requirement_type} from Body =>',
+        print(f'{institution} {requirement_id} {requirement_type} from Body =>',
               get_context_names(context_list + requirement_context), file=sys.stderr)
 
       match requirement_type:
@@ -504,9 +511,9 @@ def traverse_body(node: Any, context_list: list) -> None:
           number = int(requirement_value['number'])
           assert number == 1
 
-          args = [requirement_value['institution'],
-                  requirement_value['block_type'],
-                  requirement_value['block_value']]
+          block_args = [requirement_value['institution'],
+                        requirement_value['block_type'],
+                        requirement_value['block_value']]
           with psycopg.connect('dbname=cuny_curriculum') as conn:
             with conn.cursor(row_factory=namedtuple_row) as cursor:
               blocks = cursor.execute("""
@@ -517,7 +524,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                  and block_type = %s
                  and block_value = %s
                  and period_stop ~* '^9'
-              """, args)
+              """, block_args)
 
               if cursor.rowcount == 0:
                 print(f'{institution} {requirement_id} Block: no active block',
@@ -533,7 +540,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                     choice_context = {'choice': {'num_choices': num_blocks,
                                                  'num_required': number,
                                                  'index': block_num,
-                                                 'block_type': args[1]}}
+                                                 'block_type': block_args[1]}}
                     process_block(row,
                                   context_list + requirement_context + [choice_context])
 
@@ -569,7 +576,7 @@ def traverse_body(node: Any, context_list: list) -> None:
 
           # Use the condition as the pseudo-name of this requirement
           # UNABLE TO HANDLE RULE_COMPLETE UNTIL THE CONDITION IS EVALUATED
-          condition = requirement_value['condition']
+          condition = requirement_value['condition_str']
           for if_true_dict in requirement_value['if_true']:
             condition_dict = {'name': 'if_true', 'condition': condition}
             condition_list = [condition_dict]
@@ -663,7 +670,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             for key, value in group.items():
 
               if args.debug:
-                print(f'Dispatch {key} from Group =>',
+                print(f'{institution} {requirement_id} {key} from Group =>',
                       get_context_names(context_list + group_context), file=sys.stderr)
 
               match key:
@@ -764,7 +771,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           for key, rule in requirement_value.items():
 
             if args.debug:
-              print(f'Dispatch {key} from Subset =>',
+              print(f'{institution} {requirement_id} {key} from Subset =>',
                     get_context_names(context_list + subset_context), file=sys.stderr)
 
             match key:
@@ -831,7 +838,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 for conditional_dict in rule:
                   conditional = conditional_dict['conditional']
                   # Use the condition as the pseudo-name of this requirement
-                  condition = conditional['condition']
+                  condition = conditional['condition_str']
                   for if_true_dict in conditional['if_true']:
                     condition_list = [{'name': 'if_true', 'condition': condition}]
                     traverse_body(if_true_dict, context_list + subset_context + condition_list)
@@ -969,6 +976,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                 # Ignored Qualifiers and rules
                 continue
 
+              case 'proxy_advice':
+                # Ignored for now
+                continue
+
               case _:
                 print(f'{institution} {requirement_id} Unhandled Subset key: {key:20} '
                       f'{str(type(rule)):10} {len(rule)}', file=sys.stderr)
@@ -981,11 +992,14 @@ def traverse_body(node: Any, context_list: list) -> None:
           pass
 
         case _:
-          exit(f'Unhandled Requirement Type: {requirement_type}')
-
+          exit(f'{institution} {requirement_id} Unhandled Requirement Type: {requirement_type}'
+               f' {requirement_value}')
+    else:
+      exit(f'{institution} {requirement_id} Unhandled Requirement Type {type(requirement_value)} '
+           f'({requirement_value})')
   else:
     # Not a list, str, or dict (??)
-    exit(f'Unhandled node of type {type(node)} ({node})')
+    exit(f'{institution} {requirement_id} Unhandled node type {type(node)} ({node})')
 
 
 # main()
