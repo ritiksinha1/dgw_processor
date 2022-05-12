@@ -1105,8 +1105,10 @@ if __name__ == "__main__":
 
       suffix = '' if cursor.rowcount == 1 else 's'
       print(f'{cursor.rowcount:,} parse tree{suffix}')
+
       quarantine_count = 0
       inactive_count = 0
+      processed_count = 0
       for row in cursor:
         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
           quarantine_count += 1
@@ -1147,5 +1149,8 @@ if __name__ == "__main__":
                                                 subplan.cip_code, subplan.hegis_code])
               subplans_by_institution[row.institution][subplan.plan][subplan.subplan] = subplan_info
         process_block(row)
+        processed_count += 1
 
-  print(f'{quarantine_count:5,} Quarantined\n{inactive_count:5,} Inactive')
+  print(f'{processed_count:5,} Processed\n'
+        f'{quarantine_count:5,} Quarantined\n'
+        f'{inactive_count:5,} Inactive')
