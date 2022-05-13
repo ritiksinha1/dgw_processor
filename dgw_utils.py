@@ -244,9 +244,12 @@ def get_nv_pairs(ctx):
     for nv_pair in nv_pairs:
       lhs = nv_pair.nv_lhs()
       rhs = nv_pair.nv_rhs()
-      assert isinstance(lhs, list) and isinstance(rhs, list) and len(lhs) == 1 and len(rhs) == 1
+      # assert isinstance(lhs, list) and isinstance(rhs, list) and len(lhs) == 1 and len(rhs) == 1
       lhs = lhs[0].getText()
-      rhs = rhs[0].getText()
+      try:
+        rhs = rhs[0].getText()
+      except IndexError:
+        rhs = None
       this_lhs = lhs.lower()
 
       # AdviceJump and RemarkJump have URLs, which might span multiple nv_pairs

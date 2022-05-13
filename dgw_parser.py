@@ -157,6 +157,7 @@ if __name__ == '__main__':
     with conn.cursor(row_factory=namedtuple_row) as cursor:
       cursor.execute('select code, prompt as name from cuny_institutions')
       college_names = {r.code: r.name for r in cursor}
+  college_names['SWG01'] = 'Oswego'
 
   # Command line args
   parser = argparse.ArgumentParser(description='Parse DGW Scribe Blocks')

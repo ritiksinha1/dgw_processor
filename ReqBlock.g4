@@ -87,6 +87,7 @@ qualifier         : maxpassfail
                   | maxperdisc
                   | maxspread
                   | maxtransfer
+                  | maxterm
                   | minarea
                   | minclass
                   | mincredit
@@ -254,7 +255,7 @@ maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 maxpassfail     : MAXPASSFAIL NUMBER class_or_credit tag?;
 maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
 maxspread       : MAXSPREAD NUMBER tag?;
-maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
+maxterm         : MAXTERM NUMBER class_or_credit course_list? tag?;
 
 maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
@@ -268,10 +269,10 @@ minres          : MINRES (num_classes | num_credits) display* proxy_advice? tag?
 minspread       : MINSPREAD NUMBER tag?;
 minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
 
-noncourse       : NUMBER NONCOURSE (LP expression RP)? proxy_advice? rule_tag? label?;
+noncourse       : NUMBER NONCOURSE (LP expression RP)? (proxy_advice | rule_tag)* label?;
 num_classes     : NUMBER CLASS allow_clause?;
 num_credits     : NUMBER CREDIT allow_clause?;
-nv_pair         : (nv_lhs '=' nv_rhs)+;
+nv_pair         : (nv_lhs '=' nv_rhs?)+;
 nv_lhs          : SYMBOL;
 nv_rhs          : (STRING | SYMBOL);
 optional        : OPTIONAL;
