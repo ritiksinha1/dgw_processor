@@ -144,7 +144,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
 
     # Display the list of courses that must be included
     if len(include_courses) > 0:
-      suffix = ' is' if len(include_courses) == 1 else 's are'
+      suffix = '' if len(include_courses) == 1 else 's'
       include_clause = ' and '.join([f'{c[0]} {c[1]}' for c in except_courses])
       html_str += f'<p>Note: The following course{suffix} must be included: {include_clause}</p>'
 
