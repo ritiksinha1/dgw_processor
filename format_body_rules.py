@@ -206,10 +206,10 @@ def format_conditional(conditional_dict: dict) -> str:
       string and return a list of conditions required. But that function is only a stub, pending
       determination of what should actually be done to interpret the condition string.
 
-      The list of rules get dispatched back into this module, which requires this function to
+      The list of rules gets dispatched back into this module, which requires this function to
       determine whether to dispatch through format_header_productions of format_body_rules.
   """
-  condition_str = conditional_dict['condition']
+  condition_str = conditional_dict['condition_str']
   true_type = true_op = true_name = None
   # Simple case: major, minor, concentration is, or is not, something
   try:
@@ -416,6 +416,7 @@ def format_noncourse(noncourse_list: Any) -> str:
 
   return return_str
 
+
 # format_proxy_advice()
 # -------------------------------------------------------------------------------------------------
 def format_proxy_advice(proxy_advice_dict: dict) -> str:
@@ -595,5 +596,9 @@ def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
   try:
     return _dispatch_table[dict_key](rule_dict)
   except KeyError as ke:
-    # ++print(f'No _dispatch_table[{ke}]', file=sys.stderr)
+    if dict_key not in list(_dispatch_table.keys()):
+      print(f'No entry in _dispatch_table for {dict_key}', file=stderr)
+    else:
+      print(f'KeyError {ke} while dispatching {dict_key} to {_dispatch_table[dict_key].__name__}',
+            file=sys.stderr)
     return None

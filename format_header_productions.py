@@ -59,7 +59,7 @@ DEBUG = os.getenv('DEBUG_HEADER')
 def _format_conditional(conditional_dict: dict) -> str:
   """
   """
-  return_str = f'<details><summary>If {conditional_dict["condition"]} is true</summary>'
+  return_str = f'<details><summary>If {conditional_dict["condition_str"]} is true</summary>'
   for rule_dict in conditional_dict['if_true']:
     return_str += '\n'.join([item for item in dispatch_header_productions(rule_dict)])
   if 'if_false' in conditional_dict.keys():

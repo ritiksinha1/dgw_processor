@@ -46,6 +46,7 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
     cursor.execute('select code, name from cuny_institutions')
     college_names = {row.code: row.name for row in cursor}
 conn.close()
+college_names['SWG01'] = 'Oswego'
 
 # Dict of quarantined requirement_blocks
 quarantined_dict = QuarantineManager()
