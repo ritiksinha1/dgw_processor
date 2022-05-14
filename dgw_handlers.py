@@ -437,14 +437,11 @@ def header_tag(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def rule_tag(ctx, institution, requirement_id):
   """ rule_tag  : (RULE_TAG nv_pair)+;
-      nv_pair   : nv_lhs '=' nv_rhs;
-
-      Rule tags are currently ignored, but this method will handle them if that ever changes!
+      nv_pair   : nv_lhs '=' nv_rhs?;
   """
   if DEBUG:
     print(f'*** rule_tag({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
-
   return {'rule_tag': get_nv_pairs(ctx)}
 
 

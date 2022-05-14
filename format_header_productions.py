@@ -501,6 +501,29 @@ def _format_minres_head(minres_head_dict: dict) -> str:
     return f'{display_str}{minres_info}'
 
 
+# _format_header_tag()
+# -------------------------------------------------------------------------------------------------
+def _format_header_tag(header_tag_obj: Any) -> str:
+  """ header_tag      : (HEADER_TAG nv_pair)+;
+
+      This can be subsumed by class_credit_head, or can be a standalone header qualifier.
+      if the name-value pair is remark-jump or advice-jump, give the link. Otherwise, ignore it.
+  """
+  header_tag_list = header_tag_obj if isinstance(header_tag_obj, list) else [header_tag_obj]
+  return_html = ''
+  for header_tag_dict in header_tag_list:
+    assert isinstance(header_tag_dict, dict)
+    for key, value in header_tag_dict.items():
+      match key.lower():
+        case 'advicejump' | 'rulejump':
+          return_html += f'<p>For more information, see <a href="{value}">{value}</a></p>'
+        case _:
+          value_str = 'Unspecified' if value is None else value
+          return_html += f'<p>{key.lower()} is {value_str}</p>'
+
+  return return_html
+
+
 # _format_optional()
 # -------------------------------------------------------------------------------------------------
 def _format_optional(optional_dict: dict) -> str:
@@ -570,6 +593,7 @@ dispatch_table = {'header_class_credit': _format_class_credit,
                   'header_mingrade': _format_mingrade_head,
                   'header_minperdisc': _format_minperdisc_head,
                   'header_minres': _format_minres_head,
+                  'header_tag': _format_header_tag,
                   'optional': _format_optional,
                   'proxy_advice': format_body_rules.format_proxy_advice,
                   'remark': format_body_rules.format_remark,

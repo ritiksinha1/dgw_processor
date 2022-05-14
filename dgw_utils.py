@@ -224,7 +224,7 @@ def concentration_list(condition: str, institution: str, requirement_id: str) ->
 # -------------------------------------------------------------------------------------------------
 def get_nv_pairs(ctx):
   """
-      nv_pair         : (nv_lhs '=' nv_rhs)+;
+      nv_pair         : (nv_lhs '=' nv_rhs?)+;
       nv_lhs          : SYMBOL;
       nv_rhs          : (STRING | SYMBOL);
 
@@ -236,42 +236,47 @@ def get_nv_pairs(ctx):
     print(f'*** get_nv_pairs({ctx}', file=sys.stderr)
 
   contexts = ctx if isinstance(ctx, list) else [ctx]
+  # Strip quotes from rhs; combine all successive lhs into a single dict key.
+
   pairs_list = []
   for context in contexts:
     nv_pairs = context.nv_pair()
     last_lhs = None
-    url_str = ''
+    rhs_value = None
     for nv_pair in nv_pairs:
-      lhs = nv_pair.nv_lhs()
-      rhs = nv_pair.nv_rhs()
-      # assert isinstance(lhs, list) and isinstance(rhs, list) and len(lhs) == 1 and len(rhs) == 1
-      lhs = lhs[0].getText()
+      this_lhs = nv_pair.nv_lhs()
+      this_rhs = nv_pair.nv_rhs()
+      assert isinstance(this_lhs, list) and isinstance(this_rhs, list) and len(this_lhs) == 1
+
+      this_lhs = this_lhs[0].getText()
+
       try:
-        rhs = rhs[0].getText()
+        # If the righthand side is a string
+        this_rhs = this_rhs[0].STRING().getText().strip('"')
+      except AttributeError:
+        # If the righthand side is a symbol
+        this_rhs = [this_rhs[0].getText()]
       except IndexError:
-        rhs = None
-      this_lhs = lhs.lower()
+        # Empty righthand side
+        this_rhs = None
 
-      # AdviceJump and RemarkJump have URLs, which might span multiple nv_pairs
-      if this_lhs in ['advicejump', 'remarkjump']:
-        if this_lhs == last_lhs:
-          # Extend URL
-          url_str += rhs.strip('"')
-          continue
-        if url_str:
-          # Complete pending xxxJump item
-          pairs_list.append({last_lhs.title().replace('j', 'J'): url_str})
-        # Start new xxxJump
+      if this_lhs == last_lhs:
+        # This might be either string or list concatenation
+        rhs_value += this_rhs
+      else:
+        # New lhs
+        if last_lhs is not None:
+          # Finish up previous one
+          if isinstance(rhs_value, list):
+            rhs_value = ', '.join(rhs_value)
+          pairs_list.append({last_lhs.title().replace('j', 'J'): rhs_value})
+        # Start new one
         last_lhs = this_lhs
-        url_str = rhs.strip('"')
-        continue
+        rhs_value = this_rhs
 
-      if url_str:
-        # Complete pending xxxJump
-        pairs_list.append({last_lhs.title().replace('j', 'J'): url_str})
-      pairs_list.append({this_lhs.title(): rhs})
-      last_lhs = this_lhs
-      url_str = ''
+    if isinstance(rhs_value, list):
+      rhs_value = ', '.join(rhs_value)
+    pairs_list.append({last_lhs.title().replace('j', 'J'): rhs_value})
 
   return pairs_list
 
@@ -673,7 +678,7 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
             elif valid_qualifier == 'proxy_advice':
               qualifier_dict.update(dgw_handlers.proxy_advice(qualifier_ctx,
                                                               institution, requirement_id))
-            # rule_tag         : (RULE_TAG expression)+;
+            # rule_tag         : (RULE_TAG nv_pair)+;
             elif valid_qualifier == 'rule_tag':
               qualifier_dict.update(dgw_handlers.rule_tag(qualifier_ctx,
                                                           institution, requirement_id))

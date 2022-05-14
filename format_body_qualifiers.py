@@ -323,6 +323,30 @@ def format_minspread(minspread_dict: dict) -> str:
   return f'<p>At least {number} discipline{suffix} required.</p>'
 
 
+# _format_ruletag()
+# -------------------------------------------------------------------------------------------------
+def format_ruletag(rule_tag_obj: Any) -> str:
+  """ rule_tag      : (RULE_TAG nv_pair)+;
+  """
+  if isinstance(rule_tag_obj, list):
+    assert len(rule_tag_obj) == 1, f'Unexpected multiple rule_tag list length ({len(rule_tag_obj)})'
+    rule_tag_dict = rule_tag_obj[0]
+  else:
+   rule_tag_dict = rule_tag_obj
+  assert isinstance(rule_tag_dict, dict)
+  print(rule_tag_dict)
+  return_html = ''
+  for key, value in rule_tag_dict.items():
+    match key.lower():
+      case 'advicejump' | 'rulejump':
+        return_html += f'<p>For more information, see <a href="{value}">{value}</a></p>'
+      case _:
+        value_str = 'Unspecified' if value is None else value
+        return_html += f'<p>{key.lower()} is {value_str}</p>'
+
+  return return_html
+
+
 # format_share()
 # -------------------------------------------------------------------------------------------------
 def format_share(share_dict: dict) -> str:
@@ -370,6 +394,7 @@ _dispatch_table = {'maxpassfail': format_maxpassfail,
                    'minperdisc': format_minperdisc,
                    'minres': format_minres,
                    'minspread': format_minspread,
+                   'rule_tag': format_ruletag,
                    'share': format_share,
                    }
 
@@ -400,7 +425,7 @@ def dispatch_body_qualifiers(node: dict) -> list:
   possible_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
                          'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
                          'proxy_advice', 'rule_tag', 'samedisc', 'share']
-  ignored_qualifiers = ['proxy_advice', 'rule_tag', 'samedisc']
+  ignored_qualifiers = ['proxy_advice', 'samedisc']
   handled_qualifiers = _dispatch_table.keys()
   qualifier_strings = []
   for qualifier in possible_qualifiers:

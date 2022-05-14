@@ -166,7 +166,7 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
   # display is student-specific
   try:
     if display_str := class_credit_dict['display']:
-      class_credit_str += f'<p>Display: <em>{display_str}</em></p>'
+      class_credit_str += f'<p><em>{display_str}</em></p>'
       print('Examine this display_str in format_class_credit. Is it student-specific?:',
             display_str, file=sys.stderr)
   except KeyError:
@@ -439,7 +439,8 @@ def format_remark(remark_str: str) -> str:
 # format_rule_complete()
 # -------------------------------------------------------------------------------------------------
 def format_rule_complete(rule_complete_dict: dict) -> str:
-  """
+  """ rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) (proxy_advice | rule_tag | label)*;
+
   """
 
   try:
@@ -452,6 +453,18 @@ def format_rule_complete(rule_complete_dict: dict) -> str:
     rule_complete_str = '<p>This rule is satisfied.</p>'
   else:
     rule_complete_str = '<p>This rule is <strong>not</strong> satisfied.</p>'
+
+  try:
+    rule_tag_dicts = rule_complete_dict['rule_tag']
+    for rule_tag_dict in rule_tag_dicts:
+      for key, value in rule_tag_dict.items():
+        if key.lower() in ['advicejump', 'remarkjump']:
+          value = value.strip('"')
+          rule_complete_str += f'<p>For more information, see <a href="{value}">{value}</a></p>'
+        else:
+          rule_complete_str += f'<p>{value}</p>'
+  except KeyError:
+    pass
 
   if summary:
     return f'<display>{summary}{rule_complete_str}</display>'
