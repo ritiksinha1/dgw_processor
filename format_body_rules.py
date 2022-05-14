@@ -20,6 +20,7 @@ else:
 # The sequence of the following imports matters
 from format_body_qualifiers import dispatch_body_qualifiers
 import format_utils
+import format_body_qualifiers
 
 
 # format_block()
@@ -417,17 +418,6 @@ def format_noncourse(noncourse_list: Any) -> str:
   return return_str
 
 
-# format_proxy_advice()
-# -------------------------------------------------------------------------------------------------
-def format_proxy_advice(proxy_advice_dict: dict) -> str:
-  """ Ignoring proxy advice
-  """
-
-  proxy_advice_str = ''
-
-  return proxy_advice_str
-
-
 # format_remark()
 # -------------------------------------------------------------------------------------------------
 def format_remark(remark_str: str) -> str:
@@ -593,7 +583,7 @@ _dispatch_table = {'block': format_block,
                    'course_list_rule': format_course_list_rule,
                    'group_requirements': format_group_requirements,
                    'noncourse': format_noncourse,
-                   'proxy_advice': format_proxy_advice,
+                   'proxy_advice': format_body_qualifiers.format_proxyadvice,
                    'remark': format_remark,
                    'rule_complete': format_rule_complete,
                    'subset': format_subset

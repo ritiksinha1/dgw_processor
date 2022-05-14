@@ -91,6 +91,12 @@ def _format_class_credit(class_credit_dict: dict) -> str:
   except KeyError:
     pass
   return_str += '</p>'
+
+  try:
+    return_str += format_body_qualifiers.format_proxyadvice(class_credit_dict['proxy_advice'])
+  except KeyError:
+    pass
+
   if label_str:
     return_str += '</details>'
 
@@ -595,7 +601,7 @@ dispatch_table = {'header_class_credit': _format_class_credit,
                   'header_minres': _format_minres_head,
                   'header_tag': _format_header_tag,
                   'optional': _format_optional,
-                  'proxy_advice': format_body_rules.format_proxy_advice,
+                  'proxy_advice': format_body_qualifiers.format_proxyadvice,
                   'remark': format_body_rules.format_remark,
                   'header_share': _format_share_head,
                   'standalone': _format_standalone,
