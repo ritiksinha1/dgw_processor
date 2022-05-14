@@ -325,13 +325,16 @@ def format_minspread(minspread_dict: dict) -> str:
 
 # format_proxyadvice()
 # -------------------------------------------------------------------------------------------------
-def format_proxyadvice(proxyadvice_list: list) -> str:
+def format_proxyadvice(proxyadvice_dict: dict) -> str:
   """   return_dict = {'proxy_advice': {'proxy_str': proxy_str,
                                         'proxy_args': [arg.strip('><') for arg in proxy_args]}}
       Display nothing if there args, but plain strings might be useful
   """
-  assert isinstance(proxyadvice_list, dict)
-  return '<!-- Proxy Advice -->'
+  assert isinstance(proxyadvice_dict, dict)
+  if proxyadvice_dict['proxy_args']:
+    return '<!-- Proxy Advice -->'
+  else:
+    return f'<p>{proxyadvice_dict[proxy_str]}</p>'
 
 
 # format_ruletag()

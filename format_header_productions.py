@@ -83,17 +83,21 @@ def _format_class_credit(class_credit_dict: dict) -> str:
   else:
     return_str = ''
 
-  return_str += f'<p>{format_utils.format_num_class_credit(class_credit_dict)} required'
+  return_str += f'<p>{format_utils.format_num_class_credit(class_credit_dict)} required</p>'
 
   try:
     if class_credit_dict['pseudo']:
-      return_str += ' (nominal)'
+      return_str = return_str.replace('</p>', ' (nominal)</p>')
   except KeyError:
     pass
-  return_str += '</p>'
 
   try:
     return_str += format_body_qualifiers.format_proxyadvice(class_credit_dict['proxy_advice'])
+  except KeyError:
+    pass
+
+  try:
+    return_str += format_body_rules.format_remark(class_credit_dict['remark'])
   except KeyError:
     pass
 
@@ -558,7 +562,7 @@ def _format_share_head(share_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{share_info}<details>'
   else:
-    return f'<p>{share_info}</p>'
+    return f'{share_info}'
 
 
 # _format_standalone()
