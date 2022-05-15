@@ -265,7 +265,7 @@ def _format_maxpassfail_head(maxpassfail_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxpassfail_info}<details>'
   else:
-    return f'<p>{maxpassfail_info}</p>'
+    return maxpassfail_info
 
 
 # _format_maxperdisc()
@@ -294,7 +294,7 @@ def _format_maxperdisc_head(maxperdisc_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxperdisc_info}<details>'
   else:
-    return f'<p>{maxperdisc_info}</p>'
+    return maxperdisc_info
 
 
 # _format_maxterm_head()
@@ -357,7 +357,7 @@ def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{maxtransfer_info}<details>'
   else:
-    return f'<p>{maxtransfer_info}</p>'
+    return maxtransfer_info
 
 
 # _format_minclass_head()
@@ -383,7 +383,7 @@ def _format_minclass_head(minclass_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{minclass_info}<details>'
   else:
-    return f'<p>{minclass_info}</p>'
+    return minclass_info
 
 
 # _format_mincredit_head()
@@ -431,7 +431,7 @@ def _format_mingpa_head(mingpa_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{mingpa_info}<details>'
   else:
-    return f'<p>{mingpa_info}</p>'
+    return mingpa_info
 
 
 # _format_mingrade_head()
@@ -453,7 +453,7 @@ def _format_mingrade_head(mingrade_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{mingrade_info}<details>'
   else:
-    return f'<p>{mingrade_info}</p>'
+    return mingrade_info
 
 
 # _format_minperdisc_head()
@@ -478,7 +478,7 @@ def _format_minperdisc_head(minperdisc_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{minperdisc_info}<details>'
   else:
-    return f'<p>{minperdisc_info}</p>'
+    return minperdisc_info
 
 
 # _format_minres_head()
@@ -562,7 +562,7 @@ def _format_share_head(share_head_dict: dict) -> str:
   if label_str:
     return f'<details><summary>{label_str}</summary>{share_info}<details>'
   else:
-    return f'{share_info}'
+    return share_info
 
 
 # _format_standalone()
