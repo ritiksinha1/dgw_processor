@@ -24,20 +24,26 @@ quarantine_dict = QuarantineManager()
 
 BlockInfo = recordclass('BlockInfo',
                         'institution requirement_id block_type block_value block_title '
-                        'class_credits max_transfer min_residency min_grade min_gpa')
+                        'class_credits max_transfer min_residency min_grade min_gpa other')
 SubplanInfo = namedtuple('SubplanInfo', 'type description cip_code hegis_code')
 
 
-""" Output Files
+""" Logging/Development Reports
+      analysis_file:      Analsis of as-yet-unhandled constructs.
+      blocks_file:        List of blocks processed
       debug_file:         Info written during debugging (to avoid stdout/stderr)
-      log_file:           Record of requirements processed successfully. Bigger is better!
       fail_file:          Blocks that failed for one reason or another
-      todo_file:          Record of known requirements not yet handled. Smaller is better!
+      log_file:           Record of requirements processed successfully. Bigger is better!
+      no_courses_file:    Requirements with no course lists.
+      todo_file:          Record of all known requirements not yet handled. Smaller is better!
+
+    Data for T-Rex
       programs_file:      Spreadsheet of info about majors, minors, and concentrations
       requirements_file:  Spreadsheet of program requirement names
       mapping_file        Spreadsheet of course-to-requirements mappings
 
 """
+analysis_file = open('analysis.txt', 'w')
 blocks_file = open('blocks.txt', 'w')
 debug_file = open('debug.txt', 'w')
 fail_file = open('fail.txt', 'w')
@@ -224,11 +230,16 @@ def process_block(row: namedtuple, context_list: list = []):
     print(row.institution, row.requirement_id, 'Not an active program', file=fail_file)
     return
 
+  # Be sure the block was parsed successfully (Quarantined should have handled this.)
+  if 'error' in row.parse_tree.keys():
+    print(row.institution, row.requirement_id, 'Parser Error', file=fail_file)
+    return
+
   print(row.institution, row.requirement_id, file=blocks_file)
 
   # Augment db info with default values for class_credits max_transfer min_residency min_grade
-  # min_gpa
-  block_info = BlockInfo._make(row[0:5] + ('', '', '', '', ''))
+  # min_gpa, and other
+  block_info = BlockInfo._make(row[0:5] + ('', '', '', '', '', []))
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
   # found in the header list.
@@ -253,7 +264,8 @@ def process_block(row: namedtuple, context_list: list = []):
                             f'{block_info.max_transfer}',
                             f'{block_info.min_residency}',
                             f'{block_info.min_grade}',
-                            f'{block_info.min_gpa}'])
+                            f'{block_info.min_gpa}',
+                            json.dumps(block_info.other, ensure_ascii=False)])
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
@@ -277,7 +289,9 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
   """ Extract program-wide qualifiers: MinGrade (but not MinGPA) and residency requirements,
   """
 
-  institution, requirement_id, *_ = (block_info.institution, block_info.requirement_id)
+  institution, requirement_id, block_type, *_ = (block_info.institution,
+                                                 block_info.requirement_id,
+                                                 block_info.block_type)
   for header_item in header_list:
 
     if not isinstance(header_item, dict):
@@ -316,6 +330,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
           case 'conditional':
             # There could be a block requirement and/or a class_credit requirement; perhaps others.
             print(f'{institution} {requirement_id} Header conditional', file=todo_file)
+            print(f'{institution} {requirement_id} {block_type} Header conditional',
+                  file=analysis_file)
             pass
 
           case 'copy_rules':
@@ -326,13 +342,41 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             pass
 
           case 'header_maxclass':
-            # THERE WOULD BE A COURSE LIST HERE
-            print(f'{institution} {requirement_id} Header maxclass', file=todo_file)
+            print(f'{institution} {requirement_id} Header maxclass', file=log_file)
+            for cruft_key in ['institution', 'requirement_id', 'context_path']:
+              del(value['maxclass']['course_list'][cruft_key])
+            block_info.other.append({'maxclass': value['maxclass']})
+
+            number = int(value['maxclass']['number'])
+            num_type = '+' if number > 2 else number
+            course_list = value['maxclass']['course_list']
+            num_scribed = len(course_list['scribed_courses'][0])
+            has_all = any([c[0].startswith('@') for a in course_list['scribed_courses'] for c in a])
+            has_inc = len(course_list['include_courses']) > 0
+            has_exc = len(course_list['except_courses']) > 0
+            print(f'{institution} {requirement_id} {block_type:6} num {num_type}; scribed'
+                  f'{num_scribed:3}; @X {has_all:1}; incl {has_inc:1}; excl {has_exc:1} '
+                  f'Header maxclass',
+                  file=analysis_file)
             pass
 
           case 'header_maxcredit':
             # THERE ARE 493 OF THESE; THEY HAVE COURSE LISTS
             print(f'{institution} {requirement_id} Header maxcredit', file=todo_file)
+            for cruft_key in ['institution', 'requirement_id', 'context_path']:
+              del(value['maxcredit']['course_list'][cruft_key])
+            block_info.other.append({'maxcredit': value['maxcredit']})
+            number = int(value['maxcredit']['number'])
+            num_type = '+' if number > 2 else number
+            course_list = value['maxcredit']['course_list']
+            num_scribed = len(course_list['scribed_courses'][0])
+            has_all = any([c[0].startswith('@') for a in course_list['scribed_courses'] for c in a])
+            has_inc = len(course_list['include_courses']) > 0
+            has_exc = len(course_list['except_courses']) > 0
+            print(f'{institution} {requirement_id} {block_type:6} num {num_type}; scribed'
+                  f'{num_scribed:3}; @X {has_all:1}; incl {has_inc:1}; excl {has_exc:1} '
+                  f'Header maxcredit',
+                  file=analysis_file)
             pass
 
           case 'header_maxpassfail':
@@ -657,11 +701,11 @@ def traverse_body(node: Any, context_list: list) -> None:
           number = int(requirement_value['number'])
           groups = requirement_value['group_list']['groups']
           num_groups = len(groups)
+          context_dict['num_groups'] = num_groups
+          context_dict['num_required'] = number
+          groups_context = requirement_context + [context_dict]
           for group_num, group in enumerate(groups):
-            context_dict['group_number'] = group_num
-            context_dict['num_groups'] = num_groups
-            context_dict['num_required'] = number
-            group_context = requirement_context + [context_dict]
+            group_context = groups_context + [{'group_number': group_num}]
 
             if len(group.keys()) != 1:
               exit(f'{institution} {requirement_id} {len(group.keys())=}: '
@@ -890,29 +934,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                 assert isinstance(rule, list)
                 for group_requirement in rule:
                   traverse_body(group_requirement, context_list + subset_context)
-                  # # There is only one item per rule_dict, but this is a convenient way to get it
-                  # assert len(rule_dict) == 1
-                  # for k, v in rule_dict.items():
-                  #   local_dict = get_restrictions(v)
-                  #   try:
-                  #     local_dict['name'] = v['label']
-                  #   except KeyError as ke:
-                  #     print(f'{institution} {requirement_id} '
-                  #           f'Subset group_requirements {k} with no label',
-                  #           file=todo_file)
-                  #     # print(f'\n{institution} {requirement_id} RULE DICT', file=debug_file)
-                  #     # pprint(rule_dict, stream=debug_file)
-                  #     # print(f'\n{institution} {requirement_id} CONTEXT LIST', file=debug_file)
-                  #     # pprint(context_list, stream=debug_file)
-                  #     # print(f'\n{institution} {requirement_id} SUBSET CONTEXT', file=debug_file)
-                  #     # pprint(subset_context, stream=debug_file)
-                  #     # print(f'\n{institution} {requirement_id} LOCAL CONTEXT', file=debug_file)
-                  #     # pprint([local_dict], stream=debug_file)
-                  #   if local_dict:
-                  #     local_context = [local_dict]
-                  #   else:
-                  #     local_context = []
-                  #   traverse_body(rule_dict, context_list + subset_context + local_context)
                 continue
 
               case 'copy_rules':
@@ -1029,7 +1050,8 @@ if __name__ == "__main__":
                             'Max Transfer',
                             'Min Residency',
                             'Min Grade',
-                            'Min GPA'])
+                            'Min GPA',
+                            'Other'])
 
   requirements_writer.writerow(['Institution',
                                 'Requirement ID',
@@ -1124,7 +1146,8 @@ if __name__ == "__main__":
         if row.institution not in courses_by_institution:
           with conn.cursor(row_factory=namedtuple_row) as course_cursor:
             course_cursor.execute("""
-            select institution, course_id, offer_nbr,discipline, catalog_number, career
+            select institution, course_id, offer_nbr, equivalence_group,
+                   discipline, catalog_number, career
               from cuny_courses
              where institution = %s
                and designation not in ('MNL', 'MLA')
@@ -1136,7 +1159,7 @@ if __name__ == "__main__":
               institution, discipline, catalog_number = (course.institution,
                                                          course.discipline,
                                                          course.catalog_number)
-              value = (course.course_id, course.offer_nbr, course.career)
+              value = (course.course_id, course.offer_nbr, course.career, course.equivalence_group)
               courses_by_institution[institution][discipline][catalog_number] = value
 
             # And cache the institution's subplan info
