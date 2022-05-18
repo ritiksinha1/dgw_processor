@@ -288,8 +288,8 @@ if __name__ == '__main__':
           except KeyError:
             print(f'    OK         ', end='')
             print(f'{row.institution} {row.requirement_id} OK', file=log_file)
-
-    print(f'{current_institution} took {(time.time() - institution_start):,.1f} sec',
+    # Report last college
+    print(f'{college_names[current_institution]}: {(time.time() - institution_start):,.1f} sec',
           file=log_file)
 
     print(f'\nTotal time: {(time.time() - process_start):,.1f} sec\nMax times by block type:\n'
