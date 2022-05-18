@@ -292,7 +292,9 @@ if __name__ == '__main__':
     print(f'{college_names[current_institution]}: {(time.time() - institution_start):,.1f} sec',
           file=log_file)
 
-    print(f'\nTotal time: {(time.time() - process_start):,.1f} sec\nMax times by block type:\n'
+    min, sec = divmod(time.time() - process_start, 60)
+    hr, min = divmod(min, 60)
+    print(f'\nTotal time: {int(hr):02}:{int(min):02}:{int(sec):02}\nMax times by block type:\n'
           f'Block Type   Sec Clg Value',
           file=log_file)
     for block_type, value in longest_times.items():
