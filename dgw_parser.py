@@ -294,7 +294,7 @@ if __name__ == '__main__':
 
     min, sec = divmod(time.time() - process_start, 60)
     hr, min = divmod(min, 60)
-    print(f'\nTotal time: {int(hr):02}:{int(min):02}:{int(sec):02}\nMax times by block type:\n'
+    print(f'\nTotal time: {int(hr):02}:{int(min):02}:{round(sec):02}\nMax times by block type:\n'
           f'Block Type   Sec Clg Value',
           file=log_file)
     for block_type, value in longest_times.items():
