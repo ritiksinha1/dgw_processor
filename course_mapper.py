@@ -330,8 +330,6 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
           case 'conditional':
             # There could be a block requirement and/or a class_credit requirement; perhaps others.
             print(f'{institution} {requirement_id} Header conditional', file=todo_file)
-            print(f'{institution} {requirement_id} {block_type} Header conditional',
-                  file=analysis_file)
             pass
 
           case 'copy_rules':
@@ -348,34 +346,35 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             block_info.other.append({'maxclass': value['maxclass']})
 
             number = int(value['maxclass']['number'])
-            num_type = '+' if number > 2 else number
             course_list = value['maxclass']['course_list']
-            num_scribed = len(course_list['scribed_courses'][0])
-            has_all = any([c[0].startswith('@') for a in course_list['scribed_courses'] for c in a])
-            has_inc = len(course_list['include_courses']) > 0
-            has_exc = len(course_list['except_courses']) > 0
-            print(f'{institution} {requirement_id} {block_type:6} num {num_type}; scribed'
-                  f'{num_scribed:3}; @X {has_all:1}; incl {has_inc:1}; excl {has_exc:1} '
-                  f'Header maxclass',
+            scribed = [f'{course[0]} {course[1]} {course[2]}'
+                       for group in course_list['scribed_courses']
+                       for course in group]
+            include = [f'{course[0]} {course[1]} {course[2]}'
+                       for course in course_list['include_courses']]
+            exclude = [f'{course[0]} {course[1]} {course[2]}'
+                       for course in course_list['except_courses']]
+            print(f'{institution} {requirement_id} {block_type:6} maxclass {number}; {scribed}; '
+                  f'{include}; {exclude}',
                   file=analysis_file)
             pass
 
           case 'header_maxcredit':
-            # THERE ARE 493 OF THESE; THEY HAVE COURSE LISTS
-            print(f'{institution} {requirement_id} Header maxcredit', file=todo_file)
+            print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
             for cruft_key in ['institution', 'requirement_id', 'context_path']:
               del(value['maxcredit']['course_list'][cruft_key])
             block_info.other.append({'maxcredit': value['maxcredit']})
             number = int(value['maxcredit']['number'])
-            num_type = '+' if number > 2 else number
             course_list = value['maxcredit']['course_list']
-            num_scribed = len(course_list['scribed_courses'][0])
-            has_all = any([c[0].startswith('@') for a in course_list['scribed_courses'] for c in a])
-            has_inc = len(course_list['include_courses']) > 0
-            has_exc = len(course_list['except_courses']) > 0
-            print(f'{institution} {requirement_id} {block_type:6} num {num_type}; scribed'
-                  f'{num_scribed:3}; @X {has_all:1}; incl {has_inc:1}; excl {has_exc:1} '
-                  f'Header maxcredit',
+            scribed = [f'{course[0]} {course[1]} {course[2]}'
+                       for group in course_list['scribed_courses']
+                       for course in group]
+            include = [f'{course[0]} {course[1]} {course[2]}'
+                       for course in course_list['include_courses']]
+            exclude = [f'{course[0]} {course[1]} {course[2]}'
+                       for course in course_list['except_courses']]
+            print(f'{institution} {requirement_id} {block_type:6} maxcredit  {number}; {scribed}; '
+                  f'{include}; {exclude}',
                   file=analysis_file)
             pass
 
