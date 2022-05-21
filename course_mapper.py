@@ -114,13 +114,61 @@ def letter_grade(grade_point: float) -> str:
   return letter + suffix
 
 
+# expand_course_list()
+# -------------------------------------------------------------------------------------------------
+def expand_course_list(institution: str, requirement_id: str, course_dict: dict) -> dict:
+  """ Generate a dict of active courses that match a scribed list with except courses removed (and
+      include courses ignored), taking wildcards and ranges into account. Dict keys are (course_id,
+      offer_nbr) tuples; values are with-clause expressions (which may be null).
+
+      With-expressions can appear within the scribed list and/or the except list.
+        scribed PHYS @
+        except  @ 1@ with dwgrade < 2.0 or dwtransfer = y
+      Unable to evaluate except list where there are wildcards and the with-expression is not empty,
+      so log those cases. But if there is no with-expression, even with wildcards, the matching
+      courses get deleted from the return dict.
+
+  """
+  # Check for empty list
+  if not course_dict:
+    return {}
+
+  # Get the scribed list and flatten it
+  course_list = course_dict['scribed_courses']
+  courses = [course for area in course_list for course in area]
+
+  # Create set of (course_id, offer_nbr) tuples for exclude courses that have no with-expressions
+  exclude_list = course_dict['except_courses']
+  exclude_set = set()
+  for item in exclude_list:
+    if with_expression := item[2]:
+      # Log and skip cases with with-expressions
+      print(f'{institution} {requirement_id} exclude with {with_expression}', file=debug_file)
+    else:
+      for k, v in courses_cache((institution, item[0].strip(), item[1].strip())).items():
+        print(f'{institution} {requirement_id} exclude {k} from {courses}', file=debug_file)
+        exclude_set.add(k)
+
+  # Get rid of redundant scribes
+  courses_set = set([tuple(course) for course in courses])
+
+  # Dict of active scribed courses
+  return_dict = {}
+  for discipline, catalog_nbr, with_clause in courses_set:
+    for k, v in courses_cache((institution, discipline, catalog_nbr)).items():
+      if k not in exclude_set:
+        return_dict[(v.course_id, v.offer_nbr)] = (k, with_clause)
+
+  return return_dict
+
+
 # map_courses()
 # -------------------------------------------------------------------------------------------------
 def map_courses(institution: str, requirement_id: str, requirement_name: str, context_list: list,
                 requirement_dict: dict):
   """ Write courses and their With clauses to the map file.
       Object returned by courses_cache():
-        CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr block_title credits career')
+        CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits career')
 
       Each program requirement has a unique key based on institution, requirement_id, block_title,
       and context list.
@@ -347,16 +395,9 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
 
             number = int(value['maxclass']['number'])
             course_list = value['maxclass']['course_list']
-            scribed = [f'{course[0]} {course[1]} {course[2]}'
-                       for group in course_list['scribed_courses']
-                       for course in group]
-            include = [f'{course[0]} {course[1]} {course[2]}'
-                       for course in course_list['include_courses']]
-            exclude = [f'{course[0]} {course[1]} {course[2]}'
-                       for course in course_list['except_courses']]
-            print(f'{institution} {requirement_id} {block_type:6} maxclass {number}; {scribed}; '
-                  f'{include}; {exclude}',
-                  file=analysis_file)
+            expanded_list = expand_course_list(institution, requirement_id, course_list)
+            print(f'{institution} {requirement_id} {block_type:6} maxclass {number}; '
+                  f'{expanded_list}', file=analysis_file)
             pass
 
           case 'header_maxcredit':
@@ -366,16 +407,9 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             block_info.other.append({'maxcredit': value['maxcredit']})
             number = int(value['maxcredit']['number'])
             course_list = value['maxcredit']['course_list']
-            scribed = [f'{course[0]} {course[1]} {course[2]}'
-                       for group in course_list['scribed_courses']
-                       for course in group]
-            include = [f'{course[0]} {course[1]} {course[2]}'
-                       for course in course_list['include_courses']]
-            exclude = [f'{course[0]} {course[1]} {course[2]}'
-                       for course in course_list['except_courses']]
-            print(f'{institution} {requirement_id} {block_type:6} maxcredit  {number}; {scribed}; '
-                  f'{include}; {exclude}',
-                  file=analysis_file)
+            expanded_list = expand_course_list(institution, requirement_id, course_list)
+            print(f'{institution} {requirement_id} {block_type:6} maxcredit {number}; '
+                  f'{expanded_list}', file=analysis_file)
             pass
 
           case 'header_maxpassfail':
