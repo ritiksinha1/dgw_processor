@@ -28,8 +28,8 @@ CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits caree
 # -------------------------------------------------------------------------------------------------
 def courses_cache(idc_tuple: tuple) -> dict:
   """ If the institution hasn't been cached yet, add its courses to the cache.
-      Return a possibly-empty dict of the (course_id, offer_nbr, title, career) named tuples for the
-      institution/discipline/catalog_nbr. Scribe language wildcards allowed.
+      Return a possibly-empty dict of the (course_id, offer_nbr, title, career) namedtuples for the
+      institution/discipline/catalog_nbr. Scribe language wildcards and ranges are allowed.
   """
   institution, discipline, catalog_number = idc_tuple
   if institution not in _courses_cache.keys():
