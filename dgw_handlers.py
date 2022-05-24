@@ -32,6 +32,11 @@ from psycopg.rows import namedtuple_row
 
 DEBUG = os.getenv('DEBUG_HANDLERS')
 
+
+class ParseError(Exception):
+  pass
+
+
 # Handlers
 # =================================================================================================
 
@@ -1297,9 +1302,8 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
   except KeyError as key_error:
     key_error = str(key_error).strip('\'')
     nested = f' while processing “{key}”' if key != key_error else ''
-    # Missing handler: report it and recover ever so gracefully
-    print(f' KEY ERROR “{key_error}”{nested}: '
-          f'{institution=}; {requirement_id=}; {which_part=}', file=sys.stderr)
+    raise ParseError(f' KeyError in Parser “{key_error}”{nested}: '
+          f'{institution=}; {requirement_id=}; {which_part=}')
     print_stack()
     return {'Dispatch_Error':
             {'method': f'“{key_error}”{nested}',

@@ -244,6 +244,8 @@ if __name__ == '__main__':
     with psycopg.connect('dbname=cuny_curriculum') as conn:
       with conn.cursor(row_factory=namedtuple_row) as cursor:
         cursor.execute(query_str)
+        if cursor.rowcount == 0:
+          exit('No matching blocks found.')
 
         process_start = time.time()
         institution_start = process_start

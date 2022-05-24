@@ -157,9 +157,14 @@ def analyze_expression(ctx, institution, requirement_id):
   assert class_name(ctx) == 'Expression', (f'Assertion Error: {class_name(ctx)} is not Expression'
                                            f' in expression_to_str')
 
+  try:
+    block_type = block_types[(institution, requirement_id)]
+  except KeyError:
+    # Parsing a block that hasn't been loaded into the requirement_blocks table yet.
+    block_type = 'UNAVAILABLE'
   report = {'instituion': institution,
             'requirement_id': requirement_id,
-            'block_type': block_types[(institution, requirement_id)],
+            'block_type': block_type,
             'context_path': context_path(ctx).split(' => ')[0:-1],
             }
 
