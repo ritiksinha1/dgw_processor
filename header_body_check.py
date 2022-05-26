@@ -79,9 +79,8 @@ def format_requirement(requirement_dict: dict) -> str:
 
 if __name__ == '__main__':
   start_time = time()
-  full_report = open('./Tech_Reports/header_body_full.txt', 'w')
-  summary_report = open('./Tech_Reports/header_body_summary.txt', 'w')
-  print('Count, Program, Limit, Type, Courses, Overlap, Alternatives', file=summary_report)
+  report_file = open('./Tech_Reports/header_body_report.txt', 'w')
+  print('Count, Program, Limit, Type, Courses, Overlap, Alternatives', file=report_file)
 
   with open('./analysis.txt') as infile:
     with psycopg.connect('dbname=cuny_curriculum') as conn:
@@ -106,15 +105,15 @@ if __name__ == '__main__':
           course_dict = eval(course_dict)
           xlist_set = set([course_id for course_id, offer_nbr in course_dict.keys()])
           if len(xlist_set) == 1:
-            print(institution, requirement_id, block_type, number, limit_type, 'CROSS-LIST',
-                  file=full_report)
+            print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+                  f'CROSS-LIST', file=report_file)
             continue
           try:
             equiv_set = set([equivalence_groups[f'{course_id:06}:{offer_nbr}']
                              for course_id, offer_nbr in course_dict.keys()])
             if len(equiv_set) == 1:
-              print(institution, requirement_id, block_type, number, limit_type, 'EQUIV-SET',
-                    file=full_report)
+              print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+                    f'EQUIV-SET', file=report_file)
               continue
           except KeyError:
             pass
@@ -145,8 +144,8 @@ if __name__ == '__main__':
             num_limited = len(limited_set)
             num_requirement = len(requirement_set)
             overlap = len(limited_set & requirement_set)
-            print(f', {block_type}, {number}, {limit_type[3:]}, {num_limited}, '
-                  f'{overlap}, {num_requirement}', file=summary_report)
+            print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+                  f'{num_limited}, {overlap}, {num_requirement}', file=report_file)
 
   min, sec = divmod(time() - start_time, 60)
-  print(f'{int(min):02}:{round(sec):02}', file=sys.stderr)
+  print(f'{int(min):02}:{round(sec):02}')
