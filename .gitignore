@@ -39,3 +39,5 @@ Logs/
 /testing/test_timeouts
 /rerun.sh
 /.pdbrc
+/Tech_Reports/body_rows
+/Tech_Reports/header_row
