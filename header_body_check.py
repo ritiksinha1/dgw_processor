@@ -63,23 +63,26 @@ def format_requirement(requirement_dict: dict) -> str:
   """
   number_str = format_num_class_credit(requirement_dict)
   course_dict = requirement_dict['course_list']
-  scribed_courses = []
+  scribed_courses = set()
   for area in course_dict['scribed_courses']:
     for course in area:
       with_clause = f' With ({course[2]})' if course[2] else ''
-      scribed_courses.append(f'{course[0]} {course[1]}{with_clause}')
-  scribed_str = ', '.join(scribed_courses)
-  exclude_courses = []
+      scribed_courses.add(f'{course[0]} {course[1]}{with_clause}')
+  excluded_courses = set()
   for course in course_dict['except_courses']:
     with_clause = f' With ({course[2]})' if course[2] else ''
-    exclude_courses.append(f'{course[0]} {course[1]}{with_clause}')
-  exclude_str = 'Except ' + ', '.join(exclude_courses) if exclude_courses else ''
+    excluded_courses.add(f'{course[0]} {course[1]}{with_clause}')
 
-  return f'{number_str} in {scribed_str} {exclude_str}'
+  course_list = sorted(scribed_courses - excluded_courses)
+  return (number_str, course_list)
 
 
 if __name__ == '__main__':
   start_time = time()
+  full_report = open('./Tech_Reports/header_body_full.txt', 'w')
+  summary_report = open('./Tech_Reports/header_body_summary.txt', 'w')
+  print('Count, Program, Limit, Type, Courses, Overlap, Alternatives', file=summary_report)
+
   with open('./analysis.txt') as infile:
     with psycopg.connect('dbname=cuny_curriculum') as conn:
       with conn.cursor(row_factory=namedtuple_row) as cursor:
@@ -90,10 +93,10 @@ if __name__ == '__main__':
         """)
         equivalence_groups = {row.course: row.equivalence_group for row in cursor}
         cursor.execute("""
-select lpad(course_id::text, 6, '0')||':'||offer_nbr as courseid_str,
-       discipline||' '||catalog_number as course_name
-from cuny_courses
-""")
+        select lpad(course_id::text, 6, '0')||':'||offer_nbr as courseid_str,
+               discipline||' '||catalog_number as course_name
+        from cuny_courses
+        """)
         course_names = {row.courseid_str: row.course_name for row in cursor}
     with psycopg.connect('dbname=course_mappings') as conn:
       with conn.cursor(row_factory=namedtuple_row) as cursor:
@@ -103,13 +106,15 @@ from cuny_courses
           course_dict = eval(course_dict)
           xlist_set = set([course_id for course_id, offer_nbr in course_dict.keys()])
           if len(xlist_set) == 1:
-            print(institution, requirement_id, block_type, number, limit_type, 'CROSS-LIST')
+            print(institution, requirement_id, block_type, number, limit_type, 'CROSS-LIST',
+                  file=full_report)
             continue
           try:
             equiv_set = set([equivalence_groups[f'{course_id:06}:{offer_nbr}']
                              for course_id, offer_nbr in course_dict.keys()])
             if len(equiv_set) == 1:
-              print(institution, requirement_id, block_type, number, limit_type, 'EQUIV-SET')
+              print(institution, requirement_id, block_type, number, limit_type, 'EQUIV-SET',
+                    file=full_report)
               continue
           except KeyError:
             pass
@@ -125,16 +130,23 @@ from cuny_courses
           group by r.requirement_key, r.context, r.program_name
           """, (institution, requirement_id))
           for row in cursor:
+            limited_courses = sorted([course_names[course] for course in row.courses.split()])
+            limited_courses_str = '[' + '. '.join(limited_courses) + ']'
+
             context_dict = json.loads(row.context)
             requirement_dict = context_dict['requirement']
             requirement_name = requirement_dict['label']
-            requirement_str = format_requirement(requirement_dict)
-            context_list = context_dict['context']
-            # Show the header limit for this course
-            courses = ('[' + '. '.join(sorted([course_names[course]
-                                       for course in row.courses.split()])) + ']')
-            print(f'\n{institution} {requirement_id} {block_type} {row.program_name} '
-                  f'{limit_type} {number} {courses} '
-                  f'<{row.requirement_key}> “{requirement_name}” {requirement_str}')
+            requirement_str, requirement_courses = format_requirement(requirement_dict)
+            requirement_courses_str = ', '.join(requirement_courses)
+
+            limited_set = set(limited_courses)
+            requirement_set = set(requirement_courses)
+
+            num_limited = len(limited_set)
+            num_requirement = len(requirement_set)
+            overlap = len(limited_set & requirement_set)
+            print(f', {block_type}, {number}, {limit_type[3:]}, {num_limited}, '
+                  f'{overlap}, {num_requirement}', file=summary_report)
+
   min, sec = divmod(time() - start_time, 60)
   print(f'{int(min):02}:{round(sec):02}', file=sys.stderr)
