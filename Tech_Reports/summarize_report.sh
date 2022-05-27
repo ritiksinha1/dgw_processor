@@ -6,7 +6,7 @@
 # equivalency groups.
 
 head -1 header_body_report.txt > header_row
-tail -n+1 header_body_report.txt | ack -v 'CROSS|EQUIV' | cut -c 15- | sort | uniq -c | \
+tail -n+2 header_body_report.txt | ack -v 'CROSS|EQUIV|MATCH' | cut -c 15- | sort | uniq -c | \
   sort -r > body_rows
 cat header_row body_rows > header_body_summary.csv
 rm -f header_row body_rows

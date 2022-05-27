@@ -12,6 +12,7 @@ import os
 import sys
 import psycopg
 
+from collections import defaultdict
 from psycopg.rows import namedtuple_row
 from time import time
 
@@ -58,51 +59,79 @@ def format_num_class_credit(cc_dict: dict):
     return None
 
 
-def format_requirement(requirement_dict: dict) -> str:
-  """
+def format_requirement(requirement_dict: dict) -> (str, set):
+  """ Given a class_credit dict, generate a string telling how many classes and/or credits are
+      required. In addition, create a set of the courses in the expanded scribed courses list minus
+      excluded courses. Ignore with clauses.
   """
   number_str = format_num_class_credit(requirement_dict)
   course_dict = requirement_dict['course_list']
+
   scribed_courses = set()
   for area in course_dict['scribed_courses']:
     for course in area:
-      with_clause = f' With ({course[2]})' if course[2] else ''
-      scribed_courses.add(f'{course[0]} {course[1]}{with_clause}')
+      with_clause = f' With ({course[2]})' if course[2] else ''  # omit
+      scribed_courses.add(f'{course[0]} {course[1]}')
+
   excluded_courses = set()
   for course in course_dict['except_courses']:
-    with_clause = f' With ({course[2]})' if course[2] else ''
-    excluded_courses.add(f'{course[0]} {course[1]}{with_clause}')
+    with_clause = f' With ({course[2]})' if course[2] else ''  # omit
+    excluded_courses.add(f'{course[0]} {course[1]}')
 
-  course_list = sorted(scribed_courses - excluded_courses)
+  course_list = scribed_courses - excluded_courses
   return (number_str, course_list)
 
 
 if __name__ == '__main__':
+  # If an institution and requirement_id are given on the command line, process just that one
+  # block and print course set details to the report file.
+  if len(sys.argv) == 3:
+    institution = sys.argv[1][0:3].upper() + '01'
+    requirement_id = int(sys.argv[2].upper().strip('RA'))
+    requirement_id = f'RA{requirement_id:06}'
+    debug_block = (institution, requirement_id)
+    print(f'Examining {debug_block}')
+  else:
+    debug_block = None
+
   start_time = time()
-  report_file = open('./Tech_Reports/header_body_report.txt', 'w')
+  with_clause_dict = defaultdict(int)
+  if debug_block:
+    report_file = open('./header_body_debug.txt', 'w')
+  else:
+    report_file = open('./Tech_Reports/header_body_report.txt', 'w')
   print('Count, Program, Limit, Type, Courses, Overlap, Alternatives', file=report_file)
 
-  with open('./analysis.txt') as infile:
-    with psycopg.connect('dbname=cuny_curriculum') as conn:
-      with conn.cursor(row_factory=namedtuple_row) as cursor:
-        cursor.execute("""
-        select lpad(course_id::text, 6, '0')||':'||offer_nbr as course, equivalence_group
-        from cuny_courses
-        where equivalence_group is not null
-        """)
-        equivalence_groups = {row.course: row.equivalence_group for row in cursor}
-        cursor.execute("""
-        select lpad(course_id::text, 6, '0')||':'||offer_nbr as courseid_str,
-               discipline||' '||catalog_number as course_name
-        from cuny_courses
-        """)
-        course_names = {row.courseid_str: row.course_name for row in cursor}
-    with psycopg.connect('dbname=course_mappings') as conn:
-      with conn.cursor(row_factory=namedtuple_row) as cursor:
+  with psycopg.connect('dbname=cuny_curriculum') as conn:
+    with conn.cursor(row_factory=namedtuple_row) as cursor:
+      cursor.execute("""
+      select lpad(course_id::text, 6, '0')||':'||offer_nbr as course, equivalence_group
+      from cuny_courses
+      where equivalence_group is not null
+      """)
+      equivalence_groups = {row.course: row.equivalence_group for row in cursor}
+      cursor.execute("""
+      select lpad(course_id::text, 6, '0')||':'||offer_nbr as courseid_str,
+             discipline||' '||catalog_number as course_name
+      from cuny_courses
+      """)
+      course_names = {row.courseid_str: row.course_name for row in cursor}
+  with psycopg.connect('dbname=course_mappings') as conn:
+    with conn.cursor(row_factory=namedtuple_row) as cursor:
+      with open('./analysis.txt') as infile:
+        blocks_set = set()
         for line in infile.readlines():
           ident, course_dict = line.split(';')
           institution, requirement_id, block_type, limit_type, number = ident.split()
+
+          # Filter out repeated or non-debugging blocks
+          this_block = (institution, requirement_id)
+          if this_block in blocks_set or (debug_block and debug_block != this_block):
+            continue
+
+          blocks_set.add(this_block)
           course_dict = eval(course_dict)
+
           xlist_set = set([course_id for course_id, offer_nbr in course_dict.keys()])
           if len(xlist_set) == 1:
             print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
@@ -117,35 +146,62 @@ if __name__ == '__main__':
               continue
           except KeyError:
             pass
-          course_lookup = {f'{k[0]:06}:{k[1]}': v for k, v in course_dict.items()}
-          # Use the institution, requirement_id to look up all "requirement keys" for the block
-          cursor.execute("""
+
+          # Look up all requirements in this block that include these courses; ignore with-clauses
+          limited_set_keys = set([f'{k[0]:06}:{k[1]}' for k in course_dict.keys()])
+          for course_tuple in course_dict.values():
+            with_clause = 'None' if course_tuple[1] is None else course_tuple[1]
+            with_clause_dict[with_clause] += 1
+          if len(limited_set_keys) == 0:
+            print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+                  f'NO-MATCH', file=report_file)
+            continue
+
+          limited_courses = [course_names[course_key] for course_key in limited_set_keys]
+          limited_set = set(limited_courses)
+          num_limited = len(limited_set)
+
+          # Get list of required courses, again ignoring with-clauses
+          limited_courses_phrase = ','.join([f"'{course}'" for course in limited_set_keys])
+          cursor.execute(f"""
           select r.requirement_key, string_agg(m.course_id, ' ') as courses,
                  r.context, r.program_name
             from requirements r, course_mappings m
            where r.institution = %s
              and r.requirement_id = %s
+             and m.course_id in ({limited_courses_phrase})
              and r.requirement_key = m.requirement_key
           group by r.requirement_key, r.context, r.program_name
           """, (institution, requirement_id))
           for row in cursor:
-            limited_courses = sorted([course_names[course] for course in row.courses.split()])
-            limited_courses_str = '[' + '. '.join(limited_courses) + ']'
-
             context_dict = json.loads(row.context)
             requirement_dict = context_dict['requirement']
             requirement_name = requirement_dict['label']
-            requirement_str, requirement_courses = format_requirement(requirement_dict)
-            requirement_courses_str = ', '.join(requirement_courses)
 
-            limited_set = set(limited_courses)
-            requirement_set = set(requirement_courses)
-
-            num_limited = len(limited_set)
+            requirement_str, requirement_set = format_requirement(requirement_dict)
             num_requirement = len(requirement_set)
-            overlap = len(limited_set & requirement_set)
-            print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
-                  f'{num_limited}, {overlap}, {num_requirement}', file=report_file)
 
+            overlap_set = limited_set & requirement_set
+            num_overlap = len(overlap_set)
+
+            if debug_block:
+              limited_courses_str = ', '.join(sorted(limited_set))
+              requirement_courses_str = ', '.join(sorted(requirement_set))
+              overlap_courses_str = ', '.join(sorted(overlap_set))
+              print(f'{institution} {requirement_id} {block_type} {number} {limit_type[3:]}'
+                    f'\n  limit {limited_courses_str}'
+                    f'\n  reqmt {requirement_courses_str}'
+                    f'\n  inter {overlap_courses_str}',
+                    file=report_file)
+            else:
+              print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+                    f'{num_limited}, {num_overlap}, {num_requirement}', file=report_file)
+
+  for item in sorted(with_clause_dict.items(), key=lambda i: i[1], reverse=True):
+    print(f'{item[1]:10,} {item[0]}')
+
+  num_blocks = len(blocks_set)
+  suffix = '' if num_blocks == 1 else 's'
   min, sec = divmod(time() - start_time, 60)
-  print(f'{int(min):02}:{round(sec):02}')
+
+  print(f'{num_blocks:,} block{suffix} {int(min):02}:{round(sec):02}')
