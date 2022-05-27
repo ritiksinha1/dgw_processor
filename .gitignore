@@ -12,6 +12,7 @@ __pycache__/
 *.txt
 *.log
 *.csv
+*.xlsx
 *.egg-info/
 
 tokens
