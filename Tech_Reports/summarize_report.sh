@@ -5,8 +5,16 @@
 # institution and requirement id, which have to be dropped. And omit rows for cross-listed and
 # equivalency groups.
 
+(
+ cd /Users/vickery/Projects/dgw_processor/Tech_Reports
+
+# Save the CSV header row from the report
 head -1 header_body_report.txt > header_row
-tail -n+2 header_body_report.txt | ack -v 'CROSS|EQUIV|MATCH' | cut -c 15- | sort | uniq -c | \
+
+# Show number of blocks containing potential redundancies
+tail -n+2 header_body_report.txt | ack 'CROSS|EQUIV|MATCH' | cut -c 37- | sort | uniq -c | sort -r
+tail -n+2 header_body_report.txt | ack -v 'CROSS|EQUIV|MATCH' | cut -c 24- | sort | uniq -c | \
   sort -r > body_rows
 cat header_row body_rows > header_body_summary.csv
 rm -f header_row body_rows
+)

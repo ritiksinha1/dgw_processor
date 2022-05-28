@@ -98,9 +98,10 @@ if __name__ == '__main__':
   with_clause_dict = defaultdict(int)
   if debug_block:
     report_file = open('./header_body_debug.txt', 'w')
+    print('Count, Program, Limit, Type, Courses, Overlap, Alternatives', file=report_file)
   else:
     report_file = open('./Tech_Reports/header_body_report.txt', 'w')
-  print('Count, Program, Limit, Type, Courses, Overlap, Alternatives', file=report_file)
+    print('Count, Limit, Type, Courses, Overlap, Alternatives', file=report_file)
 
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
@@ -134,14 +135,14 @@ if __name__ == '__main__':
 
           xlist_set = set([course_id for course_id, offer_nbr in course_dict.keys()])
           if len(xlist_set) == 1:
-            print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+            print(f'{institution} {requirement_id} {block_type:6} {number:3} {limit_type:9} '
                   f'CROSS-LIST', file=report_file)
             continue
           try:
             equiv_set = set([equivalence_groups[f'{course_id:06}:{offer_nbr}']
                              for course_id, offer_nbr in course_dict.keys()])
             if len(equiv_set) == 1:
-              print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+              print(f'{institution} {requirement_id} {block_type:6} {number:3} {limit_type:9} '
                     f'EQUIV-SET', file=report_file)
               continue
           except KeyError:
@@ -153,7 +154,7 @@ if __name__ == '__main__':
             with_clause = 'None' if course_tuple[1] is None else course_tuple[1]
             with_clause_dict[with_clause] += 1
           if len(limited_set_keys) == 0:
-            print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+            print(f'{institution} {requirement_id} {block_type:6} {number:3} {limit_type:9} '
                   f'NO-MATCH', file=report_file)
             continue
 
@@ -194,7 +195,7 @@ if __name__ == '__main__':
                     f'\n  inter {overlap_courses_str}',
                     file=report_file)
             else:
-              print(f'{institution} {requirement_id}, {block_type}, {number}, {limit_type[3:]}, '
+              print(f'{institution} {requirement_id} {block_type:8}, {number}, {limit_type[3:]}, '
                     f'{num_limited}, {num_overlap}, {num_requirement}', file=report_file)
 
   for item in sorted(with_clause_dict.items(), key=lambda i: i[1], reverse=True):
