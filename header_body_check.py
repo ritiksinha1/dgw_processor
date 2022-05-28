@@ -195,8 +195,9 @@ if __name__ == '__main__':
                     f'\n  inter {overlap_courses_str}',
                     file=report_file)
             else:
-              print(f'{institution} {requirement_id} {block_type:8}, {number}, {limit_type[3:]}, '
-                    f'{num_limited}, {num_overlap}, {num_requirement}', file=report_file)
+              print(f'{institution} {requirement_id} {block_type:8}, {number:5}, '
+                    f'{limit_type[3:]:6}, '
+                    f'{num_limited:3}, {num_overlap:3}, {num_requirement:3}', file=report_file)
 
   for item in sorted(with_clause_dict.items(), key=lambda i: i[1], reverse=True):
     print(f'{item[1]:10,} {item[0]}')
