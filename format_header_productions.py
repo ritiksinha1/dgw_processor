@@ -403,7 +403,7 @@ def _format_mincredit_head(mincredit_head_dict: dict) -> str:
   mincredit_info = format_body_qualifiers.format_mincredit(mincredit_dict)
 
   if courses_str := format_utils.format_course_list(mincredit_dict['course_list']):
-    mincredit_info = mincredit_info.replace('</p>', ' in these courses:</p>')
+    mincredit_info = mincredit_info.replace('.</p>', ' in these courses:</p>')
     mincredit_info += courses_str
 
   if label_str:
