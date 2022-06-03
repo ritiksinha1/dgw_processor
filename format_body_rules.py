@@ -447,12 +447,29 @@ def format_rule_complete(rule_complete_dict: dict) -> str:
   try:
     rule_tag_dicts = rule_complete_dict['rule_tag']
     for rule_tag_dict in rule_tag_dicts:
+      advice_url = advice_hint = remark_url = remark_hint = None
+      assert isinstance(rule_tag_dict, dict)
       for key, value in rule_tag_dict.items():
-        if key.lower() in ['advicejump', 'remarkjump']:
-          value = value.strip('"')
-          rule_complete_str += f'<p>For more information, see <a href="{value}">{value}</a></p>'
-        else:
-          rule_complete_str += f'<p>{value}</p>'
+        match key.lower():  # Even though it's supposed to be case-sensitive
+          case 'advicejump':
+            advice_url = value
+          case 'remarkjump':
+            remark_url = value
+          case 'advicehint':
+            advice_hint = value
+          case 'remarkhint':
+            remark_hint = value
+            return_html += f'<p>For more information, see <a href="{value}">{value}</a></p>'
+          case _:
+            value_str = 'Unspecified' if value is None else value
+            rule_complete_str += f'<p>{key.lower()} is {value_str}</p>'
+    # Show advice, even though it would not appear in an audit if the rule is complete.
+    if advice_url:
+      advice_text = advice_hint if advice_hint else 'More Information'
+      rule_complete_str += f'<p><a href="{advice_url}">{advice_text}</a></p>'
+    if remark_url:
+      remark_text = remark_hint if remark_hint else 'More Information'
+      rule_complete_str += f'<p><a href="{remark_url}">{remark_text}</a></p>'
   except KeyError:
     pass
 

@@ -274,14 +274,16 @@ def get_nv_pairs(ctx):
           # Finish up previous one
           if isinstance(rhs_value, list):
             rhs_value = ', '.join(rhs_value)
-          pairs_list.append({last_lhs.title().replace('j', 'J'): rhs_value})
+          pairs_list.append({last_lhs.title().replace('jump', 'Jump')
+                                             .replace('hint', 'Hint'): rhs_value})
         # Start new one
         last_lhs = this_lhs
         rhs_value = this_rhs
 
     if isinstance(rhs_value, list):
       rhs_value = ', '.join(rhs_value)
-    pairs_list.append({last_lhs.title().replace('j', 'J'): rhs_value})
+    pairs_list.append({last_lhs.title().replace('jump', 'Jump')
+                                       .replace('hint', 'Hint'): rhs_value})
 
   return pairs_list
 

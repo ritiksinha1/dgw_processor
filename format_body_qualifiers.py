@@ -334,7 +334,7 @@ def format_proxyadvice(proxyadvice_dict: dict) -> str:
   if proxyadvice_dict['proxy_args']:
     return '<!-- Proxy Advice -->'
   else:
-    return f'<p>{proxyadvice_dict[proxy_str]}</p>'
+    return f'<p>{proxyadvice_dict["proxy_str"]}</p>'
 
 
 # format_ruletag()

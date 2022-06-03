@@ -517,19 +517,36 @@ def _format_header_tag(header_tag_obj: Any) -> str:
   """ header_tag      : (HEADER_TAG nv_pair)+;
 
       This can be subsumed by class_credit_head, or can be a standalone header qualifier.
-      if the name-value pair is remark-jump or advice-jump, give the link. Otherwise, ignore it.
+      if the name-value pair is RemarkJump or AdviceJump, give the link. Otherwise, show the name
+      and value. Use hints as the text of anchor elements, if available.
+      The hint and url show up as separate dicts because they are separate nv_pairs.
   """
   header_tag_list = header_tag_obj if isinstance(header_tag_obj, list) else [header_tag_obj]
   return_html = ''
+  advice_url = advice_hint = remark_url = remark_hint = None
   for header_tag_dict in header_tag_list:
     assert isinstance(header_tag_dict, dict)
     for key, value in header_tag_dict.items():
-      match key.lower():
-        case 'advicejump' | 'rulejump':
-          return_html += f'<p>For more information, see <a href="{value}">{value}</a></p>'
+      match key.lower():  # Even though it's supposed to be case-sensitive
+        case 'advicejump':
+          advice_url = value
+        case 'remarkjump':
+          remark_url = value
+        case 'advicehint':
+          advice_hint = value
+        case 'remarkhint':
+          remark_hint = value
         case _:
           value_str = 'Unspecified' if value is None else value
           return_html += f'<p>{key.lower()} is {value_str}</p>'
+  # Show advice, even though it would not appear in an audit if the rule is complete.
+  if advice_url:
+    advice_text = advice_hint if advice_hint else 'More Information'
+    return_html += f'<p><a href="{advice_url}">{advice_text}</a></p>'
+
+  if remark_url:
+    remark_text = remark_hint if remark_hint else 'More Information'
+    return_html += f'<p><a href="{remark_url}">{remark_text}</a></p>'
 
   return return_html
 
