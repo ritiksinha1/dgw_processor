@@ -405,7 +405,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             for cruft_key in ['institution', 'requirement_id', 'context_path']:
               del(value['maxcredit']['course_list'][cruft_key])
             block_info.other.append({'maxcredit': value['maxcredit']})
-            number = int(value['maxcredit']['number'])
+            number = float(value['maxcredit']['number'])
             course_list = value['maxcredit']['course_list']
             expanded_list = expand_course_list(institution, requirement_id, course_list)
             print(f'{institution} {requirement_id} {block_type:6} maxcredit {number}; '
@@ -474,8 +474,9 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
                 print(f'Invalid minres {block_info}', file=sys.stderr)
 
           case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | 'proxy_advice' | \
-               'remark' | 'rule_complete' | 'standalone' | 'header_share':
+               'remark' | 'rule_complete' | 'standalone' | 'header_share' | 'header_tag':
             # Intentionally ignored
+            print(f'{institution} {requirement_id} Header {key} Ignored', file=log_file)
             pass
 
           case _:
@@ -570,9 +571,11 @@ def traverse_body(node: Any, context_list: list) -> None:
       if context_dict:
         requirement_context = [context_dict]
       else:
-        # If there are no restrictions and no name, there's nothing to add to the context; note it.
-        print(f'{institution} {requirement_id} {requirement_type} Empty requirement_context ',
-              file=log_file)
+        # If there are no restrictions and no name, there's nothing to add to the context.
+        if requirement_type != 'conditional':
+          # None expected for conditional, but make a note for any others
+            print(f'{institution} {requirement_id} {requirement_type} Empty requirement_context ',
+                  file=log_file)
         requirement_context = []
 
       if args.debug:
@@ -902,7 +905,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         else:
                           print(institution, requirement_id, f'Subset block {num_required=} '
                                                              f'{cursor.rowcount=} {num_found=} '
-                                                             f'{num_extr=}', file=debug_file)
+                                                             f'{num_extra=}', file=debug_file)
                 continue
 
               case 'blocktype':
@@ -1135,7 +1138,7 @@ if __name__ == "__main__":
       else:
         block_type = [args.type.upper()]
         if args.all or 'ALL' in block_type:
-          block_type = ['MAJOR', 'MINOR', 'CONC']
+          block_type = ['MAJOR', 'MINOR', 'CONC', 'DEGREE']
 
         block_value = args.value.upper()
         if args.all or block_value == 'ALL':
