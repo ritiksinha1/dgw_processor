@@ -109,10 +109,6 @@ def header_class_credit(ctx, institution, requirement_id):
       num_credits         : NUMBER CREDIT allow_clause?;
       allow_clause        : LP allow NUMBER RP;
 
-      Note: header_tag is presentational, and is included here; allow is used for internal degree
-      audit logic, and is ignored here.
-      And proxy_advice is being ignored, at least for now, because cases where there are template
-      placeholders reference values not available from within the Scribe blocks.
 """
 
   return_dict = {'label': get_label(ctx)}
