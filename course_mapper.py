@@ -1067,13 +1067,15 @@ if __name__ == "__main__":
   parser = ArgumentParser()
   parser.add_argument('-a', '--all', action='store_true')
   parser.add_argument('-d', '--debug', action='store_true')
+  parser.add_argument('--do_degrees', action='store_true')
+  parser.add_argument('--do_remarks', action='store_true')
   parser.add_argument('-i', '--institution', default='qns')
   parser.add_argument('-r', '--requirement_id')
-  parser.add_argument('--no_remarks', action='store_true')
-  parser.add_argument('-t', '--type', default='major')
+  parser.add_argument('-t', '--types', default=['major'])
   parser.add_argument('-v', '--value', default='csci-bs')
   args = parser.parse_args()
-  do_remarks = not args.no_remarks
+  do_degrees = args.do_degrees
+  do_remarks = args.do_remarks
 
   empty_tree = "'{}'"
 
@@ -1136,9 +1138,11 @@ if __name__ == "__main__":
                             order by institution
                        """, (institution, requirement_id))
       else:
-        block_type = [args.type.upper()]
-        if args.all or 'ALL' in block_type:
-          block_type = ['MAJOR', 'MINOR', 'CONC', 'DEGREE']
+        block_types = [block_type.upper() for block_type in args.types]
+        if args.all or 'ALL' in block_types:
+          block_types = ['MAJOR', 'MINOR', 'CONC']
+          if do_degrees:
+            block_types.append('DEGREE')
 
         block_value = args.value.upper()
         if args.all or block_value == 'ALL':
@@ -1159,7 +1163,7 @@ if __name__ == "__main__":
                               and period_stop ~* '^9'
                               and parse_tree::text != {empty_tree}
                             order by institution, block_type, block_value""",
-                       (institution, block_type, block_value))
+                       (institution, block_types, block_value))
 
       suffix = '' if cursor.rowcount == 1 else 's'
       print(f'{cursor.rowcount:,} parse tree{suffix}')
