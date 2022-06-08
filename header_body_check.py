@@ -153,6 +153,7 @@ if __name__ == '__main__':
           for course_tuple in course_dict.values():
             with_clause = 'None' if course_tuple[1] is None else course_tuple[1]
             with_clause_dict[with_clause] += 1
+
           if len(limited_set_keys) == 0:
             print(f'{institution} {requirement_id} {block_type:6} {number:3} {limit_type:9} '
                   f'NO-MATCH', file=report_file)
