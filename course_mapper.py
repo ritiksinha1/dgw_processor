@@ -1172,6 +1172,9 @@ if __name__ == "__main__":
       inactive_count = 0
       processed_count = 0
       for row in cursor:
+        # Experiment to test impact of HTR degree blocks
+        # if row.institution == 'HTR01' and row.block_type == 'DEGREE':
+        #   continue
         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
           quarantine_count += 1
           continue
