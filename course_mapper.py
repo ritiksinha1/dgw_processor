@@ -60,14 +60,14 @@ requirements_writer = csv.writer(requirements_file)
 map_writer = csv.writer(mapping_file)
 
 
-def dict_factory():
-  """ Support for three index levels, as in courses_by_institution and subplans_by_institution.
-  """
-  return defaultdict(dict)
+# def dict_factory():
+#   """ Support for three index levels, as in courses_by_institution and subplans_by_institution.
+#   """
+#   return defaultdict(dict)
 
 
-courses_by_institution = defaultdict(dict_factory)
-subplans_by_institution = defaultdict(dict_factory)
+# courses_by_institution = defaultdict(dict_factory)
+# subplans_by_institution = defaultdict(dict_factory)
 
 requirement_index = 0
 
@@ -378,7 +378,6 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
           case 'conditional':
             # There could be a block requirement and/or a class_credit requirement; perhaps others.
             print(f'{institution} {requirement_id} Header conditional', file=todo_file)
-            print(f'{institution} {requirement_id} Header conditional')
             conditional_dict = header_item['conditional']
             condition_str = conditional_dict['condition_str']
             if_true_list = conditional_dict['if_true']
@@ -1202,36 +1201,36 @@ if __name__ == "__main__":
           inactive_count += 1
           continue
 
-        # If this is the first time this instution has been encountered, create a dict mapping
-        # this institution's courses to their course_id:offer_nbr values
-        if row.institution not in courses_by_institution:
-          with conn.cursor(row_factory=namedtuple_row) as course_cursor:
-            course_cursor.execute("""
-            select institution, course_id, offer_nbr, equivalence_group,
-                   discipline, catalog_number, career
-              from cuny_courses
-             where institution = %s
-               and designation not in ('MNL', 'MLA')
-               and course_status = 'A'
-               and attributes !~* 'BKCR'
-             order by discipline, numeric_part(catalog_number)
-            """, (row.institution, ))
-            for course in course_cursor:
-              institution, discipline, catalog_number = (course.institution,
-                                                         course.discipline,
-                                                         course.catalog_number)
-              value = (course.course_id, course.offer_nbr, course.career, course.equivalence_group)
-              courses_by_institution[institution][discipline][catalog_number] = value
+        # # If this is the first time this instution has been encountered, create a dict mapping
+        # # this institution's courses to their course_id:offer_nbr values
+        # if row.institution not in courses_by_institution:
+        #   with conn.cursor(row_factory=namedtuple_row) as course_cursor:
+        #     course_cursor.execute("""
+        #     select institution, course_id, offer_nbr, equivalence_group,
+        #            discipline, catalog_number, career
+        #       from cuny_courses
+        #      where institution = %s
+        #        and designation not in ('MNL', 'MLA')
+        #        and course_status = 'A'
+        #        and attributes !~* 'BKCR'
+        #      order by discipline, numeric_part(catalog_number)
+        #     """, (row.institution, ))
+        #     for course in course_cursor:
+        #       institution, discipline, catalog_number = (course.institution,
+        #                                                  course.discipline,
+        #                                                  course.catalog_number)
+        #       value = (course.course_id, course.offer_nbr, course.career, course.equivalence_group)
+        #       courses_by_institution[institution][discipline][catalog_number] = value
 
-            # And cache the institution's subplan info
-            course_cursor.execute("""
-            select institution, plan, subplan, subplan_type, description, cip_code, hegis_code
-            from cuny_subplans
-            """)
-            for subplan in course_cursor:
-              subplan_info = SubplanInfo._make([subplan.subplan_type, subplan.description,
-                                                subplan.cip_code, subplan.hegis_code])
-              subplans_by_institution[row.institution][subplan.plan][subplan.subplan] = subplan_info
+        #     # And cache the institution's subplan info
+        #     course_cursor.execute("""
+        #     select institution, plan, subplan, subplan_type, description, cip_code, hegis_code
+        #     from cuny_subplans
+        #     """)
+        #     for subplan in course_cursor:
+        #       subplan_info = SubplanInfo._make([subplan.subplan_type, subplan.description,
+        #                                         subplan.cip_code, subplan.hegis_code])
+        #       subplans_by_institution[row.institution][subplan.plan][subplan.subplan] = subplan_info
         process_block(row)
         processed_count += 1
 
