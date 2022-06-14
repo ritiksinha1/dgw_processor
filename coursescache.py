@@ -41,7 +41,7 @@ def courses_cache(idc_tuple: tuple) -> dict:
             from cuny_courses
            where institution = %s
              and course_status = 'A'
-             and career = 'UGRD'
+             and career in ('UGRD', 'UKCC', 'ULAG')
              and designation not in ('MNL', 'MLA')
              and attributes !~* 'BKCR'
              and max_credits > 0.0
