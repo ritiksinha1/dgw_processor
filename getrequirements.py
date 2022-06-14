@@ -85,11 +85,14 @@ def get_requirements(course_str: str) -> list:
 
 
 if __name__ == '__main__':
-  course_info, requirements = get_requirements(' '.join(sys.argv[1:]))
-  print(f"{course_info['course_id']}:{course_info['offer_nbr']} {course_info['course']} "
-        f"{course_info['title']}\nGenEd: {course_info['gened']}\nRequirements: ")
-  for requirement in requirements:
-    print(f'  {requirement}')
-  if len(requirements) == 0:
-    print('  None')
+  try:
+    course_info, requirements = get_requirements(' '.join(sys.argv[1:]))
+    print(f"{course_info['course_id']}:{course_info['offer_nbr']} {course_info['course']} "
+          f"{course_info['title']}\nGenEd: {course_info['gened']}\nRequirements: ")
+    for requirement in requirements:
+      print(f'  {requirement}')
+    if len(requirements) == 0:
+      print('  None')
+  except ValueError as ve:
+    print(ve)
 
