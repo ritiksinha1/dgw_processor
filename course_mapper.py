@@ -378,7 +378,24 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
           case 'conditional':
             # There could be a block requirement and/or a class_credit requirement; perhaps others.
             print(f'{institution} {requirement_id} Header conditional', file=todo_file)
-            pass
+            print(f'{institution} {requirement_id} Header conditional')
+            conditional_dict = header_item['conditional']
+            condition_str = conditional_dict['condition_str']
+            if_true_list = conditional_dict['if_true']
+            try:
+              if_false_list = conditional_dict['if_false']
+            except KeyError:
+              if_false_list = []
+            """ There are two cases to consider:
+                  (1) updates/additions to block-wide residency and grade restrictions, which
+                  update/augment the programs table
+                  (2) course requirements, which presumably should be added to the requirements and
+                  mapping tables.
+            """
+            # map_courses(institution, requirement_id,
+            #             requirement_name,
+            #             context_list,
+            #             requirement_dict)
 
           case 'copy_rules':
             print(f'{institution} {requirement_id}: Header copy_rules', file=todo_file)
@@ -1068,14 +1085,16 @@ if __name__ == "__main__":
   parser.add_argument('-a', '--all', action='store_true')
   parser.add_argument('-d', '--debug', action='store_true')
   parser.add_argument('--do_degrees', action='store_true')
-  parser.add_argument('--do_remarks', action='store_true')
+  parser.add_argument('--do_hunter_degrees', action='store_true')
+  parser.add_argument('--no_remarks', action='store_true')
   parser.add_argument('-i', '--institution', default='qns')
   parser.add_argument('-r', '--requirement_id')
   parser.add_argument('-t', '--types', default=['major'])
   parser.add_argument('-v', '--value', default='csci-bs')
   args = parser.parse_args()
   do_degrees = args.do_degrees
-  do_remarks = args.do_remarks
+  do_remarks = not args.no_remarks
+  skip_hunter = not args.do_hunter_degrees
 
   empty_tree = "'{}'"
 
@@ -1172,9 +1191,8 @@ if __name__ == "__main__":
       inactive_count = 0
       processed_count = 0
       for row in cursor:
-        # Experiment to test impact of HTR degree blocks
-        # if row.institution == 'HTR01' and row.block_type == 'DEGREE':
-        #   continue
+        if skip_hunter and row.institution == 'HTR01' and row.block_type == 'DEGREE':
+          continue
         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
           quarantine_count += 1
           continue
