@@ -391,7 +391,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
                   (2) course requirements, which presumably should be added to the requirements and
                   mapping tables.
             """
-            # map_courses(institution, requirement_id,
+            # map_courses(institution,
+            #             requirement_id,
             #             requirement_name,
             #             context_list,
             #             requirement_dict)
