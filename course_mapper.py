@@ -378,6 +378,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
           case 'conditional':
             # There could be a block requirement and/or a class_credit requirement; perhaps others.
             print(f'{institution} {requirement_id} Header conditional', file=todo_file)
+            print(f'{institution} {requirement_id} Header conditional')
+
             conditional_dict = header_item['conditional']
             condition_str = conditional_dict['condition_str']
             if_true_list = conditional_dict['if_true']

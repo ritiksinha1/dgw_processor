@@ -206,7 +206,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
               html_str += f'<p>{key} may not be used for this requirement.</p>'
             else:
               match value.career:
-                case 'UGRD':
+                case 'UGRD' | 'UKCC' | 'ULAG':
                   career_str = ''
                 case 'GRAD':
                   career_str = f' <em class="error">Graduate course</em>'
@@ -223,7 +223,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
                 num_excluded += 1
                 continue
               match value.career:
-                case 'UGRD':
+                case 'UGRD' | 'UKCC' | 'ULAG':
                   career_str = ''
                 case 'GRAD':
                   career_str = f' <em class="error">Graduate course</em>'
