@@ -283,7 +283,7 @@ def process_block(row: namedtuple, context_list: list = []):
     print(row.institution, row.requirement_id, 'Parser Error', file=fail_file)
     return
 
-  print(row.institution, row.requirement_id, file=blocks_file)
+  print(f'{row.institution} {row.requirement_id} {not context_list}', file=blocks_file)
 
   # Augment db info with default values for class_credits max_transfer min_residency min_grade
   # min_gpa, and other
@@ -303,17 +303,19 @@ def process_block(row: namedtuple, context_list: list = []):
   except KeyError:
     print(row.institution, row.requirement_id, 'Missing Header', file=fail_file)
 
-  programs_writer.writerow([f'{block_info.institution[0:3]}',
-                            f'{block_info.requirement_id}',
-                            f'{block_info.block_type}',
-                            f'{block_info.block_value}',
-                            f'{block_info.block_title}',
-                            f'{block_info.class_credits}',
-                            f'{block_info.max_transfer}',
-                            f'{block_info.min_residency}',
-                            f'{block_info.min_grade}',
-                            f'{block_info.min_gpa}',
-                            json.dumps(block_info.other, ensure_ascii=False)])
+  # Only top-level blocks get entries in the programs table.
+  if not context_list:
+    programs_writer.writerow([f'{block_info.institution[0:3]}',
+                              f'{block_info.requirement_id}',
+                              f'{block_info.block_type}',
+                              f'{block_info.block_value}',
+                              f'{block_info.block_title}',
+                              f'{block_info.class_credits}',
+                              f'{block_info.max_transfer}',
+                              f'{block_info.min_residency}',
+                              f'{block_info.min_grade}',
+                              f'{block_info.min_gpa}',
+                              json.dumps(block_info.other, ensure_ascii=False)])
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
