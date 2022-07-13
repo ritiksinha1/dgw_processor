@@ -9,6 +9,7 @@ import psycopg
 import sys
 
 from argparse import ArgumentParser
+from blockinfo import BlockInfo
 from collections import namedtuple, defaultdict
 from pprint import pprint
 from psycopg.rows import namedtuple_row
@@ -22,9 +23,12 @@ from quarantine_manager import QuarantineManager
 
 quarantine_dict = QuarantineManager()
 
-BlockInfo = recordclass('BlockInfo',
-                        'institution requirement_id block_type block_value block_title '
-                        'class_credits max_transfer min_residency min_grade min_gpa other')
+# BlockInfo = recordclass('BlockInfo',
+#                         'institution requirement_id block_type block_value block_title '
+#                         'class_credits max_transfer min_residency min_grade min_gpa '
+#                         'max_classes max_credits')
+
+
 SubplanInfo = namedtuple('SubplanInfo', 'type description cip_code hegis_code')
 
 
@@ -286,8 +290,18 @@ def process_block(row: namedtuple, context_list: list = []):
   print(f'{row.institution} {row.requirement_id} {not context_list}', file=blocks_file)
 
   # Augment db info with default values for class_credits max_transfer min_residency min_grade
-  # min_gpa, and other
-  block_info = BlockInfo._make(row[0:5] + ('', '', '', '', '', []))
+  # min_gpa, max_classes, max_credits
+  # block_info = BlockInfo._make(row[0:5] + ('', '', '', '', '', '', ''))
+  args = {}
+  # DB info for the block, but skip the parse_tree here.
+  for key, value in row._asdict().items():
+    if key != 'parse_tree':
+      args[key] = value
+  # Empty strings for default values that might or might not be set in the header.
+  for key in ['class_credits', 'max_transfer', 'min_residency', 'min_grade', 'min_gpa',
+              'max_classes', 'max_credits']:
+    args[key] = ''
+  block_info = BlockInfo(**args)
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
   # found in the header list.
@@ -314,8 +328,9 @@ def process_block(row: namedtuple, context_list: list = []):
                               f'{block_info.max_transfer}',
                               f'{block_info.min_residency}',
                               f'{block_info.min_grade}',
-                              f'{block_info.min_gpa}',
-                              json.dumps(block_info.other, ensure_ascii=False)])
+                              f'{block_info.min_gpa}'])
+  # But but the info gets added to the context list for all blocks
+  context_list.append(block_info._asdict())
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
@@ -412,7 +427,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             print(f'{institution} {requirement_id} Header maxclass', file=log_file)
             for cruft_key in ['institution', 'requirement_id', 'context_path']:
               del(value['maxclass']['course_list'][cruft_key])
-            block_info.other.append({'maxclass': value['maxclass']})
+            block_info['maxclass'] = value['maxclass']
 
             number = int(value['maxclass']['number'])
             course_list = value['maxclass']['course_list']
@@ -425,7 +440,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
             for cruft_key in ['institution', 'requirement_id', 'context_path']:
               del(value['maxcredit']['course_list'][cruft_key])
-            block_info.other.append({'maxcredit': value['maxcredit']})
+            block_info['maxcredit'] = value['maxcredit']
             number = float(value['maxcredit']['number'])
             course_list = value['maxcredit']['course_list']
             expanded_list = expand_course_list(institution, requirement_id, course_list)
