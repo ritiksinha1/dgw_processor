@@ -1,7 +1,7 @@
 #! /usr/local/bin/bash
 
 echo -e `date` '\n' > reports.txt
-cat blocks.txt|cut -c 1-3|sort|uniq -c >> reports.txt
+cat blocks.txt|cut -c 1-3,15-|sort|uniq -c >> reports.txt
 n=`wc -l blocks.txt`
 echo "   ${n/.txt/}" >> reports.txt
 
