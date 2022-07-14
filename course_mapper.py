@@ -195,6 +195,11 @@ Requirement Key, Course ID, Career, Course, With
   # Find the course_list in the requirement_dict.
   try:
     course_list = requirement_dict['course_list']
+    try:
+      # Ignore context_path, if it is present. (It makes the course list harder to read)
+      del course_list['context_path']
+    except KeyError:
+      pass
   except KeyError:
     # Sometimes the course_list _is_ the requirement. In these cases, all courses in the list are
     # required.
@@ -225,10 +230,11 @@ Requirement Key, Course ID, Career, Course, With
   if requirement_dict['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
   else:
-    context_col = {'context': context_list,
-                   'requirement': requirement_dict}
+    # The requirement_id has to come from the first block_info in the context
+    # list (is this really necessary?).
+    requirement_id = context_list[0]['block_info']['requirement_id']
     data_row = [institution, requirement_id, requirement_index, requirement_name,
-                json.dumps(context_col, ensure_ascii=False)]
+                json.dumps(context_list + [{'requirement': requirement_dict}], ensure_ascii=False)]
     requirements_writer.writerow(data_row)
 
 
@@ -265,7 +271,7 @@ def get_restrictions(node: dict) -> dict:
 
 # process_block()
 # =================================================================================================
-def process_block(row: namedtuple, context_list: list = []):
+def process_block(row: namedtuple, context_list: list = [], top_level: bool = False):
   """ Given (parts of) a row from the requirement_blocks db table, traverse the header and body
       lists.
   """
@@ -286,22 +292,24 @@ def process_block(row: namedtuple, context_list: list = []):
   if 'error' in row.parse_tree.keys():
     print(row.institution, row.requirement_id, 'Parser Error', file=fail_file)
     return
-
-  print(f'{row.institution} {row.requirement_id} {not context_list}', file=blocks_file)
+  # Characterize blocks as top-level or nested; use capitalization to sort top-level before nested
+  toplevel_str = 'Top-level' if top_level else 'nested'
+  print(f'{row.institution} {row.requirement_id} {toplevel_str}', file=blocks_file)
 
   # Augment db info with default values for class_credits max_transfer min_residency min_grade
   # min_gpa, max_classes, max_credits
   # block_info = BlockInfo._make(row[0:5] + ('', '', '', '', '', '', ''))
-  args = {}
+  args_dict = {}
   # DB info for the block, but skip the parse_tree here.
   for key, value in row._asdict().items():
-    if key != 'parse_tree':
-      args[key] = value
+    if key == 'parse_tree':
+      continue
+    args_dict[key] = value
   # Empty strings for default values that might or might not be set in the header.
   for key in ['class_credits', 'max_transfer', 'min_residency', 'min_grade', 'min_gpa',
               'max_classes', 'max_credits']:
-    args[key] = ''
-  block_info = BlockInfo(**args)
+    args_dict[key] = ''
+  block_info = BlockInfo(**args_dict)
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
   # found in the header list.
@@ -318,7 +326,7 @@ def process_block(row: namedtuple, context_list: list = []):
     print(row.institution, row.requirement_id, 'Missing Header', file=fail_file)
 
   # Only top-level blocks get entries in the programs table.
-  if not context_list:
+  if top_level:
     programs_writer.writerow([f'{block_info.institution[0:3]}',
                               f'{block_info.requirement_id}',
                               f'{block_info.block_type}',
@@ -330,7 +338,7 @@ def process_block(row: namedtuple, context_list: list = []):
                               f'{block_info.min_grade}',
                               f'{block_info.min_gpa}'])
   # But but the info gets added to the context list for all blocks
-  context_list.append(block_info._asdict())
+  context_list.append({'block_info': block_info._asdict()})
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
@@ -345,7 +353,8 @@ def process_block(row: namedtuple, context_list: list = []):
   else:
     item_context = context_list + [{'block_info': block_info._asdict()}]
     for body_item in body_list:
-      traverse_body(body_item, item_context)
+      # traverse_body(body_item, item_context)
+      traverse_body(body_item, context_list)
 
 
 # traverse_header()
@@ -728,7 +737,8 @@ def traverse_body(node: Any, context_list: list) -> None:
               is_circular = False
               for context_dict in context_list:
                 try:
-                  if f'{row.institution} {row.requirement_id}' == context_dict['requirement_block']:
+                  # Assume there are no cross-institutional course requirements
+                  if row.requirement_id == context_dict['requirement_id']:
                     print(institution, requirement_id, 'Circular CopyRules', file=fail_file)
                     is_circular = True
                 except KeyError:
@@ -995,8 +1005,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                                   rule_dict['class_credit'])
                     except KeyError as ke:
                       print(institution, requirement_id, block_title,
-                            f'{ke} in subset class_credit_list', file=stderr)
-                      pprint(rule_dict, stream=stderr)
+                            f'{ke} in subset class_credit_list', file=sys.stderr)
+                      pprint(rule_dict, stream=sys.stderr)
                       exit()
                 continue
 
@@ -1104,7 +1114,7 @@ if __name__ == "__main__":
   parser.add_argument('-a', '--all', action='store_true')
   parser.add_argument('-d', '--debug', action='store_true')
   parser.add_argument('--do_degrees', action='store_true')
-  parser.add_argument('--do_hunter_degrees', action='store_true')
+  parser.add_argument('--do_hunter', action='store_true')
   parser.add_argument('--no_remarks', action='store_true')
   parser.add_argument('-i', '--institution', default='qns')
   parser.add_argument('-r', '--requirement_id')
@@ -1112,8 +1122,8 @@ if __name__ == "__main__":
   parser.add_argument('-v', '--value', default='csci-bs')
   args = parser.parse_args()
   do_degrees = args.do_degrees
+  do_hunter = args.do_hunter
   do_remarks = not args.no_remarks
-  skip_hunter = not args.do_hunter_degrees
 
   empty_tree = "'{}'"
 
@@ -1210,7 +1220,7 @@ if __name__ == "__main__":
       inactive_count = 0
       processed_count = 0
       for row in cursor:
-        if skip_hunter and row.institution == 'HTR01' and row.block_type == 'DEGREE':
+        if row.institution == 'HTR01' and not do_hunter:
           continue
         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
           quarantine_count += 1
@@ -1221,37 +1231,7 @@ if __name__ == "__main__":
           inactive_count += 1
           continue
 
-        # # If this is the first time this instution has been encountered, create a dict mapping
-        # # this institution's courses to their course_id:offer_nbr values
-        # if row.institution not in courses_by_institution:
-        #   with conn.cursor(row_factory=namedtuple_row) as course_cursor:
-        #     course_cursor.execute("""
-        #     select institution, course_id, offer_nbr, equivalence_group,
-        #            discipline, catalog_number, career
-        #       from cuny_courses
-        #      where institution = %s
-        #        and designation not in ('MNL', 'MLA')
-        #        and course_status = 'A'
-        #        and attributes !~* 'BKCR'
-        #      order by discipline, numeric_part(catalog_number)
-        #     """, (row.institution, ))
-        #     for course in course_cursor:
-        #       institution, discipline, catalog_number = (course.institution,
-        #                                                  course.discipline,
-        #                                                  course.catalog_number)
-        #       value = (course.course_id, course.offer_nbr, course.career, course.equivalence_group)
-        #       courses_by_institution[institution][discipline][catalog_number] = value
-
-        #     # And cache the institution's subplan info
-        #     course_cursor.execute("""
-        #     select institution, plan, subplan, subplan_type, description, cip_code, hegis_code
-        #     from cuny_subplans
-        #     """)
-        #     for subplan in course_cursor:
-        #       subplan_info = SubplanInfo._make([subplan.subplan_type, subplan.description,
-        #                                         subplan.cip_code, subplan.hegis_code])
-        #       subplans_by_institution[row.institution][subplan.plan][subplan.subplan] = subplan_info
-        process_block(row)
+        process_block(row, context_list=[], top_level=True)
         processed_count += 1
 
   print(f'{processed_count:5,} Processed\n'
