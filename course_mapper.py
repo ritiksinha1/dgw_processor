@@ -81,13 +81,13 @@ requirement_index = 0
 def get_context_names(context_list: list) -> str:
   """ Debugging Utility for tracing dispatches
   """
-  context_names = []
+  requirement_names = []
   for ctx in context_list:
     try:
-      context_names.append(ctx['name'])
+      requirement_names.append(ctx['requirement_name'])
     except KeyError:
       pass
-  return ' => '.join(context_names)
+  return ' => '.join(requirement_names)
 
 
 # letter_grade()
@@ -606,7 +606,7 @@ def traverse_body(node: Any, context_list: list) -> None:
     elif isinstance(requirement_value, dict):
       context_dict = get_restrictions(requirement_value)
       try:
-        context_dict['name'] = requirement_value['label']
+        context_dict['requirement_name'] = requirement_value['label']
       except KeyError:
         if context_dict:
           # If there are restrictions but no name, add a placeholder name, and log it
@@ -703,12 +703,12 @@ def traverse_body(node: Any, context_list: list) -> None:
           # UNABLE TO HANDLE RULE_COMPLETE UNTIL THE CONDITION IS EVALUATED
           condition = requirement_value['condition_str']
           for if_true_dict in requirement_value['if_true']:
-            condition_dict = {'name': 'if_true', 'condition': condition}
+            condition_dict = {'requirement_name': 'if_true', 'condition': condition}
             condition_list = [condition_dict]
             traverse_body(if_true_dict, context_list + condition_list)
           try:
             for if_false_dict in requirement_value['if_false']:
-              condition_dict = {'name': 'if_false', 'condition': condition}
+              condition_dict = {'requirement_name': 'if_false', 'condition': condition}
               condition_list = [condition_dict]
               traverse_body(if_false_dict, context_list + condition_list)
           except KeyError:
@@ -885,7 +885,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
           context_dict = get_restrictions(requirement_value)
           try:
-            context_dict['name'] = requirement_value.pop('label')
+            context_dict['requirement_name'] = requirement_value.pop('label')
             subset_context = [context_dict]
           except KeyError:
             pass
@@ -927,7 +927,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                               f'active block{suffix}; {num_required} required ',
                               file=fail_file)
                       else:
-                        local_context = [{'name': block_label}]
+                        local_context = [{'requirement_name': block_label}]
                         num_found = 0
                         num_extra = 0
                         for row in cursor:
@@ -966,11 +966,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                   # Use the condition as the pseudo-name of this requirement
                   condition = conditional['condition_str']
                   for if_true_dict in conditional['if_true']:
-                    condition_list = [{'name': 'if_true', 'condition': condition}]
+                    condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
                     traverse_body(if_true_dict, context_list + subset_context + condition_list)
                   try:
                     for if_false_dict in conditional['if_false']:
-                      condition_list = [{'name': 'if_true', 'condition': condition}]
+                      condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
                       traverse_body(if_true_dict, context_list + subset_context + condition_list)
                   except KeyError:
                     # Scribe Else clause is optional
@@ -990,7 +990,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   for k, v in rule_dict.items():
                     local_dict = get_restrictions(v)
                     try:
-                      local_dict['name'] = v['label']
+                      local_dict['requirement_name'] = v['label']
                     except KeyError as ke:
                       print(f'{institution} {requirement_id} '
                             f'Subset class_credit_list {k} with no label', file=todo_file)
@@ -1069,7 +1069,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                                 file=debug_file)
                         else:
                           local_dict = {'requirement_block': target_block,
-                                        'name': row.block_title}
+                                        'requirement_name': row.block_title}
                           local_context = [local_dict]
                           traverse_body(body_list,
                                         context_list + requirement_context + local_context)
