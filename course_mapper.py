@@ -78,18 +78,6 @@ requirement_index = 0
 # =================================================================================================
 
 
-def get_context_names(context_list: list) -> str:
-  """ Debugging Utility for tracing dispatches
-  """
-  requirement_names = []
-  for ctx in context_list:
-    try:
-      requirement_names.append(ctx['requirement_name'])
-    except KeyError:
-      pass
-  return ' => '.join(requirement_names)
-
-
 # letter_grade()
 # -------------------------------------------------------------------------------------------------
 def letter_grade(grade_point: float) -> str:
@@ -231,7 +219,7 @@ Requirement Key, Course ID, Career, Course, With
     print(institution, requirement_id, requirement_name, file=no_courses_file)
   else:
     # The requirement_id has to come from the first block_info in the context
-    # list (is this really necessary?).
+    # list (is this ever actually used?).
     requirement_id = context_list[0]['block_info']['requirement_id']
     data_row = [institution, requirement_id, requirement_index, requirement_name,
                 json.dumps(context_list + [{'requirement': requirement_dict}], ensure_ascii=False)]
@@ -292,20 +280,21 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
   if 'error' in row.parse_tree.keys():
     print(row.institution, row.requirement_id, 'Parser Error', file=fail_file)
     return
-  # Characterize blocks as top-level or nested; use capitalization to sort top-level before nested
+
+  # Characterize blocks as top-level or nested for reporting purposes; use capitalization to sort
+  # top-level before nested.
   toplevel_str = 'Top-level' if top_level else 'nested'
   print(f'{row.institution} {row.requirement_id} {toplevel_str}', file=blocks_file)
 
-  # Augment db info with default values for class_credits max_transfer min_residency min_grade
-  # min_gpa, max_classes, max_credits
-  # block_info = BlockInfo._make(row[0:5] + ('', '', '', '', '', '', ''))
+  # A BlockInfo object contains block metadata from the requirement_blocks table, and will be
+  # augmented with additiona information found in the block’s header
   args_dict = {}
   # DB info for the block, but skip the parse_tree here.
   for key, value in row._asdict().items():
     if key == 'parse_tree':
       continue
     args_dict[key] = value
-  # Empty strings for default values that might or might not be set in the header.
+  # Empty strings for default values that might or might not be found in the header.
   for key in ['class_credits', 'max_transfer', 'min_residency', 'min_grade', 'min_gpa',
               'max_classes', 'max_credits']:
     args_dict[key] = ''
@@ -337,7 +326,8 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
                               f'{block_info.min_residency}',
                               f'{block_info.min_grade}',
                               f'{block_info.min_gpa}'])
-  # But but the info gets added to the context list for all blocks
+
+  # But but all blocks get added to the context list.
   context_list.append({'block_info': block_info._asdict()})
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
@@ -434,7 +424,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
 
           case 'header_maxclass':
             print(f'{institution} {requirement_id} Header maxclass', file=log_file)
-            for cruft_key in ['institution', 'requirement_id', 'context_path']:
+            for cruft_key in ['institution', 'requirement_id']:
               del(value['maxclass']['course_list'][cruft_key])
             block_info['maxclass'] = value['maxclass']
 
@@ -447,7 +437,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
 
           case 'header_maxcredit':
             print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
-            for cruft_key in ['institution', 'requirement_id', 'context_path']:
+            for cruft_key in ['institution', 'requirement_id']:
               del(value['maxcredit']['course_list'][cruft_key])
             block_info['maxcredit'] = value['maxcredit']
             number = float(value['maxcredit']['number'])
@@ -539,7 +529,7 @@ def traverse_body(node: Any, context_list: list) -> None:
 
       Element 0 of the context list is always information about the block, including header
       restrictions: MaxTransfer, MinResidency, MinGrade, and MinGPA. (See traverse_header(), which
-      set this up.)
+      adds this info to the BlockInfo object in the context_list.)
 
       If there is a label, that becomes the requirement_name to add to the context_list when
       entering sub-dicts.
@@ -564,8 +554,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
   global do_remarks, args
 
-  # Containing Block Context.
-  # Use last block_info item in the context_list
+  # Find the containing block’s context.
+  # Ir’s the last block_info item in the context_list
   for ctx in reversed(context_list):
     try:
       block_info = ctx['block_info']
@@ -590,15 +580,25 @@ def traverse_body(node: Any, context_list: list) -> None:
     assert len(node) == 1
     requirement_type, requirement_value = list(node.items())[0]
 
+    # String values are remarks: add to context (if asked for), and continue
     if isinstance(requirement_value, str):
-      # String values are remarks: add to context and continue
+      assert requirement_type == 'remark'
       if do_remarks:
-        print(f'{institution} {requirement_id} String value for {requirement_type.title()}',
+        print(f'{institution} {requirement_id} Body remark',
               file=log_file)
         context_list += [{requirement_type: requirement_value}]
       else:
         pass
 
+    # Lists happen because of how the grammar handles requirements that can occur in different
+    # orders. (“Zero or more of this followed by zero or more of that.”) Lists of the following
+    # object types have been observed here:
+    #   402 group_requirement   I think this is a bug
+    #   257 class_credit
+    #    76 remark              Are these being coalesced properly?
+    #    20 subset
+    #    11 conditional
+    #     5 group_requirements  Nested groups(?)
     elif isinstance(requirement_value, list):
       for thing in requirement_value:
         traverse_body(thing, context_list)
@@ -619,8 +619,8 @@ def traverse_body(node: Any, context_list: list) -> None:
         # If there are no restrictions and no name, there's nothing to add to the context.
         if requirement_type != 'conditional':
           # None expected for conditional, but make a note for any others
-            print(f'{institution} {requirement_id} {requirement_type} Empty requirement_context ',
-                  file=log_file)
+            print(f'{institution} {requirement_id} {requirement_type.title()} with no label and no '
+                  'qualifiers', file=log_file)
         requirement_context = []
 
       if args.debug:
@@ -758,11 +758,6 @@ def traverse_body(node: Any, context_list: list) -> None:
             print(f'{institution} {requirement_id}: Course List Rule w/o a Course List',
                   file=sys.stderr)
 
-        case 'group_requirements':
-          # Group requirements is a list, so it should not show up here.
-          exit(f'{institution} {requirement_id} Error: unexpected group_requirements',
-               file=sys.stderr)
-
         case 'rule_complete':
           print(institution, requirement_id, 'Body rule_complete', file=todo_file)
           # is_complete may be T/F
@@ -777,28 +772,28 @@ def traverse_body(node: Any, context_list: list) -> None:
           map_courses(institution, requirement_id, block_title, context_list + requirement_context,
                       requirement_value)
 
+        case 'group_requirements':
+          # Group requirements is a list , so it should not show up here.
+          exit(f'{institution} {requirement_id} Error: unexpected group_requirements',
+               file=sys.stderr)
+
         case 'group_requirement':
           print(institution, requirement_id, 'Body group_requirement', file=log_file)
           # ---------------------------------------------------------------------------------------
-          number = int(requirement_value['number'])
+          """ Each group requirement has a group_list, label, and number (num_required)
+              Each group_list is a list of groups(!)
+              Each group is one of: block, blocktype, class_credit, course_list,
+                                    group_requirement(s), noncourse, or rule_complete)
+          """
           groups = requirement_value['group_list']['groups']
-          num_groups = len(groups)
-          context_dict['num_groups'] = num_groups
-          context_dict['num_required'] = number
+          context_dict['num_groups'] = len(groups)
+          context_dict['num_required'] = int(requirement_value['number'])
           groups_context = requirement_context + [context_dict]
           for group_num, group in enumerate(groups):
             group_context = groups_context + [{'group_number': group_num}]
-
-            if len(group.keys()) != 1:
-              exit(f'{institution} {requirement_id} {len(group.keys())=}: '
-                   f'{group_num} of {len(groups)}. {group}')
+            assert len(group.keys()) == 1
 
             for key, value in group.items():
-
-              if args.debug:
-                print(f'{institution} {requirement_id} {key} from Group =>',
-                      get_context_names(context_list + group_context), file=sys.stderr)
-
               match key:
 
                 case 'block':
@@ -827,7 +822,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         if cursor.rowcount != block_num_required:
                           # HOW TO HANDLE THIS (if it occurs)?
                           suffix = '' if cursor.rowcount == 1 else 's'
-                          print(f'{institution} {requirement_id} Group lock found '
+                          print(f'{institution} {requirement_id} Group block found '
                                 f'{cursor.rowcount} row{suffix} ({block_num_required} needed)',
                                 file=todo_file)
                         else:
@@ -861,8 +856,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   continue
 
                 case 'group_requirements':
-                  # Don't log this: it's an artifact because group requirements appear as lists even
-                  # when there is only one group requirement.
+                  print(institution, requirement_id, 'Body nested group_requirements', file=log_file)
                   assert isinstance(value, list)
                   for group_requirement in value:
                     traverse_body(value, context_list + group_context)
@@ -895,11 +889,6 @@ def traverse_body(node: Any, context_list: list) -> None:
             subset_context = []
 
           for key, rule in requirement_value.items():
-
-            if args.debug:
-              print(f'{institution} {requirement_id} {key} from Subset =>',
-                    get_context_names(context_list + subset_context), file=sys.stderr)
-
             match key:
 
               case 'block':
@@ -1090,7 +1079,11 @@ def traverse_body(node: Any, context_list: list) -> None:
 
             print(institution, requirement_id, f'Unexpected Subset: {key}', file=sys.stderr)
 
-        case 'noncourse' | 'proxy_advice' | 'remark':
+        case 'remark':
+          if do_remarks:
+            print(institution, requirement_id, 'Unhandled remark', file=todo_file)
+
+        case 'noncourse' | 'proxy_advice':
           # Ignore These
           pass
 
