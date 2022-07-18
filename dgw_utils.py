@@ -165,7 +165,7 @@ def analyze_expression(ctx, institution, requirement_id):
   report = {'instituion': institution,
             'requirement_id': requirement_id,
             'block_type': block_type,
-            'context_path': context_path(ctx).split(' => ')[0:-1],
+            # 'context_path': context_path(ctx).split(' => ')[0:-1],
             }
 
   children = ctx.children
@@ -860,7 +860,7 @@ def build_course_list(ctx, institution, requirement_id) -> dict:
                  'list_type': None,
                  'except_courses': [],
                  'include_courses': [],
-                 'context_path': context_path(ctx)  # development aid
+                 # 'context_path': context_path(ctx)  # development aid
                  }
 
   #   A course list has no label, but a course_list_rule can (should) have one, and so also should
