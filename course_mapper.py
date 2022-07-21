@@ -580,7 +580,7 @@ def traverse_body(node: Any, context_list: list) -> None:
     assert len(node) == 1
     requirement_type, requirement_value = list(node.items())[0]
 
-    # String values are remarks: add to context (if asked for), and continue
+    # String values are remarks: add to context, and continue. Can be suppressed from command line.
     if isinstance(requirement_value, str):
       assert requirement_type == 'remark'
       if do_remarks:
@@ -590,18 +590,18 @@ def traverse_body(node: Any, context_list: list) -> None:
       else:
         pass
 
-    # Lists happen because of how the grammar handles requirements that can occur in different
-    # orders. (“Zero or more of this followed by zero or more of that.”) Lists of the following
-    # object types have been observed here:
-    #   402 group_requirement   I think this is a bug
+    # Lists happen in requirement_values because of how the grammar handles requirements that can
+    # occur in different orders. (“This or that, zero or more times.”)
+    # Lists of the following object types have been observed here:
+    #   402 group_requirement
     #   257 class_credit
-    #    76 remark              Are these being coalesced properly?
+    #    76 remark
     #    20 subset
     #    11 conditional
     #     5 group_requirements  Nested groups(?)
     elif isinstance(requirement_value, list):
-      for thing in requirement_value:
-        traverse_body(thing, context_list)
+      for list_item in requirement_value:
+        traverse_body(list_item, context_list)
 
     elif isinstance(requirement_value, dict):
       context_dict = get_restrictions(requirement_value)
@@ -781,21 +781,21 @@ def traverse_body(node: Any, context_list: list) -> None:
           print(institution, requirement_id, 'Body group_requirement', file=log_file)
           # ---------------------------------------------------------------------------------------
           """ Each group requirement has a group_list, label, and number (num_required)
-              Each group_list is a list of groups(!)
+              A group_list is a list of groups (!)
               Each group is one of: block, blocktype, class_credit, course_list,
                                     group_requirement(s), noncourse, or rule_complete)
           """
-          groups = requirement_value['group_list']['groups']
+          # breakpoint()
+          groups = requirement_value['group_list']
           context_dict['num_groups'] = len(groups)
           context_dict['num_required'] = int(requirement_value['number'])
-          groups_context = requirement_context + [context_dict]
           for group_num, group in enumerate(groups):
-            group_context = groups_context + [{'group_number': group_num}]
+            context_dict['group_number'] = group_num + 1
+
             assert len(group.keys()) == 1
 
             for key, value in group.items():
               match key:
-
                 case 'block':
                   try:
                     block_name = value['label']
@@ -827,7 +827,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                                 file=todo_file)
                         else:
                           for row in cursor:
-                            process_block(row, context_list + group_context)
+                            process_block(row, context_list + requirement_context)
                           print(institution, requirement_id,
                                 f'Group block {cursor.rowcount} of '
                                 f'{block_num_required} required block{suffix}',
@@ -845,7 +845,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   # This is where course lists turn up, in general.
                   try:
                     map_courses(institution, requirement_id, block_title,
-                                context_list + group_context, value)
+                                context_list + requirement_context, value)
                   except KeyError as ke:
                     # Course List is an optional part of ClassCredit
                     pass
@@ -856,10 +856,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                   continue
 
                 case 'group_requirements':
-                  print(institution, requirement_id, 'Body nested group_requirements', file=log_file)
+                  print(institution, requirement_id, 'Body nested group_requirements',
+                        file=log_file)
                   assert isinstance(value, list)
                   for group_requirement in value:
-                    traverse_body(value, context_list + group_context)
+                    traverse_body(value, context_list + requirement_context)
                   continue
 
                 case 'noncourse':
