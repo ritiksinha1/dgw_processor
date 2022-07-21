@@ -548,7 +548,7 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
     print(context_path(ctx))
     print_stack()
 
-  return_dict = {'groups': []}
+  return_dict = {'group_list': []}
   for group_ctx in ctx.group():
     children = group_ctx.getChildren()
 
@@ -558,7 +558,6 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
       if item_class.lower() == 'terminalnodeimpl':
         continue
 
-      # group_dict = {'label': get_label(child)}
       group_dict = dict()
       group_dict.update(get_qualifiers(child, institution, requirement_id))
       try:
@@ -569,7 +568,7 @@ def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
         group_dict.update(dgw_handlers.dispatch(child, institution, requirement_id))
       else:
         print(f'xxxx {class_name(child)} is not a dispatchable body key', file=sys.stderr)
-      return_dict['groups'].append(group_dict)
+      return_dict['group_list'].append(group_dict)
 
   if DEBUG:
     print('   ', return_dict, file=sys.stderr)

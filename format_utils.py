@@ -193,12 +193,8 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
         match num_courses:
 
           case 0:
-            if '@' in discipline or '@' in catalog_number or ':' in catalog_number:
-              suffix = 's'
-            else:
-              suffix = ''
             html_str += (f'<p>{course_str}: <span class="error">No credit-bearing, currently-'
-                         f'active, non-administrative course{suffix} found.</span></p>')
+                         f'active, non-administrative courses found.</span></p>')
 
           case 1:
             key, value = active_courses.popitem()

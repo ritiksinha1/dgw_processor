@@ -412,8 +412,8 @@ def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
 
     requirement_list_dict['number'] = group_requirement_ctx.NUMBER().getText()
 
-    requirement_list_dict['group_list'] = get_groups(group_requirement_ctx.groups(),
-                                                     institution, requirement_id)
+    requirement_list_dict.update(get_groups(group_requirement_ctx.groups(),
+                                            institution, requirement_id))
 
     requirement_list.append({'group_requirement': requirement_list_dict})
 
