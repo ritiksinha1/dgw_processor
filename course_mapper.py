@@ -123,7 +123,7 @@ def expand_course_list(institution: str, requirement_id: str, course_dict: dict)
   """
   # Check for empty list
   if not course_dict:
-    return {}
+    return None
 
   # Get the scribed list and flatten it
   course_list = course_dict['scribed_courses']
@@ -431,8 +431,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             number = int(value['maxclass']['number'])
             course_list = value['maxclass']['course_list']
             expanded_list = expand_course_list(institution, requirement_id, course_list)
-            print(f'{institution} {requirement_id} {block_type:6} maxclass {number}; '
-                  f'{expanded_list}', file=analysis_file)
+            print(f'{institution} {requirement_id} {block_type:6} maxclass  {number:6,}; '
+                  f'{len(expanded_list):6,} courses', file=analysis_file)
             pass
 
           case 'header_maxcredit':
@@ -443,8 +443,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             number = float(value['maxcredit']['number'])
             course_list = value['maxcredit']['course_list']
             expanded_list = expand_course_list(institution, requirement_id, course_list)
-            print(f'{institution} {requirement_id} {block_type:6} maxcredit {number}; '
-                  f'{expanded_list}', file=analysis_file)
+            print(f'{institution} {requirement_id} {block_type:6} maxcredit {number:6,.1f}; '
+                  f'{len(expanded_list):6,} courses', file=analysis_file)
             pass
 
           case 'header_maxpassfail':
@@ -652,7 +652,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, block_args)
 
               if cursor.rowcount == 0:
-                print(f'{institution} {requirement_id} Block: no active block',
+                print(f'{institution} {requirement_id} Body block: no active block',
                       file=fail_file)
               else:
                 num_blocks = cursor.rowcount
@@ -670,20 +670,43 @@ def traverse_body(node: Any, context_list: list) -> None:
                                   context_list + requirement_context + [choice_context])
 
         case 'blocktype':
-          print(institution, requirement_id, 'Body blocktype', file=log_file)
-          # No observed cases where the number of blocks is other than one and the type of block is
-          # other than Concentration. But in two cases (LEH 1298 and 1300), the containing block
-          # type is CONC instead of MAJOR.
           number = int(requirement_value['number'])
           if number != 1:
             print(institution, requirement_id, f'blocktype with number ({number}) not equal 1',
                   file=todo_file)
           else:
             req_type = requirement_value['block_type']
-            # if institution == 'LEH01' and requirement_id == 'RA002329':
-            #   print(f'{institution} {requirement_id} {block_type} {block_value}: {req_type}')
-            #   for key, value in subplans_by_institution[institution][block_value].items():
-            #     print(f'{key:12}: {value}')
+            if '-' in block_value:
+              target_value, degree = block_value.split('-')
+              with psycopg.connect('dbname=cuny_curriculum') as conn:
+                with conn.cursor(row_factory=namedtuple_row) as cursor:
+                  blocks = cursor.execute(f"""
+                  select institution, requirement_id, block_type, block_value, title as block_title,
+                         parse_tree
+                    from requirement_blocks
+                   where institution = '{institution}'
+                     and block_type = '{req_type}'
+                     and block_value ~* '^{target_value}'
+                     and period_stop ~* '^9'
+                  """)
+                  if cursor.rowcount == 0:
+                    print(f'{institution} {requirement_id} Body blocktype: no matching {req_type}',
+                          file=fail_file)
+                  else:
+                    print(institution, requirement_id, 'Body blocktype', file=log_file)
+                    # Catch observed circularities
+                    requirement_ids = [requirement_id]
+                    for row in cursor:
+                      if row.requirement_id not in requirement_ids:
+                        requirement_ids.append(row.requirement_id)
+                        process_block(row, context_list + requirement_context)
+                      else:
+                        print(f'{institution} {requirement_id} Circular blocktype', file=fail_file)
+                        break
+
+            else:
+              print(institution, requirement_id, block_value, 'Block value failed to split',
+                    file=fail_file)
 
         case 'class_credit':
           print(institution, requirement_id, 'Body class_credit', file=log_file)
@@ -1210,12 +1233,15 @@ if __name__ == "__main__":
       suffix = '' if cursor.rowcount == 1 else 's'
       print(f'{cursor.rowcount:,} parse tree{suffix}')
 
+      hunter_count = 0
       quarantine_count = 0
       inactive_count = 0
-      processed_count = 0
+      block_types = defaultdict(int)
       for row in cursor:
-        if row.institution == 'HTR01' and not do_hunter:
-          continue
+        if row.institution == 'HTR01':
+          hunter_count += 1
+          if not do_hunter:
+            continue
         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
           quarantine_count += 1
           continue
@@ -1226,8 +1252,10 @@ if __name__ == "__main__":
           continue
 
         process_block(row, context_list=[], top_level=True)
-        processed_count += 1
+        block_types[row.block_type] += 1
 
-  print(f'{processed_count:5,} Processed\n'
+  for k, v in block_types.items():
+    print(f'{v:5,} {k.title()}')
+  print(f'{hunter_count:5,} Hunter\n'
         f'{quarantine_count:5,} Quarantined\n'
         f'{inactive_count:5,} Inactive')
