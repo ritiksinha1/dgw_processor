@@ -3,9 +3,11 @@
 import sys
 
 
-def ifs(v: str):
+def ifs(v: any):
   """ Convert a value, v, from str to a float, int, or leave it as a str
   """
+  if isinstance(v, list):
+    return v
   try:
     fv = iv = None
     fv = float(v)
@@ -24,8 +26,8 @@ class BlockInfo(dict):
       by the course_mapper app.
   """
   _valid_keys = ['institution', 'requirement_id', 'block_type', 'block_value', 'block_title',
-                 'major1', 'class_credits', 'max_transfer', 'min_residency', 'min_grade', 'min_gpa',
-                 'max_classes', 'max_credits']
+                 'major1', 'class_credits', 'min_residency', 'min_grade', 'min_gpa',
+                 'max_transfer', 'max_classes', 'max_credits']
 
   def __init__(self, **kwargs):
     """ Capture whatever arguments are passed.
@@ -33,7 +35,8 @@ class BlockInfo(dict):
     # self._blockinfo = {}
     for k, v in kwargs.items():
       if k in BlockInfo._valid_keys:
-        v = ifs(v)
+        if isinstance(v, str):
+          v = ifs(v)
         if isinstance(v, str):
           exec(f'self.{k} = "{v}"')
         else:
@@ -72,7 +75,7 @@ if __name__ == '__main__':
   for arg in sys.argv[1:]:
     k, v = arg.split('=')
     # key has to be one of the _valid_keys
-    # value can be int, float, or str
+    # value can be int, float, str, or list
     args[k] = ifs(v)
   blinfo = BlockInfo(**args)
   print(blinfo._asdict())
