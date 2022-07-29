@@ -331,7 +331,7 @@ def _format_maxterm_head(maxterm_head_dict: dict) -> str:
     return maxterm_str
 
 
-# _format_maxtransfer()
+# _format_maxtransfer_head()
 # -------------------------------------------------------------------------------------------------
 def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
   """
