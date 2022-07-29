@@ -10,11 +10,11 @@ import sys
 from collections import namedtuple
 
 if __name__ == '__main__':
-
   parser = argparse.ArgumentParser()
   parser.add_argument('--institution', '-i')
   parser.add_argument('--requirement_id', '-r')
   parser.add_argument('--requirement_key', '-k')
+  parser.add_argument('--full_text', '-f', action='store_true')
   args = parser.parse_args()
   institution = requirement_id = requirement_key = None
   if args.institution:
@@ -24,6 +24,7 @@ if __name__ == '__main__':
   if args.requirement_key:
     requirement_key = int(args.requirement_key)
 
+  csv.field_size_limit(sys.maxsize)
   with open('course_mapper.requirements.csv') as req_file:
     reader = csv.reader(req_file)
     for line in reader:
@@ -37,8 +38,11 @@ if __name__ == '__main__':
               print(f'{row.institution} {row.requirement_id} {row.requirement_key:>08}:')
               for ctx in json.loads(row.context):
                 for k, v in ctx.items():
-                  print(f'  {k}: {v}')
-              print()
+                  line = f'  {k}: {v}'
+                  if args.full_text or len(line) < 132:
+                    print(line)
+                  else:
+                    print(line[0:129] + '...')
         else:
           print(f'{row.institution} {row.requirement_id} {row.requirement_key:>08}:', end='')
           for ctx in json.loads(row.context):
