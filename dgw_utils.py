@@ -650,13 +650,13 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
             # maxtransfer : MAXTRANSFER NUMBER (CLASS | CREDIT) (LP SYMBOL (list_or SYMBOL)* RP)?
             # minperdisc  : MINPERDISC NUMBER (CLASS | CREDIT)  LP SYMBOL (list_or SYMBOL)* RP
             elif valid_qualifier in ['maxperdisc', 'maxtransfer', 'minperdisc']:
-              disciplines = qualifier_ctx.SYMBOL()
-              if isinstance(disciplines, list):
-                disciplines = [d.getText() for d in disciplines]
-
+              symbols = qualifier_ctx.SYMBOL()
+              if isinstance(symbols, list):
+                symbols = [s.getText() for s in symbols]
+              symbols_name = 'transfer_types' if valid_qualifier == 'maxtransfer' else 'disciplines'
               qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText(),
                                                  'class_or_credit': class_credit_str,
-                                                 'disciplines': disciplines}
+                                                 symbols_name: symbols}
 
             # maxspread       : MAXSPREAD NUMBER
             # minarea         : MINAREA NUMBER
