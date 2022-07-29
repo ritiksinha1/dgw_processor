@@ -295,9 +295,12 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
       continue
     args_dict[key] = value
   # Empty strings for default values that might or might not be found in the header.
-  for key in ['class_credits', 'max_transfer', 'min_residency', 'min_grade', 'min_gpa',
-              'max_classes', 'max_credits']:
+  for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
     args_dict[key] = ''
+  # Empty lists as default limits that might or might not be specified in the header.
+  for key in ['max_transfer', 'max_classes', 'max_credits']:
+    args_dict[key] = []
+
   block_info = BlockInfo(**args_dict)
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
@@ -426,26 +429,37 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             print(f'{institution} {requirement_id} Header maxclass', file=log_file)
             for cruft_key in ['institution', 'requirement_id']:
               del(value['maxclass']['course_list'][cruft_key])
-            block_info['maxclass'] = value['maxclass']
 
             number = int(value['maxclass']['number'])
             course_list = value['maxclass']['course_list']
-            expanded_list = expand_course_list(institution, requirement_id, course_list)
-            print(f'{institution} {requirement_id} {block_type:6} maxclass  {number:6,}; '
-                  f'{len(expanded_list):6,} courses', file=analysis_file)
-            pass
+            course_list['courses'] = [{'course_id': f'{k[0]:06}:{k[1]}',
+                                       'course': v[0],
+                                       'with': v[1]}
+                                      for k, v in expand_course_list(institution,
+                                                                     requirement_id,
+                                                                     course_list).items()]
+            limit_dict = {'number': number,
+                          'courses': course_list
+                          }
+            block_info.max_classes.append(limit_dict)
 
           case 'header_maxcredit':
             print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
             for cruft_key in ['institution', 'requirement_id']:
               del(value['maxcredit']['course_list'][cruft_key])
-            block_info['maxcredit'] = value['maxcredit']
+
             number = float(value['maxcredit']['number'])
             course_list = value['maxcredit']['course_list']
-            expanded_list = expand_course_list(institution, requirement_id, course_list)
-            print(f'{institution} {requirement_id} {block_type:6} maxcredit {number:6,.1f}; '
-                  f'{len(expanded_list):6,} courses', file=analysis_file)
-            pass
+            course_list['courses'] = [{'course_id': f'{k[0]:06}:{k[1]}',
+                                       'course': v[0],
+                                       'with': v[1]}
+                                      for k, v in expand_course_list(institution,
+                                                                     requirement_id,
+                                                                     course_list).items()]
+            limit_dict = {'number': number,
+                          'courses': course_list
+                          }
+            block_info.max_credits.append(limit_dict)
 
           case 'header_maxpassfail':
             pass
@@ -459,13 +473,20 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             print(f'{institution} {requirement_id} Header maxtransfer', file=log_file)
             if label_str := value['label']:
               print(f'{institution} {requirement_id} Header maxtransfer label', file=todo_file)
+
+            transfer_limit = {}
             number = float(value['maxtransfer']['number'])
             class_or_credit = value['maxtransfer']['class_or_credit']
             if class_or_credit == 'credit':
-              block_info.max_transfer = f'{number:3.1f} credits'
+              transfer_limit['limit'] = f'{number:3.1f} credits'
             else:
               suffix = '' if int(number) == 1 else 'es'
-              block_info.max_transfer = f'{int(number):3} class{suffix}'
+              transfer_limit['limit'] = f'{int(number):3} class{suffix}'
+            try:
+              transfer_limit['transfer_types'] = value['transfer_types']
+            except KeyError:
+              pass
+            block_info.max_transfer.append(transfer_limit)
 
           case 'header_minclass':
             # THERE WOULD BE A COURSE LIST HERE
