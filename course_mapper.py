@@ -298,7 +298,7 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
       continue
     args_dict[key] = value
   # Catalog years string is based on period_start and period_stop
-  args_dict['catalog_years'] = catalog_years(row.period_start, row.period_stop).text
+  args_dict['catalog_years'] = catalog_years(row.period_start, row.period_stop)._asdict()
   # Empty strings for default values that might or might not be found in the header.
   for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
     args_dict[key] = ''
@@ -1263,6 +1263,7 @@ if __name__ == "__main__":
       print(f'{cursor.rowcount:,} parse tree{suffix}')
 
       hunter_count = 0
+      mhc_count = 0
       quarantine_count = 0
       inactive_count = 0
       block_types = defaultdict(int)
@@ -1273,6 +1274,9 @@ if __name__ == "__main__":
             continue
         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
           quarantine_count += 1
+          continue
+        if row.block_value.upper().startswith('MHC'):
+          mhc_count += 1
           continue
         try:
           enrollment = active_blocks[(row.institution, row.requirement_id)]
@@ -1286,5 +1290,6 @@ if __name__ == "__main__":
   for k, v in block_types.items():
     print(f'{v:5,} {k.title()}')
   print(f'{hunter_count:5,} Hunter\n'
+        f'{mhc_count:5,} Macaulay\n'
         f'{quarantine_count:5,} Quarantined\n'
         f'{inactive_count:5,} Inactive')
