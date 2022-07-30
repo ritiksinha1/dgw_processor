@@ -26,7 +26,7 @@ class BlockInfo(dict):
       by the course_mapper app.
   """
   _valid_keys = ['institution', 'requirement_id', 'block_type', 'block_value', 'block_title',
-                 'major1', 'class_credits', 'min_residency', 'min_grade', 'min_gpa',
+                 'catalog_years', 'class_credits', 'min_residency', 'min_grade', 'min_gpa',
                  'max_transfer', 'max_classes', 'max_credits']
 
   def __init__(self, **kwargs):

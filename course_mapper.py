@@ -10,6 +10,7 @@ import sys
 
 from argparse import ArgumentParser
 from blockinfo import BlockInfo
+from catalogyears import catalog_years
 from collections import namedtuple, defaultdict
 from pprint import pprint
 from psycopg.rows import namedtuple_row
@@ -287,20 +288,23 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
   print(f'{row.institution} {row.requirement_id} {toplevel_str}', file=blocks_file)
 
   # A BlockInfo object contains block metadata from the requirement_blocks table, and will be
-  # augmented with additiona information found in the block’s header
+  # augmented with additional information found in the block’s header
+
+  # The single catalog_years string is built from period_start and period_end values
   args_dict = {}
-  # DB info for the block, but skip the parse_tree here.
+  # Other metadata for the block, except catalog_years and parse_tree.
   for key, value in row._asdict().items():
-    if key == 'parse_tree':
+    if key in ['period_start', 'period_stop', 'parse_tree']:
       continue
     args_dict[key] = value
+  # Catalog years string is based on period_start and period_stop
+  args_dict['catalog_years'] = catalog_years(row.period_start, row.period_stop).text
   # Empty strings for default values that might or might not be found in the header.
   for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
     args_dict[key] = ''
   # Empty lists as default limits that might or might not be specified in the header.
   for key in ['max_transfer', 'max_classes', 'max_credits']:
     args_dict[key] = []
-
   block_info = BlockInfo(**args_dict)
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
@@ -664,7 +668,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             with conn.cursor(row_factory=namedtuple_row) as cursor:
               blocks = cursor.execute("""
               select institution, requirement_id, block_type, block_value, title as block_title,
-                     parse_tree
+                     period_start, period_stop, parse_tree
                 from requirement_blocks
                where institution = %s
                  and block_type = %s
@@ -703,7 +707,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 with conn.cursor(row_factory=namedtuple_row) as cursor:
                   blocks = cursor.execute(f"""
                   select institution, requirement_id, block_type, block_value, title as block_title,
-                         parse_tree
+                         period_start, period_stop, parse_tree
                     from requirement_blocks
                    where institution = '{institution}'
                      and block_type = '{req_type}'
@@ -766,7 +770,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             with conn.cursor(row_factory=namedtuple_row) as cursor:
               cursor.execute("""
               select institution, requirement_id, block_type, block_value, title as block_title,
-                     parse_tree
+                     period_start, period_stop, parse_tree
                 from requirement_blocks
                where institution = %s
                  and requirement_id = %s
@@ -856,7 +860,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                                     block_type,
                                     block_value,
                                     title as block_title,
-                                    parse_tree
+                                    period_start, period_stop, parse_tree
                                from requirement_blocks
                               where institution = %s
                                 and block_type =  %s
@@ -948,7 +952,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                     with conn.cursor(row_factory=namedtuple_row) as cursor:
                       cursor.execute("""
                       select institution, requirement_id, block_type, block_value,
-                             title as block_title, major1, parse_tree
+                             title as block_title, period_start, period_stop, parse_tree
                         from requirement_blocks
                        where institution = %s
                          and block_type = %s
@@ -967,9 +971,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                         for row in cursor:
                           # Heuristic: if there are more rows than needed, select just the ones
                           # where the major1 field matches the referencing block value. Any left
-                          # over are a problem
-                          if cursor.rowcount == num_required or (cursor.rowcount > num_required
-                                                                 and row.major1 == block_value):
+                          # over are a problem. But this problem remains: the heuristic is not
+                          # sufficient. Given the type, the valid blocks will have to be determined
+                          # from CUNYfirst info about plans and their subplans.
+                          if cursor.rowcount == num_required:  # or (cursor.rowcount > num_required
+                                                               # and row.major1 == block_value):
                             num_found += 1
                             if num_found <= num_required:
                               process_block(row, context_list + subset_context + local_context)
@@ -1241,6 +1247,8 @@ if __name__ == "__main__":
                                   block_type,
                                   block_value,
                                   title as block_title,
+                                  period_start,
+                                  period_stop,
                                   parse_tree
                              from requirement_blocks
                             where institution {institution_op} %s
