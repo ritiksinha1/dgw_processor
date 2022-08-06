@@ -22,14 +22,16 @@ from psycopg.rows import namedtuple_row
 # allows us to build all the local tables in a uniform way.
 query_files = {'cuny_subplans': 'ACAD_SUBPLANS',
                'cuny_plan_enrollments': 'ACAD_PLAN_ENRL',
-               'cuny_subplan_enrollments': 'ACAD_SUBPLAN_ENRL'}
+               'cuny_subplan_enrollments': 'ACAD_SUBPLAN_ENRL',
+               'cuny_acad_plan_tbl': 'ACAD_PLAN_TBL',
+               'cuny_acad_subplan_tbl': 'ACAD_SUBPLAN_TBL'}
 
 with psycopg.connect('dbname=cuny_curriculum') as conn:
   with conn.cursor(row_factory=namedtuple_row) as cursor:
 
     for table_name, query_name in query_files.items():
       latest = None
-      csv_files = Path('.').glob(f'{query_name}*')
+      csv_files = Path('./queries').glob(f'{query_name}*')
 
       for csv_file in csv_files:
         if latest is None or latest.stat().st_mtime < csv_file.stat().st_mtime:
@@ -44,7 +46,9 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
             Row = namedtuple('Row', cols)
             col_defs = ''
             for col in cols:
-              col_defs += 'enrollment int,\n' if col.startswith('count') else f'{col} text,\n'
+              col_defs += 'enrollment int,\n' if col.startswith('count') \
+                  else f'{col} date,\n' if col.endswith('date') \
+                  else f'{col} text,\n'
               pkey = ['institution', 'plan']
               if 'subplan' in cols:
                 pkey.append('subplan')
