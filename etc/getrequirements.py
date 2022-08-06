@@ -85,7 +85,15 @@ def get_requirements(course_str: str) -> list:
 
 
 if __name__ == '__main__':
+  print(""" Examples of valid course_str values:
+        QNS CSCI 100 (institution, discipline, and catalog number)
+        123456 (course_id with implied offer_nbr of 1)
+        123456:2 (course_id with explicit offer_nbr)
+        Malformed course_str raises ValueError
+  """
+)
   try:
+    assert len(sys.argv) > 1
     course_info, requirements = get_requirements(' '.join(sys.argv[1:]))
     print(f"{course_info['course_id']}:{course_info['offer_nbr']} {course_info['course']} "
           f"{course_info['title']}\nGenEd: {course_info['gened']}\nRequirements: ")

@@ -26,7 +26,7 @@ if __name__ == '__main__':
   with psycopg.connect('dbname=course_mappings') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
 
-      csv_files = Path('.').glob('c*v')
+      csv_files = Path('/Users/vickery/Projects/dgw_processor').glob('c*v')
       for file in csv_files:
 
         with open(file, 'rb') as fp:
