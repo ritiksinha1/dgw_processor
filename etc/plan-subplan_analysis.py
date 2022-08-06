@@ -36,8 +36,8 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
     # Do plans match requirement blocks?
     with open('./plan_to_ra.csv', 'w') as csv_file:
       writer = csv.writer(csv_file)
-      writer.writerow(['Institution', 'Plan\n(Block Value)', 'Students', 'Enrollment', 'Requirement_id',
-                      'Block Type'])
+      writer.writerow(['Institution', 'Plan\n(Block Value)', 'Students', 'Enrollment',
+                      'Requirement_id', 'Block Type'])
       cursor.execute("""
       select plan.institution, plan.plan,
              sum(ra.total_students) as total_students, e.enrollment,
