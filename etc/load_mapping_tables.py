@@ -1,5 +1,6 @@
 #! /usr/local/bin/python3
-""" Load the three course mapping tables into the course_mapper database
+""" Load the three course mapping tables into the course_mapper database. Then you can use
+    getrequirments.py to see what requirements a course satisfies, for example.
 """
 
 import csv

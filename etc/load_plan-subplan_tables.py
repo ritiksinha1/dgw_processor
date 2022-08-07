@@ -1,14 +1,13 @@
 #! /usr/local/bin/python3
-""" Build three tables:
-      Local Table               CUNYfirst Query     Description
-      cuny_subplans             ACAD_SUBPLANS       institution x plan x subplan
-      cuny_plan_enrollments     ACAD_PLAN_ENRL      institution x plan x enrollment
-      cuny_subplan_enrollments  ACAD_SUBPLAN_ENRL   institution x plan x subplan x enrollment
+""" Build local copies of CUNYfirst plan/subplan/enrollment tables
 
     These tables are designing to identify what subplans belong to which plans when a Scribe block
     calls for a nested block from a Major or Minor. In addition, they provided enrollment data for
-    inclusion in the metadata for requirement blocks. The table names were chosen to avoid conflict
-    with tables containing overlapping information already in use in the cuny_curriculum database.
+    inclusion in the metadata for requirement blocks. The local table names were chosen to avoid
+    conflict with tables containing overlapping information already in use in the cuny_curriculum
+    database.
+
+    All table fields are text unless the column name starts with “count” or ends with “date.”
 """
 import csv
 import psycopg
@@ -18,11 +17,12 @@ from collections import namedtuple
 from pathlib import Path
 from psycopg.rows import namedtuple_row
 
-# Since the cuny_curriculum tables are just copies of the CUNYfirst queries, the query_files dict
+# Since the cuny_curriculum tables are just copies of the CUNYfirst queries, this query_files dict
 # allows us to build all the local tables in a uniform way.
-query_files = {'cuny_subplans': 'ACAD_SUBPLANS',
-               'cuny_plan_enrollments': 'ACAD_PLAN_ENRL',
-               'cuny_subplan_enrollments': 'ACAD_SUBPLAN_ENRL',
+#                                                                 Institution x plan x ...
+query_files = {'cuny_subplans': 'ACAD_SUBPLANS',                  # ... subplan
+               'cuny_plan_enrollments': 'ACAD_PLAN_ENRL',         # ... enrollment
+               'cuny_subplan_enrollments': 'ACAD_SUBPLAN_ENRL',   # ... subplan x enrollment
                'cuny_acad_plan_tbl': 'ACAD_PLAN_TBL',
                'cuny_acad_subplan_tbl': 'ACAD_SUBPLAN_TBL'}
 
