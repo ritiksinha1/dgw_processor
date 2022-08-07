@@ -332,7 +332,7 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
                               f'{block_info.max_transfer}',
                               f'{block_info.min_residency}',
                               f'{block_info.min_grade}',
-                              f'{block_info.min_gpa}'])
+                              f'{block_info.min_gpa}', ''])
 
   # But but all blocks get added to the context list.
   context_list.append({'block_info': block_info._asdict()})

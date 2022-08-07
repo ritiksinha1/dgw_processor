@@ -25,7 +25,7 @@ if __name__ == '__main__':
   csv.field_size_limit(sys.maxsize)
   with psycopg.connect('dbname=course_mappings') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
-
+      tables = dict()
       csv_files = Path('/Users/vickery/Projects/dgw_processor').glob('c*v')
       for file in csv_files:
 
@@ -34,6 +34,7 @@ if __name__ == '__main__':
           num_lines = sum(buffer.count(b'\n') for buffer in c_generator)
         table_name = file.name.replace('course_mapper.', '').replace('.csv', '')
         print(f'\n{table_name}: {num_lines:,} lines')
+        tables[table_name] = num_lines - 1
         nl = num_lines / 100.0
         with open(file) as csv_file:
           reader = csv.reader(csv_file)
@@ -56,4 +57,10 @@ if __name__ == '__main__':
               cursor.execute(f'insert into {table_name} values({values})')
   min, sec = divmod(time() - session_start, 60)
   hr, min = divmod(min, 60)
-  print(f'\nTotal {int(hr):02}:{int(min):02}:{round(sec):02}')
+  csi = '\033['
+  bold = f'{csi}1m'
+  norm = f'{csi}0m'
+  print(f'\nTotal {int(hr):02}:{int(min):02}:{round(sec):02}\n\n'
+        f'Database: {bold}course_mappings{norm}')
+  for key, value in tables.items():
+    print(f'{value:10,} {key}')
