@@ -59,9 +59,9 @@ if __name__ == '__main__':
   min, sec = divmod(time() - session_start, 60)
   hr, min = divmod(min, 60)
   csi = '\033['
-  bold = f'{csi}1m'
-  norm = f'{csi}0m'
+  bold = f'{csi}1m{csi}38;2;255;0;255m'
+  norm = f'{csi}38;0m'
   print(f'\nTotal {int(hr):02}:{int(min):02}:{round(sec):02}\n\n'
-        f'Database: {bold}course_mappings{norm}')
+        f'Database: {bold}COURSE_MAPPINGS{norm}')
   for key, value in tables.items():
     print(f'{value:10,} {key}')
