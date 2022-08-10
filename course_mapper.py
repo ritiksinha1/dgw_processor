@@ -24,15 +24,6 @@ from quarantine_manager import QuarantineManager
 
 quarantine_dict = QuarantineManager()
 
-# BlockInfo = recordclass('BlockInfo',
-#                         'institution requirement_id block_type block_value block_title '
-#                         'class_credits max_transfer min_residency min_grade min_gpa '
-#                         'max_classes max_credits')
-
-
-SubplanInfo = namedtuple('SubplanInfo', 'type description cip_code hegis_code')
-
-
 """ Logging/Development Reports
       analysis_file:      Analsis of as-yet-unhandled constructs.
       blocks_file:        List of blocks processed
@@ -260,7 +251,7 @@ def get_restrictions(node: dict) -> dict:
 
 # process_block()
 # =================================================================================================
-def process_block(row: namedtuple, context_list: list = [], top_level: bool = False):
+def process_block(row: namedtuple, context_list: list = [], other: dict = None):
   """ Given (parts of) a row from the requirement_blocks db table, traverse the header and body
       lists.
   """
@@ -270,13 +261,6 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
     print(row.institution, row.requirement_id, 'Quarantined block', file=fail_file)
     return
 
-  # Be sure the block is for an active program
-  try:
-    enrollment = active_blocks[(row.institution, row.requirement_id)]
-  except KeyError:
-    print(row.institution, row.requirement_id, 'Not an active program', file=fail_file)
-    return
-
   # Be sure the block was parsed successfully (Quarantined should have handled this.)
   if 'error' in row.parse_tree.keys():
     print(row.institution, row.requirement_id, 'Parser Error', file=fail_file)
@@ -284,21 +268,27 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
 
   # Characterize blocks as top-level or nested for reporting purposes; use capitalization to sort
   # top-level before nested.
-  toplevel_str = 'Top-level' if top_level else 'nested'
+  toplevel_str = 'Top-level' if other and other['plan_info'] else 'nested'
   print(f'{row.institution} {row.requirement_id} {toplevel_str}', file=blocks_file)
 
-  # A BlockInfo object contains block metadata from the requirement_blocks table, and will be
-  # augmented with additional information found in the block’s header
-
-  # The single catalog_years string is built from period_start and period_end values
+  # A BlockInfo object contains block metadata from the requirement_blocks table, program and
+  # subprogram tables, and will be augmented with additional information found in the block’s header
   args_dict = {}
-  # Other metadata for the block, except catalog_years and parse_tree.
+  # DGW metadata for the block, except catalog_years and parse_tree.
   for key, value in row._asdict().items():
     if key in ['period_start', 'period_stop', 'parse_tree']:
       continue
     args_dict[key] = value
+
   # Catalog years string is based on period_start and period_stop
   args_dict['catalog_years'] = catalog_years(row.period_start, row.period_stop)._asdict()
+
+  # Program and subprogram info, if available
+  try:
+    args_dict.update(other)
+  except TypeError:
+    pass
+
   # Empty strings for default values that might or might not be found in the header.
   for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
     args_dict[key] = ''
@@ -322,7 +312,7 @@ def process_block(row: namedtuple, context_list: list = [], top_level: bool = Fa
     print(row.institution, row.requirement_id, 'Missing Header', file=fail_file)
 
   # Only top-level blocks get entries in the programs table.
-  if top_level:
+  if other and other['plan_info']:
     programs_writer.writerow([f'{block_info.institution[0:3]}',
                               f'{block_info.requirement_id}',
                               f'{block_info.block_type}',
@@ -1180,7 +1170,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 # main()
 # -------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
-  """ Get a parse tree from the requirements_table and walk it.
+  """ For all CUNY undergraduate plans/subplans and their requirements (if available), generate
+      CSV tables for the programs, their requirements, and course-to-requirement mappings.
   """
   parser = ArgumentParser()
   parser.add_argument('-a', '--all', action='store_true')
@@ -1208,7 +1199,8 @@ if __name__ == "__main__":
                             'Max Transfer',
                             'Min Residency',
                             'Min Grade',
-                            'Min GPA', 'Other'])
+                            'Min GPA',
+                            'Other'])
 
   requirements_writer.writerow(['Institution',
                                 'Requirement ID',
@@ -1222,101 +1214,91 @@ if __name__ == "__main__":
                        'Course',
                        'With'])
 
+  # These are the names of the values to obtain from the requirement_blocks, acad_plan_tbl,
+  # acad_subplan_tbl, and plan/subplan enrollment tables
+  dgw_keys = ['institution', 'requirement_id', 'block_type', 'block_value', 'block_title',
+              'period_start', 'period_stop', 'parse_tree']
+  plan_keys = ['institution', 'plan', 'plan_type', 'description', 'effective_date', 'cip_code',
+               'hegis_code', 'subplans', 'enrollment']
+  subplan_keys = ['institution', 'plan', 'subplan', 'subplan_type', 'description',
+                  'effective_date', 'cip_code', 'hegis_code', 'plans', 'enrollment']
+  DGW_Row = namedtuple('DGW_Row', dgw_keys)
+
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
-      cursor.execute("""
-      select institution, requirement_id, sum(total_students) as total_students
-      from ra_counts where active_term >= 1172
-       and total_students > 4
-      group by institution, requirement_id
-      order by institution, requirement_id
-      """)
-      active_blocks = {(row.institution, row.requirement_id): row.total_students for row in cursor}
-
-      if args.all or args.institution.upper() == 'ALL':
-        institution = '^.*$'
-        institution_op = '~*'
-      else:
-        institution = args.institution.strip('01').upper() + '01'
-        institution_op = '='
-
-      if args.requirement_id:
-        try:
-          requirement_id = f'RA{int(args.requirement_id.lower().strip("ra")):06}'
-        except ValueError:
-          exit(f'{args.requirement_id} is not a valid requirement id')
-        cursor.execute(f""" select institution,
-                                  requirement_id,
-                                  block_type,
-                                  block_value,
-                                  title as block_title,
-                                  parse_tree
-                             from requirement_blocks
-                            where institution {institution_op} %s
-                              and requirement_id = %s
-                            order by institution
-                       """, (institution, requirement_id))
-      else:
-        block_types = [block_type.upper() for block_type in args.types]
-        if args.all or 'ALL' in block_types:
-          block_types = ['MAJOR', 'MINOR', 'CONC']
-          if do_degrees:
-            block_types.append('DEGREE')
-
-        block_value = args.value.upper()
-        if args.all or block_value == 'ALL':
-          block_value = '^.*$'
-          value_op = '~*'
-        else:
-          value_op = '='
-        cursor.execute(f"""select institution,
-                                  requirement_id,
-                                  block_type,
-                                  block_value,
-                                  title as block_title,
-                                  period_start,
-                                  period_stop,
-                                  parse_tree
-                             from requirement_blocks
-                            where institution {institution_op} %s
-                              and block_type =  Any(%s)
-                              and block_value {value_op} %s
-                              and period_stop ~* '^9'
-                              and parse_tree::text != {empty_tree}
-                            order by institution, block_type, block_value""",
-                       (institution, block_types, block_value))
-
-      suffix = '' if cursor.rowcount == 1 else 's'
-      print(f'{cursor.rowcount:,} parse tree{suffix}')
-
+      """ Process every active plan, and if it has a Scribe block, process it and all its subplans.
+      """
+      no_scribe_count = 0
+      programs_count = 0
+      subprograms_count = 0
       hunter_count = 0
       mhc_count = 0
       quarantine_count = 0
-      inactive_count = 0
       block_types = defaultdict(int)
+      cursor.execute("""
+      select p.*, string_agg(s.subplan, ',') as subplans,
+             r.requirement_id, r.block_type, r.block_value, r.title as block_title,
+             r.period_start, r.period_stop, r.parse_tree,
+             e.enrollment
+        from cuny_acad_plan_tbl p
+             left join cuny_plan_enrollments e
+                    on p.institution = e.institution
+                   and p.plan = e.plan
+             left join cuny_acad_subplan_tbl s
+                    on p.institution = s.institution
+                   and p.plan = s.plan
+             left join requirement_blocks r
+                    on p.institution = r.institution
+                   and p.plan = r.block_value
+                   and r.period_stop ~* '^9'
+      where p.plan !~* '^mhc'
+      group by p.institution, p.plan, p.plan_type, p.description, p.effective_date, p.cip_code,
+               p.hegis_code, r.requirement_id, r.block_type, r.block_value, block_title,
+               r.period_start, r.period_stop, r.parse_tree, e.enrollment
+      order by institution, plan
+      """)
       for row in cursor:
-        if row.institution == 'HTR01':
-          hunter_count += 1
-          if not do_hunter:
-            continue
-        if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
-          quarantine_count += 1
-          continue
-        if row.block_value.upper().startswith('MHC'):
-          mhc_count += 1
-          continue
-        try:
-          enrollment = active_blocks[(row.institution, row.requirement_id)]
-        except KeyError:
-          inactive_count += 1
-          continue
+        # plan_info collects fields from the plan and plan_enrollments tables
+        plan_dict = {}
+        dgw_dict = {}
+        for key, value in row._asdict().items():
+          if key in plan_keys:
+            plan_dict[key] = str(value)
+          if key in dgw_keys:
+            dgw_dict[key] = value if isinstance(value, dict) else str(value)
 
-        process_block(row, context_list=[], top_level=True)
-        block_types[row.block_type] += 1
+        # If there is no requirement_block, this plan is done: just enter it into the programs table
+        # using plan info as a surrogate for dgw metadata, converting plan_types from MAJ/MIN to
+        # MAJOR/MINOR
+        if row.requirement_id is None:
+          no_scribe_count += 1
+          programs_writer.writerow([row.institution, None, row.plan_type + 'OR', row.plan,
+                                    row.description, None, None, None, None, None,
+                                    {'plan_info': plan_dict}])
+        else:
+          # Process the scribe block for this program, subject to command line exclusions and errors
+          programs_count += 1
+
+          if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
+            quarantine_count += 1
+            continue
+          if row.institution == 'HTR01':
+            hunter_count += 1
+            if not do_hunter:
+              continue
+          if row.block_value.upper().startswith('MHC'):
+            mhc_count += 1
+            continue
+
+          dgw_row = DGW_Row._make([dgw_dict[k] for k in dgw_keys])
+          process_block(dgw_row, context_list=[], other={'plan_info': plan_dict})
+          block_types[dgw_row.block_type] += 1
 
   for k, v in block_types.items():
     print(f'{v:5,} {k.title()}')
   print(f'{hunter_count:5,} Hunter\n'
         f'{mhc_count:5,} Macaulay\n'
         f'{quarantine_count:5,} Quarantined\n'
-        f'{inactive_count:5,} Inactive')
+        f'{no_scribe_count:5,} No Scribe\n'
+        f'{programs_count:5,} Programs\n'
+        f'{subprograms_count:5,} Subprograms\n')

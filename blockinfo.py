@@ -22,12 +22,23 @@ def ifs(v: any):
 
 
 class BlockInfo(dict):
-  """ Information about a Scribe Block, which will become part of the context list of a requirement
-      by the course_mapper app.
+  """ Information about a program or subprogram, which will become part of the context list of a
+      requirement by the course_mapper app. Information comes from:
+        * CF acad_plan and acad_subplan tables
+        * DGW dap_requirement_block metadata, if available
+        * Scribe block header objects, if available
+
+      plan_info:
+       'plan'. 'plan_type', 'plan_name', 'plan_cip_code', 'plan_effective_date',
+       'plan_enrollment', 'subplans',
+      subplan_info:
+       'subplan', 'subplan_type', 'subplan_name', 'subplan_cip_code',
+       'subplan_effective_date', 'subplan_enrollment', 'plans',
   """
-  _valid_keys = ['institution', 'requirement_id', 'block_type', 'block_value', 'block_title',
-                 'catalog_years', 'class_credits', 'min_residency', 'min_grade', 'min_gpa',
-                 'max_transfer', 'max_classes', 'max_credits']
+  _valid_keys = ['institution', 'plan_info', 'subplan_info',
+                 'requirement_id', 'block_type', 'block_value', 'block_title', 'catalog_years',
+                 'class_credits', 'min_residency', 'min_grade', 'min_gpa', 'max_transfer',
+                 'max_classes', 'max_credits']
 
   def __init__(self, **kwargs):
     """ Capture whatever arguments are passed.
