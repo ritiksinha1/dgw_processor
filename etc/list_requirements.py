@@ -25,7 +25,7 @@ if __name__ == '__main__':
     requirement_key = int(args.requirement_key)
 
   csv.field_size_limit(sys.maxsize)
-  with open('course_mapper.requirements.csv') as req_file:
+  with open('/Users/vickery/projects/dgw_processor/course_mapper.requirements.csv') as req_file:
     reader = csv.reader(req_file)
     for line in reader:
       if reader.line_num == 1:

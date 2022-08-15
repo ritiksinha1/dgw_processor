@@ -3,6 +3,7 @@
 """
 
 import csv
+import datetime
 import os
 import json
 import psycopg
@@ -295,6 +296,7 @@ def process_block(row: namedtuple, context_list: list = [], other: dict = None):
   # Empty lists as default limits that might or might not be specified in the header.
   for key in ['max_transfer', 'max_classes', 'max_credits']:
     args_dict[key] = []
+
   block_info = BlockInfo(**args_dict)
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
@@ -634,13 +636,9 @@ def traverse_body(node: Any, context_list: list) -> None:
         # If there are no restrictions and no name, there's nothing to add to the context.
         if requirement_type != 'conditional':
           # None expected for conditional, but make a note for any others
-            print(f'{institution} {requirement_id} {requirement_type.title()} with no label and no '
+            print(f'{institution} {requirement_id} Body {requirement_type} with no label and no '
                   'qualifiers', file=log_file)
         requirement_context = []
-
-      if args.debug:
-        print(f'{institution} {requirement_id} {requirement_type} from Body =>',
-              get_context_names(context_list + requirement_context), file=sys.stderr)
 
       match requirement_type:
 
@@ -685,43 +683,48 @@ def traverse_body(node: Any, context_list: list) -> None:
                                   context_list + requirement_context + [choice_context])
 
         case 'blocktype':
-          number = int(requirement_value['number'])
-          if number != 1:
-            print(institution, requirement_id, f'blocktype with number ({number}) not equal 1',
-                  file=todo_file)
-          else:
-            req_type = requirement_value['block_type']
-            if '-' in block_value:
-              target_value, degree = block_value.split('-')
-              with psycopg.connect('dbname=cuny_curriculum') as conn:
-                with conn.cursor(row_factory=namedtuple_row) as cursor:
-                  blocks = cursor.execute(f"""
-                  select institution, requirement_id, block_type, block_value, title as block_title,
-                         period_start, period_stop, parse_tree
-                    from requirement_blocks
-                   where institution = '{institution}'
-                     and block_type = '{req_type}'
-                     and block_value ~* '^{target_value}'
-                     and period_stop ~* '^9'
-                  """)
-                  if cursor.rowcount == 0:
-                    print(f'{institution} {requirement_id} Body blocktype: no matching {req_type}',
-                          file=fail_file)
-                  else:
-                    print(institution, requirement_id, 'Body blocktype', file=log_file)
-                    # Catch observed circularities
-                    requirement_ids = [requirement_id]
-                    for row in cursor:
-                      if row.requirement_id not in requirement_ids:
-                        requirement_ids.append(row.requirement_id)
-                        process_block(row, context_list + requirement_context)
-                      else:
-                        print(f'{institution} {requirement_id} Circular blocktype', file=fail_file)
-                        break
+          # The block_type comes from the requirement value, and it should match one of the plan's
+          # subplans.
+          number_required = int(requirement_value['number'])
+          required_block_type = requirement_value['block_type']
+          try:
+            subplans = context_list[0]['block_info']['plan_info']['subplans'].split(',')
+            print(subplans)
+          except KeyError as ke:
+            print(institution, requirement_id, ke, list(context_list[0].keys()))
+            exit()
 
-            else:
-              print(institution, requirement_id, block_value, 'Block value failed to split',
-                    file=fail_file)
+          # if '-' in block_value:
+          #   target_value, degree = block_value.split('-')
+          #   with psycopg.connect('dbname=cuny_curriculum') as conn:
+          #     with conn.cursor(row_factory=namedtuple_row) as cursor:
+          #       blocks = cursor.execute(f"""
+          #       select institution, requirement_id, block_type, block_value, title as block_title,
+          #              period_start, period_stop, parse_tree
+          #         from requirement_blocks
+          #        where institution = '{institution}'
+          #          and block_type = '{req_type}'
+          #          and block_value ~* '^{target_value}'
+          #          and period_stop ~* '^9'
+          #       """)
+          #       if cursor.rowcount == 0:
+          #         print(f'{institution} {requirement_id} Body blocktype: no matching {req_type}',
+          #               file=fail_file)
+          #       else:
+          #         print(institution, requirement_id, 'Body blocktype', file=log_file)
+          #         # Catch observed circularities
+          #         requirement_ids = [requirement_id]
+          #         for row in cursor:
+          #           if row.requirement_id not in requirement_ids:
+          #             requirement_ids.append(row.requirement_id)
+          #             process_block(row, context_list + requirement_context)
+          #           else:
+          #             print(f'{institution} {requirement_id} Circular blocktype', file=fail_file)
+          #             break
+
+          else:
+            print(institution, requirement_id, block_value, 'Block value failed to split',
+                  file=fail_file)
 
         case 'class_credit':
           print(institution, requirement_id, 'Body class_credit', file=log_file)
@@ -1179,14 +1182,15 @@ if __name__ == "__main__":
   parser.add_argument('--do_degrees', action='store_true')
   parser.add_argument('--do_hunter', action='store_true')
   parser.add_argument('--no_remarks', action='store_true')
-  parser.add_argument('-i', '--institution', default='qns')
-  parser.add_argument('-r', '--requirement_id')
-  parser.add_argument('-t', '--types', default=['major'])
-  parser.add_argument('-v', '--value', default='csci-bs')
+  parser.add_argument('-w', '--weeks', type=int, default=40)
+  parser.add_argument('-p', '--progress', action='store_true')
   args = parser.parse_args()
   do_degrees = args.do_degrees
   do_hunter = args.do_hunter
   do_remarks = not args.no_remarks
+
+  gestation_period = datetime.timedelta(weeks=args.weeks)
+  today = datetime.date.today()
 
   empty_tree = "'{}'"
 
@@ -1231,14 +1235,15 @@ if __name__ == "__main__":
       no_scribe_count = 0
       programs_count = 0
       subprograms_count = 0
+      inactive_count = 0
+      quarantine_count = 0
       hunter_count = 0
       mhc_count = 0
-      quarantine_count = 0
       block_types = defaultdict(int)
       cursor.execute("""
-      select p.*, string_agg(s.subplan, ',') as subplans,
+      select p.*, string_agg(s.subplan||':'||ss.enrollment, ',') as subplans,
              r.requirement_id, r.block_type, r.block_value, r.title as block_title,
-             r.period_start, r.period_stop, r.parse_tree,
+             r.period_start, r.period_stop, r.parse_date, r.parse_tree,
              e.enrollment
         from cuny_acad_plan_tbl p
              left join cuny_plan_enrollments e
@@ -1247,6 +1252,9 @@ if __name__ == "__main__":
              left join cuny_acad_subplan_tbl s
                     on p.institution = s.institution
                    and p.plan = s.plan
+             left join cuny_subplan_enrollments ss
+                    on ss.institution = s.institution
+                   and ss.plan = s.plan
              left join requirement_blocks r
                     on p.institution = r.institution
                    and p.plan = r.block_value
@@ -1254,10 +1262,13 @@ if __name__ == "__main__":
       where p.plan !~* '^mhc'
       group by p.institution, p.plan, p.plan_type, p.description, p.effective_date, p.cip_code,
                p.hegis_code, r.requirement_id, r.block_type, r.block_value, block_title,
-               r.period_start, r.period_stop, r.parse_tree, e.enrollment
+               r.period_start, r.period_stop, r.parse_date, r.parse_tree, e.enrollment
       order by institution, plan
       """)
+      num_programs = cursor.rowcount
       for row in cursor:
+        if args.progress:
+          print(f'\r{cursor.rownumber:,}/{num_programs:,} programs {row.institution[0:3]}', end='')
         # plan_info collects fields from the plan and plan_enrollments tables
         plan_dict = {}
         dgw_dict = {}
@@ -1279,13 +1290,26 @@ if __name__ == "__main__":
           # Process the scribe block for this program, subject to command line exclusions and errors
           programs_count += 1
 
+          # Skip “inactive” programs. These are ones that have zero students and were not modified
+          # in the last 40 weeks. (We are allowing a gestation period for new/altered programs to
+          # start attracting students.)
+          last_change = max(row.parse_date, row.effective_date)
+          if row.enrollment is None and (today - last_change) > gestation_period:
+            inactive_count += 1
+            continue
+
+          # Skip scribe blocks that have parse errors
           if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
             quarantine_count += 1
             continue
+
+          # Hunter ... ah, Hunter College
           if row.institution == 'HTR01':
             hunter_count += 1
             if not do_hunter:
               continue
+
+          # Macaulay Honors programs aren’t transfer-relevant
           if row.block_value.upper().startswith('MHC'):
             mhc_count += 1
             continue
@@ -1294,11 +1318,14 @@ if __name__ == "__main__":
           process_block(dgw_row, context_list=[], other={'plan_info': plan_dict})
           block_types[dgw_row.block_type] += 1
 
+  if args.progress:
+    print()
   for k, v in block_types.items():
     print(f'{v:5,} {k.title()}')
   print(f'{hunter_count:5,} Hunter\n'
         f'{mhc_count:5,} Macaulay\n'
         f'{quarantine_count:5,} Quarantined\n'
+        f'{inactive_count:5,} Inactive\n'
         f'{no_scribe_count:5,} No Scribe\n'
         f'{programs_count:5,} Programs\n'
-        f'{subprograms_count:5,} Subprograms\n')
+        f'{subprograms_count:5,} Subprograms')
