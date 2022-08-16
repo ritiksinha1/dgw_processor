@@ -609,13 +609,6 @@ def traverse_body(node: Any, context_list: list) -> None:
 
     # Lists happen in requirement_values because of how the grammar handles requirements that can
     # occur in different orders. (“This or that, zero or more times.”)
-    # Lists of the following object types have been observed here:
-    #   402 group_requirement
-    #   257 class_credit
-    #    76 remark
-    #    20 subset
-    #    11 conditional
-    #     5 group_requirements  Nested groups(?)
     elif isinstance(requirement_value, list):
       for list_item in requirement_value:
         traverse_body(list_item, context_list)
@@ -625,20 +618,12 @@ def traverse_body(node: Any, context_list: list) -> None:
       try:
         context_dict['requirement_name'] = requirement_value['label']
       except KeyError:
-        if context_dict:
-          # If there are restrictions but no name, add a placeholder name, and log it
-          print(f'{institution} {requirement_id} Requirement with restrictions but no label',
-                file=debug_file)
-
-      if context_dict:
-        requirement_context = [context_dict]
-      else:
-        # If there are no restrictions and no name, there's nothing to add to the context.
+        # If there is no label, add a placeholder name, and log the situation
         if requirement_type != 'conditional':
-          # None expected for conditional, but make a note for any others
-            print(f'{institution} {requirement_id} Body {requirement_type} with no label and no '
-                  'qualifiers', file=log_file)
-        requirement_context = []
+          context_dict['requirement_name'] = 'Unnamed Requirement'
+        print(f'{institution} {requirement_id} Body {requirement_type} with no label',
+              file=log_file)
+      requirement_context = [context_dict]
 
       match requirement_type:
 
@@ -665,7 +650,8 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, block_args)
 
               if cursor.rowcount == 0:
-                print(f'{institution} {requirement_id} Body block: no active block',
+                # TELL WHICH BLOCK_TYPE/VALUE FAILED
+                print(f'{institution} {requirement_id} Body block: no active blocks',
                       file=fail_file)
               else:
                 num_blocks = cursor.rowcount
@@ -679,52 +665,65 @@ def traverse_body(node: Any, context_list: list) -> None:
                                                  'num_required': number,
                                                  'index': block_num,
                                                  'block_type': block_args[1]}}
-                    process_block(row,
-                                  context_list + requirement_context + [choice_context])
+                    process_block(row, context_list + requirement_context + [choice_context])
 
         case 'blocktype':
-          # The block_type comes from the requirement value, and it should match one of the plan's
-          # subplans.
-          number_required = int(requirement_value['number'])
-          required_block_type = requirement_value['block_type']
-          try:
-            subplans = context_list[0]['block_info']['plan_info']['subplans'].split(',')
-            print(subplans)
-          except KeyError as ke:
-            print(institution, requirement_id, ke, list(context_list[0].keys()))
-            exit()
+          # The block_type comes from the requirement value, and it must match one or more of the
+          # plan's subplans.
 
-          # if '-' in block_value:
-          #   target_value, degree = block_value.split('-')
-          #   with psycopg.connect('dbname=cuny_curriculum') as conn:
-          #     with conn.cursor(row_factory=namedtuple_row) as cursor:
-          #       blocks = cursor.execute(f"""
-          #       select institution, requirement_id, block_type, block_value, title as block_title,
-          #              period_start, period_stop, parse_tree
-          #         from requirement_blocks
-          #        where institution = '{institution}'
-          #          and block_type = '{req_type}'
-          #          and block_value ~* '^{target_value}'
-          #          and period_stop ~* '^9'
-          #       """)
-          #       if cursor.rowcount == 0:
-          #         print(f'{institution} {requirement_id} Body blocktype: no matching {req_type}',
-          #               file=fail_file)
-          #       else:
-          #         print(institution, requirement_id, 'Body blocktype', file=log_file)
-          #         # Catch observed circularities
-          #         requirement_ids = [requirement_id]
-          #         for row in cursor:
-          #           if row.requirement_id not in requirement_ids:
-          #             requirement_ids.append(row.requirement_id)
-          #             process_block(row, context_list + requirement_context)
-          #           else:
-          #             print(f'{institution} {requirement_id} Circular blocktype', file=fail_file)
-          #             break
+          num_required = int(requirement_value['number'])
+          required_blocktype = requirement_value['block_type']
 
+          if required_blocktype != 'CONC':
+            print(f'{institution} {requirement_id} Body blocktype Required blocktype '
+                  f'({required_blocktype}) is not “CONC”', file=fail_file)
           else:
-            print(institution, requirement_id, block_value, 'Block value failed to split',
-                  file=fail_file)
+            # There has to be at least num_required subplans possible, although there may be
+            # problems fetching them.
+            try:
+              subplans_list = context_list[0]['block_info']['plan_info']['subplans'].split(',')
+            except AttributeError:
+              subplans_list = []
+            num_subplans = len(subplans_list)
+            s = '' if num_subplans == 1 else 's'
+            if num_subplans < num_required:
+              print(f'{institution} {requirement_id} Body blocktype {num_subplans} known '
+                    f'subplan{s} but {num_required} needed.', file=fail_file)
+            else:
+              # Look up all matching subplans
+              try:
+                subplan_names, enrollments = zip(*[s.split(':') for s in subplans_list])
+              except ValueError as ve:
+                breakpoint()
+              block_value_list = ','.join([f"'{name}'" for name in subplan_names])
+              with psycopg.connect('dbname=cuny_curriculum') as conn:
+                with conn.cursor(row_factory=namedtuple_row) as cursor:
+                  cursor.execute(f"""
+                  select institution, requirement_id, block_type, block_value, title as block_title,
+                         period_start, period_stop, parse_tree
+                    from requirement_blocks
+                   where institution = %s
+                     and block_type = %s
+                     and block_value in ({block_value_list})
+                     and period_stop ~* '^9'
+                  """, (institution, required_blocktype))
+                  s = '' if num_required == 1 else 's'
+                  if cursor.rowcount < num_required:
+                    print(f'{institution} {requirement_id} Body blocktype {num_required} block{s} '
+                          f'needed but no more than {cursor.rowcount} found', file=fail_file)
+                  else:
+                    requirement_name = f'{num_required} concentration{s} required'
+                    choice_context = {'choice': {'num_choices': num_subplans,
+                                                 'num_required': num_required,
+                                                 'index': 0,
+                                                 'block_type': required_blocktype}}
+                    block_values = []
+                    for row in cursor:
+                      if row.block_value in block_values:
+                        print(f'{institution} {requirement_id} Body blocktype Duplicate '
+                              f'{row.block_value} with {row.block_title}', file=fail_file)
+                      block_values.append(row.block_value)
+                      process_block(row, context_list + requirement_context + [choice_context])
 
         case 'class_credit':
           print(institution, requirement_id, 'Body class_credit', file=log_file)
@@ -965,7 +964,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   num_required = int(block_dict['block']['number'])
                   suffix = '' if num_required == 1 else 's'
                   block_label = block_dict['block']['label']
-                  required_block_type = block_dict['block']['block_type']
+                  required_blocktype = block_dict['block']['block_type']
                   required_block_value = block_dict['block']['block_value']
                   with psycopg.connect('dbname=cuny_curriculum') as conn:
                     with conn.cursor(row_factory=namedtuple_row) as cursor:
@@ -977,7 +976,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                          and block_type = %s
                          and block_value = %s
                          and period_stop ~* '^9'
-                      """, [institution, required_block_type, required_block_value])
+                      """, [institution, required_blocktype, required_block_value])
                       if cursor.rowcount < num_required:
                         suffix = '' if cursor.rowcount == 1 else 's'
                         print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
@@ -1062,7 +1061,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                       """, [institution, target_requirement_id])
                       if cursor.rowcount != 1:
                         print(f'{institution} {requirement_id} Subset copy_rules: '
-                              f'{cursor.rowcount} active blocks',
+                              f'{target_requirement_id} not active',
                               file=fail_file)
                       else:
                         row = cursor.fetchone()
@@ -1176,6 +1175,7 @@ if __name__ == "__main__":
   """ For all CUNY undergraduate plans/subplans and their requirements (if available), generate
       CSV tables for the programs, their requirements, and course-to-requirement mappings.
   """
+  start_time = datetime.datetime.now()
   parser = ArgumentParser()
   parser.add_argument('-a', '--all', action='store_true')
   parser.add_argument('-d', '--debug', action='store_true')
@@ -1187,6 +1187,7 @@ if __name__ == "__main__":
   args = parser.parse_args()
   do_degrees = args.do_degrees
   do_hunter = args.do_hunter
+  hunter_tag = 'HTR (processed)' if do_hunter else 'HTR (skipped)'
   do_remarks = not args.no_remarks
 
   gestation_period = datetime.timedelta(weeks=args.weeks)
@@ -1234,13 +1235,12 @@ if __name__ == "__main__":
       """
       no_scribe_count = 0
       programs_count = 0
-      subprograms_count = 0
       inactive_count = 0
       quarantine_count = 0
       hunter_count = 0
       mhc_count = 0
       block_types = defaultdict(int)
-      cursor.execute("""
+      cursor.execute(r"""
       select p.*, string_agg(s.subplan||':'||ss.enrollment, ',') as subplans,
              r.requirement_id, r.block_type, r.block_value, r.title as block_title,
              r.period_start, r.period_stop, r.parse_date, r.parse_tree,
@@ -1255,11 +1255,13 @@ if __name__ == "__main__":
              left join cuny_subplan_enrollments ss
                     on ss.institution = s.institution
                    and ss.plan = s.plan
+                   and ss.subplan = s.subplan
              left join requirement_blocks r
                     on p.institution = r.institution
                    and p.plan = r.block_value
                    and r.period_stop ~* '^9'
       where p.plan !~* '^mhc'
+        and p.plan ~* '\-[AB]' -- Must lead to bachelor or associate degree
       group by p.institution, p.plan, p.plan_type, p.description, p.effective_date, p.cip_code,
                p.hegis_code, r.requirement_id, r.block_type, r.block_value, block_title,
                r.period_start, r.period_stop, r.parse_date, r.parse_tree, e.enrollment
@@ -1269,14 +1271,15 @@ if __name__ == "__main__":
       for row in cursor:
         if args.progress:
           print(f'\r{cursor.rownumber:,}/{num_programs:,} programs {row.institution[0:3]}', end='')
+
         # plan_info collects fields from the plan and plan_enrollments tables
         plan_dict = {}
         dgw_dict = {}
         for key, value in row._asdict().items():
           if key in plan_keys:
-            plan_dict[key] = str(value)
+            plan_dict[key] = str(value) if key.endswith('date') else value
           if key in dgw_keys:
-            dgw_dict[key] = value if isinstance(value, dict) else str(value)
+            dgw_dict[key] = str(value) if key.endswith('date') else value
 
         # If there is no requirement_block, this plan is done: just enter it into the programs table
         # using plan info as a surrogate for dgw metadata, converting plan_types from MAJ/MIN to
@@ -1309,23 +1312,20 @@ if __name__ == "__main__":
             if not do_hunter:
               continue
 
-          # Macaulay Honors programs aren’t transfer-relevant
-          if row.block_value.upper().startswith('MHC'):
-            mhc_count += 1
-            continue
-
           dgw_row = DGW_Row._make([dgw_dict[k] for k in dgw_keys])
           process_block(dgw_row, context_list=[], other={'plan_info': plan_dict})
           block_types[dgw_row.block_type] += 1
 
   if args.progress:
     print()
+  s = '' if args.weeks == 1 else 's'
+  print(f'{programs_count:5,} Programs\n'
+        f'{hunter_count:5,} {hunter_tag} \n'
+        f'{no_scribe_count:5,} No dgw_req_block\n'
+        f'{quarantine_count:5,} Quarantined\n'
+        f'{inactive_count:5,} Inactive more than {args.weeks} week{s}\nBlock Types')
+
   for k, v in block_types.items():
     print(f'{v:5,} {k.title()}')
-  print(f'{hunter_count:5,} Hunter\n'
-        f'{mhc_count:5,} Macaulay\n'
-        f'{quarantine_count:5,} Quarantined\n'
-        f'{inactive_count:5,} Inactive\n'
-        f'{no_scribe_count:5,} No Scribe\n'
-        f'{programs_count:5,} Programs\n'
-        f'{subprograms_count:5,} Subprograms')
+
+  print(f'{(datetime.datetime.now() - start_time).seconds} seconds')
