@@ -650,9 +650,8 @@ def traverse_body(node: Any, context_list: list) -> None:
               """, block_args)
 
               if cursor.rowcount == 0:
-                # TELL WHICH BLOCK_TYPE/VALUE FAILED
-                print(f'{institution} {requirement_id} Body block: no active blocks',
-                      file=fail_file)
+                print(f'{institution} {requirement_id} Body block: no active {block_args[1:]} '
+                      f'blocks', file=fail_file)
               else:
                 num_blocks = cursor.rowcount
                 block_num = 0
@@ -719,6 +718,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                                                  'block_type': required_blocktype}}
                     block_values = []
                     for row in cursor:
+                      choice_context['choice']['index'] += 1
                       if row.block_value in block_values:
                         print(f'{institution} {requirement_id} Body blocktype Duplicate '
                               f'{row.block_value} with {row.block_title}', file=fail_file)
@@ -789,7 +789,9 @@ def traverse_body(node: Any, context_list: list) -> None:
 
                 parse_tree = row.parse_tree
                 if parse_tree == '{}':
-                  print(f'Parsing {row.institution} {row.requirement_id}')
+                  # Not expecting to do this
+                  print(f'{row.institution} {row.requirement_id} Body copy_rules parse '
+                        f'{row.requirement_id}', file=log_file)
                   parse_tree = parse_block(row.institution, row.requirement_id,
                                            row.period_start, row.period_stop)
                 try:
@@ -1291,7 +1293,6 @@ if __name__ == "__main__":
                                     {'plan_info': plan_dict}])
         else:
           # Process the scribe block for this program, subject to command line exclusions and errors
-          programs_count += 1
 
           # Skip “inactive” programs. These are ones that have zero students and were not modified
           # in the last 40 weeks. (We are allowing a gestation period for new/altered programs to
@@ -1314,6 +1315,7 @@ if __name__ == "__main__":
 
           dgw_row = DGW_Row._make([dgw_dict[k] for k in dgw_keys])
           process_block(dgw_row, context_list=[], other={'plan_info': plan_dict})
+          programs_count += 1
           block_types[dgw_row.block_type] += 1
 
   if args.progress:
@@ -1321,7 +1323,7 @@ if __name__ == "__main__":
   s = '' if args.weeks == 1 else 's'
   print(f'{programs_count:5,} Programs\n'
         f'{hunter_count:5,} {hunter_tag} \n'
-        f'{no_scribe_count:5,} No dgw_req_block\n'
+        f'{no_scribe_count:5,} No dgw_req_block row\n'
         f'{quarantine_count:5,} Quarantined\n'
         f'{inactive_count:5,} Inactive more than {args.weeks} week{s}\nBlock Types')
 
