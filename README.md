@@ -24,3 +24,6 @@ The Viewer shows the program requirements and the currently-active courses that 
 
 ### Course Mapper
 THE [CUNY Transfer Explorer (“T-Rex”)](https://explorer.cuny.edu/) is being developed as a “one-stop shop” for all things transfer-related at CUNY. The Course Mapper generates a structured table of program requirements and a mapping table of currently-active courses to those requirements. At the present time, those tables are generated on a development system and exported to T-Rex.
+
+## Stand With Ukraine
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://stand-with-ukraine.pp.ua)
