@@ -618,11 +618,11 @@ def traverse_body(node: Any, context_list: list) -> None:
       try:
         context_dict['requirement_name'] = requirement_value['label']
       except KeyError:
-        # If there is no label, add a placeholder name, and log the situation
+        # Unless a conditional, if there is no label, add a placeholder name, and log the situation
         if requirement_type != 'conditional':
           context_dict['requirement_name'] = 'Unnamed Requirement'
-        print(f'{institution} {requirement_id} Body {requirement_type} with no label',
-              file=log_file)
+          print(f'{institution} {requirement_id} Body {requirement_type} with no label',
+                file=log_file)
       requirement_context = [context_dict]
 
       match requirement_type:
@@ -687,7 +687,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             s = '' if num_subplans == 1 else 's'
             if num_subplans < num_required:
               print(f'{institution} {requirement_id} Body blocktype {num_subplans} known '
-                    f'subplan{s} but {num_required} needed.', file=fail_file)
+                    f'subplan{s} but {num_required} needed', file=fail_file)
             else:
               # Look up all matching subplans
               try:
@@ -964,7 +964,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 # label number type value
                 for block_dict in rule:
                   num_required = int(block_dict['block']['number'])
-                  suffix = '' if num_required == 1 else 's'
+                  s = '' if num_required == 1 else 's'
                   block_label = block_dict['block']['label']
                   required_blocktype = block_dict['block']['block_type']
                   required_block_value = block_dict['block']['block_value']
@@ -980,39 +980,21 @@ def traverse_body(node: Any, context_list: list) -> None:
                          and period_stop ~* '^9'
                       """, [institution, required_blocktype, required_block_value])
                       if cursor.rowcount < num_required:
-                        suffix = '' if cursor.rowcount == 1 else 's'
+                        s = '' if cursor.rowcount == 1 else 's'
                         print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
-                              f'active block{suffix}; {num_required} required ',
+                              f'active block{s}; {num_required} required ',
+                              file=fail_file)
+                      elif cursor.rowcount > num_required:
+                        s = '' if cursor.rowcount == 1 else 's'
+                        print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
+                              f'active block{s}; {num_required} required ',
                               file=fail_file)
                       else:
                         local_context = [{'requirement_name': block_label}]
-                        num_found = 0
-                        num_extra = 0
                         for row in cursor:
-                          # Heuristic: if there are more rows than needed, select just the ones
-                          # where the major1 field matches the referencing block value. Any left
-                          # over are a problem. But this problem remains: the heuristic is not
-                          # sufficient. Given the type, the valid blocks will have to be determined
-                          # from CUNYfirst info about plans and their subplans.
-                          if cursor.rowcount == num_required:  # or (cursor.rowcount > num_required
-                                                               # and row.major1 == block_value):
-                            num_found += 1
-                            if num_found <= num_required:
-                              process_block(row, context_list + subset_context + local_context)
-                            else:
-                              num_extra += 1
-                        if num_extra:
-                          print(institution, requirement_id, f'Subset block needed {num_required}; '
-                                                             f'found {num_extra} extra',
-                                                             file=todo_file)
-                        elif num_found == num_required:
-                          print(institution, requirement_id, f'Subset block {num_found} of '
-                                f'{num_required} required block{suffix}', file=log_file)
-                        else:
-                          print(institution, requirement_id, f'Subset block {num_required=} '
-                                                             f'{cursor.rowcount=} {num_found=} '
-                                                             f'{num_extra=}', file=debug_file)
-                continue
+                          process_block(row, context_list + subset_context + local_context)
+                        print(institution, requirement_id, f'Subset block {cursor.rownumber} of '
+                              f'{num_required} required block{s}', file=log_file)
 
               case 'blocktype':
                 print(f'{institution} {requirement_id} Subset blocktype', file=todo_file)
@@ -1090,10 +1072,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                               problem = 'compile error'
                             else:
                               problem = 'no body_list'
-                            print(f'{institution} {requirement_id} Subset copy_rules target: '
-                                  f'{problem}', file=fail_file)
-                            print(f'{institution} {requirement_id} Subset copy_rules target, '
-                                  f'{row.requirement_id}, compile error: {parse_tree["error"]} ',
+                            print(f'{institution} {requirement_id} Subset copy_rules target = '
+                                  f'{row.requirement_id}: {problem}', file=fail_file)
+                            print(f'{institution} {requirement_id} Subset copy_rules target = '
+                                  f'{row.requirement_id}: {parse_tree["error"]} ',
                                   file=debug_file)
                           else:
                             local_dict = {'requirement_block': target_block,
