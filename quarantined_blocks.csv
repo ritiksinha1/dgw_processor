@@ -2,13 +2,9 @@ Institution,Requirement ID,Block Type,Catalog,Year,Explanation,Can Ellucian
 BAR01,RA000625,MAJOR,GRAD,Current,Empty block (all comments),No
 BCC01,RA000276,CONC,UGRD,Current,Nested subsets not allowed; PSEUDO incorrectly used in body.,Unknown
 BCC01,RA000597,MAJOR,UGRD,Current,Invalid credit range (1-2) on line 85,Yes
-BKL01,RA003399,MAJOR,UGRD,Current,Missing comma in course list on line 100,Unknown
-BMC01,RA000002,OTHER,UGRD,Current,Use of ! rather than # for comment on line 658,Unknown
 BMC01,RA000289,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Unknown
 BMC01,RA000291,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
-BMC01,RA000321,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
 BMC01,RA000335,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
-BMC01,RA000360,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,No
 BMC01,RA000367,OTHER,UGRD,Current,Illegal if-else structure in header,Unknown
 CSI01,RA000365,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 32,unknown
 CSI01,RA000465,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 30,unknown

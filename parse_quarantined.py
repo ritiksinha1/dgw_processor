@@ -15,6 +15,7 @@ quarantined_dict = QuarantineManager()
 # Convert keys to a list so we can delete from the dict if anything parses correctly now.
 keys = list(quarantined_dict.keys())
 num_quarantined = len(keys)
+num_nolonger = 0
 num_success = 0
 num_fail = 0
 with psycopg.connect('dbname=cuny_curriculum') as conn:
@@ -29,6 +30,11 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
          and requirement_id = %s
       """, (institution, requirement_id))
       row = cursor.fetchone()
+      if not row.period_stop.startswith('9'):
+        num_nolonger += 1
+        del quarantined_dict[key]
+        print('Dequarantined: No longer current')
+        continue
       parse_tree = parse_block(institution, requirement_id, row.period_start, row.period_stop,
                                row.requirement_text)
       try:
@@ -41,6 +47,7 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
         print('OK: No longer quarantined')
         num_success += 1
 
-print(f'Quarantined:{num_quarantined:>5,}\n'
-      f'Success:    {num_success:>5,}\n'
-      f'Fail:       {num_fail:>5,}')
+print(f'Quarantined: {num_quarantined:>5,}\n'
+      f'Not current: {num_nolonger:>5}\n'
+      f'Success:     {num_success:>5,}\n'
+      f'Fail:        {num_fail:>5,}')
