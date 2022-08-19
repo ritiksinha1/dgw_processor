@@ -19,10 +19,17 @@ do
   shift
 done
 
-echo -e `date` '\n' > reports.txt
+echo -e `date` '\n\nBLOCK COUNTS' > reports.txt
+
 cat blocks.txt|cut -c 1-3,15-|sort|uniq -c >> reports.txt
 n=`wc -l blocks.txt`
-echo "   ${n/.txt/}" >> reports.txt
+echo "   ${n/blocks.txt/}Total" >> reports.txt
+
+echo -e "\nANOMALIES" >> reports.txt
+cat anomalies.txt >> reports.txt
+
+echo -e "\nMISSING SCRIBE BLOCKS" >> reports.txt
+cat missing_ra.txt >> reports.txt
 
 for r in log todo fail no_courses debug analysis
 do
