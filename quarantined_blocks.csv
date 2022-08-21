@@ -13,84 +13,11 @@ CSI01,RA000575,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 54,unkn
 CSI01,RA000594,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 54,unknown
 CSI01,RA000606,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 32,unknown
 CSI01,RA000611,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 29,unknown
-HTR01,RA000296,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000298,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000299,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000303,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000332,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000335,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000339,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000348,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000349,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000350,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000397,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000418,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000424,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000480,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000481,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000493,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000642,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000644,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000645,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000646,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000647,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000736,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000739,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000743,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000750,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000753,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000756,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000762,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000765,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000769,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000773,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000776,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000781,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000784,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000810,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000814,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000819,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000835,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA000850,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001071,MINOR,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001105,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001107,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001221,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001223,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001225,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001228,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001231,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001236,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001239,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001241,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001242,MAJOR,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001259,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001288,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001298,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001301,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001325,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001348,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001365,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001401,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001548,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001558,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001563,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001570,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001663,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001727,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001729,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA001933,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA002675,CONC,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA002677,CONC,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA002679,CONC,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA002681,CONC,UGRD,Current,Timeout after 60 seconds,unknown
-HTR01,RA002683,CONC,UGRD,Current,Timeout after 60 seconds,unknown
 JJC01,RA000617,OTHER,UGRD,Current,Fractional number of classes (not credits) on line 45.,Unknown
 JJC01,RA001698,MAJOR,UGRD,Current,“3Credits” is not valid on line 70,unknown
 JJC01,RA001699,MAJOR,UGRD,Current,“3Credits” is not valid on line 72,unknown
 KCC01,RA001147,OTHER,UGRD,Current,"Missing BeginIf/EndIf around lines 18-20. (Probably lines 23-26, too.)",Unknown
 KCC01,RA001158,OTHER,UGRD,Current,"Missing BeginIf/EndIf around lines 24-26. (Probably lines 29-32, too.)",Unknown
-LEH01,RA002411,OTHER,UGRD,Current,Timeout after 60 seconds,unknown
 NYT01,RA000599,OTHER,UGRD,Current,Missing comma at end of line 536,Unknown
 NYT01,RA000666,MAJOR,UGRD,Current,Invalid use of PSEUDO,Unknown
 NYT01,RA000678,MAJOR,UGRD,Current,Invalid use of PSEUDO,Unknown
