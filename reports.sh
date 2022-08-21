@@ -25,10 +25,10 @@ cat blocks.txt|cut -c 1-3,15-|sort|uniq -c >> reports.txt
 n=`wc -l blocks.txt`
 echo "   ${n/blocks.txt/}Total" >> reports.txt
 
-echo -e "\nANOMALIES" >> reports.txt
+echo -e "\nMAJORS WITH NON-MAJOR BLOCK TYPES" >> reports.txt
 cat anomalies.txt >> reports.txt
 
-echo -e "\nMISSING SCRIBE BLOCKS" >> reports.txt
+echo -e "\nMAJORS WITH NO SCRIBE BLOCKS" >> reports.txt
 cat missing_ra.txt >> reports.txt
 
 for r in log todo fail no_courses debug analysis
