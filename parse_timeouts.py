@@ -10,6 +10,7 @@ import time
 
 from dgw_parser import parse_block
 from psycopg.rows import namedtuple_row
+from quarantine_manager import QuarantineManager
 
 
 def elapsed(since: float):
@@ -26,6 +27,8 @@ if __name__ == "__main__":
   arg_parser.add_argument('-t', '--timelimit', type=int, default=1800)
 
   args = arg_parser.parse_args()
+
+  quarantine_dict = QuarantineManager()
 
   # Get the institutions and requirement_ids of the error blocks.
   with psycopg.connect('dbname=cuny_curriculum') as conn:
@@ -57,6 +60,7 @@ if __name__ == "__main__":
                                  row.requirement_text,
                                  args.timelimit)
 
+        quarantine_key = (row.institution, row.requirement_id)
         try:
           error_msg = parse_tree['error'].strip('\n')
           if 'timeout' in error_msg.lower():
@@ -65,8 +69,12 @@ if __name__ == "__main__":
           else:
             print(f' Failed {error_msg}')
             num_fail += 1
+          if not quarantine_dict.is_quarantined(quarantine_key):
+            quarantine_dict[quarantine_key] = [error_msg, 'Unknown']
         except KeyError:
           print(f' Completed {elapsed(start)}')
+          if quarantine_dict.is_quarantined(quarantine_key):
+            del quarantine_dict[quarantine_key]
           num_succeed += 1
 
   print(f'Timelimit:{args.timelimit:>7,} sec\n'
