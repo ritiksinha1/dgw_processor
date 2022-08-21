@@ -944,8 +944,12 @@ def traverse_body(node: Any, context_list: list) -> None:
             context_dict['requirement_name'] = requirement_value.pop('label')
             subset_context = [context_dict]
           except KeyError:
-            print(f'{institution} {requirement_id} Subset requirement with no label {requirement_value}',
-                  file=debug_file)
+            # Could be block, class_credit_list, group_requirements, or (nested subset?), which all
+            # have their own labels..
+            for rv_key in requirement_value.keys():
+              print(institution, requirement_id, rv_key)
+              assert rv_key in ['block', 'class_credit_list', 'group_requirements', 'subset']
+            # breakpoint()
             subset_context = []
 
           for key, rule in requirement_value.items():
