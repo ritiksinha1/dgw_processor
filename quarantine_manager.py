@@ -173,6 +173,7 @@ if __name__ == '__main__':
               """, key)
               assert cursor.rowcount == 1
               print(f'{institution} {requirement_id}')
+
       elif selection == 'a':
         # Add institution requirement_id reason to quarantine
         try:
