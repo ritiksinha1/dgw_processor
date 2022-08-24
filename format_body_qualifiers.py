@@ -162,16 +162,18 @@ def format_minclass(minclass_dict: dict) -> str:
     number = int(minclass_dict['number'])
     if number < 1:
       raise ValueError('MinClass with minimum less than 1.')
-    suffix = '' if number == 1 else 'es'
-    return_str = f'<p>At least  {number} class{suffix} required'
+    s = '' if number == 1 else 'es'
+    return_str = f'<details><summary>At least {number} class{s} required in ...</summary>'
     try:
-      course_list_str = format_course_list(minclass_dict['courses']['course_list'])
+      return_str += format_course_list(minclass_dict['course_list']) + '</details>'
     except KeyError:
-      return_str += '.</p>'
+      return_str += '<p class="error">Error: Missing course list</p>'
   except ValueError as ve:
     return f'<p class="error"> Invalid MinClass {ve} {minclass_dict=}.</p>'
   except KeyError as ke:
     return f'<p class="error"> Invalid MinClass {ke} {minclass_dict=}.</p>'
+
+  return return_str
 
 
 # format_mincredit()

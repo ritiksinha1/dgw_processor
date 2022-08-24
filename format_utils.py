@@ -132,21 +132,22 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
     except_courses = info['except_courses']
     include_courses = info['include_courses']
 
-    # Create list of actual courses that will be excluded, if any. This will be used as a filter
-    # when the scribed_courses are looked up.
-    exclude_courses = []
+    # Create dict of actual courses that will be excluded, if any. The keys will be used as a filter
+    # when the scribed_courses are looked up. The with-clause will be the objects' values.
+    exclude_courses = dict()
     for discipline, catalog_number, with_clause in except_courses:
-      # Log with_clauses
-      if with_clause is not None:
-        print(f'{institution} {requirement_id}: Except with ({with_clause})', file=sys.stderr)
-      exclude_courses += [f'k[0] k[1]'
-                          for k in courses_cache((institution, discipline, catalog_number))]
+      if with_clause is None:
+        exclude_with_str = ''
+      else:
+        exclude_with_str = f'with {with_clause}'
+      for course in courses_cache((institution, discipline, catalog_number)):
+        exclude_courses[course] = exclude_with_str
 
     # Display the list of courses that must be included
     if len(include_courses) > 0:
-      suffix = '' if len(include_courses) == 1 else 's'
-      include_clause = ' and '.join([f'{c[0]} {c[1]}' for c in except_courses])
-      html_str += f'<p>Note: The following course{suffix} must be included: {include_clause}</p>'
+      s = '' if len(include_courses) == 1 else 's'
+      include_clause = ' and '.join([f'{c[0]} {c[1]}' for c in include_courses])
+      html_str += f'<p>Note: The following course{s} must be included: {include_clause}</p>'
 
     # Display all the scribed courses, with areas if appropriate, and with active course information
     """ Area I
@@ -214,9 +215,12 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
           case _:
             details_body = ''
             num_excluded = 0
+            exclude_with_set = set()
             for key, value in active_courses.items():
-              if key in exclude_courses:
+              if key in exclude_courses.keys():
                 num_excluded += 1
+                if exclude_courses[key]:
+                  exclude_with_set.add(exclude_courses[key])
                 continue
               match value.career:
                 case 'UGRD' | 'UKCC' | 'ULAG':
@@ -229,8 +233,22 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
                                f'{grade_req}{residency_req}{career_str}</p>')
             # Report any exclusions
             if num_excluded > 0:
-              suffix = '' if num_excluded == 1 else 's'
-              html_str += f'<p>{num_excluded} course{suffix} excluded.</p>'
+              s = '' if num_excluded == 1 else 's'
+              num_withs = len(exclude_with_set)
+              ws = '' if num_withs == 1 else 's'
+              withs = ', '.join(exclude_with_set)
+              match withs.count(','):
+                case 0:
+                  pass
+                case 1:
+                  withs = withs.replace(',', ' and')
+                case _:
+                  r = withs.rindex(',') + 1
+                  withs = withs[0:r] + ' and' + withs[r:]
+
+              with_span = f' <span>Restriction{ws} found: {withs}</span>' if num_withs > 0 else ''
+              html_str += f'<p>{num_excluded} course{s} excluded.{with_span}</p>'
+
             # If there is only one course remaining after exclusions, no need for a details element
             remaining = num_courses - num_excluded
             if remaining < 1:

@@ -1152,8 +1152,8 @@ def subset(ctx, institution, requirement_id):
   return_dict = {'label': get_label(ctx)}
 
   if ctx.body_conditional():
-    return_dict['conditional'] = [body_conditional(context, institution, requirement_id)
-                                  for context in ctx.body_conditional()]
+    return_dict['conditional_list'] = [body_conditional(context, institution, requirement_id)
+                                       for context in ctx.body_conditional()]
 
   if ctx.block():
     return_dict['block'] = [block(context, institution, requirement_id) for context in ctx.block()]

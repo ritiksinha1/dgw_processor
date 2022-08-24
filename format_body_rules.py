@@ -348,7 +348,7 @@ def format_group_requirements(group_requirements: list) -> str:
     elif (num_required == 1) and (num_groups == 2):
       prefix = 'Either of the'
     else:
-      prefix = f'Any {num_required_str}'
+      prefix = f'Any {num_required_str} of the'
     group_requirement_str = f'<p>{prefix} following {num_groups_str} group{s}</p>'
 
     for index, requirement in enumerate(group_requirement['group_list']):
