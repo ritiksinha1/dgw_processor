@@ -90,7 +90,7 @@ def format_num_class_credit(cc_dict: dict):
     return f'{num_classes_str}{conjunction_str}{num_credits_str}'
 
   except (KeyError, ValueError) as err:
-    print(f'Ignore class/credit dict: {cc_dict}', file=sys.stderr)
+    print(f'Invalid class/credit dict: {err}\n{cc_dict}', file=sys.stderr)
     return None
 
 

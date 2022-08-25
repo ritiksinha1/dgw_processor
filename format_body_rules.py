@@ -147,6 +147,7 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
 
   # There has to be num classes and/or num credits
   class_credit_str = f'<p>{format_utils.format_num_class_credit(class_credit_dict)} required</p>'
+
   try:
     num_areas_required = int(class_credit_dict['minarea']['number'])
   except KeyError:
@@ -201,15 +202,11 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
 # format_conditional()
 # -------------------------------------------------------------------------------------------------
 def format_conditional(conditional_dict: dict) -> str:
-  """ Expect a conditional expression string, an if_true list of rules, and an optional if_false
-      list of rules. (Note: conditionals don't have labels: they aren't requirements per se.)
-      As a reminder of work to be done, we call format_conditional() to interpret the condition
-      string and return a list of conditions required. But that function is only a stub, pending
-      determination of what should actually be done to interpret the condition string.
-
-      The list of rules gets dispatched back into this module, which requires this function to
-      determine whether to dispatch through format_header_productions of format_body_rules.
+  """ Format a single conditional item from a list of them.
   """
+  # Preconditions
+  assert isinstance(conditional_dict, dict)
+
   condition_str = conditional_dict['condition_str']
   true_type = true_op = true_name = None
   # Simple case: major, minor, concentration is, or is not, something
@@ -240,6 +237,32 @@ def format_conditional(conditional_dict: dict) -> str:
     pass
 
   return f'<details>{summary_str}{conditional_body}{else_summary}{else_body}</details>'
+
+
+# format_conditional_list()
+# -------------------------------------------------------------------------------------------------
+def format_conditional_list(conditional_list: list) -> str:
+  """ Expect a conditional expression string, an if_true list of rules, and an optional if_false
+      list of rules. (Note: conditionals don't have labels: they aren't requirements per se.)
+      As a reminder of work to be done, we call format_conditional() to interpret the condition
+      string and return a list of conditions required. But that function is only a stub, pending
+      determination of what should actually be done to interpret the condition string.
+
+      The list of rules gets dispatched back into this module, which requires this function to
+      determine whether to dispatch through format_header_productions of format_body_rules.
+  """
+  assert isinstance(conditional_list, list), (f'conditional_list is {type(conditional_list)}, not '
+                                              f'list')
+  return_str = ''
+  for conditional_item in conditional_list:
+    try:
+      conditional_dict = conditional_item['conditional']
+    except KeyError:
+      raise ValueError(f'Conditional item with no conditional key in [{conditional_item.keys()}]')
+
+    return_str += format_conditional(conditional_dict)
+
+  return return_str
 
 
 # format_copy_rules()
@@ -501,20 +524,25 @@ def format_subset(subset_dict: dict) -> str:
          rule_complete
   """
   if DEBUG:
-    print(f'*** format_subset({list(info.keys())})', file=sys.stderr)
+    print(f'*** format_subset({list(subset_dict.keys())})', file=sys.stderr)
+
+  valid_keys = ['block', 'blocktype', 'class_credit_list', 'conditional', 'conditional_list',
+                'copy_rules', 'course_list', 'group', 'label', 'noncourse', 'qualifier', 'remark',
+                'rule_complete']
+  for key in subset_dict.keys():
+    if key not in valid_keys:
+      print(f'Subset with invalid key: {key}', file=sys.stderr)
 
   try:
-    label_str = subset_dict['label']
-    summary = f'<summary>{label_str}</summary>'
+    label_str = subset_dict.pop('label')
   except KeyError:
-    summary = None
+    label_str = None
 
   subset_str = ''
 
 # If there is a remark, it goes right after the summary
   try:
-    if remark_str := subset_dict['remark']:
-      subset_str += f'<p>{subset_str}</p>'
+    subset_str += f'<p>{subset_dict.pop("remark")}</p>'
   except KeyError:
     pass
 
@@ -527,71 +555,69 @@ def format_subset(subset_dict: dict) -> str:
 
 # Is this a non-course requirement?
   try:
-    if noncourse_dict := subset_dict['noncourse']:
-      subset_str += format_noncourse(noncourse_dict)
+    subset_str += format_noncourse(subset_dict.pop('noncourse'))
   except KeyError:
     pass
 
 # Block, blocktype, copy_rules, rule_complete
   try:
-    if block_str := subset_dict['block']:
-      subset_str += format_block(subset_dict['block'])
+    subset_str += format_block(subset_dict.pop('block'))
   except KeyError:
     pass
 
   try:
-    if blocktype_str := subset_dict['blocktype']:
-      subset_str += format_blocktype(subset_dict['blocktype'])
+    subset_str += format_blocktype(subset_dict.pop('blocktype'))
   except KeyError:
     pass
 
   try:
-    if copy_rules_str := subset_dict['copy_rules']:
-      subset_str += format_copy_rules(subset_dict['copy_rules'])
+    subset_str += format_copy_rules(subset_dict.pop('copy_rules'))
   except KeyError:
     pass
 
   try:
-    if rule_complete_str := subset_dict['rule_complete']:
-      subset_str += format_rule_complete(subset_dict['rule_complete'])
+    subset_str += format_rule_complete(subset_dict.pop('rule_complete'))
   except KeyError:
     pass
 
 # Course lists
   try:
-    course_lists = subset_dict['course_lists']
+    course_lists = subset_dict.pop('course_lists')
     for course_list in course_lists:
-      subset_str += format_utils.format_course_list(course_list['course_list'])
+      subset_str += format_utils.format_course_list(course_list)
   except KeyError:
     pass
 
 # this leaves conditional, group, and class_credit_list
   try:
-    if conditioinal_dict := subset_dict['conditinal']:
-      subset_str += format_conditional(conditional_dict)
+    if conditional_list := subset_dict.pop('conditional_list'):
+      subset_str += format_conditional_list(conditional_list)
   except KeyError:
     pass
 
   try:
-    if group_dict := subset_dict['group_requirements']:
-      subset_str += format_group_requirements(group_dict)
+    subset_str += format_group_requirements(subset_dict.pop('group_requirements'))
   except KeyError:
     pass
 
   try:
-    if class_credit_list := subset_dict['class_credit_list']:
-      # The value of class_credit_body might be either a dict or a list of dicts.
+    if class_credit_list := subset_dict.pop('class_credit_list'):
+      # The value of class_credit_list is a list of class_credit dicts.
       for class_credit_dict in class_credit_list:
-
-        # subset_str += str(class_credit_dict)
-        subset_str += format_class_credit(class_credit_dict['class_credit'])
+        try:
+          subset_str += format_class_credit(class_credit_dict['class_credit'])
+        except KeyError as ke:
+          print('Missing class_credit key in class_credit_dict: {ke}', file=sys.stderr)
   except KeyError:
     pass
 
-  if summary:
-    return f'<details>{summary}{subset_str}</details>'
+  assert not subset_dict.keys(), f'Subset unhandled key(s): {list(subset_dict.keys())}'
+
+  if label_str:
+    return f'<details><summary>{label_str}</summary>{subset_str}</details>'
   else:
-    return f'{subset_str}'
+    return (f'<details><summary><span class="error">Missing Requirement Name</span></summary>'
+            f'{subset_str}</details>')
 
 
 # _dispatch_table {}
@@ -600,6 +626,7 @@ _dispatch_table = {'block': format_block,
                    'blocktype': format_blocktype,
                    'class_credit': format_class_credit,
                    'conditional': format_conditional,
+                   'conditional_list': format_conditional_list,
                    'copy_rules': format_copy_rules,
                    'course_list_rule': format_course_list_rule,
                    'group_requirements': format_group_requirements,
@@ -621,7 +648,7 @@ def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
     return _dispatch_table[dict_key](rule_dict)
   except KeyError as ke:
     if dict_key not in list(_dispatch_table.keys()):
-      print(f'No entry in _dispatch_table for {dict_key}', file=stderr)
+      print(f'No entry in _dispatch_table for {dict_key}', file=sys.stderr)
     else:
       print(f'KeyError {ke} while dispatching {dict_key} to {_dispatch_table[dict_key].__name__}',
             file=sys.stderr)

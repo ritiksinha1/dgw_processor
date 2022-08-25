@@ -78,12 +78,12 @@ def _format_class_credit(class_credit_dict: dict) -> str:
   """ No course list in the head. But pseudo, if true, means the number of classes and/or credits
       is not actually meaningful.
   """
-  if label_str := class_credit_dict['label']:
-    return_str = f'<details><summary>{label_str}</summary'
-  else:
-    return_str = ''
+  try:
+    label_str = class_credit_dict['label']
+  except KeyError:
+    label_str = None
 
-  return_str += f'<p>{format_utils.format_num_class_credit(class_credit_dict)} required</p>'
+  return_str = f'<p>{format_utils.format_num_class_credit(class_credit_dict)} required</p>'
 
   try:
     if class_credit_dict['pseudo']:
@@ -101,10 +101,10 @@ def _format_class_credit(class_credit_dict: dict) -> str:
   except KeyError:
     pass
 
-  if label_str:
-    return_str += '</details>'
-
-  return return_str
+  if label_str is not None:
+    return f'<details><summary>{label_str}</summary>{return_str}</details>'
+  else:
+    return return_str
 
 
 # _format_lastres()
