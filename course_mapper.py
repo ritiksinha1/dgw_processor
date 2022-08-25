@@ -604,7 +604,7 @@ def traverse_body(node: Any, context_list: list) -> None:
     # A dict should have one key that identifies the requirement type, and a sub-dict that gives the
     # details about that requirement, including the label that gives it its name.
 
-    assert len(node) == 1
+    assert len(node) == 1, f'{list(node.keys())}'
     requirement_type, requirement_value = list(node.items())[0]
 
     # String values are remarks: add to context, and continue. Can be suppressed from command line.
@@ -740,8 +740,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             pass
 
         case 'conditional':
-          print(institution, requirement_id, 'Body conditional', file=log_file)
-
+          assert isinstance(requirement_value, dict)
           # Use the condition as the pseudo-name of this requirement
           # UNABLE TO HANDLE RULE_COMPLETE UNTIL THE CONDITION IS EVALUATED
           condition = requirement_value['condition_str']
@@ -757,6 +756,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           except KeyError:
             # Scribe Else clause is optional
             pass
+          print(institution, requirement_id, 'Body conditional', file=log_file)
 
         case 'copy_rules':
           print(institution, requirement_id, 'Body copy_rules', file=log_file)
@@ -947,9 +947,8 @@ def traverse_body(node: Any, context_list: list) -> None:
             # Could be block, class_credit_list, group_requirements, or (nested subset?), which all
             # have their own labels..
             for rv_key in requirement_value.keys():
-              print(institution, requirement_id, rv_key)
-              assert rv_key in ['block', 'class_credit_list', 'group_requirements', 'subset']
-            # breakpoint()
+              if rv_key not in ['block', 'class_credit_list', 'group_requirements', 'subset']:
+                print(f'{institution} {requirement_id} {rv_key}: No label', file=fail_file)
             subset_context = []
 
           for key, rule in requirement_value.items():
@@ -995,23 +994,24 @@ def traverse_body(node: Any, context_list: list) -> None:
               case 'blocktype':
                 print(f'{institution} {requirement_id} Subset blocktype', file=todo_file)
 
-              case 'conditional':
-                print(f'{institution} {requirement_id} Subset conditional', file=log_file)
+              case 'conditional_list':
+                print(f'{institution} {requirement_id} Subset conditional_list', file=log_file)
                 assert isinstance(rule, list)
                 for conditional_dict in rule:
-                  conditional = conditional_dict['conditional']
-                  # Use the condition as the pseudo-name of this requirement
-                  condition = conditional['condition_str']
-                  for if_true_dict in conditional['if_true']:
-                    condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
-                    traverse_body(if_true_dict, context_list + subset_context + condition_list)
-                  try:
-                    for if_false_dict in conditional['if_false']:
-                      condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
-                      traverse_body(if_true_dict, context_list + subset_context + condition_list)
-                  except KeyError:
-                    # Scribe Else clause is optional
-                    pass
+                  traverse_body(conditional_dict, context_list + subset_context)
+
+                  # # Use the condition as the pseudo-name of this requirement
+                  # condition = conditional['condition_str']
+                  # for if_true_dict in conditional['if_true']:
+                  #   condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
+                  #   traverse_body(if_true_dict, context_list + subset_context + condition_list)
+                  # try:
+                  #   for if_false_dict in conditional['if_false']:
+                  #     condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
+                  #     traverse_body(if_true_dict, context_list + subset_context + condition_list)
+                  # except KeyError:
+                  #   # Scribe Else clause is optional
+                  #   pass
 
               case 'copy_rules':
                 print(institution, requirement_id, 'Subset copy_rules', file=log_file)
@@ -1146,7 +1146,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   file=log_file)
 
         case 'noncourse':
-          # Ignore These
+          # Ignore this
           print(f'{institution} {requirement_id} Body {requirement_type} (ignored)', file=log_file)
 
         case _:
@@ -1154,7 +1154,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           exit(f'{institution} {requirement_id} Unhandled Requirement Type: {requirement_type}'
                f' {requirement_value}')
   else:
-    # Another fatal error (ot a list, str, or dict)
+    # Another fatal error (not a list, str, or dict)
     exit(f'{institution} {requirement_id} Unhandled node type {type(node)} ({node})')
 
 
@@ -1322,7 +1322,7 @@ if __name__ == "__main__":
   s = '' if args.weeks == 1 else 's'
   print(f'{programs_count:5,} Programs\n'
         f'{hunter_count:5,} {hunter_tag} \n'
-        f'{no_scribe_count:5,} No dgw_req_block row\n'
+        f'{no_scribe_count:5,} No dgw_req_block\n'
         f'{quarantine_count:5,} Quarantined\n'
         f'{inactive_count:5,} Inactive more than {args.weeks} week{s}\nBlock Types')
 
