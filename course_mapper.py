@@ -279,9 +279,9 @@ def process_block(row: namedtuple, context_list: list = [], other: dict = None):
   # A BlockInfo object contains block metadata from the requirement_blocks table, program and
   # subprogram tables, and will be augmented with additional information found in the block’s header
   args_dict = {}
-  # DGW metadata for the block, except catalog_years and parse_tree.
+  # DGW metadata for the block, except catalog_years, major1, and parse_tree.
   for key, value in row._asdict().items():
-    if key in ['period_start', 'period_stop', 'parse_tree']:
+    if key in ['period_start', 'period_stop', 'major1', 'parse_tree']:
       continue
     args_dict[key] = value
 
@@ -652,7 +652,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               with conn.cursor(row_factory=namedtuple_row) as cursor:
                 blocks = cursor.execute("""
                 select institution, requirement_id, block_type, block_value, title as block_title,
-                       period_start, period_stop, parse_tree
+                       period_start, period_stop, major1, parse_tree
                   from requirement_blocks
                  where institution = %s
                    and block_type = %s
@@ -660,15 +660,30 @@ def traverse_body(node: Any, context_list: list) -> None:
                    and period_stop ~* '^9'
                 """, block_args)
 
+                target_block = None
                 if cursor.rowcount == 0:
                   print(f'{institution} {requirement_id} Body block: no active {block_args[1:]} '
                         f'blocks', file=fail_file)
                 elif cursor.rowcount > 1:
-                  print(f'{institution} {requirement_id} Body block: {cursor.rowcount} active '
-                        f'{block_args[1:]} blocks', file=fail_file)
+                  # Hopefully, the major1 field of exactly one block will match this program's block
+                  # value, resolving the issue.
+                  matching_rows = []
+                  for row in cursor:
+                    if row.major1 == block_value:
+                      matching_rows.append(row)
+                  if len(matching_rows) == 1:
+                    target_block = matching_rows[0]
+                  else:
+                    print(f'{institution} {requirement_id} Body block: {cursor.rowcount} active '
+                          f'{block_args[1:]} blocks; {len(matching_rows)} major1 matches',
+                          file=fail_file)
                 else:
-                  process_block(cursor.fetchone(), context_list + requirement_context)
-                  print(institution, requirement_id, 'Body block', file=log_file)
+                  target_block = cursor.fetchone()
+
+                if target_block is not None:
+                  process_block(target_block, context_list + requirement_context)
+                  print(f'{institution} {requirement_id} Body block {target_block.block_type}',
+                        file=log_file)
 
         case 'blocktype':
           # The block_type comes from the requirement value, and it must match one or more of the
