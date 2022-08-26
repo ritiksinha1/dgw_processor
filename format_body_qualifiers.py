@@ -428,7 +428,8 @@ def _dispatch_qualifier(qualifier: str, qualifier_info: Any) -> str:
 # -------------------------------------------------------------------------------------------------
 def dispatch_body_qualifiers(node: dict) -> list:
   """ Given a dict that may or may not have keys for known qualifiers return a list of HTML
-      formatted strings representing the handled qualifiers found. Report any unhandled ones.
+      formatted strings representing the handled qualifiers found. Remove the ones found; report any
+      unhandled ones.
   """
   assert isinstance(node, dict), (f'{type(node)} is not dict in format_body_qualifiers. {node=}')
 
@@ -442,8 +443,8 @@ def dispatch_body_qualifiers(node: dict) -> list:
   qualifier_strings = []
   for qualifier in possible_qualifiers:
     if qualifier in node.keys():
-      qualifier_dict = node[qualifier]
       if qualifier in handled_qualifiers:
+        qualifier_dict = node.pop(qualifier)
         # print('*** qualifier:', qualifier)
         if qualifier_str := _dispatch_qualifier(qualifier, qualifier_dict):
           qualifier_strings.append(qualifier_str)

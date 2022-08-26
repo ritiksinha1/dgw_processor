@@ -528,10 +528,10 @@ def format_subset(subset_dict: dict) -> str:
 
   valid_keys = ['block', 'blocktype', 'class_credit_list', 'conditional', 'conditional_list',
                 'copy_rules', 'course_list', 'group', 'label', 'noncourse', 'qualifier', 'remark',
-                'rule_complete']
+                'rule_complete', 'share']
   for key in subset_dict.keys():
     if key not in valid_keys:
-      print(f'Subset with invalid key: {key}', file=sys.stderr)
+      return f'<p class="error">Error: subset with unexpected key: {key}</p>'
 
   try:
     label_str = subset_dict.pop('label')
