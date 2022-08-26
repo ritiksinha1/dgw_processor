@@ -631,8 +631,9 @@ def traverse_body(node: Any, context_list: list) -> None:
         # Unless a conditional, if there is no label, add a placeholder name, and log the situation
         if requirement_type != 'conditional':
           context_dict['requirement_name'] = 'Unnamed Requirement'
-          print(f'{institution} {requirement_id} Body {requirement_type} with no label',
-                file=log_file)
+          if requirement_type not in ['copy_rules']:  # There may be others (?) ...
+            print(f'{institution} {requirement_id} Body {requirement_type} with no label',
+                  file=log_file)
       requirement_context = [context_dict]
 
       match requirement_type:

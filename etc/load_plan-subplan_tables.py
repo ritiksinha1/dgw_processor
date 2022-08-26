@@ -14,6 +14,7 @@ import psycopg
 import sys
 
 from collections import namedtuple
+from datetime import date
 from pathlib import Path
 from psycopg.rows import namedtuple_row
 
@@ -38,6 +39,12 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
           latest = csv_file
 
       with open(latest) as csv_file:
+        num_rows = len(csv_file.readlines())
+      date_str = date.fromtimestamp(latest.stat().st_mtime)
+
+      with open(latest) as csv_file:
+        print(f'Loading {table_name} from {latest.name} {date_str} ({num_rows:,} rows)')
+
         reader = csv.reader(csv_file)
         for line in reader:
           if reader.line_num == 1:
