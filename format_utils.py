@@ -271,6 +271,40 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
   return html_str
 
 
+# format_group_requirement()
+# -------------------------------------------------------------------------------------------------
+def format_group_requirement(num_groups: int, num_required: int):
+  """ Return an English string that handles various combinations of values.
+  """
+  assert isinstance(num_groups, int) and isinstance(num_required, int), 'Precondition failed'
+
+  suffix = '' if num_required == 1 else 's'
+  if num_required < len(number_names):
+    num_required_str = number_names[num_required].lower()
+  else:
+    num_required_str = f'{num_required:,}'
+
+  s = '' if num_groups == 1 else 's'
+
+  if num_groups < len(number_names):
+    num_groups_str = number_names[num_groups].lower()
+  else:
+    num_groups_str = f'{num_groups:,}'
+
+  if num_required == num_groups:
+    if num_required == 1:
+      prefix = 'The'
+    elif num_required == 2:
+      prefix = 'Both of the'
+    else:
+      prefix = 'All of the'
+  elif (num_required == 1) and (num_groups == 2):
+    prefix = 'Either of the'
+  else:
+    prefix = f'Any {num_required_str} of the'
+  return f'{prefix} following {num_groups_str} group{s}'
+
+
 # format_number()
 # -------------------------------------------------------------------------------------------------
 def format_number(number_arg, is_int=False):

@@ -348,31 +348,32 @@ def format_group_requirements(group_requirements: list) -> str:
       summary = None
 
     num_required = int(group_requirement['number'])
-    suffix = '' if num_required == 1 else 's'
-    if num_required < len(format_utils.number_names):
-      num_required_str = format_utils.number_names[num_required].lower()
-    else:
-      num_required_str = f'{num_required:,}'
+    # suffix = '' if num_required == 1 else 's'
+    # if num_required < len(format_utils.number_names):
+    #   num_required_str = format_utils.number_names[num_required].lower()
+    # else:
+    #   num_required_str = f'{num_required:,}'
+
     num_groups = len(group_requirement['group_list'])
-    s = '' if num_groups == 1 else 's'
+    # s = '' if num_groups == 1 else 's'
+    # if num_groups < len(format_utils.number_names):
+    #   num_groups_str = format_utils.number_names[num_groups].lower()
+    # else:
+    #   num_groups_str = f'{num_groups:,}'
 
-    if num_groups < len(format_utils.number_names):
-      num_groups_str = format_utils.number_names[num_groups].lower()
-    else:
-      num_groups_str = f'{num_groups:,}'
-
-    if num_required == num_groups:
-      if num_required == 1:
-        prefix = 'The'
-      elif num_required == 2:
-        prefix = 'Both of the'
-      else:
-        prefix = 'All of the'
-    elif (num_required == 1) and (num_groups == 2):
-      prefix = 'Either of the'
-    else:
-      prefix = f'Any {num_required_str} of the'
-    group_requirement_str = f'<p>{prefix} following {num_groups_str} group{s}</p>'
+    # if num_required == num_groups:
+    #   if num_required == 1:
+    #     prefix = 'The'
+    #   elif num_required == 2:
+    #     prefix = 'Both of the'
+    #   else:
+    #     prefix = 'All of the'
+    # elif (num_required == 1) and (num_groups == 2):
+    #   prefix = 'Either of the'
+    # else:
+    #   prefix = f'Any {num_required_str} of the'
+    text_description = format_utils.format_group_requirement(num_groups, num_required)
+    group_requirement_str = (f'<p>{text_description}:</p>')
 
     for index, requirement in enumerate(group_requirement['group_list']):
       for key in requirement.keys():
