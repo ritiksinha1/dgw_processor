@@ -13,7 +13,6 @@ from argparse import ArgumentParser
 from blockinfo import BlockInfo
 from catalogyears import catalog_years
 from collections import namedtuple, defaultdict
-from pprint import pprint
 from psycopg.rows import namedtuple_row
 from recordclass import recordclass
 from typing import Any
@@ -69,6 +68,11 @@ map_writer = csv.writer(mapping_file)
 # subplans_by_institution = defaultdict(dict_factory)
 
 requirement_index = 0
+number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+                'ten', 'eleven', 'twelve']
+number_ordinals = ['zeroth', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh',
+                   'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth']
+
 
 # =================================================================================================
 
@@ -147,6 +151,40 @@ def expand_course_list(institution: str, requirement_id: str, course_dict: dict)
         return_dict[(v.course_id, v.offer_nbr)] = (k, with_clause)
 
   return return_dict
+
+
+# format_group_description()
+# -------------------------------------------------------------------------------------------------
+def format_group_description(num_groups: int, num_required: int):
+  """ Return an English string to replace the label (requirement_name) for group requirements.
+  """
+  assert isinstance(num_groups, int) and isinstance(num_required, int), 'Precondition failed'
+
+  suffix = '' if num_required == 1 else 's'
+  if num_required < len(number_names):
+    num_required_str = number_names[num_required].lower()
+  else:
+    num_required_str = f'{num_required:,}'
+
+  s = '' if num_groups == 1 else 's'
+
+  if num_groups < len(number_names):
+    num_groups_str = number_names[num_groups].lower()
+  else:
+    num_groups_str = f'{num_groups:,}'
+
+  if num_required == num_groups:
+    if num_required == 1:
+      prefix = 'The'
+    elif num_required == 2:
+      prefix = 'Both of the'
+    else:
+      prefix = 'All of the'
+  elif (num_required == 1) and (num_groups == 2):
+    prefix = 'Either of the'
+  else:
+    prefix = f'Any {num_required_str} of the'
+  return f'{prefix} following {num_groups_str} group{s}'
 
 
 # map_courses()
@@ -871,10 +909,27 @@ def traverse_body(node: Any, context_list: list) -> None:
                                     group_requirement(s), noncourse, or rule_complete)
           """
           groups = requirement_value['group_list']
-          context_dict['num_groups'] = len(groups)
-          context_dict['num_required'] = int(requirement_value['number'])
+          num_groups = len(groups)
+          s = '' if num_groups == 1 else 's'
+          if num_groups < len(number_names):
+            num_groups_str = number_names[num_groups]
+          else:
+            num_groups_str = f'{num_groups:,}'
+
+          num_required = int(requirement_value['number'])
+          context_dict['num_groups'] = num_groups
+          context_dict['num_required'] = num_required
+          context_dict['requirement_name'] = format_group_description(num_groups, num_required)
+
           for group_num, group in enumerate(groups):
-            context_dict['group_number'] = group_num + 1
+            if (group_num + 1) < len(number_ordinals):
+              group_num_str = (f'{number_ordinals[group_num + 1].title()} of {num_groups_str} '
+                               f'group{s}')
+            else:
+              group_num_str = f'Group number {group_num + 1:,} of {num_groups_str} group{s}'
+            group_context = [{'group_number': group_num + 1,
+                              'requirement_name': group_num_str}
+                             ]
 
             assert len(group.keys()) == 1
 
@@ -912,7 +967,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         print(f'{institution} {requirement_id} Group block: {cursor.rowcount} '
                               f'active [{block_type}, {block_value}] blocks', file=fail_file)
                       else:
-                        process_block(cursor.fetchone(), context_list + requirement_context)
+                        process_block(cursor.fetchone(), context_list + requirement_context + group_context)
                         print(f'{institution} {requirement_id} Group block', file=log_file)
 
                 case 'blocktype':
@@ -923,7 +978,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   # This is where course lists turn up, in general.
                   try:
                     map_courses(institution, requirement_id, block_title,
-                                context_list + requirement_context, value)
+                                context_list + requirement_context + group_context, value)
                   except KeyError as ke:
                     # Course List is an optional part of ClassCredit
                     pass
@@ -936,7 +991,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         file=log_file)
                   assert isinstance(value, list)
                   for group_requirement in value:
-                    traverse_body(value, context_list + requirement_context)
+                    traverse_body(value, context_list + requirement_context + group_context)
 
                 case 'noncourse':
                   print(f'{institution} {requirement_id} Group noncourse (ignored)',
@@ -1124,7 +1179,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                     except KeyError as ke:
                       print(institution, requirement_id, block_title,
                             f'{ke} in subset class_credit_list', file=sys.stderr)
-                      pprint(rule_dict, stream=sys.stderr)
+                      print(rule_dict, stream=sys.stderr)
                       exit()
 
               case 'group_requirements':
