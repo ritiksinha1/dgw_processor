@@ -527,8 +527,8 @@ def format_subset(subset_dict: dict) -> str:
     print(f'*** format_subset({list(subset_dict.keys())})', file=sys.stderr)
 
   valid_keys = ['block', 'blocktype', 'class_credit_list', 'conditional', 'conditional_list',
-                'copy_rules', 'course_list', 'group', 'label', 'noncourse', 'qualifier', 'remark',
-                'rule_complete', 'share']
+                'copy_rules', 'course_list', 'group_requirements', 'label', 'noncourse',
+                'qualifier', 'remark', 'rule_complete', 'share']
   for key in subset_dict.keys():
     if key not in valid_keys:
       return f'<p class="error">Error: subset with unexpected key: {key}</p>'
