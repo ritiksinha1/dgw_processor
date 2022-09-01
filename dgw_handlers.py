@@ -1173,12 +1173,11 @@ def subset(ctx, institution, requirement_id):
     return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
 
   if ctx.course_list_rule():
-    # The grammar makes this a list, but the length will always be unity
-    contexts = [context for context in ctx.course_list_rule()]
-    assert len(contexts) == 1, f'Multiple ({len(contexts)} contexts in subset course_list_rule)'
-    return_dict.update({'course_list_rule':
-                        build_course_list(contexts[0].course_list_body().course_list(),
-                                          institution, requirement_id)})
+    # The grammar makes this a list, but the length will almost always be unity
+    return_dict['course_list_rules'] = [{'course_list_rule':
+                                         build_course_list(context.course_list_body().course_list(),
+                                                           institution, requirement_id)}
+                                        for context in ctx.course_list_rule()]
 
   if ctx.group_requirement():
     return_dict.update(group_requirement(ctx.group_requirement(), institution, requirement_id))
