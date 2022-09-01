@@ -213,20 +213,29 @@ Requirement Key, Course ID, Career, Course, With
   global requirement_index
   requirement_index += 1
 
-  # Find the course_list in the requirement_dict.
+  # Copy the requirement_dict in case a local version has to be constructed
+  requirement_info = requirement_dict.copy()
   try:
-    course_list = requirement_dict['course_list']
+    course_list = requirement_info['course_list']
+  except KeyError:
+    # Sometimes the course_list _is_ the requirement. In these cases, all scribed courses are
+    # required. So create a requirement_info dict with a set of values to reflect this.
+    course_list = requirement_dict
+    num_scribed = sum([len(area) for area in course_list['scribed_courses']])
+    requirement_info = {'label': None,
+                        'conjunction': None,
+                        'course_list': requirement_dict,
+                        'max_classes': num_scribed,
+                        'max_credits': None,
+                        'min_classes': num_scribed,
+                        'min_credits': None,
+                        'allow_classes': None,
+                        'allow_credits': None}
     try:
       # Ignore context_path, if it is present. (It makes the course list harder to read)
       del course_list['context_path']
     except KeyError:
       pass
-  except KeyError:
-    # Sometimes the course_list _is_ the requirement. In these cases, all courses in the list are
-    # required.
-    course_list = requirement_dict
-    # Do we need to add min_classes, and all the other class_credit keys to the requirement_dict?
-    print(institution, requirement_id, f'Requirement is course_list', file=todo_file)
 
   # Filter out duplicated courses: people scribe course lists that include the same course(s) more
   # than once.
@@ -244,18 +253,18 @@ Requirement Key, Course ID, Career, Course, With
       for key, value in courses_dict.items():
         courses_set.add(f'{value.course_id:06}:{value.offer_nbr}|{value.career}|'
                         f'{key}: {value.title}|{with_clause}')
-    requirement_dict['num_courses'] = len(courses_set)
+    requirement_info['num_courses'] = len(courses_set)
     for course in courses_set:
       map_writer.writerow([requirement_index] + course.split('|'))
 
-  if requirement_dict['num_courses'] == 0:
+  if requirement_info['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
   else:
     # The requirement_id has to come from the first block_info in the context
     # list (is this ever actually used?).
     requirement_id = context_list[0]['block_info']['requirement_id']
     data_row = [institution, requirement_id, requirement_index, requirement_name,
-                json.dumps(context_list + [{'requirement': requirement_dict}], ensure_ascii=False)]
+                json.dumps(context_list + [{'requirement': requirement_info}], ensure_ascii=False)]
     requirements_writer.writerow(data_row)
 
 
@@ -984,6 +993,16 @@ def traverse_body(node: Any, context_list: list) -> None:
                     pass
 
                 case 'course_list_rule':
+                  try:
+                    if course_list := requirement_value['course_list']:
+                      map_courses(institution, requirement_id, block_title,
+                                  context_list + group_context, value)
+                      print(institution, requirement_id, 'Group course_list_rule', file=log_file)
+                  except KeyError:
+                    # Can't have a Course List Rule w/o a course list
+                    print(f'{institution} {requirement_id} Group course_list_rule w/o a Course '
+                          f'List', file=fail_file)
+
                   print(institution, requirement_id, 'Group course_list_rule', file=todo_file)
 
                 case 'group_requirements':
@@ -1151,8 +1170,19 @@ def traverse_body(node: Any, context_list: list) -> None:
                             traverse_body(body_list,
                                           context_list + requirement_context + local_context)
 
-              case 'course_lists':
-                print(f'{institution} {requirement_id} Subset {key}', file=todo_file)
+              case 'course_lists' | 'course_list_rule':
+                # Until everything is re-parsed, accept either key. For consistency with the Body
+                # and Group handlers, this key was renamed from course_lists to course_list_rule
+                # on 2022-08-31.
+                try:
+                  map_courses(institution, requirement_id, block_title,
+                              context_list + requirement_context,
+                              requirement_value[key]['course_list'])
+                  print(f'{institution} {requirement_id} Subset {key}', file=log_file)
+                except KeyError as ke:
+                  print(requirement_value)
+                  print(f'{institution} {requirement_id} Subset {key} w/o a {ke}',
+                        file=fail_file)
 
               case 'class_credit_list':
                 print(f'{institution} {requirement_id} Subset {key}', file=log_file)
