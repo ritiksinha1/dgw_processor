@@ -1170,19 +1170,18 @@ def traverse_body(node: Any, context_list: list) -> None:
                             traverse_body(body_list,
                                           context_list + requirement_context + local_context)
 
-              case 'course_lists' | 'course_list_rule':
-                # Until everything is re-parsed, accept either key. For consistency with the Body
-                # and Group handlers, this key was renamed from course_lists to course_list_rule
-                # on 2022-08-31.
-                try:
-                  map_courses(institution, requirement_id, block_title,
-                              context_list + requirement_context,
-                              requirement_value[key]['course_list'])
-                  print(f'{institution} {requirement_id} Subset {key}', file=log_file)
-                except KeyError as ke:
-                  print(requirement_value)
-                  print(f'{institution} {requirement_id} Subset {key} w/o a {ke}',
-                        file=fail_file)
+              case 'course_list_rules':
+                assert isinstance(rule, list), f'{key=} {requirement_value=}'
+                for rule_dict in rule:
+                  try:
+                    map_courses(institution, requirement_id, block_title,
+                                context_list + requirement_context,
+                                rule_dict['course_list_rule']['course_list'])
+                    print(f'{institution} {requirement_id} Subset course_list_rule', file=log_file)
+                  except KeyError as ke:
+                    print(requirement_value)
+                    print(f'{institution} {requirement_id} Subset {key} missing {ke}',
+                          file=fail_file)
 
               case 'class_credit_list':
                 print(f'{institution} {requirement_id} Subset {key}', file=log_file)
@@ -1338,13 +1337,13 @@ if __name__ == "__main__":
              r.period_start, r.period_stop, r.parse_date, r.parse_tree,
              e.enrollment
         from cuny_acad_plan_tbl p
-             left join cuny_plan_enrollments e
+             left join cuny_acad_plan_enrollments e
                     on p.institution = e.institution
                    and p.plan = e.plan
              left join cuny_acad_subplan_tbl s
                     on p.institution = s.institution
                    and p.plan = s.plan
-             left join cuny_subplan_enrollments ss
+             left join cuny_acad_subplan_enrollments ss
                     on ss.institution = s.institution
                    and ss.plan = s.plan
                    and ss.subplan = s.subplan
