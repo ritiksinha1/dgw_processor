@@ -805,7 +805,6 @@ def traverse_body(node: Any, context_list: list) -> None:
         case 'conditional':
           assert isinstance(requirement_value, dict)
           # Use the condition as the pseudo-name of this requirement
-          # UNABLE TO HANDLE RULE_COMPLETE UNTIL THE CONDITION IS EVALUATED
           condition = requirement_value['condition_str']
           for if_true_dict in requirement_value['if_true']:
             condition_dict = {'requirement_name': 'if_true', 'condition': condition}
@@ -879,6 +878,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                   traverse_body(body_list,
                                 context_list + requirement_context + local_context)
 
+        case 'course_list':
+          # Not observed to occur
+          print(institution, requirement_id, 'Body course_list', file=fail_file)
+
         case 'course_list_rule':
           try:
             if course_list := requirement_value['course_list']:
@@ -891,18 +894,14 @@ def traverse_body(node: Any, context_list: list) -> None:
                   file=fail_file)
 
         case 'rule_complete':
-          print(institution, requirement_id, 'Body rule_complete', file=todo_file)
-          # is_complete may be T/F
-          # rule_tag is followed by a name-value pair. If the name is RemarkJump, the value is a URL
-          # for more info. Otherwise, the name-value pair is used to control formatting of the rule.
-          # This happens only inside conditionals, where the idea will be to look at what whether
-          # it's in the true or false leg, what the condition is, and whether this is True or False
-          # to infer what requirement must or must not be met. We're looking at YOU, Lehman ACC-BA.
-
-        case 'course_list':
-          print(institution, requirement_id, 'Body course_list', file=log_file)
-          map_courses(institution, requirement_id, block_title, context_list + requirement_context,
-                      requirement_value)
+          # There are no course requirements for this, but whether “is_complete” is true or false,
+          # coupled with what sort of conditional structure it is nested in, could be used to tell
+          # whether a concentration is required (or not). For now, it is ignored, and unless there
+          # is a group structure to hold references to other blocks (which could be used if a
+          # student has to complete, say, 3 of 5 possible concentrations), assume that however many
+          # concentration blocks are found, the student has to declare one and complete its
+          # requirements.)
+          print(institution, requirement_id, 'Body rule_complete (ignored)', file=log_file)
 
         case 'group_requirements':
           # Group requirements is a list , so it should not show up here.
@@ -1017,6 +1016,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         file=log_file)
 
                 case 'rule_complete':
+                  # Not observed to occur
                   print(f'{institution} {requirement_id} Group rule_complete', file=todo_file)
 
                 case _:
