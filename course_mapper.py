@@ -7,6 +7,7 @@ import datetime
 import os
 import json
 import psycopg
+import re
 import sys
 
 from argparse import ArgumentParser
@@ -927,7 +928,32 @@ def traverse_body(node: Any, context_list: list) -> None:
           num_required = int(requirement_value['number'])
           context_dict['num_groups'] = num_groups
           context_dict['num_required'] = num_required
-          context_dict['requirement_name'] = format_group_description(num_groups, num_required)
+          description_str = format_group_description(num_groups, num_required)
+          group_description = {'requirement_name': description_str}
+
+          # Often, the label for the groups is redundant to the nicely-structured description
+          # provided by format_group_description(). See how well we can filter those out.
+
+          ignore_words = number_names + ['and', 'area', 'areas', 'choose', 'following', 'from',
+                                         'group', 'groups', 'module', 'modules', 'of', 'option',
+                                         'options', 'or', 'select', 'selected', 'selct', 'slect',
+                                         'sequence', 'sequences', 'set', 'study', 'the']
+          word_str = context_dict['requirement_name']
+
+          # Strip digits and punctuation and extract resulting words from description string
+          words = [word.lower() for word in
+                   re.sub(r'[\d,:]+', ' ', word_str).split()]
+          for ignore_word in ignore_words:
+            try:
+              del words[words.index(ignore_word)]
+            except ValueError:
+              pass
+          if words:
+            # TODO add a new requirement_name
+            print(f'Keep {word_str} {words}', file=sys.stderr)
+          else:
+            # TODO replace the requirement_name
+            print(f'Drop {word_str}', file=sys.stderr)
 
           for group_num, group in enumerate(groups):
             if (group_num + 1) < len(number_ordinals):
@@ -935,7 +961,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                                f'group{s}')
             else:
               group_num_str = f'Group number {group_num + 1:,} of {num_groups_str} group{s}'
-            group_context = [{'group_number': group_num + 1,
+            group_context = [group_description,
+                             {'group_number': group_num + 1,
                               'requirement_name': group_num_str}
                              ]
 
@@ -975,7 +1002,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                         print(f'{institution} {requirement_id} Group block: {cursor.rowcount} '
                               f'active [{block_type}, {block_value}] blocks', file=fail_file)
                       else:
-                        process_block(cursor.fetchone(), context_list + requirement_context + group_context)
+                        process_block(cursor.fetchone(),
+                                      context_list + requirement_context + group_context)
                         print(f'{institution} {requirement_id} Group block', file=log_file)
 
                 case 'blocktype':
@@ -1216,6 +1244,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                 print(f'{institution} {requirement_id} Subset {key}', file=log_file)
                 assert isinstance(rule, list)
                 for group_requirement in rule:
+                  # This will now show up in log_file as a Body group requirement, but the context
+                  # will include the subset context.
                   traverse_body(group_requirement, context_list + subset_context)
 
               case 'maxpassfail' | 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
