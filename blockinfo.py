@@ -35,10 +35,9 @@ class BlockInfo(dict):
        'subplan', 'subplan_type', 'subplan_name', 'subplan_cip_code',
        'subplan_effective_date', 'subplan_enrollment', 'plans',
   """
-  _valid_keys = ['institution', 'plan_info', 'subplan_info',
-                 'requirement_id', 'block_type', 'block_value', 'block_title', 'catalog_years',
-                 'class_credits', 'min_residency', 'min_grade', 'min_gpa', 'max_transfer',
-                 'max_classes', 'max_credits']
+  _valid_keys = ['institution', 'requirement_id', 'block_type', 'block_value', 'block_title',
+                 'catalog_years', 'class_credits', 'min_residency', 'min_grade', 'min_gpa',
+                 'max_transfer', 'max_classes', 'max_credits', 'other']
 
   def __init__(self, **kwargs):
     """ Capture whatever arguments are passed.

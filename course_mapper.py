@@ -302,9 +302,18 @@ def get_restrictions(node: dict) -> dict:
 
 # process_block()
 # =================================================================================================
-def process_block(row: namedtuple, context_list: list = [], other: dict = None):
+def process_block(row: namedtuple, context_list: list = [], plan_info: dict = None):
   """ Given (parts of) a row from the requirement_blocks db table, traverse the header and body
       lists.
+      Development pain point: the "other" argument is a catch-all for information not originally
+      captured in the programs table. It is structured as a dict, with the following optional keys
+      currently defined:
+
+        plan_info   Information about a plan and its subplan if this is a top-level block (a major
+                    or minor, but not a concentration)
+        mincredit   {
+        minclass    { These are possibly empty lists of dicts of their respective types
+        maxperdisc  {
   """
   global quarantine_count
 
@@ -314,14 +323,15 @@ def process_block(row: namedtuple, context_list: list = [], other: dict = None):
     print(row.institution, row.requirement_id, 'Quarantined block', file=fail_file)
     return
 
-  # Be sure the block was parsed successfully (Quarantined should have handled this.)
+  # Be sure the block was parsed successfully (Quarantined should have handled this, but there might
+  # be timeouts.)
   if 'error' in row.parse_tree.keys():
     print(row.institution, row.requirement_id, 'Parser Error', file=fail_file)
     return
 
   # Characterize blocks as top-level or nested for reporting purposes; use capitalization to sort
   # top-level before nested.
-  toplevel_str = 'Top-level' if other and other['plan_info'] else 'nested'
+  toplevel_str = 'Top-level' if plan_info else 'nested'
   print(f'{row.institution} {row.requirement_id} {toplevel_str}', file=blocks_file)
 
   # A BlockInfo object contains block metadata from the requirement_blocks table, program and
@@ -336,11 +346,18 @@ def process_block(row: namedtuple, context_list: list = [], other: dict = None):
   # Catalog years string is based on period_start and period_stop
   args_dict['catalog_years'] = catalog_years(row.period_start, row.period_stop)._asdict()
 
+  # The ignomious 'other' column.
+  other_dict = {'maxperdisc': [],
+                'minclass': [],
+                'mincredit': []}
+
   # Program and subprogram info, if available
   try:
-    args_dict.update(other)
+    other_dict.update(plan_info)
   except TypeError:
     pass
+
+  args_dict['other'] = other_dict
 
   # Empty strings for default values that might or might not be found in the header.
   for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
@@ -366,7 +383,7 @@ def process_block(row: namedtuple, context_list: list = [], other: dict = None):
     print(row.institution, row.requirement_id, 'Missing Header', file=fail_file)
 
   # Only top-level blocks get entries in the programs table.
-  if other and other['plan_info']:
+  if plan_info:
     programs_writer.writerow([f'{block_info.institution[0:3]}',
                               f'{block_info.requirement_id}',
                               f'{block_info.block_type}',
@@ -376,7 +393,9 @@ def process_block(row: namedtuple, context_list: list = [], other: dict = None):
                               f'{block_info.max_transfer}',
                               f'{block_info.min_residency}',
                               f'{block_info.min_grade}',
-                              f'{block_info.min_gpa}', ''])
+                              f'{block_info.min_gpa}',
+                              f'{block_info.other}',
+                              ])
 
   # But but all blocks get added to the context list.
   context_list.append({'block_info': block_info._asdict()})
@@ -513,9 +532,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             pass
 
           case 'header_maxperdisc':
-            # THERE WOULD BE A COURSE LIST HERE
-            print(f'{institution} {requirement_id} Header maxperdisc', file=todo_file)
-            pass
+            print(f'{institution} {requirement_id} Header maxperdisc', file=log_file)
+            block_info._asdict()['other']['maxperdisc'].append(value['maxperdisc'])
 
           case 'header_maxtransfer':
             print(f'{institution} {requirement_id} Header maxtransfer', file=log_file)
@@ -537,14 +555,12 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             block_info.max_transfer.append(transfer_limit)
 
           case 'header_minclass':
-            # THERE WOULD BE A COURSE LIST HERE
-            print(f'{institution} {requirement_id} Header minclass', file=todo_file)
-            pass
+            print(f'{institution} {requirement_id} Header minclass', file=log_file)
+            block_info._asdict()['other']['minclass'].append(value['minclass'])
 
           case 'header_mincredit':
-            # THERE WOULD BE A COURSE LIST HERE
-            print(f'{institution} {requirement_id} Header mincredit', file=todo_file)
-            pass
+            print(f'{institution} {requirement_id} Header mincredit', file=log_file)
+            block_info._asdict()['other']['mincredit'].append(value['mincredit'])
 
           case 'header_mingpa':
             print(f'{institution} {requirement_id} Header mingpa', file=log_file)
@@ -747,7 +763,8 @@ def traverse_body(node: Any, context_list: list) -> None:
             # There has to be at least num_required subplans possible, although there may be
             # problems fetching them.
             try:
-              subplans_list = context_list[0]['block_info']['plan_info']['subplans'].split(',')
+              subplans_list = (context_list[0]['block_info']['other']['plan_info']['subplans']
+                               .split(','))
             except AttributeError:
               subplans_list = []
             num_subplans = len(subplans_list)
@@ -760,7 +777,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               try:
                 subplan_names, enrollments = zip(*[s.split(':') for s in subplans_list])
               except ValueError as ve:
-                breakpoint()
+                exit(f'{institution} {requirement_id} Unexpected ValueError {ve} in Body blocktype')
               block_value_list = ','.join([f"'{name}'" for name in subplan_names])
               with psycopg.connect('dbname=cuny_curriculum') as conn:
                 with conn.cursor(row_factory=namedtuple_row) as cursor:
@@ -928,11 +945,9 @@ def traverse_body(node: Any, context_list: list) -> None:
           num_required = int(requirement_value['number'])
           context_dict['num_groups'] = num_groups
           context_dict['num_required'] = num_required
-          description_str = format_group_description(num_groups, num_required)
-          group_description = {'requirement_name': description_str}
 
-          # Often, the label for the groups is redundant to the nicely-structured description
-          # provided by format_group_description(). See how well we can filter those out.
+          # Replace common variants of the requirement_name with standard-format version
+          description_str = format_group_description(num_groups, num_required)
 
           ignore_words = number_names + ['and', 'area', 'areas', 'choose', 'following', 'from',
                                          'group', 'groups', 'module', 'modules', 'of', 'option',
@@ -948,12 +963,18 @@ def traverse_body(node: Any, context_list: list) -> None:
               del words[words.index(ignore_word)]
             except ValueError:
               pass
+
+          # Are there any not-to-ignore words left?
           if words:
-            # TODO add a new requirement_name
-            print(f'Keep {word_str} {words}', file=sys.stderr)
+            # Yes: keep the current requirement_name.
+            # (Would it be better to put the formatted name under the context list?)
+            print(f'Keep {institution} {requirement_id} |{word_str}| {words}', file=debug_file)
+            pass
           else:
-            # TODO replace the requirement_name
-            print(f'Drop {word_str}', file=sys.stderr)
+            # No: Replace the Scribed name with our formatted one.
+            context_dict['requirement_name'] = description_str
+            print(f'Replace {institution} {requirement_id} |{word_str}| => |{description_str}|',
+                  file=debug_file)
 
           for group_num, group in enumerate(groups):
             if (group_num + 1) < len(number_ordinals):
@@ -961,8 +982,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                                f'group{s}')
             else:
               group_num_str = f'Group number {group_num + 1:,} of {num_groups_str} group{s}'
-            group_context = [group_description,
-                             {'group_number': group_num + 1,
+
+            group_context = [{'group_number': group_num + 1,
                               'requirement_name': group_num_str}
                              ]
 
@@ -1438,7 +1459,7 @@ if __name__ == "__main__":
               continue
 
           dgw_row = DGW_Row._make([dgw_dict[k] for k in dgw_keys])
-          process_block(dgw_row, context_list=[], other={'plan_info': plan_dict})
+          process_block(dgw_row, context_list=[], plan_info={'plan_info': plan_dict})
 
           programs_count += 1
           block_types[dgw_row.block_type] += 1
