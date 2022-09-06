@@ -22,8 +22,13 @@ done
 echo -e `date` '\n\nBLOCK COUNTS' > reports.txt
 
 cat blocks.txt|cut -c 1-3,15-|sort|uniq -c >> reports.txt
-n=`wc -l blocks.txt`
-echo "   ${n/blocks.txt/}Total" >> reports.txt
+n_top=`ack Top-level blocks.txt|wc -l`
+n_nest=`ack nested blocks.txt|wc -l`
+n_total=`wc -l blocks.txt`
+echo '   ------------------' >> reports.txt
+printf "   %'d %s\n" ${n_top} "Top Level" >> reports.txt
+printf "   %'d %s\n" ${n_nest} "Nested" >> reports.txt
+printf "   %'d %s\n" ${n_total/blocks.txt/} "Total" >> reports.txt
 
 echo -e "\nMAJORS WITH NON-MAJOR BLOCK TYPES" >> reports.txt
 cat anomalies.txt >> reports.txt
@@ -31,7 +36,7 @@ cat anomalies.txt >> reports.txt
 echo -e "\nMAJORS WITH NO SCRIBE BLOCKS" >> reports.txt
 cat missing_ra.txt >> reports.txt
 
-for r in log todo fail no_courses debug analysis
+for r in log todo fail no_courses # debug analysis
 do
   echo -e "\n$r" | tr a-z A-Z >> reports.txt
   if [[ $r = no_courses ]]
