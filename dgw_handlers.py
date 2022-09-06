@@ -144,7 +144,7 @@ body_class_credit : (num_classes | num_credits)
       course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
       course_list_rule  : course_list_body label?;  # (Not actually relevant here)
 
-    Ignore proxy_advice and tag.
+    Ignore tag.
   """
 
   return_dict = {'label': get_label(ctx)}
@@ -168,6 +168,9 @@ body_class_credit : (num_classes | num_credits)
 
   if ctx.rule_tag():
     return_dict['rule_tag'] = get_nv_pairs(ctx.rule_tag())
+
+  if ctx.proxy_advice():
+    return_dict.update(proxy_advice(ctx.proxy_advice(), institution, requirement_id))
 
   if ctx.remark():
     return_dict['remark'] = ' '.join([s.getText().strip(' "')
@@ -415,6 +418,11 @@ def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
     requirement_list_dict.update(get_groups(group_requirement_ctx.groups(),
                                             institution, requirement_id))
 
+    if group_requirement_ctx.proxy_advice():
+      return_dict.update(proxy_advice(group_requirement_ctx.proxy_advice(),
+                                      institution,
+                                      requirement_id))
+
     requirement_list.append({'group_requirement': requirement_list_dict})
 
   return {'group_requirements': requirement_list}
@@ -469,6 +477,9 @@ def lastres(ctx, institution, requirement_id):
 
   if ctx.course_list():
     return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
+
+  if ctx.proxy_advice():
+    return_dict.update(proxy_advice(ctx.proxy_advice(), institution, requirement_id))
 
   if ctx.display():
     return_dict['display'] = get_display(ctx)
@@ -1066,6 +1077,9 @@ def rule_complete(ctx, institution, requirement_id):
 
   if ctx.rule_tag():
     return_dict['rule_tag'] = get_nv_pairs(ctx.rule_tag())
+
+  if ctx.proxy_advice():
+    return_dict.update(proxy_advice(ctx.proxy_advice(), institution, requirement_id))
 
   return {'rule_complete': return_dict}
 
