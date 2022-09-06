@@ -311,9 +311,10 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
 
         plan_info   Information about a plan and its subplan if this is a top-level block (a major
                     or minor, but not a concentration)
-        mincredit   {
-        minclass    { These are possibly empty lists of dicts of their respective types
-        maxperdisc  {
+        mincredit   |
+        minclass    | These are possibly empty lists of dicts of their respective types
+        minperdisc. |
+        maxperdisc  |
   """
   global quarantine_count
 
@@ -349,7 +350,8 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
   # The ignomious 'other' column.
   other_dict = {'maxperdisc': [],
                 'minclass': [],
-                'mincredit': []}
+                'mincredit': [],
+                'minperdisc': []}
 
   # Program and subprogram info, if available
   try:
@@ -459,6 +461,16 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
                 class_credit_list.append(f'{max_credits:.1f} credits')
               else:
                 class_credit_list.append(f'{min_credits:.1f}-{max_credits:.1f} credits')
+              try:
+                proxy_advice = value['proxy_advice']
+                if do_proxy_advice:
+                  print(f'{institution} {requirement_id} Header {key} proxy_advice',
+                        file=todo_file)
+                else:
+                  print(f'{institution} {requirement_id} Header {key} proxy_advice (ignored)',
+                        file=log_file)
+              except KeyError:
+                pass
             block_info.class_credits = ' and '.join(class_credit_list)
 
           case 'conditional':
@@ -533,7 +545,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
 
           case 'header_maxperdisc':
             print(f'{institution} {requirement_id} Header maxperdisc', file=log_file)
-            block_info._asdict()['other']['maxperdisc'].append(value['maxperdisc'])
+            block_info.other['maxperdisc'].append(value['maxperdisc'])
 
           case 'header_maxtransfer':
             print(f'{institution} {requirement_id} Header maxtransfer', file=log_file)
@@ -576,7 +588,10 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             block_info.min_grade = letter_grade(float(value['mingrade']['number']))
 
           case 'header_minperdisc':
-            pass
+            if label := value['label']:
+              print(f'{institution} {requirement_id} Header minperdisc label', file=todo_file)
+            block_info.other['minperdisc']. append(value['minperdisc'])
+            print(f'{institution} {requirement_id} Header minperdisc', file=log_file)
 
           case 'header_minres':
             print(f'{institution} {requirement_id} Header minres', file=log_file)
@@ -1277,7 +1292,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                 if do_proxy_advice:
                   print(f'{institution} {requirement_id} Subset {key}', file=todo_file)
                 else:
-                  print(f'{institution} {requirement_id} Subset {key}: (ignored)', file=log_file)
+                  print(f'{institution} {requirement_id} Subset {key} (ignored)', file=log_file)
 
               case _:
                 print(f'{institution} {requirement_id} Unhandled Subset {key}: '
