@@ -32,11 +32,6 @@ if __name__ == '__main__':
   if args.requirement_key:
     requirement_key = f'{args.requirement_key}'
 
-  if institution:
-    print(institution, requirement_id, requirement_key)
-  else:
-    print('Key', requirement_key)
-
   csv.field_size_limit(sys.maxsize)
   with open('/Users/vickery/projects/dgw_processor/course_mapper.requirements.csv') as req_file:
     reader = csv.reader(req_file)
@@ -50,7 +45,9 @@ if __name__ == '__main__':
            (institution and row.institution != institution) or \
            (requirement_id and row.requirement_id != requirement_id):
           continue
-        print(f'\n{row.institution} {row.requirement_id} {int(row.requirement_key):>08}:')
+
+        print(f'{row.institution} {row.requirement_id} '
+              f'{int(row.requirement_key):>08}')
         for ctx in json.loads(row.context):
           for k, v in ctx.items():
             line = f'  {k}: {v}'
@@ -58,3 +55,4 @@ if __name__ == '__main__':
               print(line)
             else:
               print(line[0:129] + '...')
+        print()

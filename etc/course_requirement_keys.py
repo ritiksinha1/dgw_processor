@@ -13,6 +13,7 @@ from psycopg.rows import namedtuple_row
 
 parser = ArgumentParser('Look up mapping keys for a course')
 parser.add_argument('course', nargs='*')
+parser.add_argument('-f', '--full_text', action='store_true')
 args = parser.parse_args()
 
 if len(args.course) == 1:
@@ -55,11 +56,16 @@ else:
   exit(f'eh? {args.course}')
 
 target = f'{course_id:06}:{offer_nbr}'
-print(f'{target=}')
+run_args = [Path('list_requirements.py')]
+if args.full_text:
+  run_args.append('-f')
+
 with open('/Users/vickery/Projects/dgw_processor/course_mapper.course_mappings.csv') as csv_file:
+  requirement_counter = 0
   reader = csv.reader(csv_file)
   for line in reader:
     if line[1] == target:
+      requirement_counter += 1
+      print(f'{target} requirement {requirement_counter}')
       requirement_key = line[0]
-      subprocess.run([Path('list_requirements.py'), '-k', requirement_key],
-                     stdout=sys.stdout)
+      subprocess.run(run_args + ['-k', requirement_key], stdout=sys.stdout)
