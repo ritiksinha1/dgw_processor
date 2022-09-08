@@ -37,6 +37,7 @@ elif len(args.course) == 3:
        where institution ~* %s
          and discipline ~* %s
          and catalog_number ~* '^{catalog_number}$'
+         and course_status = 'A'
       """, [institution, discipline])
 
       match cursor.rowcount:
