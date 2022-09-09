@@ -1163,56 +1163,68 @@ def subset(ctx, institution, requirement_id):
     print(f'*** subset({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  return_dict = {'label': get_label(ctx)}
+  return_dict = {}
 
-  if ctx.body_conditional():
-    return_dict['conditional_list'] = [body_conditional(context, institution, requirement_id)
-                                       for context in ctx.body_conditional()]
+  for child in ctx.children:
 
-  if ctx.block():
-    return_dict['block'] = [block(context, institution, requirement_id) for context in ctx.block()]
+    match name := class_name(child).lower():
 
-  if ctx.blocktype():
-    return_dict['blocktype'] = [blocktype(context, institution, requirement_id)
-                                for context in ctx.blocktype()]
+      case 'label':
+        return_dict['label'] = get_label(ctx)
 
-  if ctx.body_class_credit():
-    # Return a list of class_credit dicts
-    return_dict['class_credit_list'] = [body_class_credit(context, institution, requirement_id)
-                                        for context in ctx.body_class_credit()]
+      case 'block':
+        return_dict['block'] = [block(context, institution, requirement_id) for context in ctx.block()]
 
-  if ctx.copy_rules():
-    assert len(ctx.copy_rules()) == 1, (f'Assertion Error: {len(ctx.copy_rules())} '
-                                        f'is not unity in subset')
-    return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
+      case 'blocktype':
+        return_dict['blocktype'] = [blocktype(context, institution, requirement_id)
+                                    for context in ctx.blocktype()]
 
-  if ctx.course_list_rule():
-    # The grammar makes this a list, but the length will almost always be unity
-    return_dict['course_list_rules'] = [{'course_list_rule':
-                                         build_course_list(context.course_list_body().course_list(),
-                                                           institution, requirement_id)}
-                                        for context in ctx.course_list_rule()]
+      case 'body_conditional':
+         return_dict['conditional_list'] = [body_conditional(context, institution, requirement_id)
+                                            for context in ctx.body_conditional()]
 
-  if ctx.group_requirement():
-    return_dict.update(group_requirement(ctx.group_requirement(), institution, requirement_id))
+      case 'body_class_credit':
+        # Return a list of class_credit dicts
+        return_dict['class_credit_list'] = [body_class_credit(context, institution, requirement_id)
+                                            for context in ctx.body_class_credit()]
 
-  if ctx.noncourse():
-    return_dict['noncourse'] = [noncourse(context, institution, requirement_id)
-                                for context in ctx.noncourse()]
+      case 'copy_rules':
+        assert len(ctx.copy_rules()) == 1, (f'Assertion Error: {len(ctx.copy_rules())} '
+                                            f'is not unity in subset')
+        return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
 
-  if ctx.rule_complete():
-    assert len(ctx.rule_complete()) == 1, (f'Assertion Error: {len(ctx.rule_complete())} '
-                                           f'is not unity in subset')
-    return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0],
-                                                 institution, requirement_id)
+      case 'course_list_rule':
+        # The grammar makes this a list, but the length will almost always be unity
+        return_dict['course_list_rules'] = [{'course_list_rule':
+                                             build_course_list(context.course_list_body().course_list(),
+                                                               institution, requirement_id)}
+                                            for context in ctx.course_list_rule()]
 
-  if qualifiers := ctx.qualifier():
-    return_dict.update(get_qualifiers(qualifiers, institution, requirement_id))
+      case 'group_requirement':
+        return_dict.update(group_requirement(ctx.group_requirement(), institution, requirement_id))
 
-  if ctx.remark():
-    return_dict['remark'] = ' '.join([s.getText().strip(' "')
-                                     for c in ctx.remark()
-                                     for s in c.string()])
+      case 'noncourse':
+        return_dict['noncourse'] = [noncourse(context, institution, requirement_id)
+                                    for context in ctx.noncourse()]
+
+      case 'rule_complete':
+        assert len(ctx.rule_complete()) == 1, (f'Assertion Error: {len(ctx.rule_complete())} '
+                                               f'is not unity in subset')
+        return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0],
+                                                     institution, requirement_id)
+
+      case 'remark':
+        return_dict['remark'] = ' '.join([s.getText().strip(' "')
+                                         for c in ctx.remark()
+                                         for s in c.string()])
+
+      case 'qualifier':
+        return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
+
+      case 'terminalnodeimpl':
+        pass
+
+      case _: print('Subset TODO', name)
 
   return {'subset': return_dict}
 
