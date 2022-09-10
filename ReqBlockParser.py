@@ -1,4 +1,4 @@
-# Generated from ReqBlock.g4 by ANTLR 4.10.1
+# Generated from ReqBlock.g4 by ANTLR 4.11.1
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -730,7 +730,7 @@ class ReqBlockParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.10.1")
+        self.checkVersion("4.11.1")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -809,7 +809,7 @@ class ReqBlockParser ( Parser ):
             self.state = 210
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.SEMICOLON:
+            if _la==105:
                 self.state = 208
                 self.match(ReqBlockParser.SEMICOLON)
                 self.state = 209
@@ -884,7 +884,7 @@ class ReqBlockParser ( Parser ):
             self.state = 224
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while ((((_la - 23)) & ~0x3f) == 0 and ((1 << (_la - 23)) & ((1 << (ReqBlockParser.COPY_RULES - 23)) | (1 << (ReqBlockParser.DONT_SHARE - 23)) | (1 << (ReqBlockParser.HEADER_TAG - 23)) | (1 << (ReqBlockParser.LASTRES - 23)) | (1 << (ReqBlockParser.MAXCLASS - 23)) | (1 << (ReqBlockParser.MAXCREDIT - 23)) | (1 << (ReqBlockParser.MAXPASSFAIL - 23)) | (1 << (ReqBlockParser.MAXPERDISC - 23)) | (1 << (ReqBlockParser.MAXTERM - 23)) | (1 << (ReqBlockParser.MAXTRANSFER - 23)) | (1 << (ReqBlockParser.MINGPA - 23)) | (1 << (ReqBlockParser.MINGRADE - 23)) | (1 << (ReqBlockParser.MINCLASS - 23)) | (1 << (ReqBlockParser.MINCREDIT - 23)) | (1 << (ReqBlockParser.MINPERDISC - 23)) | (1 << (ReqBlockParser.MINRES - 23)) | (1 << (ReqBlockParser.MINTERM - 23)) | (1 << (ReqBlockParser.OPTIONAL - 23)) | (1 << (ReqBlockParser.PROXY_ADVICE - 23)) | (1 << (ReqBlockParser.REMARK - 23)) | (1 << (ReqBlockParser.RULE_COMPLETE - 23)) | (1 << (ReqBlockParser.RULE_INCOMPLETE - 23)) | (1 << (ReqBlockParser.STANDALONE - 23)) | (1 << (ReqBlockParser.SHARE - 23)) | (1 << (ReqBlockParser.IF - 23)) | (1 << (ReqBlockParser.NUMBER - 23)))) != 0):
+            while (((_la - 23)) & ~0x3f) == 0 and ((1 << (_la - 23)) & 18296347375139973) != 0:
                 self.state = 221
                 self.header_rule()
                 self.state = 226
@@ -944,7 +944,7 @@ class ReqBlockParser ( Parser ):
             self.state = 230
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.STRING) | (1 << ReqBlockParser.BEGINSUB) | (1 << ReqBlockParser.BLOCK) | (1 << ReqBlockParser.COPY_RULES) | (1 << ReqBlockParser.PROXY_ADVICE) | (1 << ReqBlockParser.REMARK) | (1 << ReqBlockParser.RULE_COMPLETE) | (1 << ReqBlockParser.RULE_INCOMPLETE))) != 0) or ((((_la - 71)) & ~0x3f) == 0 and ((1 << (_la - 71)) & ((1 << (ReqBlockParser.IF - 71)) | (1 << (ReqBlockParser.IS - 71)) | (1 << (ReqBlockParser.NUMBER - 71)) | (1 << (ReqBlockParser.CATALOG_NUMBER - 71)) | (1 << (ReqBlockParser.WILD - 71)) | (1 << (ReqBlockParser.SYMBOL - 71)) | (1 << (ReqBlockParser.L_SQB - 71)))) != 0):
+            while ((_la) & ~0x3f) == 0 and ((1 << _la) & 513410357530198018) != 0 or (((_la - 71)) & ~0x3f) == 0 and ((1 << (_la - 71)) & 134218691) != 0:
                 self.state = 227
                 self.body_rule()
                 self.state = 232
@@ -1029,30 +1029,30 @@ class ReqBlockParser ( Parser ):
             self.state = 236
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.AND, ReqBlockParser.PLUS]:
+            if token in [75, 101]:
                 self.state = 234
                 self.and_list()
                 pass
-            elif token in [ReqBlockParser.OR, ReqBlockParser.COMMA]:
+            elif token in [76, 88]:
                 self.state = 235
                 self.or_list()
                 pass
-            elif token in [ReqBlockParser.EOF, ReqBlockParser.STRING, ReqBlockParser.DISPLAY, ReqBlockParser.BEGINSUB, ReqBlockParser.BLOCK, ReqBlockParser.COPY_RULES, ReqBlockParser.DONT_SHARE, ReqBlockParser.ENDOT, ReqBlockParser.ENDSUB, ReqBlockParser.EXCEPT, ReqBlockParser.HEADER_TAG, ReqBlockParser.INCLUDING, ReqBlockParser.LABEL, ReqBlockParser.LASTRES, ReqBlockParser.MAXCLASS, ReqBlockParser.MAXCREDIT, ReqBlockParser.MAXPASSFAIL, ReqBlockParser.MAXPERDISC, ReqBlockParser.MAXSPREAD, ReqBlockParser.MAXTERM, ReqBlockParser.MAXTRANSFER, ReqBlockParser.MINAREA, ReqBlockParser.MINGPA, ReqBlockParser.MINGRADE, ReqBlockParser.MINCLASS, ReqBlockParser.MINCREDIT, ReqBlockParser.MINPERDISC, ReqBlockParser.MINRES, ReqBlockParser.MINSPREAD, ReqBlockParser.MINTERM, ReqBlockParser.OPTIONAL, ReqBlockParser.PROXY_ADVICE, ReqBlockParser.REMARK, ReqBlockParser.RULE_COMPLETE, ReqBlockParser.RULE_INCOMPLETE, ReqBlockParser.RULE_TAG, ReqBlockParser.STANDALONE, ReqBlockParser.SHARE, ReqBlockParser.TAG, ReqBlockParser.SAME_DISC, ReqBlockParser.ELSE, ReqBlockParser.ENDELSE, ReqBlockParser.ENDIF, ReqBlockParser.IF, ReqBlockParser.IS, ReqBlockParser.NUMBER, ReqBlockParser.CATALOG_NUMBER, ReqBlockParser.WILD, ReqBlockParser.SYMBOL, ReqBlockParser.L_SQB, ReqBlockParser.RP, ReqBlockParser.SEMICOLON]:
+            elif token in [-1, 1, 6, 19, 20, 23, 25, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 56, 57, 58, 59, 60, 61, 62, 63, 68, 69, 70, 71, 72, 77, 78, 79, 80, 98, 103, 105]:
                 pass
             else:
                 pass
             self.state = 242
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.EXCEPT or _la==ReqBlockParser.INCLUDING:
+            while _la==28 or _la==31:
                 self.state = 240
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [ReqBlockParser.EXCEPT]:
+                if token in [28]:
                     self.state = 238
                     self.except_list()
                     pass
-                elif token in [ReqBlockParser.INCLUDING]:
+                elif token in [31]:
                     self.state = 239
                     self.include_list()
                     pass
@@ -1212,7 +1212,7 @@ class ReqBlockParser ( Parser ):
             self.state = 257
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.L_SQB:
+            if _la==98:
                 self.state = 256
                 self.area_start()
 
@@ -1230,7 +1230,7 @@ class ReqBlockParser ( Parser ):
             self.state = 266
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.LP:
+            while _la==97:
                 self.state = 263
                 self.with_clause()
                 self.state = 268
@@ -1240,7 +1240,7 @@ class ReqBlockParser ( Parser ):
             self.state = 270
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.R_SQB:
+            if _la==104:
                 self.state = 269
                 self.area_end()
 
@@ -1318,7 +1318,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 274
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==ReqBlockParser.R_SQB:
+                if _la==104:
                     self.state = 273
                     self.area_end()
 
@@ -1328,7 +1328,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 280 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (_la==ReqBlockParser.AND or _la==ReqBlockParser.PLUS):
+                if not (_la==75 or _la==101):
                     break
 
         except RecognitionException as re:
@@ -1404,7 +1404,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 284
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==ReqBlockParser.R_SQB:
+                if _la==104:
                     self.state = 283
                     self.area_end()
 
@@ -1414,7 +1414,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 290 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (_la==ReqBlockParser.OR or _la==ReqBlockParser.COMMA):
+                if not (_la==76 or _la==88):
                     break
 
         except RecognitionException as re:
@@ -1481,15 +1481,15 @@ class ReqBlockParser ( Parser ):
             self.state = 296
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.AND, ReqBlockParser.PLUS]:
+            if token in [75, 101]:
                 self.state = 294
                 self.and_list()
                 pass
-            elif token in [ReqBlockParser.OR, ReqBlockParser.COMMA]:
+            elif token in [76, 88]:
                 self.state = 295
                 self.or_list()
                 pass
-            elif token in [ReqBlockParser.EOF, ReqBlockParser.STRING, ReqBlockParser.DISPLAY, ReqBlockParser.BEGINSUB, ReqBlockParser.BLOCK, ReqBlockParser.COPY_RULES, ReqBlockParser.DONT_SHARE, ReqBlockParser.ENDOT, ReqBlockParser.ENDSUB, ReqBlockParser.EXCEPT, ReqBlockParser.HEADER_TAG, ReqBlockParser.INCLUDING, ReqBlockParser.LABEL, ReqBlockParser.LASTRES, ReqBlockParser.MAXCLASS, ReqBlockParser.MAXCREDIT, ReqBlockParser.MAXPASSFAIL, ReqBlockParser.MAXPERDISC, ReqBlockParser.MAXSPREAD, ReqBlockParser.MAXTERM, ReqBlockParser.MAXTRANSFER, ReqBlockParser.MINAREA, ReqBlockParser.MINGPA, ReqBlockParser.MINGRADE, ReqBlockParser.MINCLASS, ReqBlockParser.MINCREDIT, ReqBlockParser.MINPERDISC, ReqBlockParser.MINRES, ReqBlockParser.MINSPREAD, ReqBlockParser.MINTERM, ReqBlockParser.OPTIONAL, ReqBlockParser.PROXY_ADVICE, ReqBlockParser.REMARK, ReqBlockParser.RULE_COMPLETE, ReqBlockParser.RULE_INCOMPLETE, ReqBlockParser.RULE_TAG, ReqBlockParser.STANDALONE, ReqBlockParser.SHARE, ReqBlockParser.TAG, ReqBlockParser.SAME_DISC, ReqBlockParser.ELSE, ReqBlockParser.ENDELSE, ReqBlockParser.ENDIF, ReqBlockParser.IF, ReqBlockParser.IS, ReqBlockParser.NUMBER, ReqBlockParser.CATALOG_NUMBER, ReqBlockParser.WILD, ReqBlockParser.SYMBOL, ReqBlockParser.L_SQB, ReqBlockParser.RP, ReqBlockParser.SEMICOLON]:
+            elif token in [-1, 1, 6, 19, 20, 23, 25, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 56, 57, 58, 59, 60, 61, 62, 63, 68, 69, 70, 71, 72, 77, 78, 79, 80, 98, 103, 105]:
                 pass
             else:
                 pass
@@ -1557,15 +1557,15 @@ class ReqBlockParser ( Parser ):
             self.state = 302
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.AND, ReqBlockParser.PLUS]:
+            if token in [75, 101]:
                 self.state = 300
                 self.and_list()
                 pass
-            elif token in [ReqBlockParser.OR, ReqBlockParser.COMMA]:
+            elif token in [76, 88]:
                 self.state = 301
                 self.or_list()
                 pass
-            elif token in [ReqBlockParser.EOF, ReqBlockParser.STRING, ReqBlockParser.DISPLAY, ReqBlockParser.BEGINSUB, ReqBlockParser.BLOCK, ReqBlockParser.COPY_RULES, ReqBlockParser.DONT_SHARE, ReqBlockParser.ENDOT, ReqBlockParser.ENDSUB, ReqBlockParser.EXCEPT, ReqBlockParser.HEADER_TAG, ReqBlockParser.INCLUDING, ReqBlockParser.LABEL, ReqBlockParser.LASTRES, ReqBlockParser.MAXCLASS, ReqBlockParser.MAXCREDIT, ReqBlockParser.MAXPASSFAIL, ReqBlockParser.MAXPERDISC, ReqBlockParser.MAXSPREAD, ReqBlockParser.MAXTERM, ReqBlockParser.MAXTRANSFER, ReqBlockParser.MINAREA, ReqBlockParser.MINGPA, ReqBlockParser.MINGRADE, ReqBlockParser.MINCLASS, ReqBlockParser.MINCREDIT, ReqBlockParser.MINPERDISC, ReqBlockParser.MINRES, ReqBlockParser.MINSPREAD, ReqBlockParser.MINTERM, ReqBlockParser.OPTIONAL, ReqBlockParser.PROXY_ADVICE, ReqBlockParser.REMARK, ReqBlockParser.RULE_COMPLETE, ReqBlockParser.RULE_INCOMPLETE, ReqBlockParser.RULE_TAG, ReqBlockParser.STANDALONE, ReqBlockParser.SHARE, ReqBlockParser.TAG, ReqBlockParser.SAME_DISC, ReqBlockParser.ELSE, ReqBlockParser.ENDELSE, ReqBlockParser.ENDIF, ReqBlockParser.IF, ReqBlockParser.IS, ReqBlockParser.NUMBER, ReqBlockParser.CATALOG_NUMBER, ReqBlockParser.WILD, ReqBlockParser.SYMBOL, ReqBlockParser.L_SQB, ReqBlockParser.RP, ReqBlockParser.SEMICOLON]:
+            elif token in [-1, 1, 6, 19, 20, 23, 25, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 56, 57, 58, 59, 60, 61, 62, 63, 68, 69, 70, 71, 72, 77, 78, 79, 80, 98, 103, 105]:
                 pass
             else:
                 pass
@@ -1626,22 +1626,22 @@ class ReqBlockParser ( Parser ):
             self.state = 308
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.SYMBOL]:
+            if token in [80]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 304
                 self.symbol()
                 pass
-            elif token in [ReqBlockParser.NUMBER]:
+            elif token in [77]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 305
                 self.match(ReqBlockParser.NUMBER)
                 pass
-            elif token in [ReqBlockParser.CATALOG_NUMBER]:
+            elif token in [78]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 306
                 self.match(ReqBlockParser.CATALOG_NUMBER)
                 pass
-            elif token in [ReqBlockParser.WILD]:
+            elif token in [79]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 307
                 self.match(ReqBlockParser.WILD)
@@ -1710,27 +1710,27 @@ class ReqBlockParser ( Parser ):
             self.state = 315
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.SYMBOL]:
+            if token in [80]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 310
                 self.symbol()
                 pass
-            elif token in [ReqBlockParser.STRING]:
+            elif token in [1]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 311
                 self.string()
                 pass
-            elif token in [ReqBlockParser.WILD]:
+            elif token in [79]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 312
                 self.match(ReqBlockParser.WILD)
                 pass
-            elif token in [ReqBlockParser.BLOCK]:
+            elif token in [20]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 313
                 self.match(ReqBlockParser.BLOCK)
                 pass
-            elif token in [ReqBlockParser.IS]:
+            elif token in [72]:
                 self.enterOuterAlt(localctx, 5)
                 self.state = 314
                 self.match(ReqBlockParser.IS)
@@ -2018,82 +2018,82 @@ class ReqBlockParser ( Parser ):
             self.state = 349
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.MAXPASSFAIL]:
+            if token in [36]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 333
                 self.maxpassfail()
                 pass
-            elif token in [ReqBlockParser.MAXPERDISC]:
+            elif token in [37]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 334
                 self.maxperdisc()
                 pass
-            elif token in [ReqBlockParser.MAXSPREAD]:
+            elif token in [38]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 335
                 self.maxspread()
                 pass
-            elif token in [ReqBlockParser.MAXTRANSFER]:
+            elif token in [40]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 336
                 self.maxtransfer()
                 pass
-            elif token in [ReqBlockParser.MAXTERM]:
+            elif token in [39]:
                 self.enterOuterAlt(localctx, 5)
                 self.state = 337
                 self.maxterm()
                 pass
-            elif token in [ReqBlockParser.MINAREA]:
+            elif token in [41]:
                 self.enterOuterAlt(localctx, 6)
                 self.state = 338
                 self.minarea()
                 pass
-            elif token in [ReqBlockParser.MINCLASS]:
+            elif token in [44]:
                 self.enterOuterAlt(localctx, 7)
                 self.state = 339
                 self.minclass()
                 pass
-            elif token in [ReqBlockParser.MINCREDIT]:
+            elif token in [45]:
                 self.enterOuterAlt(localctx, 8)
                 self.state = 340
                 self.mincredit()
                 pass
-            elif token in [ReqBlockParser.MINGPA]:
+            elif token in [42]:
                 self.enterOuterAlt(localctx, 9)
                 self.state = 341
                 self.mingpa()
                 pass
-            elif token in [ReqBlockParser.MINGRADE]:
+            elif token in [43]:
                 self.enterOuterAlt(localctx, 10)
                 self.state = 342
                 self.mingrade()
                 pass
-            elif token in [ReqBlockParser.MINPERDISC]:
+            elif token in [46]:
                 self.enterOuterAlt(localctx, 11)
                 self.state = 343
                 self.minperdisc()
                 pass
-            elif token in [ReqBlockParser.MINSPREAD]:
+            elif token in [48]:
                 self.enterOuterAlt(localctx, 12)
                 self.state = 344
                 self.minspread()
                 pass
-            elif token in [ReqBlockParser.PROXY_ADVICE]:
+            elif token in [53]:
                 self.enterOuterAlt(localctx, 13)
                 self.state = 345
                 self.proxy_advice()
                 pass
-            elif token in [ReqBlockParser.RULE_TAG]:
+            elif token in [59]:
                 self.enterOuterAlt(localctx, 14)
                 self.state = 346
                 self.rule_tag()
                 pass
-            elif token in [ReqBlockParser.SAME_DISC]:
+            elif token in [63]:
                 self.enterOuterAlt(localctx, 15)
                 self.state = 347
                 self.samedisc()
                 pass
-            elif token in [ReqBlockParser.DONT_SHARE, ReqBlockParser.SHARE]:
+            elif token in [25, 61]:
                 self.enterOuterAlt(localctx, 16)
                 self.state = 348
                 self.share()
@@ -2152,7 +2152,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 351
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.BEGINELSE or _la==ReqBlockParser.BEGINIF):
+            if not(_la==66 or _la==67):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2208,7 +2208,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 353
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.ENDELSE or _la==ReqBlockParser.ENDIF):
+            if not(_la==69 or _la==70):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2286,11 +2286,11 @@ class ReqBlockParser ( Parser ):
             self.state = 360
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.COPY_RULES, ReqBlockParser.DONT_SHARE, ReqBlockParser.HEADER_TAG, ReqBlockParser.LASTRES, ReqBlockParser.MAXCLASS, ReqBlockParser.MAXCREDIT, ReqBlockParser.MAXPASSFAIL, ReqBlockParser.MAXPERDISC, ReqBlockParser.MAXTERM, ReqBlockParser.MAXTRANSFER, ReqBlockParser.MINGPA, ReqBlockParser.MINGRADE, ReqBlockParser.MINCLASS, ReqBlockParser.MINCREDIT, ReqBlockParser.MINPERDISC, ReqBlockParser.MINRES, ReqBlockParser.MINTERM, ReqBlockParser.OPTIONAL, ReqBlockParser.PROXY_ADVICE, ReqBlockParser.REMARK, ReqBlockParser.RULE_COMPLETE, ReqBlockParser.RULE_INCOMPLETE, ReqBlockParser.STANDALONE, ReqBlockParser.SHARE, ReqBlockParser.IF, ReqBlockParser.NUMBER]:
+            if token in [23, 25, 30, 33, 34, 35, 36, 37, 39, 40, 42, 43, 44, 45, 46, 47, 49, 51, 53, 56, 57, 58, 60, 61, 71, 77]:
                 self.state = 358
                 self.header_rule()
                 pass
-            elif token in [ReqBlockParser.BEGINELSE, ReqBlockParser.BEGINIF]:
+            elif token in [66, 67]:
                 self.state = 359
                 self.header_rule_group()
                 pass
@@ -2363,11 +2363,11 @@ class ReqBlockParser ( Parser ):
             self.state = 368
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.COPY_RULES, ReqBlockParser.DONT_SHARE, ReqBlockParser.HEADER_TAG, ReqBlockParser.LASTRES, ReqBlockParser.MAXCLASS, ReqBlockParser.MAXCREDIT, ReqBlockParser.MAXPASSFAIL, ReqBlockParser.MAXPERDISC, ReqBlockParser.MAXTERM, ReqBlockParser.MAXTRANSFER, ReqBlockParser.MINGPA, ReqBlockParser.MINGRADE, ReqBlockParser.MINCLASS, ReqBlockParser.MINCREDIT, ReqBlockParser.MINPERDISC, ReqBlockParser.MINRES, ReqBlockParser.MINTERM, ReqBlockParser.OPTIONAL, ReqBlockParser.PROXY_ADVICE, ReqBlockParser.REMARK, ReqBlockParser.RULE_COMPLETE, ReqBlockParser.RULE_INCOMPLETE, ReqBlockParser.STANDALONE, ReqBlockParser.SHARE, ReqBlockParser.IF, ReqBlockParser.NUMBER]:
+            if token in [23, 25, 30, 33, 34, 35, 36, 37, 39, 40, 42, 43, 44, 45, 46, 47, 49, 51, 53, 56, 57, 58, 60, 61, 71, 77]:
                 self.state = 366
                 self.header_rule()
                 pass
-            elif token in [ReqBlockParser.BEGINELSE, ReqBlockParser.BEGINIF]:
+            elif token in [66, 67]:
                 self.state = 367
                 self.header_rule_group()
                 pass
@@ -2443,7 +2443,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 374 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (((((_la - 23)) & ~0x3f) == 0 and ((1 << (_la - 23)) & ((1 << (ReqBlockParser.COPY_RULES - 23)) | (1 << (ReqBlockParser.DONT_SHARE - 23)) | (1 << (ReqBlockParser.HEADER_TAG - 23)) | (1 << (ReqBlockParser.LASTRES - 23)) | (1 << (ReqBlockParser.MAXCLASS - 23)) | (1 << (ReqBlockParser.MAXCREDIT - 23)) | (1 << (ReqBlockParser.MAXPASSFAIL - 23)) | (1 << (ReqBlockParser.MAXPERDISC - 23)) | (1 << (ReqBlockParser.MAXTERM - 23)) | (1 << (ReqBlockParser.MAXTRANSFER - 23)) | (1 << (ReqBlockParser.MINGPA - 23)) | (1 << (ReqBlockParser.MINGRADE - 23)) | (1 << (ReqBlockParser.MINCLASS - 23)) | (1 << (ReqBlockParser.MINCREDIT - 23)) | (1 << (ReqBlockParser.MINPERDISC - 23)) | (1 << (ReqBlockParser.MINRES - 23)) | (1 << (ReqBlockParser.MINTERM - 23)) | (1 << (ReqBlockParser.OPTIONAL - 23)) | (1 << (ReqBlockParser.PROXY_ADVICE - 23)) | (1 << (ReqBlockParser.REMARK - 23)) | (1 << (ReqBlockParser.RULE_COMPLETE - 23)) | (1 << (ReqBlockParser.RULE_INCOMPLETE - 23)) | (1 << (ReqBlockParser.STANDALONE - 23)) | (1 << (ReqBlockParser.SHARE - 23)) | (1 << (ReqBlockParser.IF - 23)) | (1 << (ReqBlockParser.NUMBER - 23)))) != 0)):
+                if not ((((_la - 23)) & ~0x3f) == 0 and ((1 << (_la - 23)) & 18296347375139973) != 0):
                     break
 
             self.state = 376
@@ -2816,11 +2816,11 @@ class ReqBlockParser ( Parser ):
             self.state = 410
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.STRING, ReqBlockParser.BEGINSUB, ReqBlockParser.BLOCK, ReqBlockParser.COPY_RULES, ReqBlockParser.PROXY_ADVICE, ReqBlockParser.REMARK, ReqBlockParser.RULE_COMPLETE, ReqBlockParser.RULE_INCOMPLETE, ReqBlockParser.IF, ReqBlockParser.IS, ReqBlockParser.NUMBER, ReqBlockParser.CATALOG_NUMBER, ReqBlockParser.WILD, ReqBlockParser.SYMBOL, ReqBlockParser.L_SQB]:
+            if token in [1, 19, 20, 23, 53, 56, 57, 58, 71, 72, 77, 78, 79, 80, 98]:
                 self.state = 408
                 self.body_rule()
                 pass
-            elif token in [ReqBlockParser.BEGINELSE, ReqBlockParser.BEGINIF]:
+            elif token in [66, 67]:
                 self.state = 409
                 self.body_rule_group()
                 pass
@@ -2893,11 +2893,11 @@ class ReqBlockParser ( Parser ):
             self.state = 418
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [ReqBlockParser.STRING, ReqBlockParser.BEGINSUB, ReqBlockParser.BLOCK, ReqBlockParser.COPY_RULES, ReqBlockParser.PROXY_ADVICE, ReqBlockParser.REMARK, ReqBlockParser.RULE_COMPLETE, ReqBlockParser.RULE_INCOMPLETE, ReqBlockParser.IF, ReqBlockParser.IS, ReqBlockParser.NUMBER, ReqBlockParser.CATALOG_NUMBER, ReqBlockParser.WILD, ReqBlockParser.SYMBOL, ReqBlockParser.L_SQB]:
+            if token in [1, 19, 20, 23, 53, 56, 57, 58, 71, 72, 77, 78, 79, 80, 98]:
                 self.state = 416
                 self.body_rule()
                 pass
-            elif token in [ReqBlockParser.BEGINELSE, ReqBlockParser.BEGINIF]:
+            elif token in [66, 67]:
                 self.state = 417
                 self.body_rule_group()
                 pass
@@ -2973,7 +2973,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 424 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.STRING) | (1 << ReqBlockParser.BEGINSUB) | (1 << ReqBlockParser.BLOCK) | (1 << ReqBlockParser.COPY_RULES) | (1 << ReqBlockParser.PROXY_ADVICE) | (1 << ReqBlockParser.REMARK) | (1 << ReqBlockParser.RULE_COMPLETE) | (1 << ReqBlockParser.RULE_INCOMPLETE))) != 0) or ((((_la - 71)) & ~0x3f) == 0 and ((1 << (_la - 71)) & ((1 << (ReqBlockParser.IF - 71)) | (1 << (ReqBlockParser.IS - 71)) | (1 << (ReqBlockParser.NUMBER - 71)) | (1 << (ReqBlockParser.CATALOG_NUMBER - 71)) | (1 << (ReqBlockParser.WILD - 71)) | (1 << (ReqBlockParser.SYMBOL - 71)) | (1 << (ReqBlockParser.L_SQB - 71)))) != 0)):
+                if not (((_la) & ~0x3f) == 0 and ((1 << _la) & 513410357530198018) != 0 or (((_la - 71)) & ~0x3f) == 0 and ((1 << (_la - 71)) & 134218691) != 0):
                     break
 
             self.state = 426
@@ -3248,7 +3248,7 @@ class ReqBlockParser ( Parser ):
                         self.state = 447
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==ReqBlockParser.TAG:
+                        if _la==62:
                             self.state = 446
                             self.tag()
 
@@ -3340,7 +3340,7 @@ class ReqBlockParser ( Parser ):
             self.state = 465
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.AND or _la==ReqBlockParser.OR:
+            while _la==75 or _la==76:
                 self.state = 460
                 self.logical_op()
                 self.state = 461
@@ -3502,7 +3502,7 @@ class ReqBlockParser ( Parser ):
             self.state = 486
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.DONT_SHARE) | (1 << ReqBlockParser.MAXPASSFAIL) | (1 << ReqBlockParser.MAXPERDISC) | (1 << ReqBlockParser.MAXSPREAD) | (1 << ReqBlockParser.MAXTERM) | (1 << ReqBlockParser.MAXTRANSFER) | (1 << ReqBlockParser.MINAREA) | (1 << ReqBlockParser.MINGPA) | (1 << ReqBlockParser.MINGRADE) | (1 << ReqBlockParser.MINCLASS) | (1 << ReqBlockParser.MINCREDIT) | (1 << ReqBlockParser.MINPERDISC) | (1 << ReqBlockParser.MINSPREAD) | (1 << ReqBlockParser.PROXY_ADVICE) | (1 << ReqBlockParser.REMARK) | (1 << ReqBlockParser.RULE_TAG) | (1 << ReqBlockParser.SHARE) | (1 << ReqBlockParser.SAME_DISC))) != 0):
+            while ((_la) & ~0x3f) == 0 and ((1 << _la) & -6259581338265845760) != 0:
                 self.state = 484
                 self._errHandler.sync(self)
                 la_ = self._interp.adaptivePredict(self._input,44,self._ctx)
@@ -3512,7 +3512,7 @@ class ReqBlockParser ( Parser ):
                     self.state = 480
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==ReqBlockParser.TAG:
+                    if _la==62:
                         self.state = 479
                         self.tag()
 
@@ -3537,7 +3537,7 @@ class ReqBlockParser ( Parser ):
             self.state = 490
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 489
                 self.label()
 
@@ -3746,7 +3746,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 506 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << ReqBlockParser.STRING) | (1 << ReqBlockParser.BLOCK) | (1 << ReqBlockParser.COPY_RULES) | (1 << ReqBlockParser.RULE_COMPLETE) | (1 << ReqBlockParser.RULE_INCOMPLETE))) != 0) or ((((_la - 71)) & ~0x3f) == 0 and ((1 << (_la - 71)) & ((1 << (ReqBlockParser.IF - 71)) | (1 << (ReqBlockParser.IS - 71)) | (1 << (ReqBlockParser.NUMBER - 71)) | (1 << (ReqBlockParser.CATALOG_NUMBER - 71)) | (1 << (ReqBlockParser.WILD - 71)) | (1 << (ReqBlockParser.SYMBOL - 71)) | (1 << (ReqBlockParser.L_SQB - 71)))) != 0)):
+                if not (((_la) & ~0x3f) == 0 and ((1 << _la) & 432345564237004802) != 0 or (((_la - 71)) & ~0x3f) == 0 and ((1 << (_la - 71)) & 134218691) != 0):
                     break
 
             self.state = 508
@@ -3765,7 +3765,7 @@ class ReqBlockParser ( Parser ):
                         self.state = 511
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==ReqBlockParser.TAG:
+                        if _la==62:
                             self.state = 510
                             self.tag()
 
@@ -3790,7 +3790,7 @@ class ReqBlockParser ( Parser ):
             self.state = 521
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 520
                 self.label()
 
@@ -3869,7 +3869,7 @@ class ReqBlockParser ( Parser ):
             self.state = 527
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.RULE_TAG:
+            if _la==59:
                 self.state = 526
                 self.rule_tag()
 
@@ -3877,7 +3877,7 @@ class ReqBlockParser ( Parser ):
             self.state = 530
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.PROXY_ADVICE:
+            if _la==53:
                 self.state = 529
                 self.proxy_advice()
 
@@ -3954,7 +3954,7 @@ class ReqBlockParser ( Parser ):
             self.state = 538
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.PROXY_ADVICE:
+            if _la==53:
                 self.state = 537
                 self.proxy_advice()
 
@@ -4147,7 +4147,7 @@ class ReqBlockParser ( Parser ):
             self.state = 556
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.AND or _la==ReqBlockParser.OR:
+            if _la==75 or _la==76:
                 self.state = 551
                 self.logical_op()
                 self.state = 554
@@ -4174,11 +4174,11 @@ class ReqBlockParser ( Parser ):
                     self.state = 566
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [ReqBlockParser.PSEUDO, ReqBlockParser.PSUEDO, ReqBlockParser.IS]:
+                    if token in [54, 55, 72]:
                         self.state = 559
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==ReqBlockParser.IS:
+                        if _la==72:
                             self.state = 558
                             self.match(ReqBlockParser.IS)
 
@@ -4186,19 +4186,19 @@ class ReqBlockParser ( Parser ):
                         self.state = 561
                         self.pseudo()
                         pass
-                    elif token in [ReqBlockParser.DISPLAY]:
+                    elif token in [6]:
                         self.state = 562
                         self.display()
                         pass
-                    elif token in [ReqBlockParser.PROXY_ADVICE]:
+                    elif token in [53]:
                         self.state = 563
                         self.proxy_advice()
                         pass
-                    elif token in [ReqBlockParser.HEADER_TAG]:
+                    elif token in [30]:
                         self.state = 564
                         self.header_tag()
                         pass
-                    elif token in [ReqBlockParser.TAG]:
+                    elif token in [62]:
                         self.state = 565
                         self.tag()
                         pass
@@ -4212,7 +4212,7 @@ class ReqBlockParser ( Parser ):
             self.state = 572
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 571
                 self.header_label()
 
@@ -4348,7 +4348,7 @@ class ReqBlockParser ( Parser ):
             self.state = 583
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.AND or _la==ReqBlockParser.OR:
+            if _la==75 or _la==76:
                 self.state = 578
                 self.logical_op()
                 self.state = 581
@@ -4383,31 +4383,31 @@ class ReqBlockParser ( Parser ):
                     self.state = 595
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [ReqBlockParser.DISPLAY]:
+                    if token in [6]:
                         self.state = 588
                         self.display()
                         pass
-                    elif token in [ReqBlockParser.PROXY_ADVICE]:
+                    elif token in [53]:
                         self.state = 589
                         self.proxy_advice()
                         pass
-                    elif token in [ReqBlockParser.REMARK]:
+                    elif token in [56]:
                         self.state = 590
                         self.remark()
                         pass
-                    elif token in [ReqBlockParser.DONT_SHARE, ReqBlockParser.SHARE]:
+                    elif token in [25, 61]:
                         self.state = 591
                         self.share()
                         pass
-                    elif token in [ReqBlockParser.RULE_TAG]:
+                    elif token in [59]:
                         self.state = 592
                         self.rule_tag()
                         pass
-                    elif token in [ReqBlockParser.LABEL]:
+                    elif token in [32]:
                         self.state = 593
                         self.label()
                         pass
-                    elif token in [ReqBlockParser.TAG]:
+                    elif token in [62]:
                         self.state = 594
                         self.tag()
                         pass
@@ -4474,7 +4474,7 @@ class ReqBlockParser ( Parser ):
             self.state = 602
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 601
                 self.header_label()
 
@@ -4535,7 +4535,7 @@ class ReqBlockParser ( Parser ):
             self.state = 606
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 605
                 self.header_label()
 
@@ -4596,7 +4596,7 @@ class ReqBlockParser ( Parser ):
             self.state = 610
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 609
                 self.header_label()
 
@@ -4657,7 +4657,7 @@ class ReqBlockParser ( Parser ):
             self.state = 614
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 613
                 self.header_label()
 
@@ -4718,7 +4718,7 @@ class ReqBlockParser ( Parser ):
             self.state = 618
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 617
                 self.header_label()
 
@@ -4779,7 +4779,7 @@ class ReqBlockParser ( Parser ):
             self.state = 622
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 621
                 self.header_label()
 
@@ -4840,7 +4840,7 @@ class ReqBlockParser ( Parser ):
             self.state = 626
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 625
                 self.header_label()
 
@@ -4901,7 +4901,7 @@ class ReqBlockParser ( Parser ):
             self.state = 630
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 629
                 self.header_label()
 
@@ -4962,7 +4962,7 @@ class ReqBlockParser ( Parser ):
             self.state = 634
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 633
                 self.header_label()
 
@@ -5023,7 +5023,7 @@ class ReqBlockParser ( Parser ):
             self.state = 638
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 637
                 self.header_label()
 
@@ -5084,7 +5084,7 @@ class ReqBlockParser ( Parser ):
             self.state = 642
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 641
                 self.header_label()
 
@@ -5145,7 +5145,7 @@ class ReqBlockParser ( Parser ):
             self.state = 646
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 645
                 self.header_label()
 
@@ -5206,7 +5206,7 @@ class ReqBlockParser ( Parser ):
             self.state = 650
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 649
                 self.header_label()
 
@@ -5267,7 +5267,7 @@ class ReqBlockParser ( Parser ):
             self.state = 654
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 653
                 self.header_label()
 
@@ -5328,7 +5328,7 @@ class ReqBlockParser ( Parser ):
             self.state = 658
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 657
                 self.header_label()
 
@@ -5384,7 +5384,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 660
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.ACCEPT or _la==ReqBlockParser.ALLOW):
+            if not(_la==16 or _la==17):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -5534,7 +5534,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 666
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.CLASS or _la==ReqBlockParser.CREDIT):
+            if not(_la==22 or _la==24):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -5940,7 +5940,7 @@ class ReqBlockParser ( Parser ):
             self.state = 696
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.OF:
+            if _la==52:
                 self.state = 694
                 self.match(ReqBlockParser.OF)
                 self.state = 695
@@ -5960,7 +5960,7 @@ class ReqBlockParser ( Parser ):
             self.state = 703
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.TAG:
+            if _la==62:
                 self.state = 702
                 self.tag()
 
@@ -5968,7 +5968,7 @@ class ReqBlockParser ( Parser ):
             self.state = 708
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.DISPLAY:
+            while _la==6:
                 self.state = 705
                 self.display()
                 self.state = 710
@@ -6055,7 +6055,7 @@ class ReqBlockParser ( Parser ):
             self.state = 720
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.TAG:
+            if _la==62:
                 self.state = 719
                 self.tag()
 
@@ -6132,7 +6132,7 @@ class ReqBlockParser ( Parser ):
             self.state = 728
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.TAG:
+            if _la==62:
                 self.state = 727
                 self.tag()
 
@@ -6296,7 +6296,7 @@ class ReqBlockParser ( Parser ):
             self.state = 746
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.OR or _la==ReqBlockParser.COMMA:
+            while _la==76 or _la==88:
                 self.state = 741
                 self.list_or()
                 self.state = 742
@@ -6546,7 +6546,7 @@ class ReqBlockParser ( Parser ):
             self.state = 781
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LP:
+            if _la==97:
                 self.state = 770
                 self.match(ReqBlockParser.LP)
                 self.state = 771
@@ -6554,7 +6554,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 777
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==ReqBlockParser.OR or _la==ReqBlockParser.COMMA:
+                while _la==76 or _la==88:
                     self.state = 772
                     self.list_or()
                     self.state = 773
@@ -7101,7 +7101,7 @@ class ReqBlockParser ( Parser ):
             self.state = 852
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.OR or _la==ReqBlockParser.COMMA:
+            while _la==76 or _la==88:
                 self.state = 847
                 self.list_or()
                 self.state = 848
@@ -7219,7 +7219,7 @@ class ReqBlockParser ( Parser ):
             self.state = 873
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.DISPLAY:
+            while _la==6:
                 self.state = 870
                 self.display()
                 self.state = 875
@@ -7237,7 +7237,7 @@ class ReqBlockParser ( Parser ):
             self.state = 880
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.TAG:
+            if _la==62:
                 self.state = 879
                 self.tag()
 
@@ -7391,7 +7391,7 @@ class ReqBlockParser ( Parser ):
             self.state = 894
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.TAG:
+            if _la==62:
                 self.state = 893
                 self.tag()
 
@@ -7399,7 +7399,7 @@ class ReqBlockParser ( Parser ):
             self.state = 899
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.DISPLAY:
+            while _la==6:
                 self.state = 896
                 self.display()
                 self.state = 901
@@ -7490,7 +7490,7 @@ class ReqBlockParser ( Parser ):
             self.state = 908
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LP:
+            if _la==97:
                 self.state = 904
                 self.match(ReqBlockParser.LP)
                 self.state = 905
@@ -7507,11 +7507,11 @@ class ReqBlockParser ( Parser ):
                     self.state = 912
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [ReqBlockParser.PROXY_ADVICE]:
+                    if token in [53]:
                         self.state = 910
                         self.proxy_advice()
                         pass
-                    elif token in [ReqBlockParser.RULE_TAG]:
+                    elif token in [59]:
                         self.state = 911
                         self.rule_tag()
                         pass
@@ -7590,7 +7590,7 @@ class ReqBlockParser ( Parser ):
             self.state = 923
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LP:
+            if _la==97:
                 self.state = 922
                 self.allow_clause()
 
@@ -7655,7 +7655,7 @@ class ReqBlockParser ( Parser ):
             self.state = 928
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LP:
+            if _la==97:
                 self.state = 927
                 self.allow_clause()
 
@@ -7844,7 +7844,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 941
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.STRING or _la==ReqBlockParser.SYMBOL):
+            if not(_la==1 or _la==80):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -8017,7 +8017,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 951
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.PSEUDO or _la==ReqBlockParser.PSUEDO):
+            if not(_la==54 or _la==55):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -8179,7 +8179,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 962
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.RULE_COMPLETE or _la==ReqBlockParser.RULE_INCOMPLETE):
+            if not(_la==57 or _la==58):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -8192,15 +8192,15 @@ class ReqBlockParser ( Parser ):
                     self.state = 966
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [ReqBlockParser.PROXY_ADVICE]:
+                    if token in [53]:
                         self.state = 963
                         self.proxy_advice()
                         pass
-                    elif token in [ReqBlockParser.RULE_TAG]:
+                    elif token in [59]:
                         self.state = 964
                         self.rule_tag()
                         pass
-                    elif token in [ReqBlockParser.LABEL]:
+                    elif token in [32]:
                         self.state = 965
                         self.label()
                         pass
@@ -8413,7 +8413,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 982
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.DONT_SHARE or _la==ReqBlockParser.SHARE):
+            if not(_la==25 or _la==61):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -8648,12 +8648,12 @@ class ReqBlockParser ( Parser ):
             self.state = 1002
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.EQ:
+            if _la==90:
                 self.state = 1000
                 self.match(ReqBlockParser.EQ)
                 self.state = 1001
                 _la = self._input.LA(1)
-                if not(((((_la - 77)) & ~0x3f) == 0 and ((1 << (_la - 77)) & ((1 << (ReqBlockParser.NUMBER - 77)) | (1 << (ReqBlockParser.CATALOG_NUMBER - 77)) | (1 << (ReqBlockParser.SYMBOL - 77)))) != 0)):
+                if not((((_la - 77)) & ~0x3f) == 0 and ((1 << (_la - 77)) & 11) != 0):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -8743,7 +8743,7 @@ class ReqBlockParser ( Parser ):
             self.state = 1011
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==ReqBlockParser.DISPLAY:
+            while _la==6:
                 self.state = 1008
                 self.display()
                 self.state = 1013
@@ -8753,7 +8753,7 @@ class ReqBlockParser ( Parser ):
             self.state = 1015
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.PROXY_ADVICE:
+            if _la==53:
                 self.state = 1014
                 self.proxy_advice()
 
@@ -8761,7 +8761,7 @@ class ReqBlockParser ( Parser ):
             self.state = 1018
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==ReqBlockParser.LABEL:
+            if _la==32:
                 self.state = 1017
                 self.label()
 
@@ -8969,7 +8969,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 1035
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==ReqBlockParser.NONCOURSE:
+                if _la==50:
                     self.state = 1034
                     self.match(ReqBlockParser.NONCOURSE)
 
@@ -9088,7 +9088,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 1058
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.AND or _la==ReqBlockParser.OR):
+            if not(_la==75 or _la==76):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -9162,7 +9162,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 1060
             _la = self._input.LA(1)
-            if not(((((_la - 72)) & ~0x3f) == 0 and ((1 << (_la - 72)) & ((1 << (ReqBlockParser.IS - 72)) | (1 << (ReqBlockParser.ISNT - 72)) | (1 << (ReqBlockParser.EQ - 72)) | (1 << (ReqBlockParser.GE - 72)) | (1 << (ReqBlockParser.GT - 72)) | (1 << (ReqBlockParser.LE - 72)) | (1 << (ReqBlockParser.LT - 72)) | (1 << (ReqBlockParser.NE - 72)))) != 0)):
+            if not((((_la - 72)) & ~0x3f) == 0 and ((1 << (_la - 72)) & 161218563) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -9218,7 +9218,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 1062
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.OR or _la==ReqBlockParser.COMMA):
+            if not(_la==76 or _la==88):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -9274,7 +9274,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 1064
             _la = self._input.LA(1)
-            if not(_la==ReqBlockParser.AND or _la==ReqBlockParser.PLUS):
+            if not(_la==75 or _la==101):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

@@ -1,9 +1,9 @@
 ifeq (${HOSTTYPE},aarch64)
-	antlr := java -Xmx500M -cp .:/opt/homebrew/Cellar/antlr/4.10.1/antlr-4.10.1-complete.jar org.antlr.v4.Tool
-	antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/opt/homebrew/Cellar/antlr/4.10.1/antlr-4.10.1-complete.jar org.antlr.v4.Tool
+	antlr := java -Xmx500M -cp .:/opt/homebrew/Cellar/antlr/4.11.1/antlr-4.11.1-complete.jar org.antlr.v4.Tool
+	antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/opt/homebrew/Cellar/antlr/4.11.1/antlr-4.11.1-complete.jar org.antlr.v4.Tool
 else
-	antlr := java -Xmx500M -cp .:/usr/local/lib/antlr-4.10.1-complete.jar org.antlr.v4.Tool
-	antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/usr/local/lib/antlr-4.10.1-complete.jar org.antlr.v4.Tool
+	antlr := java -Xmx500M -cp .:/usr/local/lib/antlr-4.11.1-complete.jar org.antlr.v4.Tool
+	antpy := java -Xmx500M -Dlanguage=Python3 -cp .:/usr/local/lib/antlr-4.11.1-complete.jar org.antlr.v4.Tool
 endif
 
 .PHONY: parser
