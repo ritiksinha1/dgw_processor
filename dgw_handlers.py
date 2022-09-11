@@ -1163,7 +1163,7 @@ def subset(ctx, institution, requirement_id):
     print(f'*** subset({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  return_dict = {}
+  return_dict = {'requirements': []}
 
   for child in ctx.children:
 
@@ -1173,58 +1173,78 @@ def subset(ctx, institution, requirement_id):
         return_dict['label'] = get_label(ctx)
 
       case 'block':
-        return_dict['block'] = [block(context, institution, requirement_id) for context in ctx.block()]
+        return_dict['requirements'].append({'block': [block(context,
+                                                            institution,
+                                                            requirement_id)
+                                           for context in ctx.block()]})
 
       case 'blocktype':
-        return_dict['blocktype'] = [blocktype(context, institution, requirement_id)
-                                    for context in ctx.blocktype()]
+        return_dict['requirements'].append({'blocktype_list': [blocktype(context,
+                                                                         institution,
+                                                                         requirement_id)
+                                            for context in ctx.blocktype()]})
 
       case 'body_conditional':
-         return_dict['conditional_list'] = [body_conditional(context, institution, requirement_id)
-                                            for context in ctx.body_conditional()]
+         return_dict['requirements'].append({'conditional_list': [body_conditional(context,
+                                                                                   institution,
+                                                                                   requirement_id)
+                                             for context in ctx.body_conditional()]})
 
       case 'body_class_credit':
         # Return a list of class_credit dicts
-        return_dict['class_credit_list'] = [body_class_credit(context, institution, requirement_id)
-                                            for context in ctx.body_class_credit()]
+        return_dict['requirements'].append({'class_credit_list': [body_class_credit(context,
+                                                                                    institution,
+                                                                                    requirement_id)
+                                            for context in ctx.body_class_credit()]})
 
       case 'copy_rules':
         assert len(ctx.copy_rules()) == 1, (f'Assertion Error: {len(ctx.copy_rules())} '
                                             f'is not unity in subset')
-        return_dict.update(copy_rules(ctx.copy_rules()[0], institution, requirement_id))
+        return_dict['requirements'].append(copy_rules(ctx.copy_rules()[0],
+                                                      institution, requirement_id))
 
       case 'course_list_rule':
-        # The grammar makes this a list, but the length will almost always be unity
-        return_dict['course_list_rules'] = [{'course_list_rule':
-                                             build_course_list(context.course_list_body().course_list(),
-                                                               institution, requirement_id)}
-                                            for context in ctx.course_list_rule()]
+        # The grammar makes this a list, and the length is not always unity
+        return_dict['requirements'].append({'course_list_rules': [
+                                            {'course_list_rule':
+                                                build_course_list(
+                                                    context.course_list_body().course_list(),
+                                                    institution,
+                                                    requirement_id)
+                                             } for context in ctx.course_list_rule()]})
 
       case 'group_requirement':
-        return_dict.update(group_requirement(ctx.group_requirement(), institution, requirement_id))
+        return_dict['requirements'].append(group_requirement(ctx.group_requirement(),
+                                                             institution,
+                                                             requirement_id))
 
       case 'noncourse':
-        return_dict['noncourse'] = [noncourse(context, institution, requirement_id)
-                                    for context in ctx.noncourse()]
+        return_dict['requirements'].append({'noncourse': [noncourse(context,
+                                                                    institution,
+                                                                    requirement_id)
+                                            for context in ctx.noncourse()]})
 
       case 'rule_complete':
-        assert len(ctx.rule_complete()) == 1, (f'Assertion Error: {len(ctx.rule_complete())} '
-                                               f'is not unity in subset')
-        return_dict['rule_complete'] = rule_complete(ctx.rule_complete()[0],
-                                                     institution, requirement_id)
+        assert len(ctx.rule_complete()) == 1, (f'Subset: {len(ctx.rule_complete())} is not unity')
+
+        return_dict['requirements'].append({'rule_complete': rule_complete(ctx.rule_complete()[0],
+                                                                           institution,
+                                                                           requirement_id)})
 
       case 'remark':
-        return_dict['remark'] = ' '.join([s.getText().strip(' "')
-                                         for c in ctx.remark()
-                                         for s in c.string()])
+        return_dict['requirements'].append({'remark': ' '.join([s.getText().strip(' "')
+                                                                for c in ctx.remark()
+                                                                for s in c.string()])})
 
       case 'qualifier':
-        return_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
+        return_dict['requirements'].append({'qualifiers': get_qualifiers(ctx.qualifier(),
+                                                                         institution,
+                                                                         requirement_id)})
 
       case 'terminalnodeimpl':
         pass
 
-      case _: print('Subset TODO', name)
+      case _: print(f'{institution} {requirement_id} Subset TODO {name}', file=sys.stderr)
 
   return {'subset': return_dict}
 
