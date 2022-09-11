@@ -1090,8 +1090,8 @@ def traverse_body(node: Any, context_list: list) -> None:
           print(institution, requirement_id, 'Body subset', file=log_file)
           # ---------------------------------------------------------------------------------------
           # Process the valid rules in the subset
-
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
+
           context_dict = get_restrictions(requirement_value)
 
           try:
@@ -1104,199 +1104,208 @@ def traverse_body(node: Any, context_list: list) -> None:
               if rv_key not in ['block', 'class_credit_list', 'group_requirements', 'subset']:
                 print(f'{institution} {requirement_id} {rv_key}: No label', file=fail_file)
             subset_context = []
+          # GET SUBSET QUALIFIERS AND REMARKS HERE
+          for requirement in requirement_value['requirements']:
+            # GET RULE QUALIFIERS AND REMARKS HERE
+            restrictions = get_restrictions(requirement)
+            try:
+              requirement_name = requirement.pop('label')
+            except KeyError:
+              requirement_name = 'No Label'
+            print(institution, requirement_id, requirement_name, restrictions, file=sys.stderr)
+            for key, rule in requirement.items():
 
-          for key, rule in requirement_value.items():
+              match key:
 
-            match key:
+                case 'block':
+                  # label number type value
+                  for block_dict in rule:
+                    num_required = int(block_dict['block']['number'])
+                    if num_required != 1:
+                      print(f'{institution} {requirement_id} Subset block: {num_required=}',
+                            file=fail_file)
+                      continue
+                    block_label = block_dict['block']['label']
+                    required_block_type = block_dict['block']['block_type']
+                    required_block_value = block_dict['block']['block_value']
+                    with psycopg.connect('dbname=cuny_curriculum') as conn:
+                      with conn.cursor(row_factory=namedtuple_row) as cursor:
+                        cursor.execute("""
+                        select institution, requirement_id, block_type, block_value,
+                               title as block_title, period_start, period_stop, parse_tree
+                          from requirement_blocks
+                         where institution = %s
+                           and block_type = %s
+                           and block_value = %s
+                           and period_stop ~* '^9'
+                        """, [institution, required_block_type, required_block_value])
+                        if cursor.rowcount == 0:
+                          print(f'{institution} {requirement_id} Subset block: no active '
+                                f'[{required_block_type}, {required_block_value}] blocks',
+                                file=fail_file)
+                        elif cursor.rowcount > num_required:
+                          print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
+                                f'active [{required_block_type}, {required_block_value}] blocks',
+                                file=fail_file)
+                        else:
+                          local_context = [{'requirement_name': block_label}]
+                          process_block(cursor.fetchone(),
+                                        context_list + subset_context + local_context)
+                          print(institution, requirement_id, f'Subset block', file=log_file)
 
-              case 'block':
-                # label number type value
-                for block_dict in rule:
-                  num_required = int(block_dict['block']['number'])
-                  if num_required != 1:
-                    print(f'{institution} {requirement_id} Subset block: {num_required=}',
-                          file=fail_file)
-                    continue
-                  block_label = block_dict['block']['label']
-                  required_block_type = block_dict['block']['block_type']
-                  required_block_value = block_dict['block']['block_value']
-                  with psycopg.connect('dbname=cuny_curriculum') as conn:
-                    with conn.cursor(row_factory=namedtuple_row) as cursor:
-                      cursor.execute("""
-                      select institution, requirement_id, block_type, block_value,
-                             title as block_title, period_start, period_stop, parse_tree
-                        from requirement_blocks
-                       where institution = %s
-                         and block_type = %s
-                         and block_value = %s
-                         and period_stop ~* '^9'
-                      """, [institution, required_block_type, required_block_value])
-                      if cursor.rowcount == 0:
-                        print(f'{institution} {requirement_id} Subset block: no active '
-                              f'[{required_block_type}, {required_block_value}] blocks',
-                              file=fail_file)
-                      elif cursor.rowcount > num_required:
-                        print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
-                              f'active [{required_block_type}, {required_block_value}] blocks',
-                              file=fail_file)
-                      else:
-                        local_context = [{'requirement_name': block_label}]
-                        process_block(cursor.fetchone(),
-                                      context_list + subset_context + local_context)
-                        print(institution, requirement_id, f'Subset block', file=log_file)
+                case 'blocktype':
+                  print(f'{institution} {requirement_id} Subset blocktype', file=todo_file)
 
-              case 'blocktype':
-                print(f'{institution} {requirement_id} Subset blocktype', file=todo_file)
+                case 'conditional_list':
+                  print(f'{institution} {requirement_id} Subset conditional_list', file=log_file)
+                  assert isinstance(rule, list)
+                  for conditional_dict in rule:
+                    traverse_body(conditional_dict, context_list + subset_context)
 
-              case 'conditional_list':
-                print(f'{institution} {requirement_id} Subset conditional_list', file=log_file)
-                assert isinstance(rule, list)
-                for conditional_dict in rule:
-                  traverse_body(conditional_dict, context_list + subset_context)
+                    # # Use the condition as the pseudo-name of this requirement
+                    # condition = conditional['condition_str']
+                    # for if_true_dict in conditional['if_true']:
+                    #   condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
+                    #   traverse_body(if_true_dict, context_list + subset_context + condition_list)
+                    # try:
+                    #   for if_false_dict in conditional['if_false']:
+                    #     condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
+                    #     traverse_body(if_true_dict, context_list + subset_context + condition_list)
+                    # except KeyError:
+                    #   # Scribe Else clause is optional
+                    #   pass
 
-                  # # Use the condition as the pseudo-name of this requirement
-                  # condition = conditional['condition_str']
-                  # for if_true_dict in conditional['if_true']:
-                  #   condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
-                  #   traverse_body(if_true_dict, context_list + subset_context + condition_list)
-                  # try:
-                  #   for if_false_dict in conditional['if_false']:
-                  #     condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
-                  #     traverse_body(if_true_dict, context_list + subset_context + condition_list)
-                  # except KeyError:
-                  #   # Scribe Else clause is optional
-                  #   pass
-
-              case 'copy_rules':
-                print(institution, requirement_id, 'Subset copy_rules', file=log_file)
-                try:
-                  target_requirement_id = rule['requirement_id']
-                except KeyError as ke:
-                  exit(f'Missing key {ke} in Subset copy_rules')
-                target_block = f'{institution} {target_requirement_id}'
-                if target_block in requirement_context:
-                  print(target_block, 'Subset copy_rules: Circular target', file=fail_file)
-                else:
-                  with psycopg.connect('dbname=cuny_curriculum') as conn:
-                    with conn.cursor(row_factory=namedtuple_row) as cursor:
-                      cursor.execute("""
-                      select institution,
-                             requirement_id,
-                             block_type,
-                             block_value,
-                             title as block_title,
-                             period_start,
-                             period_stop,
-                             parse_tree
-                        from requirement_blocks
-                       where institution = %s
-                         and requirement_id = %s
-                         and period_stop ~* '^9'
-                      """, [institution, target_requirement_id])
-                      if cursor.rowcount != 1:
-                        print(f'{institution} {requirement_id} Subset copy_rules: '
-                              f'{target_requirement_id} not active',
-                              file=fail_file)
-                      else:
-                        row = cursor.fetchone()
-                        is_circular = False
-                        for context_dict in context_list:
-                          try:
-                            # Assume there are no cross-institutional course requirements
-                            if row.requirement_id == context_dict['requirement_id']:
-                              print(institution, requirement_id, 'Subset circular CopyRules',
-                                    file=fail_file)
-                              is_circular = True
-                          except KeyError:
-                            pass
-                        if not is_circular:
-                          parse_tree = row.parse_tree
-                          if parse_tree == '{}':
-                            print(f'Parsing {row.institution} {row.requirement_id}')
-                            parse_tree = parse_block(row.institution, row.requirement_id,
-                                                     row.period_start, row.period_stop)
-                          try:
-                            body_list = parse_tree['body_list']
-                          except KeyError as ke:
-                            if 'error' in parse_tree.keys():
-                              problem = 'compile error'
-                            else:
-                              problem = 'no body_list'
-                            print(f'{institution} {requirement_id} Subset copy_rules target = '
-                                  f'{row.requirement_id}: {problem}', file=fail_file)
-                            print(f'{institution} {requirement_id} Subset copy_rules target = '
-                                  f'{row.requirement_id}: {parse_tree["error"]} ',
-                                  file=debug_file)
-                          else:
-                            local_dict = {'requirement_block': target_block,
-                                          'requirement_name': row.block_title}
-                            local_context = [local_dict]
-                            traverse_body(body_list,
-                                          context_list + requirement_context + local_context)
-
-              case 'course_list_rules':
-                assert isinstance(rule, list), f'{key=} {requirement_value=}'
-                for rule_dict in rule:
+                case 'copy_rules':
+                  print(institution, requirement_id, 'Subset copy_rules', file=log_file)
                   try:
-                    map_courses(institution, requirement_id, block_title,
-                                context_list + requirement_context,
-                                rule_dict['course_list_rule']['course_list'])
-                    print(f'{institution} {requirement_id} Subset course_list_rule', file=log_file)
+                    target_requirement_id = rule['requirement_id']
                   except KeyError as ke:
-                    print(requirement_value)
-                    print(f'{institution} {requirement_id} Subset {key} missing {ke}',
-                          file=fail_file)
+                    print(rule)
+                    exit(f'Missing key {ke} in Subset copy_rules')
+                  target_block = f'{institution} {target_requirement_id}'
+                  if target_block in requirement_context:
+                    print(target_block, 'Subset copy_rules: Circular target', file=fail_file)
+                  else:
+                    with psycopg.connect('dbname=cuny_curriculum') as conn:
+                      with conn.cursor(row_factory=namedtuple_row) as cursor:
+                        cursor.execute("""
+                        select institution,
+                               requirement_id,
+                               block_type,
+                               block_value,
+                               title as block_title,
+                               period_start,
+                               period_stop,
+                               parse_tree
+                          from requirement_blocks
+                         where institution = %s
+                           and requirement_id = %s
+                           and period_stop ~* '^9'
+                        """, [institution, target_requirement_id])
+                        if cursor.rowcount != 1:
+                          print(f'{institution} {requirement_id} Subset copy_rules: '
+                                f'{target_requirement_id} not active',
+                                file=fail_file)
+                        else:
+                          row = cursor.fetchone()
+                          is_circular = False
+                          for context_dict in context_list:
+                            try:
+                              # Assume there are no cross-institutional course requirements
+                              if row.requirement_id == context_dict['requirement_id']:
+                                print(institution, requirement_id, 'Subset circular CopyRules',
+                                      file=fail_file)
+                                is_circular = True
+                            except KeyError:
+                              pass
+                          if not is_circular:
+                            parse_tree = row.parse_tree
+                            if parse_tree == '{}':
+                              print(f'Parsing {row.institution} {row.requirement_id}')
+                              parse_tree = parse_block(row.institution, row.requirement_id,
+                                                       row.period_start, row.period_stop)
+                            try:
+                              body_list = parse_tree['body_list']
+                            except KeyError as ke:
+                              if 'error' in parse_tree.keys():
+                                problem = 'compile error'
+                              else:
+                                problem = 'no body_list'
+                              print(f'{institution} {requirement_id} Subset copy_rules target = '
+                                    f'{row.requirement_id}: {problem}', file=fail_file)
+                              print(f'{institution} {requirement_id} Subset copy_rules target = '
+                                    f'{row.requirement_id}: {parse_tree["error"]} ',
+                                    file=debug_file)
+                            else:
+                              local_dict = {'requirement_block': target_block,
+                                            'requirement_name': row.block_title}
+                              local_context = [local_dict]
+                              traverse_body(body_list,
+                                            context_list + requirement_context + local_context)
 
-              case 'class_credit_list':
-                print(f'{institution} {requirement_id} Subset {key}', file=log_file)
-                assert isinstance(rule, list)
-                for rule_dict in rule:
-                  # There is only one item per rule_dict, but this is a convenient way to get it
-                  assert len(rule_dict) == 1
-                  for k, v in rule_dict.items():
-                    local_dict = get_restrictions(v)
-                    try:
-                      local_dict['requirement_name'] = v['label']
-                    except KeyError as ke:
-                      print(f'{institution} {requirement_id} '
-                            f'Subset class_credit_list {k} with no label', file=todo_file)
-
-                    if local_dict:
-                      local_context = [local_dict]
-                    else:
-                      local_context = []
+                case 'course_list_rules':
+                  assert isinstance(rule, list), f'{key=} {requirement_value=}'
+                  for rule_dict in rule:
                     try:
                       map_courses(institution, requirement_id, block_title,
-                                  context_list + subset_context + local_context,
-                                  rule_dict['class_credit'])
+                                  context_list + requirement_context,
+                                  rule_dict['course_list_rule']['course_list'])
+                      print(f'{institution} {requirement_id} Subset course_list_rule', file=log_file)
                     except KeyError as ke:
-                      print(institution, requirement_id, block_title,
-                            f'{ke} in subset class_credit_list', file=sys.stderr)
-                      print(rule_dict, stream=sys.stderr)
-                      exit()
+                      print(requirement_value)
+                      print(f'{institution} {requirement_id} Subset {key} missing {ke}',
+                            file=fail_file)
 
-              case 'group_requirements':
-                # This is a list of group_requirement dicts
-                print(f'{institution} {requirement_id} Subset {key}', file=log_file)
-                assert isinstance(rule, list)
-                for group_requirement in rule:
-                  # This will now show up in log_file as a Body group requirement, but the context
-                  # will include the subset context.
-                  traverse_body(group_requirement, context_list + subset_context)
+                case 'class_credit_list':
+                  print(f'{institution} {requirement_id} Subset {key}', file=log_file)
+                  assert isinstance(rule, list)
+                  for rule_dict in rule:
+                    # There is only one item per rule_dict, but this is a convenient way to get it
+                    assert len(rule_dict) == 1
+                    for k, v in rule_dict.items():
+                      local_dict = get_restrictions(v)
+                      try:
+                        local_dict['requirement_name'] = v['label']
+                      except KeyError as ke:
+                        print(f'{institution} {requirement_id} '
+                              f'Subset class_credit_list {k} with no label', file=todo_file)
 
-              case 'maxpassfail' | 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
-                # Ignored Qualifiers and rules
-                print(f'{institution} {requirement_id} Subset {key} (ignored)', file=log_file)
+                      if local_dict:
+                        local_context = [local_dict]
+                      else:
+                        local_context = []
+                      try:
+                        map_courses(institution, requirement_id, block_title,
+                                    context_list + subset_context + local_context,
+                                    rule_dict['class_credit'])
+                      except KeyError as ke:
+                        print(institution, requirement_id, block_title,
+                              f'{ke} in subset class_credit_list', file=sys.stderr)
+                        print(rule_dict, stream=sys.stderr)
+                        exit()
 
-              case 'proxy_advice':
-                if do_proxy_advice:
-                  print(f'{institution} {requirement_id} Subset {key}', file=todo_file)
-                else:
+                case 'group_requirements':
+                  # This is a list of group_requirement dicts
+                  print(f'{institution} {requirement_id} Subset {key}', file=log_file)
+                  assert isinstance(rule, list)
+                  for group_requirement in rule:
+                    # This will now show up in log_file as a Body group requirement, but the context
+                    # will include the subset context.
+                    traverse_body(group_requirement, context_list + subset_context)
+
+                case 'maxpassfail' | 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
+                  # Ignored Qualifiers and rules
                   print(f'{institution} {requirement_id} Subset {key} (ignored)', file=log_file)
 
-              case _:
-                print(f'{institution} {requirement_id} Unhandled Subset {key}: '
-                      f'{str(type(rule)):10} {len(rule)}', file=sys.stderr)
+                case 'proxy_advice':
+                  if do_proxy_advice:
+                    print(f'{institution} {requirement_id} Subset {key}', file=todo_file)
+                  else:
+                    print(f'{institution} {requirement_id} Subset {key} (ignored)', file=log_file)
+
+                case _:
+                  print(f'{institution} {requirement_id} Unhandled Subset {key}: '
+                        f'{str(type(rule)):10} {len(rule)}', file=sys.stderr)
 
         case 'remark':
           if do_remarks:
