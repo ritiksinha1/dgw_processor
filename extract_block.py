@@ -16,15 +16,6 @@ from pprint import pprint
 from psycopg.rows import namedtuple_row
 
 if __name__ == '__main__':
-  # parser = argparse.ArgumentParser('Extract a block for debugging')
-  # parser.add_argument('-d', '--debug', action='store_true', default=False)
-  # parser.add_argument('-i', '--institution', default='QNS01')
-  # parser.add_argument('-ra', '--requirement_id')
-  # parser.add_argument('-t', '--block_type', default='MAJOR')
-  # parser.add_argument('-v', '--block_value')
-
-  # # Parse args
-  # args = parser.parse_args()
   args = ' '.join(sys.argv[1:]).replace(',', ' ').replace('_', ' ').split(' ')
   institution = f'{args[0][0:3].upper()}01'
   requirement_id = int(args[1].strip('RA'))
@@ -58,17 +49,10 @@ if __name__ == '__main__':
     header_list = body_list = {}
 
   print(base_name)
-  with open(f'./extracts/{base_name}.scribe', 'w') as scribe_block:
+  with open(f'./extracts/{base_name}.txt', 'w') as scribe_block:
     print(row.requirement_text, file=scribe_block)
 
   with open(f'./extracts/{base_name}.json', 'w') as json_file:
     print(json.dumps(parse_tree, indent=2), file=json_file)
-
-  # with open(f'./extracts/{base_name}.py', 'w') as parsed:
-  #   print('HEADER = (', file=parsed)
-  #   pprint(header_list, stream=parsed)
-  #   print(')\nBODY = (', file=parsed)
-  #   pprint(body_list, stream=parsed)
-  #   print(')', file=parsed)
 
   exit()
