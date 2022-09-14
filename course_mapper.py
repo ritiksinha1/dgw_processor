@@ -1090,6 +1090,8 @@ def traverse_body(node: Any, context_list: list) -> None:
           print(institution, requirement_id, 'Body subset', file=log_file)
           # ---------------------------------------------------------------------------------------
           # Process the valid rules in the subset
+          if institution == 'LEH01' and requirement_id == 'RA002560':
+            breakpoint()
 
           # Track MaxTransfer and MinGrade restrictions (qualifiers).
           context_dict = get_restrictions(requirement_value)
@@ -1115,8 +1117,6 @@ def traverse_body(node: Any, context_list: list) -> None:
             assert len(requirement.keys()) == 1, f'{requirement.keys()}'
 
             for key, rule in requirement.items():
-              if requirement_id == 'RA002560':
-                print(f'\n{requirement}', file=sys.stderr)
               # try:
               #   context_dict = get_restrictions(rule)
               # except AssertionError as ae:
