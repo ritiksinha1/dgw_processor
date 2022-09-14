@@ -1090,30 +1090,42 @@ def traverse_body(node: Any, context_list: list) -> None:
           print(institution, requirement_id, 'Body subset', file=log_file)
           # ---------------------------------------------------------------------------------------
           # Process the valid rules in the subset
-          # Track MaxTransfer and MinGrade restrictions (qualifiers).
 
+          # Track MaxTransfer and MinGrade restrictions (qualifiers).
           context_dict = get_restrictions(requirement_value)
 
           try:
             context_dict['requirement_name'] = requirement_value.pop('label')
-            subset_context = [context_dict]
           except KeyError:
-            # Could be block, class_credit_list, group_requirements, or (nested subset?), which all
-            # have their own labels..
-            for rv_key in requirement_value.keys():
-              if rv_key not in ['block', 'class_credit_list', 'group_requirements', 'subset']:
-                print(f'{institution} {requirement_id} {rv_key}: No label', file=fail_file)
-            subset_context = []
-          # GET SUBSET QUALIFIERS AND REMARKS HERE
+            context_dict['requirement_name'] = 'No requirement name available'
+            print(f'{institution} {requirement_id} Subset with no label', file=fail_file)
+          try:
+            context_dict['remark'] = requirement_value.pop('remark')
+            print(f'{institution} {requirement_id} Subset remark', file=log_file)
+          except KeyError:
+            # Remarks are optional
+            pass
+
+          subset_context = [context_dict]
+
+          # The requirement_value should be a list of requirement_objects. The subset context
+          # provides information for the whole subset; each requirement takes care of its own
+          # context.
           for requirement in requirement_value['requirements']:
-            # GET RULE QUALIFIERS AND REMARKS HERE
-            restrictions = get_restrictions(requirement)
-            try:
-              requirement_name = requirement.pop('label')
-            except KeyError:
-              requirement_name = 'No Label'
-            print(institution, requirement_id, requirement_name, restrictions, file=sys.stderr)
+            assert len(requirement.keys()) == 1, f'{requirement.keys()}'
+
             for key, rule in requirement.items():
+              if requirement_id == 'RA002560':
+                print(f'\n{requirement}', file=sys.stderr)
+              # try:
+              #   context_dict = get_restrictions(rule)
+              # except AssertionError as ae:
+              #   print('\n', requirement, '\n', rule, file=sys.stderr)
+              #   exit()
+              # try:
+              #   context_dict['requirement_name'] = rule.pop('label')
+              # except KeyError:
+              #   print(f'{key} object has no label', file=sys.stderr)
 
               match key:
 
@@ -1281,7 +1293,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                       except KeyError as ke:
                         print(institution, requirement_id, block_title,
                               f'{ke} in subset class_credit_list', file=sys.stderr)
-                        print(rule_dict, stream=sys.stderr)
+                        print(rule_dict, file=sys.stderr)
                         exit()
 
                 case 'group_requirements':
@@ -1304,7 +1316,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                     print(f'{institution} {requirement_id} Subset {key} (ignored)', file=log_file)
 
                 case _:
-                  print(f'{institution} {requirement_id} Unhandled Subset {key}: '
+                  print(f'{institution} {requirement_id} Unhandled Subset {key=}: '
                         f'{str(type(rule)):10} {len(rule)}', file=sys.stderr)
 
         case 'remark':

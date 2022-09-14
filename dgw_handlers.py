@@ -1046,6 +1046,7 @@ def proxy_advice(proxy_ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def remark(ctx, institution, requirement_id):
   """ remark          : (REMARK string SEMICOLON?)+;
+      All remark contexts get combined into one object.
   """
   if DEBUG:
     print(f'*** remark({class_name(ctx)}, {institution}, {requirement_id})',
@@ -1170,6 +1171,8 @@ def subset(ctx, institution, requirement_id):
     match name := class_name(child).lower():
 
       case 'label':
+        assert 'label' not in return_dict.keys(), (f'{institution} {requirement_id} Multiple '
+                                                   f'subset labels')
         return_dict['label'] = get_label(ctx)
 
       case 'block':
@@ -1232,16 +1235,15 @@ def subset(ctx, institution, requirement_id):
                                                                            requirement_id)})
 
       case 'remark':
-        return_dict['requirements'].append({'remark': ' '.join([s.getText().strip(' "')
-                                                                for c in ctx.remark()
-                                                                for s in c.string()])})
+        assert 'remark' not in return_dict.keys(), (f'{institution} {requirement_id} Multiple '
+                                                    f'subset remarks')
+        return_dict.update(remark(ctx.remark(), institution, requirement_id))
 
       case 'qualifier':
-        return_dict['requirements'].append({'qualifiers': get_qualifiers(ctx.qualifier(),
-                                                                         institution,
-                                                                         requirement_id)})
+        return_dict['qualifiers'] = get_qualifiers(ctx.qualifier(), institution, requirement_id)
 
       case 'terminalnodeimpl':
+        # BeginSub/EndSub
         pass
 
       case _: print(f'{institution} {requirement_id} Subset TODO {name}', file=sys.stderr)

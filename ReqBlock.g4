@@ -167,7 +167,7 @@ body_rule       : block
 //  -----------------------------------------------------------------------------------------------
 /*  Body Only: n of m groups required
  */
-group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark)* label? ;
+group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark | label)*;
 groups            : group (logical_op group)*; // But only OR should occur
 group             : LP
                    ( block
@@ -176,8 +176,7 @@ group             : LP
                    | course_list_rule
                    | group_requirement
                    | noncourse
-                   | rule_complete ) (qualifier tag? | proxy_advice | remark)* label?
-                   RP ;
+                   | rule_complete ) (qualifier tag? | proxy_advice | remark | label)* RP ;
 
 //  Rule Subset (body only)
 //  -----------------------------------------------------------------------------------------------
@@ -192,7 +191,7 @@ subset            : BEGINSUB
                     | noncourse
                     | rule_complete
                   )+
-                  ENDSUB (qualifier tag? | proxy_advice | remark)* label?;
+                  ENDSUB (qualifier tag? | proxy_advice | remark | label)*;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
