@@ -351,6 +351,7 @@ def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
     with the implicit assumption that all courses in the list are required.
 
     CSI01 RA 000544 is the only block observed to use this feature at the top level of the body.
+    Update: now seeing it in jjc 1573 (instead)
 
     course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
     course_list_rule  : course_list_body label?;
@@ -1197,21 +1198,13 @@ def subset(ctx, institution, requirement_id):
                                                                                    requirement_id)})
 
       case 'copy_rules':
-        return_dict['requirements'].append(copy_rules(child,
-                                                      institution, requirement_id))
+        return_dict['requirements'].append(copy_rules(child, institution, requirement_id))
 
       case 'course_list_rule':
-        # The grammar makes this a list, and the length is not always unity
-        return_dict['requirements'].append({'course_list_rules': [
-                                            {'course_list_rule':
-                                                build_course_list(
-                                                    context.course_list_body().course_list(),
-                                                    institution,
-                                                    requirement_id)
-                                             } for context in child]})
+        return_dict['requirements'].append(course_list_rule(child, institution, requirement_id))
 
       case 'group_requirement':
-        return_dict['requirements'].append(group_requirement(ctx.group_requirement(),
+        return_dict['requirements'].append(group_requirement(child,
                                                              institution,
                                                              requirement_id))
 

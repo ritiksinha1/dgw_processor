@@ -916,15 +916,14 @@ def traverse_body(node: Any, context_list: list) -> None:
           print(institution, requirement_id, 'Body course_list', file=fail_file)
 
         case 'course_list_rule':
-          try:
-            if course_list := requirement_value['course_list']:
-              map_courses(institution, requirement_id, block_title,
-                          context_list + requirement_context, requirement_value)
-              print(institution, requirement_id, 'Body course_list_rule', file=log_file)
-          except KeyError:
+          if 'course_list' not in requirement_value.keys():
             # Can't have a Course List Rule w/o a course list
             print(f'{institution} {requirement_id} Body course_list_rule w/o a Course List',
                   file=fail_file)
+          else:
+            map_courses(institution, requirement_id, block_title,
+                        context_list + requirement_context, requirement_value)
+            print(institution, requirement_id, 'Body course_list_rule', file=log_file)
 
         case 'rule_complete':
           # There are no course requirements for this, but whether “is_complete” is true or false,
@@ -1056,17 +1055,14 @@ def traverse_body(node: Any, context_list: list) -> None:
                     pass
 
                 case 'course_list_rule':
-                  try:
-                    if course_list := requirement_value['course_list']:
-                      map_courses(institution, requirement_id, block_title,
-                                  context_list + group_context, value)
-                      print(institution, requirement_id, 'Group course_list_rule', file=log_file)
-                  except KeyError:
+                  if 'course_list' not in requirement_value.keys():
                     # Can't have a Course List Rule w/o a course list
                     print(f'{institution} {requirement_id} Group course_list_rule w/o a Course '
                           f'List', file=fail_file)
-
-                  print(institution, requirement_id, 'Group course_list_rule', file=todo_file)
+                  else:
+                    map_courses(institution, requirement_id, block_title,
+                                context_list + group_context, value)
+                    print(institution, requirement_id, 'Group course_list_rule', file=log_file)
 
                 case 'group_requirements':
                   print(institution, requirement_id, 'Body nested group_requirements',
@@ -1259,19 +1255,16 @@ def traverse_body(node: Any, context_list: list) -> None:
                               traverse_body(body_list,
                                             context_list + requirement_context + local_context)
 
-                case 'course_list_rules':
-                  assert isinstance(rule, list), f'{key=} {requirement_value=}'
-                  for rule_dict in rule:
-                    try:
-                      map_courses(institution, requirement_id, block_title,
-                                  context_list + requirement_context,
-                                  rule_dict['course_list_rule']['course_list'])
-                      print(f'{institution} {requirement_id} Subset course_list_rule',
-                            file=log_file)
-                    except KeyError as ke:
-                      print(requirement_value)
-                      print(f'{institution} {requirement_id} Subset {key} missing {ke}',
-                            file=fail_file)
+                case 'course_list_rule':
+                  if 'course_list' not in rule.keys():
+                    # Can't have a Course List Rule w/o a course list
+                    print(f'{institution} {requirement_id} Subset course_list_rule w/o a '
+                          f'course_list', file=fail_file)
+                  else:
+                    map_courses(institution, requirement_id, block_title,
+                                context_list + requirement_context,
+                                rule)
+                    print(f'{institution} {requirement_id} Subset course_list_rule', file=log_file)
 
                 case 'class_credit_list':
                   print(f'{institution} {requirement_id} Subset {key}', file=log_file)
