@@ -22,13 +22,18 @@ if __name__ == '__main__':
   """
   institution = requirement_id = requirement_key = None
 
+  do_full_text = args.full_text
   if args.lookup:
     if len(args.lookup) == 2:
       institution = f'{args.lookup[0].strip("10").upper()}01'
       requirement_id = f'RA{args.lookup[1].upper().strip("AR"):>06}'
+    elif len(args.lookup == 3):
+      # Assume first arg is -f
+      do_full_text = True
+      institution = f'{args.lookup[1].strip("10").upper()}01'
+      requirement_id = f'RA{args.lookup[2].upper().strip("AR"):>06}'
     else:
       exit(f'eh? {args.lookup}')
-
   if args.requirement_key:
     requirement_key = f'{args.requirement_key}'
 
@@ -51,7 +56,7 @@ if __name__ == '__main__':
         for ctx in json.loads(row.context):
           for k, v in ctx.items():
             line = f'  {k}: {v}'
-            if args.full_text or len(line) < 132:
+            if do_full_text or len(line) < 132:
               print(line)
             else:
               print(line[0:129] + '...')
