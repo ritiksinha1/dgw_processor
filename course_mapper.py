@@ -134,11 +134,18 @@ def expand_course_list(institution: str, requirement_id: str, course_dict: dict)
   exclude_set = set()
   for item in exclude_list:
     if with_expression := item[2]:
-      # Log and skip cases with with-expressions
-      print(f'{institution} {requirement_id} exclude with {with_expression}', file=debug_file)
+      # Ignore cases where the with clause references DWTerm
+      if 'dwterm' in with_expression.lower():
+        print(f'institution requirement_id exclude course based on DWTerm (ignored)', file=log_file)
+        continue
+      # Log and skip remaining cases that have with-expressions
+      print(f'{institution} {requirement_id} expand_course_list(): exclude w/ with',
+            file=todo_file)
+      print(f'{institution} {requirement_id} expand_course_list(): exclude {with_expression}',
+            file=debug_file)
     else:
+      print(f'{institution} {requirement_id} Exclude course', file=log_file)
       for k, v in courses_cache((institution, item[0].strip(), item[1].strip())).items():
-        print(f'{institution} {requirement_id} exclude {k} from {courses}', file=debug_file)
         exclude_set.add(k)
 
   # Get rid of redundant scribes
@@ -499,7 +506,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
           case 'header_class_credit':
             if label_str := value['label']:
               print(f'{institution} {requirement_id}: Header class_credit label: {label_str}',
-                    file=debug_file)
+                    file=todo_file)
             min_classes = None if value['min_classes'] is None else int(value['min_classes'])
             min_credits = None if value['min_credits'] is None else float(value['min_credits'])
             max_classes = None if value['max_classes'] is None else int(value['max_classes'])
@@ -555,10 +562,6 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             #             requirement_name,
             #             context_list,
             #             requirement_dict)
-
-          case 'copy_rules':
-            print(f'{institution} {requirement_id}: Header copy_rules', file=todo_file)
-            pass
 
           case 'header_lastres':
             pass
@@ -837,19 +840,21 @@ def traverse_body(node: Any, context_list: list) -> None:
             # There has to be at least num_required subplans possible, although there may be
             # problems fetching them.
             try:
-              subplans_list = (context_list[0]['block_info']['other']['plan_info']['subplans']
-                               .split(','))
-            except AttributeError:
+              # The subplans list comes from the top-level (plan) block_info, even if the rule comes
+              # from a deeply nested block.
+              subplans_list = context_list[0]['block_info']['other']['plan_info']['subplans']
+            except KeyError:
               subplans_list = []
             num_subplans = len(subplans_list)
             s = '' if num_subplans == 1 else 's'
             if num_subplans < num_required:
-              print(f'{institution} {requirement_id} Body blocktype {num_subplans} known '
+              print(f'{institution} {requirement_id} Body blocktype: program has {num_subplans} '
                     f'subplan{s} but {num_required} needed', file=fail_file)
             else:
               # Look up all matching subplans
               try:
-                subplan_names, enrollments = zip(*[s.split(':') for s in subplans_list])
+                subplan_names, enrollments = zip(*[(s['subplan'], s['enrollment'])
+                                                 for s in subplans_list])
               except ValueError as ve:
                 exit(f'{institution} {requirement_id} Unexpected ValueError {ve} in Body blocktype')
               block_value_list = ','.join([f"'{name}'" for name in subplan_names])
@@ -947,28 +952,17 @@ def traverse_body(node: Any, context_list: list) -> None:
                 parse_tree = row.parse_tree
                 if parse_tree == '{}':
                   # Not expecting to do this
-                  print(f'{row.institution} {row.requirement_id} Body copy_rules parse '
+                  print(f'{row.institution} {row.requirement_id} Body copy_rules parse target block'
                         f'{row.requirement_id}', file=log_file)
                   parse_tree = parse_block(row.institution, row.requirement_id,
                                            row.period_start, row.period_stop)
-                try:
-                  body_list = parse_tree['body_list']
-                except KeyError as ke:
-                  if 'error' in parse_tree.keys():
-                    problem = 'compile error'
-                  else:
-                    problem = 'no body_list'
-                  print(f'{institution} {requirement_id} Subset copy_rules target: '
-                        f'{problem}', file=fail_file)
-                  print(f'{institution} {requirement_id} Subset copy_rules target, '
-                        f'{row.requirement_id}, compile error: {parse_tree["error"]} ',
-                        file=debug_file)
-                else:
-                  local_dict = {'requirement_block': row.requirement_id,
-                                'requirement_name': row.block_title}
-                  local_context = [local_dict]
-                  traverse_body(body_list,
-                                context_list + requirement_context + local_context)
+
+                body_list = parse_tree['body_list']
+                local_dict = {'requirement_block': row.requirement_id,
+                              'requirement_name': row.block_title}
+                local_context = [local_dict]
+                traverse_body(body_list,
+                              context_list + requirement_context + local_context)
 
         case 'course_list':
           # Not observed to occur
@@ -1040,14 +1034,10 @@ def traverse_body(node: Any, context_list: list) -> None:
           # Are there any not-to-ignore words left?
           if words:
             # Yes: keep the current requirement_name.
-            # (Would it be better to put the formatted name under the context list?)
-            print(f'Keep {institution} {requirement_id} |{word_str}| {words}', file=debug_file)
             pass
           else:
             # No: Replace the Scribed name with our formatted one.
             context_dict['requirement_name'] = description_str
-            print(f'Replace {institution} {requirement_id} |{word_str}| => |{description_str}|',
-                  file=debug_file)
 
           for group_num, group in enumerate(groups):
             if (group_num + 1) < len(number_ordinals):
@@ -1057,8 +1047,7 @@ def traverse_body(node: Any, context_list: list) -> None:
               group_num_str = f'Group number {group_num + 1:,} of {num_groups_str} group{s}'
 
             group_context = [{'group_number': group_num + 1,
-                              'requirement_name': group_num_str}
-                             ]
+                              'requirement_name': group_num_str}]
 
             assert len(group.keys()) == 1
 
@@ -1101,10 +1090,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                         print(f'{institution} {requirement_id} Group block', file=log_file)
 
                 case 'blocktype':
-                  print(institution, requirement_id, 'Group blocktype', file=todo_file)
+                  # Not observed to occur
+                  print(institution, requirement_id, 'Group blocktype (ignored)', file=todo_file)
 
                 case 'class_credit':
-                  print(institution, requirement_id, 'Group class_credit', file=log_file)
                   # This is where course lists turn up, in general.
                   try:
                     map_courses(institution, requirement_id, block_title,
@@ -1112,6 +1101,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   except KeyError as ke:
                     # Course List is an optional part of ClassCredit
                     pass
+                  print(institution, requirement_id, 'Group class_credit', file=log_file)
 
                 case 'course_list_rule':
                   if 'course_list' not in requirement_value.keys():
@@ -1124,11 +1114,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                     print(institution, requirement_id, 'Group course_list_rule', file=log_file)
 
                 case 'group_requirements':
-                  print(institution, requirement_id, 'Body nested group_requirements',
-                        file=log_file)
                   assert isinstance(value, list)
                   for group_requirement in value:
                     traverse_body(value, context_list + requirement_context + group_context)
+                  print(institution, requirement_id, 'Body nested group_requirements',
+                        file=log_file)
 
                 case 'noncourse':
                   print(f'{institution} {requirement_id} Group noncourse (ignored)',
@@ -1223,7 +1213,9 @@ def traverse_body(node: Any, context_list: list) -> None:
                           print(institution, requirement_id, f'Subset block', file=log_file)
 
                 case 'blocktype':
-                  print(f'{institution} {requirement_id} Subset blocktype', file=todo_file)
+                  # Not observed to occur
+                  print(f'{institution} {requirement_id} Subset blocktype (ignored)',
+                        file=todo_file)
 
                 case 'conditional_list':
                   print(f'{institution} {requirement_id} Subset conditional_list', file=log_file)
