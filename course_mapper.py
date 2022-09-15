@@ -354,6 +354,43 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
                 'minperdisc': []}
 
   # Program and subprogram info, if available
+  if plan_info:
+    # Expand subplans to include requirement_ids, if available.
+    plan_dict = plan_info['plan_info']
+    if plan_dict['subplans']:
+      institution = row.institution
+      plan_code = plan_dict['plan']
+      subplans = plan_dict['subplans'].split(',')
+      subplans_list = []
+      with psycopg.connect('dbname=cuny_curriculum') as conn:
+        with conn.cursor(row_factory=namedtuple_row) as cursor:
+          for subplan in subplans:
+            subplan_code, enrollment = subplan.split(':')
+            subplans_dict = {'subplan': subplan_code,
+                             'enrollment': enrollment,
+                             }
+            # Look up all the requirement blocks for the subplan. (There _should_ be exactly one,
+            # but that's not true)
+            cursor.execute("""
+            select s.plan, s.subplan, s.subplan_type, s.cip_code,
+                   r.institution, r.requirement_id, r.block_type, r.block_value, r.major1, r.title
+              from cuny_acad_subplan_tbl s, requirement_blocks r
+             where s.institution = %s
+               and r.institution = s.institution
+               and s.plan =%s
+               and s.subplan = %s
+               and (r.block_value = %s and r.block_type = 'CONC')
+            """, (institution, plan_code, subplan_code, subplan_code))
+            for subplan_row in cursor.fetchall():
+              subplans_dict['subplan_type'] = subplan_row.subplan_type
+              subplans_dict['cip_code'] = subplan_row.cip_code
+              subplans_dict['requirement_id'] = subplan_row.requirement_id
+              subplans_dict['block_type'] = subplan_row.block_type
+              subplans_dict['block_value'] = subplan_row.block_value
+              subplans_dict['major1'] = subplan_row.major1
+              subplans_dict['title'] = subplan_row.title
+            subplans_list.append(subplans_dict)
+      plan_info['plan_info']['subplans'] = subplans_list
   try:
     other_dict.update(plan_info)
   except TypeError:
@@ -1465,7 +1502,7 @@ if __name__ == "__main__":
         # MAJOR/MINOR
         if row.requirement_id is None:
           no_scribe_count += 1
-          programs_writer.writerow([row.institution, None, row.plan_type + 'OR', row.plan,
+          programs_writer.writerow([row.institution[0:3], None, row.plan_type + 'OR', row.plan,
                                     row.description, None, None, None, None, None,
                                     {'plan_info': plan_dict}])
           # Log the issue
@@ -1488,7 +1525,7 @@ if __name__ == "__main__":
             quarantine_count += 1
             continue
 
-          # Hunter ... ah, Hunter College
+          # Hunter ... ah, Hunter College. No longer seems to be the problem it once was.
           if row.institution == 'HTR01':
             hunter_count += 1
             if not do_hunter:
