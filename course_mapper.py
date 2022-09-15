@@ -360,15 +360,10 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
     if plan_dict['subplans']:
       institution = row.institution
       plan_code = plan_dict['plan']
-      subplans = plan_dict['subplans'].split(',')
-      subplans_list = []
+      subplans = plan_dict['subplans']
       with psycopg.connect('dbname=cuny_curriculum') as conn:
         with conn.cursor(row_factory=namedtuple_row) as cursor:
-          for subplan in subplans:
-            subplan_code, enrollment = subplan.split(':')
-            subplan_dict = {'subplan': subplan_code,
-                            'enrollment': enrollment,
-                            }
+          for subplan_dict in subplans:
             # Look up all the requirement blocks for the subplan.
             cursor.execute("""
             select s.plan, s.subplan, s.subplan_type, s.cip_code,
@@ -415,11 +410,12 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
                   subplan_dict['requirement_id'].append(subplan_row.requirement_id)
                   subplan_dict['major1'].append(subplan_row.major1)
             subplans_list.append(subplan_dict)
-      plan_info['plan_info']['subplans'] = subplans_list
+    plan_info['plan_info']['subplans'] = subplans_list
   try:
     other_dict.update(plan_info)
-  except TypeError:
-    pass
+  except TypeError as err:
+    # There is no plan_info for this block
+    other_dict['plan_info'] = 'None'
 
   args_dict['other'] = other_dict
 
@@ -458,7 +454,7 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
                               f'{block_info.min_residency}',
                               f'{block_info.min_grade}',
                               f'{block_info.min_gpa}',
-                              f'{block_info.other}',
+                              json.dumps(block_info.other, ensure_ascii=False),
                               ])
 
   # But but all blocks get added to the context list.
@@ -1465,8 +1461,7 @@ if __name__ == "__main__":
               'period_start', 'period_stop', 'parse_tree']
   plan_keys = ['institution', 'plan', 'plan_type', 'description', 'effective_date', 'cip_code',
                'hegis_code', 'subplans', 'enrollment']
-  subplan_keys = ['institution', 'plan', 'subplan', 'subplan_type', 'description',
-                  'effective_date', 'cip_code', 'hegis_code', 'plans', 'enrollment']
+
   DGW_Row = namedtuple('DGW_Row', dgw_keys)
 
   with psycopg.connect('dbname=cuny_curriculum') as conn:
@@ -1519,6 +1514,15 @@ if __name__ == "__main__":
         for key, value in row._asdict().items():
           if key in plan_keys:
             plan_dict[key] = str(value) if key.endswith('date') else value
+            # For subplans, convert the string_agg from the query to a list of dicts
+            subplans_list = []
+            if key == 'subplans' and value is not None:
+              subplans = value.split(',')
+              for subplan in subplans:
+                subplan_code, enrollment = subplan.split(':')
+                subplans_list.append({'subplan': subplan_code, 'enrollment': int(enrollment)})
+              plan_dict['subplans'] = subplans_list
+
           if key in dgw_keys:
             dgw_dict[key] = str(value) if key.endswith('date') else value
 
@@ -1527,9 +1531,9 @@ if __name__ == "__main__":
         # MAJOR/MINOR
         if row.requirement_id is None:
           no_scribe_count += 1
-          programs_writer.writerow([row.institution[0:3], None, row.plan_type + 'OR', row.plan,
+          programs_writer.writerow([row.institution[0:3], 'None', row.plan_type + 'OR', row.plan,
                                     row.description, None, None, None, None, None,
-                                    {'plan_info': plan_dict}])
+                                    json.dumps({'plan_info': plan_dict}, ensure_ascii=False)])
           # Log the issue
           print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
                 f"{plan_dict['description']}", file=missing_file)
