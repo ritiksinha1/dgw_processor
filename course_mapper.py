@@ -366,11 +366,10 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
         with conn.cursor(row_factory=namedtuple_row) as cursor:
           for subplan in subplans:
             subplan_code, enrollment = subplan.split(':')
-            subplans_dict = {'subplan': subplan_code,
-                             'enrollment': enrollment,
-                             }
-            # Look up all the requirement blocks for the subplan. (There _should_ be exactly one,
-            # but that's not true)
+            subplan_dict = {'subplan': subplan_code,
+                            'enrollment': enrollment,
+                            }
+            # Look up all the requirement blocks for the subplan.
             cursor.execute("""
             select s.plan, s.subplan, s.subplan_type, s.cip_code,
                    r.institution, r.requirement_id, r.block_type, r.block_value, r.major1, r.title
@@ -381,15 +380,41 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
                and s.subplan = %s
                and (r.block_value = %s and r.block_type = 'CONC')
             """, (institution, plan_code, subplan_code, subplan_code))
-            for subplan_row in cursor.fetchall():
-              subplans_dict['subplan_type'] = subplan_row.subplan_type
-              subplans_dict['cip_code'] = subplan_row.cip_code
-              subplans_dict['requirement_id'] = subplan_row.requirement_id
-              subplans_dict['block_type'] = subplan_row.block_type
-              subplans_dict['block_value'] = subplan_row.block_value
-              subplans_dict['major1'] = subplan_row.major1
-              subplans_dict['title'] = subplan_row.title
-            subplans_list.append(subplans_dict)
+            # There _should_ be exactly one requirement block for each subplan, but that doesn't
+            # always happen.
+            subplan_rows = [row for row in cursor.fetchall()]
+            num_rows = len(subplan_rows)
+            if num_rows == 0:
+              # Missing requirement block
+              subplan_dict['requirement_id'] = None
+            elif num_rows == 1:
+              # Expected case
+              subplan_row = subplan_rows[0]
+              subplan_dict['subplan_type'] = subplan_row.subplan_type
+              subplan_dict['cip_code'] = subplan_row.cip_code
+              subplan_dict['requirement_id'] = subplan_row.requirement_id
+              subplan_dict['block_type'] = subplan_row.block_type
+              subplan_dict['block_value'] = subplan_row.block_value
+              subplan_dict['major1'] = subplan_row.major1
+              subplan_dict['title'] = subplan_row.title
+            else:
+              # Multiple matches
+              # It might be possible to select the correct block by matching the major1 value to the
+              # plan, but that doesn't always work, so we just report the id and major1 values as
+              # lists.
+              for index, subplan_row in enumerate(subplan_rows):
+                if index == 0:
+                  subplan_dict['subplan_type'] = subplan_row.subplan_type
+                  subplan_dict['cip_code'] = subplan_row.cip_code
+                  subplan_dict['requirement_id'] = [subplan_row.requirement_id]
+                  subplan_dict['block_type'] = subplan_row.block_type
+                  subplan_dict['block_value'] = subplan_row.block_value
+                  subplan_dict['major1'] = [subplan_row.major1]
+                  subplan_dict['title'] = subplan_row.title
+                else:
+                  subplan_dict['requirement_id'].append(subplan_row.requirement_id)
+                  subplan_dict['major1'].append(subplan_row.major1)
+            subplans_list.append(subplan_dict)
       plan_info['plan_info']['subplans'] = subplans_list
   try:
     other_dict.update(plan_info)
