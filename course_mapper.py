@@ -374,6 +374,7 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
                and s.plan =%s
                and s.subplan = %s
                and (r.block_value = %s and r.block_type = 'CONC')
+               and r.period_stop ~* '^9'
             """, (institution, plan_code, subplan_code, subplan_code))
             # There _should_ be exactly one requirement block for each subplan, but that doesn't
             # always happen.
@@ -387,10 +388,10 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
               subplan_row = subplan_rows[0]
               subplan_dict['subplan_type'] = subplan_row.subplan_type
               subplan_dict['cip_code'] = subplan_row.cip_code
-              subplan_dict['requirement_id'] = subplan_row.requirement_id
+              subplan_dict['requirement_id'] = [subplan_row.requirement_id]
               subplan_dict['block_type'] = subplan_row.block_type
               subplan_dict['block_value'] = subplan_row.block_value
-              subplan_dict['major1'] = subplan_row.major1
+              subplan_dict['major1'] = [subplan_row.major1]
               subplan_dict['title'] = subplan_row.title
             else:
               # Multiple matches
@@ -1516,11 +1517,15 @@ if __name__ == "__main__":
             plan_dict[key] = str(value) if key.endswith('date') else value
             # For subplans, convert the string_agg from the query to a list of dicts
             subplans_list = []
-            if key == 'subplans' and value is not None:
-              subplans = value.split(',')
-              for subplan in subplans:
-                subplan_code, enrollment = subplan.split(':')
-                subplans_list.append({'subplan': subplan_code, 'enrollment': int(enrollment)})
+            if key == 'subplans':
+              if value is None:
+                # Just use the empty list initialized above
+                pass
+              else:
+                subplans = value.split(',')
+                for subplan in subplans:
+                  subplan_code, enrollment = subplan.split(':')
+                  subplans_list.append({'subplan': subplan_code, 'enrollment': int(enrollment)})
               plan_dict['subplans'] = subplans_list
 
           if key in dgw_keys:
