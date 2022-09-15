@@ -118,7 +118,6 @@ header_else         : ELSE (header_rule | header_rule_group);
 header_rule_group   : (begin_if header_rule+ end_if);
 header_rule         : header_class_credit
                     | header_conditional
-                    | copy_rules
                     | header_lastres
                     | header_maxclass
                     | header_maxcredit
