@@ -545,10 +545,15 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
 
             conditional_dict = header_item['conditional']
             condition_str = conditional_dict['condition_str']
-            # print(f'{institution} {requirement_id} Header conditional: {condition_str}')
+            print(f'\n{institution} {requirement_id} Header conditional: {condition_str}',
+                  file=debug_file)
             if_true_list = conditional_dict['if_true']
+            for item in if_true_list:
+              print(f'  T: {list(item.keys())}', file=debug_file)
             try:
               if_false_list = conditional_dict['if_false']
+              for item in if_false_list:
+                print(f'    F: {list(item.keys())}', file=debug_file)
             except KeyError:
               if_false_list = []
             """ There are two cases to consider:
@@ -845,11 +850,19 @@ def traverse_body(node: Any, context_list: list) -> None:
               subplans_list = context_list[0]['block_info']['other']['plan_info']['subplans']
             except KeyError:
               subplans_list = []
+            plan_enrollment = context_list[0]['block_info']['other']['plan_info']['enrollment']
+            if plan_enrollment is None:
+              plan_enrollment = 0
+            else:
+              plan_enrollment = int(plan_enrollment)
+            s = '' if plan_enrollment == 1 else 's'
+            plan_enrollment_str = f'{plan_enrollment:,} student{s}.'
             num_subplans = len(subplans_list)
             s = '' if num_subplans == 1 else 's'
             if num_subplans < num_required:
               print(f'{institution} {requirement_id} Body blocktype: program has {num_subplans} '
-                    f'subplan{s} but {num_required} needed', file=fail_file)
+                    f'subplan{s} but {num_required} needed. {plan_enrollment_str}',
+                    file=fail_file)
             else:
               # Look up all matching subplans
               try:
@@ -872,7 +885,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                   s = '' if num_required == 1 else 's'
                   if cursor.rowcount < num_required:
                     print(f'{institution} {requirement_id} Body blocktype {num_required} block{s} '
-                          f'needed but no more than {cursor.rowcount} found', file=fail_file)
+                          f'needed but no more than {cursor.rowcount} found.'
+                          f' {plan_enrollment_str}', file=fail_file)
                   else:
                     requirement_name = f'{num_required} concentration{s} required'
                     choice_context = {'choice': {'num_choices': num_subplans,
@@ -884,7 +898,9 @@ def traverse_body(node: Any, context_list: list) -> None:
                       choice_context['choice']['index'] += 1
                       if row.block_value in block_values:
                         print(f'{institution} {requirement_id} Body blocktype Duplicate '
-                              f'{row.block_value} with {row.block_title}', file=fail_file)
+                              f'{row.block_value} with {row.block_title}. {plan_enrollment_str}',
+                              file=fail_file)
+                        continue
                       block_values.append(row.block_value)
                       process_block(row, context_list + requirement_context + [choice_context])
 
