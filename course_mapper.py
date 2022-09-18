@@ -362,15 +362,18 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
 
   # Program and subprogram info, if available
   if plan_info:
-    # Expand subplans to include requirement_ids, if available.
+    # Expand subplans to include requirement_ids and dap_req_block info, if available.
     plan_dict = plan_info['plan_info']
+    plan_requirement_id = plan_dict['requirement_id']
+
     if plan_dict['subplans']:
       institution = row.institution
       plan_code = plan_dict['plan']
-      subplans = plan_dict['subplans']
-      with psycopg.connect('dbname=cuny_curriculum') as conn:
-        with conn.cursor(row_factory=namedtuple_row) as cursor:
-          for subplan_dict in subplans:
+      subplan_dicts = plan_dict['subplans']
+
+      for subplan_dict in subplan_dicts:
+        with psycopg.connect('dbname=cuny_curriculum') as conn:
+          with conn.cursor(row_factory=namedtuple_row) as cursor:
             # Look up all the requirement blocks for the subplan.
             cursor.execute("""
             select s.plan, s.subplan, s.subplan_type, s.cip_code,
@@ -382,14 +385,17 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
                and s.subplan = %s
                and (r.block_value = %s and r.block_type = 'CONC')
                and r.period_stop ~* '^9'
-            """, (institution, plan_code, subplan_code, subplan_code))
+            """, (institution, plan_code, subplan_dict['subplan'], subplan_dict['subplan']))
+
             # There _should_ be exactly one requirement block for each subplan, but that doesn't
             # always happen.
             subplan_rows = [row for row in cursor.fetchall()]
             num_rows = len(subplan_rows)
             if num_rows == 0:
               # Missing requirement block
-              subplan_dict['requirement_id'] = None
+              subplan_dict['requirement_id'] = []
+              print(f'{institution} {plan_requirement_id} Subplan: 0 requirement_ids',
+                    file=fail_file)
             elif num_rows == 1:
               # Expected case
               subplan_row = subplan_rows[0]
@@ -399,12 +405,12 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
               subplan_dict['block_type'] = subplan_row.block_type
               subplan_dict['block_value'] = subplan_row.block_value
               subplan_dict['major1'] = [subplan_row.major1]
-              subplan_dict['title'] = subplan_row.title
+              subplan_dict['title'] = [subplan_row.title]
             else:
               # Multiple matches
-              # It might be possible to select the correct block by matching the major1 value to the
-              # plan, but that doesn't always work, so we just report the id and major1 values as
-              # lists.
+              # It might be possible to select the correct block by matching the major1 value to
+              # the plan, but that doesn't always work. When it fails, report requirement_id, title,
+              # and major1 as lists.
               for index, subplan_row in enumerate(subplan_rows):
                 if index == 0:
                   subplan_dict['subplan_type'] = subplan_row.subplan_type
@@ -413,10 +419,28 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
                   subplan_dict['block_type'] = subplan_row.block_type
                   subplan_dict['block_value'] = subplan_row.block_value
                   subplan_dict['major1'] = [subplan_row.major1]
-                  subplan_dict['title'] = subplan_row.title
+                  subplan_dict['title'] = [subplan_row.title]
                 else:
                   subplan_dict['requirement_id'].append(subplan_row.requirement_id)
                   subplan_dict['major1'].append(subplan_row.major1)
+                  subplan_dict['title'].append(subplan_row.title)
+
+              # Perhaps exactly one major1 value matched the plan_code?
+              for sub_index, requirement_id in enumerate(subplan_dict['requirement_id']):
+                if subplan_dict['major1'][sub_index] == plan_code:
+                  subplan_dict['requirement_id'] = [requirement_id]
+                  subplan_dict['major1'] = [subplan_dict['major1'][sub_index]]
+                  subplan_dict['title'] = [subplan_dict['title'][sub_index]]
+                  break
+                else:
+                  # Another possibility is that the title string somehow matches the program code.
+                  # But that seems like risky territory, and is not attempted here.
+                  num = len(subplan_dict['requirement_id'])
+                  s = '' if num == 1 else 's'
+                  print(f'{institution} {plan_requirement_id} Subplan: {num} requirement_id{s}',
+                        file=fail_file)
+                  pass
+            # save the result
             subplans_list.append(subplan_dict)
     plan_info['plan_info']['subplans'] = subplans_list
   try:
@@ -1551,6 +1575,7 @@ if __name__ == "__main__":
           print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
                 f"{plan_dict['description']}", file=missing_file)
         else:
+          plan_dict['requirement_id'] = row.requirement_id
           # Process the scribe block for this program, subject to command line exclusions and errors
 
           # Skip “inactive” programs. These are ones that have zero students and were not modified
