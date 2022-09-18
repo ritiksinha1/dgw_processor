@@ -1,5 +1,5 @@
 #! /usr/local/bin/python3
-""" Fetch subplan information from the mapper's requirements.other column
+""" Fetch information other than subplan info from the mapper's requirements.other column
 """
 import csv
 import json
@@ -20,7 +20,7 @@ if len(sys.argv) > 2:
   else:
     target_plan = sys.argv[2].upper()
 if len(sys.argv) > 3:
-  exit('Usage: fetch_subplans [institution [plan|RA#]]')
+  exit('Usage: fetch_other [institution [plan|RA#]]')
 
 with open ('/Users/vickery/Projects/dgw_processor/course_mapper.programs.csv') as csv_file:
   reader = csv.reader(csv_file)
@@ -47,26 +47,7 @@ with open ('/Users/vickery/Projects/dgw_processor/course_mapper.programs.csv') a
         if target_plan is None:
           target_plan = plan_info['plan']
 
-      # Display the subplans
-      print(plan_info['subplans'])
-      subplans = plan_info['subplans']
-      print(f'\n{row.institution} {row.requirement_id:8} {target_plan:12}', end='')
-      if len(subplans) == 0:
-        print('  no subplans')
-        continue
-      else:
-        s = '' if len(subplans) == 1 else 's'
-        print(f'  {len(subplans):3} subplan{s}\n'
-              f'  Subplan     Enrolled  RA       major1       Title')
-        for subplan in subplans:
-          try:
-            blocks = zip(subplan['requirement_id'], subplan['major1'], subplan['title'])
-            blocks_list = []
-            for block in blocks:
-              major1_str = f'{block[1]:12}' if block[1] else '            '
-              title_str = f'{block[2]}' if block[2] else ''
-              blocks_list.append(f'{block[0]} {major1_str} {title_str}')
-            blocks_str = ', '.join(blocks_list)
-          except KeyError as err:
-            blocks_str = 'No requirement blocks'
-          print(f'  {subplan["subplan"]:12} {subplan["enrollment"]:7,}  {blocks_str}')
+      # Display all the keys, and the lengths of their lists
+      print(f'\n{row.institution} {row.requirement_id:8} {target_plan:12}')
+      for other_key, other_value in other.items():
+        print(f'  {other_key} {len(other_value)}')

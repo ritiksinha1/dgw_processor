@@ -355,7 +355,9 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
   args_dict['catalog_years'] = catalog_years(row.period_start, row.period_stop)._asdict()
 
   # The ignomious 'other' column.
-  other_dict = {'maxperdisc': [],
+  other_dict = {'maxclass': [],
+                'maxcredit': [],
+                'maxperdisc': [],
                 'minclass': [],
                 'mincredit': [],
                 'minperdisc': []}
@@ -462,6 +464,8 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
   # found in the header list.
+  # if block_info.institution == 'BAR01' and block_info.requirement_id == 'RA001577':
+  #   breakpoint()
   try:
     header_list = row.parse_tree['header_list']
     if len(header_list) > 0:
@@ -512,7 +516,8 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
 # traverse_header()
 # =================================================================================================
 def traverse_header(block_info: namedtuple, header_list: list) -> None:
-  """ Extract program-wide qualifiers: MinGrade (but not MinGPA) and residency requirements,
+  """ Extract program-wide qualifiers, and update block_info with the values found. Handles only
+      fields deemed relevant to transfer.
   """
 
   institution, requirement_id, block_type, *_ = (block_info.institution,
@@ -611,10 +616,9 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             limit_dict = {'number': number,
                           'courses': course_list
                           }
-            block_info.max_classes.append(limit_dict)
+            block_info.other['maxclass'].append(limit_dict)
 
           case 'header_maxcredit':
-            print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
             for cruft_key in ['institution', 'requirement_id']:
               del(value['maxcredit']['course_list'][cruft_key])
 
@@ -629,7 +633,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             limit_dict = {'number': number,
                           'courses': course_list
                           }
-            block_info.max_credits.append(limit_dict)
+            block_info.other['maxcredit'].append(limit_dict)
+            print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
 
           case 'header_maxpassfail':
             pass
@@ -659,11 +664,11 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
 
           case 'header_minclass':
             print(f'{institution} {requirement_id} Header minclass', file=log_file)
-            block_info._asdict()['other']['minclass'].append(value['minclass'])
+            block_info.other['minclass'].append(value['minclass'])
 
           case 'header_mincredit':
             print(f'{institution} {requirement_id} Header mincredit', file=log_file)
-            block_info._asdict()['other']['mincredit'].append(value['mincredit'])
+            block_info.other['mincredit'].append(value['mincredit'])
 
           case 'header_mingpa':
             print(f'{institution} {requirement_id} Header mingpa', file=log_file)
@@ -681,7 +686,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
           case 'header_minperdisc':
             if label := value['label']:
               print(f'{institution} {requirement_id} Header minperdisc label', file=todo_file)
-            block_info.other['minperdisc']. append(value['minperdisc'])
+            block_info.other['minperdisc'].append(value['minperdisc'])
             print(f'{institution} {requirement_id} Header minperdisc', file=log_file)
 
           case 'header_minres':
