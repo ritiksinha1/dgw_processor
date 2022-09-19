@@ -46,7 +46,8 @@ def enrollments(institution: str, arg: str) -> str:
            and requirement_id = %s
         """, (institution, arg))
         if cursor.rowcount != 1:
-          return (f'{cursor.rowcount} requirement blocks match {institution} {requirement_id}')
+          num_err = 'No' if cursor.rowcount == 0 else f'{cursor.rowcount:,}'
+          return (None, f'{num_err} requirement blocks match {institution} {arg}')
         row = cursor.fetchone()
         # check block type to see whether block value is a plan or a subplan
         plan = subplan = None
