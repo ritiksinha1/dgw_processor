@@ -9,8 +9,10 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
   with conn.cursor(row_factory=namedtuple_row) as cursor:
 
     cursor.execute("""
-      select institution, plan, enrollment
-        from cuny_acad_plan_enrollments
+      select t.institution, t.plan, coalesce(e.enrollment, 0) as enrollment
+        from cuny_acad_plan_tbl t left join cuny_acad_plan_enrollments e
+          on t.institution = e.institution
+         and t.plan = e.plan
       """)
     plans = {(row.institution, row.plan): row.enrollment for row in cursor.fetchall()}
 
@@ -66,9 +68,11 @@ def enrollments(institution: str, arg: str) -> str:
   if (institution, arg) in subplans.keys():
     return subplans[(institution, arg)], 'subplan'
   elif (institution, arg) in plans.keys():
-    return plans[(institution, arg)], 'plan'
+    num_students = int(plans[(institution, arg)])
+    num_students = 'Zero' if num_students == 0 else f'{num_students:,}'
+    return num_students, 'plan'
   else:
-    return (None, f'No plan or subplan info for {institution} {arg}')
+    return (None, f'No plan or subplan enrollment for {institution} {arg}')
 
 
 # Interactive mode
@@ -78,9 +82,10 @@ if __name__ == '__main__':
     enrollment, text = enrollments(sys.argv[1], sys.argv[2])
     if enrollment:
       s = '' if enrollment == 1 else 's'
-      exit(f'{enrollment:,} {text} student{s}')
+      print(f'{enrollment} {text} student{s}')
     else:
-      exit(text)
+      print(text)
+    exit()
   # No command line options; interactive mode
   while True:
     print('? ', end='')
@@ -90,7 +95,7 @@ if __name__ == '__main__':
     institution, arg = line.split()
     enrollment, text = enrollments(institution, arg)
     if enrollment:
-      s = '' if enrollment == 1 else 's'
-      print(f'{enrollment:,} {text} student{s}')
+      s = '' if enrollment == '1' else 's'
+      print(f'{enrollment} {text} student{s}')
     else:
       print(text)
