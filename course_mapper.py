@@ -46,7 +46,7 @@ blocks_file = open('blocks.txt', 'w')
 debug_file = open('debug.txt', 'w')
 fail_file = open('fail.txt', 'w')
 log_file = open('log.txt', 'w')
-missing_file = open(f'missing_ra.txt', 'w')
+missing_file = open(f'missing.txt', 'w')
 no_courses_file = open('no_courses.txt', 'w')
 todo_file = open(f'todo.txt', 'w')
 
@@ -1457,6 +1457,7 @@ if __name__ == "__main__":
   parser.add_argument('--no_remarks', action='store_true')
   parser.add_argument('-w', '--weeks', type=int, default=40)
   parser.add_argument('-p', '--progress', action='store_true')
+  parser.add_argument('-t', '--timing', action='store_true')
   args = parser.parse_args()
   do_degrees = args.do_degrees
   do_hunter = not args.no_hunter
@@ -1616,13 +1617,14 @@ if __name__ == "__main__":
   if args.progress:
     print()
   s = '' if args.weeks == 1 else 's'
-  print(f'{programs_count:5,} Programs\n'
+  print(f'{programs_count:5,} Blocks')
+  for k, v in block_types.items():
+    print(f'{v:5,} {k.title()}')
+  print(f'-----\n'
         f'{hunter_count:5,} {hunter_tag} \n'
         f'{no_scribe_count:5,} No dgw_req_block\n'
         f'{quarantine_count:5,} Quarantined\n'
-        f'{inactive_count:5,} Inactive more than {args.weeks} week{s}\nBlock Types')
+        f'{inactive_count:5,} Inactive more than {args.weeks} week{s}')
 
-  for k, v in block_types.items():
-    print(f'{v:5,} {k.title()}')
-
-  print(f'{(datetime.datetime.now() - start_time).seconds} seconds')
+  if args.timing:
+    print(f'{(datetime.datetime.now() - start_time).seconds} seconds')
