@@ -16,9 +16,9 @@ import sys
 
 from collections import namedtuple
 from pprint import pprint, pformat
+from psycopg.rows import namedtuple_row
 
 from catalogyears import catalog_years
-from psycopg.rows import namedtuple_row
 
 # Module-level variables
 _quarantined_dict = None

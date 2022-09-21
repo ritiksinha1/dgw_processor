@@ -33,10 +33,12 @@ def enrollments(institution: str, arg: str) -> str:
       there is no matching enrollment info, an error message. Count is None for errors.
   """
   institution = institution.upper().strip('01') + '01'
+  block_type = block_value = plan = subplan = None
 
   # Decide what sort of argument was provided
   block_number = arg.upper().strip('RA')
   if block_number.isnumeric():
+
     # Interpret arg as a requirement_id
     arg = f'RA{block_number:>06}'
     with psycopg.connect('dbname=cuny_curriculum') as conn:
@@ -49,16 +51,17 @@ def enrollments(institution: str, arg: str) -> str:
         """, (institution, arg))
         if cursor.rowcount != 1:
           num_err = 'No' if cursor.rowcount == 0 else f'{cursor.rowcount:,}'
-          return (None, f'{num_err} requirement blocks match {institution} {arg}')
+          return (None, f'{institution[0:3]} {arg}: {num_err} matching requirement blocks')
         row = cursor.fetchone()
         # check block type to see whether block value is a plan or a subplan
-        plan = subplan = None
-        if row.block_type == 'MAJOR':
-          plan = row.block_value
-        elif row.block_type == 'CONC' or row.block_type == 'MINOR':
-          subplan = row.block_value
+        block_type = row.block_type
+        block_value = row.block_value
+        if block_type == 'MAJOR':
+          plan = block_value
+        elif block_type == 'CONC' or row.block_type == 'MINOR':
+          subplan = block_value
         else:
-          return (None, f'{institution} {arg}: {row.block_type} is not MAJOR, MINOR, or CONC')
+          return (None, f'{institution[0:3]} {arg} ({block_type.title()} {block_value}): No data')
 
   else:
     # Interpret arg as a plan or subplan code
@@ -72,7 +75,9 @@ def enrollments(institution: str, arg: str) -> str:
     num_students = 'Zero' if num_students == 0 else f'{num_students:,}'
     return num_students, 'plan'
   else:
-    return (None, f'No plan or subplan enrollment for {institution} {arg}')
+    details = f' ({block_type.title()} {block_value})' if block_type else ''
+
+    return (None, f'{institution[0:3]} {arg}{details}: No enrollment')
 
 
 # Interactive mode
