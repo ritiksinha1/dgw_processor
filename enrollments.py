@@ -61,7 +61,8 @@ def enrollments(institution: str, arg: str) -> str:
         elif block_type == 'CONC' or row.block_type == 'MINOR':
           subplan = block_value
         else:
-          return (None, f'{institution[0:3]} {arg} ({block_type.title()} {block_value}): No data')
+          return (None,
+                  f'{institution[0:3]} {arg} ({block_type.title():9} {block_value:>12}): No data')
 
   else:
     # Interpret arg as a plan or subplan code
@@ -75,7 +76,7 @@ def enrollments(institution: str, arg: str) -> str:
     num_students = 'Zero' if num_students == 0 else f'{num_students:,}'
     return num_students, 'plan'
   else:
-    details = f' ({block_type.title()} {block_value})' if block_type else ''
+    details = f' ({block_type.title():9} {block_value:>12})' if block_type else ''
 
     return (None, f'{institution[0:3]} {arg}{details}: No enrollment')
 
