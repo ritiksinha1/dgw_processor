@@ -272,7 +272,8 @@ Requirement Key, Course ID, Career, Course, With
     # list (is this ever actually used?).
     requirement_id = context_list[0]['block_info']['requirement_id']
     data_row = [institution, requirement_id, requirement_index, requirement_name,
-                json.dumps(context_list + [{'requirement': requirement_info}], ensure_ascii=False)]
+                json.dumps(context_list + [{'requirement_name': requirement_info}],
+                           ensure_ascii=False)]
     requirements_writer.writerow(data_row)
 
 
