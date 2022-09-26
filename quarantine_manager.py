@@ -171,7 +171,9 @@ if __name__ == '__main__':
                where institution = %s
                  and requirement_id = %s
               """, key)
-              assert cursor.rowcount == 1
+              if cursor.rowcount != 1:
+                print(f'{institution} {requirement_id} update failed with {cursor.rowcount = }')
+                continue
               print(f'{institution} {requirement_id}')
       elif selection == 'a':
         # Add institution requirement_id reason to quarantine
