@@ -2,6 +2,7 @@ Institution,Requirement ID,Block Type,Catalog,Year,Explanation,Can Ellucian
 BAR01,RA000625,MAJOR,GRAD,Current,Empty block (all comments),No
 BCC01,RA000276,CONC,UGRD,Current,Nested subsets not allowed; PSEUDO incorrectly used in body.,Unknown
 BCC01,RA000597,MAJOR,UGRD,Current,Invalid credit range (1-2) on line 85,Yes
+BCC01,RA000686,OTHER,UGRD,Current,"Syntax Error on line 3738, column 0",unknown
 BKL01,RA003670,MAJOR,UGRD,Current,Missing comma in course list on line 100,Unknown
 BMC01,RA000289,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Unknown
 BMC01,RA000291,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
