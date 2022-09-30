@@ -22,6 +22,8 @@ if len(sys.argv) > 2:
 if len(sys.argv) > 3:
   exit('Usage: fetch_other [institution [plan|RA#]]')
 
+print(target_institution, target_plan, target_requirement_id)
+
 with open ('/Users/vickery/Projects/dgw_processor/course_mapper.programs.csv') as csv_file:
   reader = csv.reader(csv_file)
   for line in reader:
@@ -50,4 +52,4 @@ with open ('/Users/vickery/Projects/dgw_processor/course_mapper.programs.csv') a
       # Display all the keys, and the lengths of their lists
       print(f'\n{row.institution} {row.requirement_id:8} {target_plan:12}')
       for other_key, other_value in other.items():
-        print(f'  {other_key} {len(other_value)}')
+        print(f'  {other_key} {other_value}')
