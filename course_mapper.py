@@ -46,7 +46,7 @@ blocks_file = open('blocks.txt', 'w')
 debug_file = open('debug.txt', 'w')
 fail_file = open('fail.txt', 'w')
 log_file = open('log.txt', 'w')
-missing_file = open(f'missing.txt', 'w')
+missing_file = open(f'missing_ra.txt', 'w')
 no_courses_file = open('no_courses.txt', 'w')
 todo_file = open(f'todo.txt', 'w')
 
@@ -193,6 +193,25 @@ def format_group_description(num_groups: int, num_required: int):
   else:
     prefix = f'Any {num_required_str} of the'
   return f'{prefix} following {num_groups_str} group{s}'
+
+
+# header_minres()
+# -------------------------------------------------------------------------------------------------
+def header_minres(block_info, value):
+  """
+  """
+  min_classes = value['minres']['min_classes']
+  min_credits = value['minres']['min_credits']
+  # There must be a better way to do an xor check ...
+  match (min_classes, min_credits):
+    case [None, None]:
+      print(f'Invalid minres {block_info}', file=sys.stderr)
+    case [None, credits]:
+      block_info.min_residency = f'{float(credits):.1f} credits'
+    case [classes, None]:
+      block_info.min_residency = f'{int(classes)} classes'
+    case _:
+      print(f'Invalid minres {block_info}', file=sys.stderr)
 
 
 # map_courses()
@@ -360,7 +379,8 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
                 'maxperdisc': [],
                 'minclass': [],
                 'mincredit': [],
-                'minperdisc': []}
+                'minperdisc': [],
+                'conditional': []}
 
   # Program and subprogram info, if available
   if plan_info:
@@ -565,11 +585,29 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
                   print(f'{institution} {requirement_id} Header {key} proxy_advice (ignored)',
                         file=log_file)
               except KeyError:
+                # No proxy-advice (normal))
                 pass
             block_info.class_credits = ' and '.join(class_credit_list)
 
           case 'conditional':
-            # There could be a block requirement and/or a class_credit requirement; perhaps others.
+            """ Observed:
+                  No course list items
+                   58   T: ['header_class_credit']
+                   30   F: ['header_class_credit']
+                   49   T: ['header_share']
+                   49   F: ['header_share']
+                    7   T: ['header_minres']
+
+                  Items with course lists
+                   15   T: ['header_maxcredit']
+                    1   T: ['header_maxtransfer']
+                    2   T: ['header_minclass']
+                    5   T: ['header_mincredit']
+                    1   F: ['header_mincredit']
+
+                  Recursive item
+                   28   F: ['conditional']
+            """
             print(f'{institution} {requirement_id} Header conditional', file=todo_file)
 
             conditional_dict = header_item['conditional']
@@ -585,19 +623,9 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
                 print(f'    F: {list(item.keys())}', file=debug_file)
             except KeyError:
               if_false_list = []
-            """ There are two cases to consider:
-                  (1) updates/additions to block-wide residency and grade restrictions, which
-                  update/augment the programs table
-                  (2) course requirements, which presumably should be added to the requirements and
-                  mapping tables.
-            """
-            # map_courses(institution,
-            #             requirement_id,
-            #             requirement_name,
-            #             context_list,
-            #             requirement_dict)
 
           case 'header_lastres':
+            print(f'{institution} {requirement_id} Header lastres (ignored', file=log_file)
             pass
 
           case 'header_maxclass':
@@ -637,7 +665,9 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
 
           case 'header_maxpassfail':
-            pass
+            print(f'{institution} {requirement_id} Header maxpassfail', file=log_file)
+            assert 'maxpassfail' not in block_info.other.keys()
+            block_info.other['maxpassfail'] = value['maxpassfail']
 
           case 'header_maxperdisc':
             print(f'{institution} {requirement_id} Header maxperdisc', file=log_file)
@@ -691,18 +721,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
 
           case 'header_minres':
             print(f'{institution} {requirement_id} Header minres', file=log_file)
-            min_classes = value['minres']['min_classes']
-            min_credits = value['minres']['min_credits']
-            # There must be a better way to do an xor check ...
-            match (min_classes, min_credits):
-              case [None, None]:
-                print(f'Invalid minres {block_info}', file=sys.stderr)
-              case [None, credits]:
-                block_info.min_residency = f'{float(credits):.1f} credits'
-              case [classes, None]:
-                block_info.min_residency = f'{int(classes)} classes'
-              case _:
-                print(f'Invalid minres {block_info}', file=sys.stderr)
+            header_minres(block_info, value)
 
           case 'proxy_advice':
             if do_proxy_advice:
@@ -710,7 +729,13 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
             else:
               print(f'{institution} {requirement_id} Header {key} (ignored)', file=log_file)
 
-          case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | 'remark' | \
+          case 'remark':
+            # (Not observed to occur)
+            print(f'{institution} {requirement_id} Header remark', file=log_file)
+            assert 'remark' not in block_info.other.keys()
+            block_info.other['remark'] = value['remark']
+
+          case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | \
                'rule_complete' | 'standalone' | 'header_share' | 'header_tag':
             # Intentionally ignored
             print(f'{institution} {requirement_id} Header {key} (ignored)', file=log_file)
