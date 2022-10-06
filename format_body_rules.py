@@ -92,6 +92,8 @@ def format_blocktype(blocktype_arg: Any) -> str:
   """
 
   if isinstance(blocktype_arg, list):
+    if len(blocktype_arg) != 1:
+      return f'<p class="error">Blocktype list len({len(blocktype_arg)}) not handled.</p>'
     blocktype_dict = blocktype_arg[0]
   else:
     blocktype_dict = blocktype_arg
@@ -126,6 +128,13 @@ def format_blocktype(blocktype_arg: Any) -> str:
 # -------------------------------------------------------------------------------------------------
 def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
   """
+      Grammar:
+        body_class_credit : (num_classes | num_credits)
+                            (logical_op (num_classes | num_credits))? course_list_body?
+                            (display | proxy_advice | remark | share | rule_tag | label | tag )*
+                          ;
+      Parse Tree:
+
   """
   if isinstance(class_credit_arg, list):
     if len(class_credit_arg) > 1:
@@ -187,9 +196,9 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
     # print('no prob w/ class_credit_dict')
   except TypeError as te:
     # This isn't supposed to happen
-    print(te)
-    print(class_credit_dict)
-    exit()
+    print(te, file=sys.stderr)
+    print(class_credit_dict, file=sys.stderr)
+    exit('Unexpected TypeError in format_class_credit()')
   except KeyError as ke:
     pass
 
@@ -324,8 +333,45 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
 # -------------------------------------------------------------------------------------------------
 def format_course_list_rule(course_list_rule: dict) -> str:
   """
+      Grammar
+        course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
+        course_list_rule  : course_list_body label?;
+      Parse Tree keys
+        label
+        remark
+        proxy_advice
+        qualifier
+        course_list
+
   """
-  return '<p class="error">format_course_list_rule() not implemented yet.</p>'
+  try:
+    label_str = course_list_rule['label']
+    summary_element = f'<summary>{label_str}</summary>'
+  except KeyError:
+    summary_element = f'<summary class="error">Course List Rule With No Name</summary>'
+
+  course_list_rule_str = ''
+
+  try:
+    course_list_rule_str += format_remark(course_list_rule['remark'])
+  except KeyError:
+    pass
+
+  try:
+    proxy_str = course_list_rule['proxy_advice']['proxy_str']
+    course_list_rule_str += f'<p><strong>Advice: </strong> {proxy_str}</p>'
+  except KeyError:
+    pass
+
+  try:
+    for qualifier in course_list_rule['qualifiers']:
+      course_list_rule_str += dispatch_body_qualifiers(qualifier)
+  except KeyError:
+    pass
+
+  course_list_rule_str += format_utils.format_course_list(course_list_rule['course_list'])
+
+  return f'<details>{summary_element}{course_list_rule_str}</details>'
 
 
 # format_group_requirements()
@@ -338,24 +384,30 @@ def format_group_requirements(group_requirements: list) -> str:
   """
   assert isinstance(group_requirements, list), (f'{type(group_requirements)} is not list '
                                                 f'in format_group_requirements')
+
   group_requirements_str = ''
   for group_requirement in [gr['group_requirement'] for gr in group_requirements]:
 
     try:
       label_str = group_requirement['label']
-      summary = f'<summary>{label_str}</summary>'
+      summary_element = f'<summary>{label_str}</summary>'
     except KeyError:
-      summary = None
+      summary_element = '<summary class="error">Group Requirement Has No Name</summary>'
 
     num_required = int(group_requirement['number'])
     num_groups = len(group_requirement['group_list'])
 
-    # THIS IS AN EXPERIMENT: REPLACE THE LABEL, IF PRESENT, WITH A STANDARDIZED DESCRIPTION
-    text_description = format_utils.format_group_requirement(num_groups, num_required)
-    summary = f'<summary>{text_description}:</summary>'
+    try:
+      group_requirement_str = format_remark(group_requirement['remark'])
+    except KeyError:
+      pass
 
-    group_requirement_str = ''
+    # Standardized descriptioin of the group requirement structure.
+    text_description = format_utils.format_group_requirement(num_groups, num_required)
+    group_requirement_str += f'<p>{text_description}</p>'
+
     for index, requirement in enumerate(group_requirement['group_list']):
+
       for key in requirement.keys():
         match key:
           case 'block':
@@ -379,11 +431,7 @@ def format_group_requirements(group_requirements: list) -> str:
             # Remarks will show up here? Or are they handled like labels??
             group_requirement_str += (f'<p>{key.title()}: {requirement[key]} requirement not '
                                       f'implemented.</p>')
-
-    if summary:
-      group_requirements_str += f'<details>{summary}{group_requirement_str}</details>'
-    else:
-      group_requirements_str += f'{group_requirement_str}'
+    group_requirements_str += f'<details>{summary_element}{group_requirement_str}</details>'
 
   return group_requirements_str
 
@@ -490,115 +538,154 @@ def format_rule_complete(rule_complete_dict: dict) -> str:
 # format_subset()
 # -------------------------------------------------------------------------------------------------
 def format_subset(subset_dict: dict) -> str:
-  """  Subset dict keys:
-         block
-         blocktype
-         class_credit_body
-         conditional
-         copy_rules
-         course_list
-         group
-         label
-         noncourse
-         qualifier
-         remark
-         rule_complete
+  """                     Grammar                 Dict Key(s)
+      subset            : BEGINSUB
+                        ( body_conditional        conditional_list
+                          | block                 block
+                          | blocktype             blocktype_list
+                          | body_class_credit     class_credit
+                          | copy_rules            copy_rules
+                          | course_list_rule      course_list_rule
+                          | group_requirement     group_requirements
+                          | noncourse             noncourse
+                          | rule_complete         rule_complete
+                        )+
+                        ENDSUB (qualifier tag? | proxy_advice | remark | label)*;
+      The label and qualifiers, remararks, and proxy_advice (if any) are top-level keys in the
+      returned dict. The others are returned in a list, using the list to maintain the sequence
+      in which they appear in the subset.
+
+    Presentation: A details element with the label as summary; if no label, make it an error
+    message. Then, in the details body, remarks, proxy_advice, and qualifiers. Then, each item in
+    the list of requirements (block, blocktype, etc.)
   """
   if DEBUG:
     print(f'*** format_subset({list(subset_dict.keys())})', file=sys.stderr)
 
-  valid_keys = ['block', 'blocktype', 'class_credit_list', 'conditional', 'conditional_list',
-                'copy_rules', 'course_list', 'group_requirements', 'label', 'noncourse',
-                'qualifier', 'remark', 'rule_complete', 'share']
-  for key in subset_dict.keys():
-    if key not in valid_keys:
-      return f'<p class="error">Error: subset with unexpected key: {key}</p>'
-
   try:
     label_str = subset_dict.pop('label')
+    summary_element = f'<summary>{label_str}</summary>'
   except KeyError:
-    label_str = None
+    summary_element = '<summary class="error">Unnamed Requirement</summary>'
 
   subset_str = ''
 
-# If there is a remark, it goes right after the summary
+  # If there is a remark, it goes right after the summary
   try:
     subset_str += f'<p>{subset_dict.pop("remark")}</p>'
   except KeyError:
     pass
 
-# Next, any qualifiers.
+  # Proxy advice? (Ignored here)
+  try:
+    subset_dict.pop("proxy_advice")
+  except KeyError:
+    pass
+
+  # Next, any qualifiers.
   try:
     if qualifiers_list := dispatch_body_qualifiers(subset_dict):
       subset_str += '\n'.join(qualifiers_list)
   except KeyError:
     pass
 
-# Is this a non-course requirement?
-  try:
-    subset_str += format_noncourse(subset_dict.pop('noncourse'))
-  except KeyError:
-    pass
+  # Iterate over the list of requirements
+  for requirement in subset_dict['requirements']:
+    assert(len(requirement.keys()) == 1), (f'Requirement list item with {len(requirement.keys())} '
+                                           f'keys')
 
-# Block, blocktype, copy_rules, rule_complete
-  try:
-    subset_str += format_block(subset_dict.pop('block'))
-  except KeyError:
-    pass
+    for key, value in requirement.items():
 
-  try:
-    subset_str += format_blocktype(subset_dict.pop('blocktype'))
-  except KeyError:
-    pass
+      match key:
+        case 'conditional_list':
+          subset_str += format_conditional_list(value)
 
-  try:
-    subset_str += format_copy_rules(subset_dict.pop('copy_rules'))
-  except KeyError:
-    pass
+        case 'block':
+          subset_str += format_block(value)
 
-  try:
-    subset_str += format_rule_complete(subset_dict.pop('rule_complete'))
-  except KeyError:
-    pass
+        case 'blocktype_list':
+          subset_str += format_blocktype(value)
 
-# Course lists
-  try:
-    course_lists = subset_dict.pop('course_lists')
-    for course_list in course_lists:
-      subset_str += format_utils.format_course_list(course_list)
-  except KeyError:
-    pass
+        case 'class_credit':
+          subset_str += format_class_credit(value)
 
-# this leaves conditional, group, and class_credit_list
-  try:
-    if conditional_list := subset_dict.pop('conditional_list'):
-      subset_str += format_conditional_list(conditional_list)
-  except KeyError:
-    pass
+        case 'copy_rules':
+          subset_str += format_copy_rules(value)
 
-  try:
-    subset_str += format_group_requirements(subset_dict.pop('group_requirements'))
-  except KeyError:
-    pass
+        case 'course_list_rule':
+          subset_str += format_course_list_rule(value)
 
-  try:
-    if class_credit_list := subset_dict.pop('class_credit_list'):
-      # The value of class_credit_list is a list of class_credit dicts.
-      for class_credit_dict in class_credit_list:
-        try:
-          subset_str += format_class_credit(class_credit_dict['class_credit'])
-        except KeyError as ke:
-          print('Missing class_credit key in class_credit_dict: {ke}', file=sys.stderr)
-  except KeyError:
-    pass
+        case 'group_requirements':
+          subset_str += format_group_requirements(value)
 
-  assert not subset_dict.keys(), f'Subset unhandled key(s): {list(subset_dict.keys())}'
+        case 'noncourse':
+          subset_str += format_noncourse(value)
 
-  if label_str:
-    return f'<details><summary>{label_str}</summary>{subset_str}</details>'
-  else:
-    return (f'<details><summary><span class="error">Missing Requirement Name</span></summary>'
-            f'{subset_str}</details>')
+        case 'rule_complete':
+          subset_str += format_rule_complete(value)
+
+        case _:
+          raise ValueError(f'Unhandled subset rule key: {key}')
+
+  # # Is this a non-course requirement?
+  # try:
+  #   subset_str += format_noncourse(subset_dict.pop('noncourse'))
+  # except KeyError:
+  #   pass
+
+  # # Block, blocktype, copy_rules, rule_complete
+  # try:
+  #   subset_str += format_block(subset_dict.pop('block'))
+  # except KeyError:
+  #   pass
+
+  # try:
+  #   subset_str += format_blocktype(subset_dict.pop('blocktype'))
+  # except KeyError:
+  #   pass
+
+  # try:
+  #   subset_str += format_copy_rules(subset_dict.pop('copy_rules'))
+  # except KeyError:
+  #   pass
+
+  # try:
+  #   subset_str += format_rule_complete(subset_dict.pop('rule_complete'))
+  # except KeyError:
+  #   pass
+
+  # # Course lists
+  # try:
+  #   course_lists = subset_dict.pop('course_lists')
+  #   for course_list in course_lists:
+  #     subset_str += format_utils.format_course_list(course_list)
+  # except KeyError:
+  #   pass
+
+  # # this leaves conditional, group, and class_credit_list
+  # try:
+  #   if conditional_list := subset_dict.pop('conditional_list'):
+  #     subset_str += format_conditional_list(conditional_list)
+  # except KeyError:
+  #   pass
+
+  # try:
+  #   subset_str += format_group_requirements(subset_dict.pop('group_requirements'))
+  # except KeyError:
+  #   pass
+
+  # try:
+  #   if class_credit_list := subset_dict.pop('class_credit_list'):
+  #     # The value of class_credit_list is a list of class_credit dicts.
+  #     for class_credit_dict in class_credit_list:
+  #       try:
+  #         subset_str += format_class_credit(class_credit_dict['class_credit'])
+  #       except KeyError as ke:
+  #         print('Missing class_credit key in class_credit_dict: {ke}', file=sys.stderr)
+  # except KeyError:
+  #   pass
+
+  return (f'<details>{summary_element}'f'{subset_str}</details>')
 
 
 # _dispatch_table {}

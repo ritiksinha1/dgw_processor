@@ -134,8 +134,8 @@ def header_class_credit(ctx, institution, requirement_id):
 def body_class_credit(ctx, institution, requirement_id):
   """
 body_class_credit : (num_classes | num_credits)
-                  (logical_op (num_classes | num_credits))? course_list_body?
-                  (display | proxy_advice | remark | share | rule_tag | label | tag )*
+                    (logical_op (num_classes | num_credits))? course_list_body?
+                    (display | proxy_advice | remark | share | rule_tag | label | tag )*
                   ;
 
       num_classes         : NUMBER CLASS allow_clause?;
@@ -363,9 +363,14 @@ def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
   course_list_body_ctx = ctx.course_list_body()
   return_dict.update(build_course_list(course_list_body_ctx.course_list(),
                                        institution, requirement_id))
+
   if course_list_body_ctx.qualifier():
     return_dict.update(get_qualifiers(course_list_body_ctx.qualifier(),
                                       institution, requirement_id))
+
+  if course_list_body_ctx.proxy_advice():
+    return_dict.update(proxy_advice(course_list_body_ctx.proxy_advice(),
+                                    institution, requirement_id))
 
   if course_list_body_ctx.remark():
     return_dict['remark'] = ' '.join([s.getText().strip(' "')
@@ -411,6 +416,8 @@ def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
   requirement_list = []
   for group_requirement_ctx in group_requirement_contexts:
     requirement_list_dict = {'label': get_label(group_requirement_ctx)}
+    requirement_list_dict.update(remark(group_requirement_ctx.remark(),
+                                        institution, requirement_id))
     requirement_list_dict.update(get_qualifiers(group_requirement_ctx.qualifier(),
                                                 institution, requirement_id))
 
@@ -1146,20 +1153,22 @@ def standalone(ctx, institution, requirement_id):
 # subset()
 # -------------------------------------------------------------------------------------------------
 def subset(ctx, institution, requirement_id):
-  """
+  """                     Grammar                 Dict Key(s)
       subset            : BEGINSUB
-                        ( body_conditional
-                          | block
-                          | blocktype
-                          | body_class_credit
-                          | copy_rules
-                          | course_list_rule
-                          | group_requirement
-                          | noncourse
-                          | rule_complete
+                        ( body_conditional        conditional_list
+                          | block                 block
+                          | blocktype             blocktype_list
+                          | body_class_credit     class_credit
+                          | copy_rules            copy_rules
+                          | course_list_rule      course_list_rule
+                          | group_requirement     group_requirements
+                          | noncourse             noncourse
+                          | rule_complete         rule_complete
                         )+
-                        ENDSUB qualifier* (remark | label)*;
-
+                        ENDSUB (qualifier tag? | proxy_advice | remark | label)*;
+      The label and qualifiers, remararks, and proxy_advice (if any) are top-level keys in the
+      returned dict. The others are returned in a list, using the list to maintain the sequence
+      in which they appear in the subset.
   """
   if DEBUG:
     print(f'*** subset({class_name(ctx)}, {institution}, {requirement_id})',
@@ -1193,9 +1202,7 @@ def subset(ctx, institution, requirement_id):
 
       case 'body_class_credit':
         # Return a list of class_credit dicts
-        return_dict['requirements'].append({'class_credit_list': body_class_credit(child,
-                                                                                   institution,
-                                                                                   requirement_id)})
+        return_dict['requirements'].append(body_class_credit(child, institution, requirement_id))
 
       case 'copy_rules':
         return_dict['requirements'].append(copy_rules(child, institution, requirement_id))

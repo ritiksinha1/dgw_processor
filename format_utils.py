@@ -16,6 +16,7 @@ import html_utils
 
 from collections import namedtuple, defaultdict
 from coursescache import courses_cache, CourseTuple
+from traceback import print_exception, print_stack
 
 if os.getenv('DEBUG_FORMAT_UTILS'):
   DEBUG = True
@@ -58,7 +59,6 @@ def format_num_class_credit(cc_dict: dict):
       Returns None if the expected keys are not found in the cc_dict.
   """
   assert isinstance(cc_dict, dict), f'{type(cc_dict)} is not dict'
-
   try:
     num_classes_str = ''
     if cc_dict['min_classes'] is not None:
@@ -90,8 +90,8 @@ def format_num_class_credit(cc_dict: dict):
     return f'{num_classes_str}{conjunction_str}{num_credits_str}'
 
   except (KeyError, ValueError) as err:
-    print(f'Invalid class/credit dict: {err}\n{cc_dict}', file=sys.stderr)
-    return None
+    print_exception(err, file=sys.stderr)
+    return f'<p class="error">Invalid class/credit dict: {err}</p>'
 
 
 # format_course_list()

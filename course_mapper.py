@@ -136,7 +136,8 @@ def expand_course_list(institution: str, requirement_id: str, course_dict: dict)
     if with_expression := item[2]:
       # Ignore cases where the with clause references DWTerm
       if 'dwterm' in with_expression.lower():
-        print(f'institution requirement_id exclude course based on DWTerm (ignored)', file=log_file)
+        print(f'{institution} {requirement_id} Exclude course based on DWTerm (ignored)',
+              file=log_file)
         continue
       # Log and skip remaining cases that have with-expressions
       print(f'{institution} {requirement_id} expand_course_list(): exclude w/ with',
@@ -599,6 +600,8 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
                     7   T: ['header_minres']
 
                   Items with course lists
+                  The problem is that many of these expand to un-useful lists of courses, but others
+                  are meaningful. Need to look at them in more detail.
                    15   T: ['header_maxcredit']
                     1   T: ['header_maxtransfer']
                     2   T: ['header_minclass']
@@ -625,6 +628,7 @@ def traverse_header(block_info: namedtuple, header_list: list) -> None:
               if_false_list = []
 
           case 'header_lastres':
+            # A subset of residency requirements
             print(f'{institution} {requirement_id} Header lastres (ignored', file=log_file)
             pass
 
@@ -1387,7 +1391,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                                 rule)
                     print(f'{institution} {requirement_id} Subset course_list_rule', file=log_file)
 
-                case 'class_credit_list':
+                case 'class_credit':
                   print(f'{institution} {requirement_id} Subset {key}', file=log_file)
 
                   if isinstance(rule, list):
@@ -1401,7 +1405,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                         local_dict['requirement_name'] = v['label']
                       except KeyError as ke:
                         print(f'{institution} {requirement_id} '
-                              f'Subset class_credit_list {k} with no label', file=todo_file)
+                              f'Subset class_credit {k} with no label', file=todo_file)
 
                       if local_dict:
                         local_context = [local_dict]
@@ -1413,7 +1417,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                                     rule_dict['class_credit'])
                       except KeyError as ke:
                         print(institution, requirement_id, block_title,
-                              f'{ke} in subset class_credit_list', file=sys.stderr)
+                              f'{ke} in subset class_credit', file=sys.stderr)
                         print(rule, file=sys.stderr)
                         exit()
 
