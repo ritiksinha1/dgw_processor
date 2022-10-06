@@ -206,13 +206,13 @@ blocktype       : NUMBER BLOCKTYPE expression proxy_advice? label;
 allow_clause        : LP allow NUMBER RP;
 
 header_class_credit : (num_classes | num_credits)
-                    (logical_op (num_classes | num_credits))?
-                    (IS? pseudo | display | proxy_advice | header_tag | tag)* header_label?
+                      (logical_op (num_classes | num_credits))?
+                      (IS? pseudo | display | proxy_advice | header_tag | tag)* header_label?
                     ;
 
 body_class_credit : (num_classes | num_credits)
-                  (logical_op (num_classes | num_credits))? course_list_body?
-                  (display | proxy_advice | remark | share | rule_tag | label | tag )*
+                    (logical_op (num_classes | num_credits))? course_list_body?
+                    (display | proxy_advice | remark | share | rule_tag | label | tag )*
                   ;
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
