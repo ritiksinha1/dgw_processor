@@ -386,8 +386,9 @@ def format_group_requirements(group_requirements: list) -> str:
                                                 f'in format_group_requirements')
 
   group_requirements_str = ''
-  for group_requirement in [gr['group_requirement'] for gr in group_requirements]:
 
+  for group_requirement in [gr['group_requirement'] for gr in group_requirements]:
+    group_requirement_str = ''
     try:
       label_str = group_requirement['label']
       summary_element = f'<summary>{label_str}</summary>'
@@ -398,7 +399,7 @@ def format_group_requirements(group_requirements: list) -> str:
     num_groups = len(group_requirement['group_list'])
 
     try:
-      group_requirement_str = format_remark(group_requirement['remark'])
+      group_requirement_str += format_remark(group_requirement['remark'])
     except KeyError:
       pass
 
