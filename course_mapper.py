@@ -301,8 +301,8 @@ Requirement Key, Course ID, Career, Course, With
 def get_restrictions(node: dict) -> dict:
   """ Return qualifiers that might affect transferability.
   """
-
   assert isinstance(node, dict)
+
   return_dict = dict()
   # The maxtransfer restriction puts a limit on the number of classes or credits that can be
   # transferred, possibly with a list of "types" for which the limit applies. I think the type names
@@ -1393,33 +1393,32 @@ def traverse_body(node: Any, context_list: list) -> None:
 
                 case 'class_credit':
                   print(f'{institution} {requirement_id} Subset {key}', file=log_file)
-
                   if isinstance(rule, list):
                     rule_dicts = rule
                   else:
                     rule_dicts = [rule]
                   for rule_dict in rule_dicts:
-                    for k, v in rule_dict.items():
-                      local_dict = get_restrictions(v)
-                      try:
-                        local_dict['requirement_name'] = v['label']
-                      except KeyError as ke:
-                        print(f'{institution} {requirement_id} '
-                              f'Subset class_credit {k} with no label', file=todo_file)
+                    local_dict = get_restrictions(rule_dict)
+                    try:
+                      local_dict['requirement_name'] = rule_dict['label']
+                    except KeyError as ke:
+                      print(f'{institution} {requirement_id} '
+                            f'Subset class_credit with no label', file=todo_file)
+                    # for k, v in rule_dict.items():
 
-                      if local_dict:
-                        local_context = [local_dict]
-                      else:
-                        local_context = []
-                      try:
-                        map_courses(institution, requirement_id, block_title,
-                                    context_list + subset_context + local_context,
-                                    rule_dict['class_credit'])
-                      except KeyError as ke:
-                        print(institution, requirement_id, block_title,
-                              f'{ke} in subset class_credit', file=sys.stderr)
-                        print(rule, file=sys.stderr)
-                        exit()
+                    #   if local_dict:
+                    #     local_context = [local_dict]
+                    #   else:
+                    #     local_context = []
+                    try:
+                      map_courses(institution, requirement_id, block_title,
+                                  context_list + subset_context + [local_dict],
+                                  rule_dict)
+                    except KeyError as ke:
+                      print(institution, requirement_id, block_title,
+                            f'{ke} in subset class_credit', file=sys.stderr)
+                      print(rule, file=sys.stderr)
+                      exit()
 
                 case 'group_requirements':
                   # This is a list of group_requirement dicts
