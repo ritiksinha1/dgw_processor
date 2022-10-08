@@ -18,6 +18,7 @@ from psycopg.rows import namedtuple_row
 from recordclass import recordclass
 from typing import Any
 
+from activeblocks import active_blocks
 from coursescache import courses_cache
 from dgw_parser import parse_block
 
@@ -1533,7 +1534,8 @@ if __name__ == "__main__":
 
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
-      """ Process every active plan, and if it has a Scribe block, process it and all its subplans.
+      """ Use the CUNYfirst plan and subplan tables to look up all CUNY majors and minors (plans).
+          their associated subplans (if any), and each plan's associated requirement block (if any).
       """
       no_scribe_count = 0
       programs_count = 0
@@ -1575,9 +1577,11 @@ if __name__ == "__main__":
         if args.progress:
           print(f'\r{cursor.rownumber:,}/{num_programs:,} programs {row.institution[0:3]}', end='')
 
-        # plan_info collects fields from the plan and plan_enrollments tables
-        plan_dict = {}
-        dgw_dict = {}
+        # plan_dict collects fields from the plan and plan_enrollments tables
+        plan_dict = dict()
+        # dgw_dict is used to determine current-active requirement blocks
+        dgw_dict = dict()
+
         for key, value in row._asdict().items():
           if key in plan_keys:
             plan_dict[key] = str(value) if key.endswith('date') else value
@@ -1609,6 +1613,8 @@ if __name__ == "__main__":
           print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
                 f"{plan_dict['description']}", file=missing_file)
         else:
+          """ Filter out inactive plans/subplans
+          """
           plan_dict['requirement_id'] = row.requirement_id
           # Process the scribe block for this program, subject to command line exclusions and errors
 
