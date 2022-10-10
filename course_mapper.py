@@ -18,7 +18,7 @@ from psycopg.rows import namedtuple_row
 from recordclass import recordclass
 from typing import Any
 
-from activeblocks import active_blocks
+from activeblocks import active_blocks, active_plans, active_subplans
 from coursescache import courses_cache
 from dgw_parser import parse_block
 
@@ -48,6 +48,8 @@ debug_file = open('debug.txt', 'w')
 fail_file = open('fail.txt', 'w')
 log_file = open('log.txt', 'w')
 missing_file = open(f'missing_ra.txt', 'w')
+new_plan_file = open(f'new_plans.txt', 'w')
+inactive_plan_file = open(f'inactive_plans.txt', 'w')
 no_courses_file = open('no_courses.txt', 'w')
 todo_file = open(f'todo.txt', 'w')
 
@@ -344,11 +346,11 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
         minperdisc. |
         maxperdisc  |
   """
-  global quarantine_count
+  global quarantine_plan_count, quarantine_subplan_count
 
   # Be sure the block is available
   if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
-    quarantine_count += 1
+    quarantine_plan_count += 1
     print(row.institution, row.requirement_id, 'Quarantined block', file=fail_file)
     return
 
@@ -1473,28 +1475,31 @@ def traverse_body(node: Any, context_list: list) -> None:
 # main()
 # -------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
-  """ For all CUNY undergraduate plans/subplans and their requirements (if available), generate
+  """ For all active CUNY undergraduate plans/subplans and their requirements, generate
       CSV tables for the programs, their requirements, and course-to-requirement mappings.
+
+      For a plan/subplan to be considered "active" it must be marked active in the CUNYfirst
+      ACAD_(SUB)PLAN_TBL, AND must either have non-zero enrollment in ACAD_(SUB)PLAN_ENRLMNT or be a
+      new a new plan/subplan that hasn’t had a chance to enroll students yet, AND it must have an
+      active DGW requirement block, as given by the ir_dgw_active_blocks list.
   """
   start_time = datetime.datetime.now()
   parser = ArgumentParser()
   parser.add_argument('-a', '--all', action='store_true')
   parser.add_argument('-d', '--debug', action='store_true')
   parser.add_argument('--do_degrees', action='store_true')
-  parser.add_argument('--no_hunter', action='store_true')
   parser.add_argument('--do_proxy_advice', action='store_true')
   parser.add_argument('--no_remarks', action='store_true')
-  parser.add_argument('-w', '--weeks', type=int, default=40)
+  parser.add_argument('-w', '--weeks', type=int, default=26)
   parser.add_argument('-p', '--progress', action='store_true')
   parser.add_argument('-t', '--timing', action='store_true')
   args = parser.parse_args()
   do_degrees = args.do_degrees
-  do_hunter = not args.no_hunter
-  hunter_tag = 'HTR (processed)' if do_hunter else 'HTR (skipped)'
   do_proxy_advice = args.do_proxy_advice
   do_remarks = not args.no_remarks
 
   gestation_period = datetime.timedelta(weeks=args.weeks)
+  gestation_days = gestation_period.days
   today = datetime.date.today()
 
   empty_tree = "'{}'"
@@ -1537,12 +1542,15 @@ if __name__ == "__main__":
       """ Use the CUNYfirst plan and subplan tables to look up all CUNY majors and minors (plans).
           their associated subplans (if any), and each plan's associated requirement block (if any).
       """
-      no_scribe_count = 0
+      missing_plan_req_block_count = 0
+      inactive_plan_req_block_count = 0
+      new_plan_count = 0
+      missing_subplan_req_block_count = 0
+      inactive_subplan_req_block_count = 0
+      new_subplan_count = 0
       programs_count = 0
-      inactive_count = 0
-      quarantine_count = 0
-      hunter_count = 0
-      mhc_count = 0
+      quarantine_plan_count = 0
+      quarantine_subplan_count = 0
       block_types = defaultdict(int)
       cursor.execute(r"""
       select p.*, string_agg(s.subplan||':'||ss.enrollment, ',') as subplans,
@@ -1582,10 +1590,12 @@ if __name__ == "__main__":
         # dgw_dict is used to determine current-active requirement blocks
         dgw_dict = dict()
 
+        # For each plan, check that it is active has non-zero enrollment or is new, and that it is
+        # deemed active by dap_active_blocks.
         for key, value in row._asdict().items():
           if key in plan_keys:
             plan_dict[key] = str(value) if key.endswith('date') else value
-            # For subplans, convert the string_agg from the query to a list of dicts
+            # Convert the string_agg of subplans from the query to a list of dicts
             subplans_list = []
             if key == 'subplans':
               if value is None:
@@ -1601,42 +1611,56 @@ if __name__ == "__main__":
           if key in dgw_keys:
             dgw_dict[key] = str(value) if key.endswith('date') else value
 
-        # If there is no requirement_block, this plan is done: just enter it into the programs table
-        # using plan info as a surrogate for dgw metadata, converting plan_types from MAJ/MIN to
-        # MAJOR/MINOR
+        # Skip Macaulay Honors College programs
+        # ... these were already filtered out of the local copy of acad_plan_tbl
+        # if plan_dict['plan'].lower().startswith('mhc'):
+        #   mhc_count += 1
+        #   continue
+
+        # If there is no requirement_block, this plan is done
         if row.requirement_id is None:
-          no_scribe_count += 1
-          programs_writer.writerow([row.institution[0:3], 'None', row.plan_type + 'OR', row.plan,
-                                    row.description, None, None, None, None, None,
-                                    json.dumps({'plan_info': plan_dict}, ensure_ascii=False)])
           # Log the issue
           print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
                 f"{plan_dict['description']}", file=missing_file)
+          missing_plan_req_block_count += 1
+          continue
+
+        # Note plans with zero enrollment, which might be too new to have students yet.
+        last_change = max(row.parse_date, row.effective_date)
+        if row.enrollment is None and (today - last_change) < gestation_period:
+          print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
+                f"{plan_dict['description']}", file=new_plan_file)
+          new_plan_count += 1
         else:
-          """ Filter out inactive plans/subplans
-          """
-          plan_dict['requirement_id'] = row.requirement_id
-          # Process the scribe block for this program, subject to command line exclusions and errors
-
-          # Skip “inactive” programs. These are ones that have zero students and were not modified
-          # in the last 40 weeks. (We are allowing a gestation period for new/altered programs to
-          # start attracting students.)
-          last_change = max(row.parse_date, row.effective_date)
-          if row.enrollment is None and (today - last_change) > gestation_period:
-            inactive_count += 1
+          # Is this an active requirement block, per ir_dgw_active_blocks?
+          try:
+            plan_info = active_plans[(row.institution, plan_dict['plan'])]
+          except KeyError:
+            # Plan not active: log the situation and ignore the plan
+            print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
+                  f"{plan_dict['description']}", file=inactive_plan_file)
+            inactive_plan_req_block_count += 1
             continue
 
-          # Log, and skip top-level scribe blocks that have parse errors
+          # Log, and skip plans where the scribe block has parse errors
           if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
-            print(f'{row.institution} {row.requirement_id} Top-level: Quarantined', file=fail_file)
-            quarantine_count += 1
+            print(f'{row.institution} {row.requirement_id} Quarantined plan req_block',
+                  file=fail_file)
+            quarantine_plan_count += 1
             continue
 
-          # Hunter ... ah, Hunter College. No longer seems to be the problem it once was.
-          if row.institution == 'HTR01':
-            hunter_count += 1
-            if not do_hunter:
-              continue
+          # We have a plan ...
+          plan_dict['requirement_id'] = row.requirement_id
+
+          # ... retain only those subplans that have and active req_block or are too new to attract
+          # students yet.
+
+          # THIS WILL MAKE INTERNAL BLOCK PROCESSING CHECKS REDUNDANT, BUT ONLY FOR "OTHER"
+          # BLOCKTYPE REFERENCES (I THINK)
+          for subplan in plan_dict['subplans']:
+            print(row.institution, row.requirement_id, subplan)
+
+          # Process the scribe block for this program, subject to command line exclusions and errors
 
           dgw_row = DGW_Row._make([dgw_dict[k] for k in dgw_keys])
           process_block(dgw_row, context_list=[], plan_info={'plan_info': plan_dict})
@@ -1655,10 +1679,13 @@ if __name__ == "__main__":
   for k, v in block_types.items():
     print(f'{v:5,} {k.title()}')
   print(f'-----\n'
-        f'{hunter_count:5,} {hunter_tag} \n'
-        f'{no_scribe_count:5,} No dgw_req_block\n'
-        f'{quarantine_count:5,} Quarantined\n'
-        f'{inactive_count:5,} Inactive more than {args.weeks} week{s}')
+        f'{missing_plan_req_block_count:5,} Missing plan dgw_req_block\n'
+        f'{inactive_plan_req_block_count:5,} Inactive plan dgw_req_block\n'
+        f'{new_plan_count:5,} Zero-enrollment plan less than {gestation_days} days old\n'
+        f'{missing_subplan_req_block_count:5,} Missing subplan dgw_req_block\n'
+        f'{inactive_subplan_req_block_count:5,} Inactive subplan dgw_req_block\n'
+        f'{new_subplan_count:5,} Zero-enrollment subplan less than {gestation_days} days old\n'
+        f'{quarantine_plan_count:5,} Quarantined plan req_block\n')
 
   if args.timing:
     print(f'{(datetime.datetime.now() - start_time).seconds} seconds')
