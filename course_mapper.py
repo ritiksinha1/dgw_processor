@@ -445,7 +445,7 @@ def process_block(requirement_block: dict,
                       'subplan_effective_date': subplan['effective_date'],
                       'subplan_cip_code': subplan['cip_code'],
                       'subplan_active_terms': rb['num_recent_active_terms'],
-                      'subplan_enrollement': rb['recent_enrollment'],
+                      'subplan_enrollment': rb['recent_enrollment'],
                       }
       plan_info_dict['subplans'].append(subplan_dict)
     header_dict['other']['plan_info'] = plan_info_dict
@@ -464,39 +464,7 @@ def process_block(requirement_block: dict,
                               json.dumps(header_dict['other'], ensure_ascii=False),
                               generated_date
                               ])
-
-    return
-  # # The ignomious 'other' column.
-  # other_dict = {'maxclass': [],
-  #               'maxcredit': [],
-  #               'maxperdisc': [],
-  #               'minclass': [],
-  #               'mincredit': [],
-  #               'minperdisc': [],
-  #               'conditional': []}
-
-  # # Empty strings for default values that might or might not be found in the header.
-  # for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
-  #   args_dict[key] = ''
-  # # Empty lists as default limits that might or might not be specified in the header.
-  # for key in ['max_transfer', 'max_classes', 'max_credits']:
-  #   args_dict[key] = []
-
-  # block_info = BlockInfo(**args_dict)
-
-  # traverse_header() is a one-pass procedure that updates the block_info record with parameters
-  # found in the header list.
-  # try:
-  #   header_list = parse_tree['header_list']
-  #   # if len(header_list) > 0:
-  #   #   try:
-  #   #     traverse_header(block_info, header_list)
-  #   #   except KeyError as ke:
-  #   #     exit(f'{institution} {requirement_id} Header KeyError {ke}')
-  #   # else:
-  #   #   print(row.institution, row.requirement_id, 'Empty Header', file=log_file)
-  # except KeyError:
-  #   print(row.institution, row.requirement_id, 'Missing Header', file=fail_file)
+    # Decide what the context list needs to contain. requirement_names plus ???
 
   # Only top-level blocks get entries in the programs table.
   if plan_info:
