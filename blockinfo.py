@@ -23,17 +23,30 @@ def ifs(v: any):
 
 class BlockInfo(dict):
   """ Information about a program or subprogram, which will become part of the context list of a
-      requirement by the course_mapper app. Information comes from:
-        * CF acad_plan and acad_subplan tables
-        * DGW dap_requirement_block metadata, if available
-        * Scribe block header objects, if available
+      requirement. Information comes from:
+        * DGW dap_req_block metadata
+        * CUNYFirst acad_plan and acad_subplan tables
+        * Scribe block header
 
-      plan_info:
-       'plan'. 'plan_type', 'plan_name', 'plan_cip_code', 'plan_effective_date',
-       'plan_enrollment', 'subplans',
-      subplan_info:
-       'subplan', 'subplan_type', 'subplan_name', 'subplan_cip_code',
-       'subplan_effective_date', 'subplan_enrollment', 'plans',
+      BlockInfo is an object (dict) with one attribute (key) named 'block_info'.
+      The value part contains nested objects with the following keys:
+
+      plan_dict:
+       plan_name, plan_type, plan_description, plan_cip_code, plan_effective_date, requirement_block
+       subplans_list
+
+      subplans_list:
+       subplan_name, subplan_type, subplan_description, subplan_cip_code, subplan_effective_date,
+       requirement_block
+
+      requirement_block: (May appear in a plan_dict, subplan_dict, or nested dict)
+        institution, requirement_id, block_type, block_value, block_title, catalog_years_str,
+        num_recent_active_terms, recent_enrollment
+
+      header_dict: (Not part of block_info: used to populate program table.)
+        class_credits, min_residency, min_grade, min_gpa, max_transfer, max_classes,
+        max_credits, other
+
   """
   _valid_keys = ['institution', 'requirement_id', 'block_type', 'block_value', 'block_title',
                  'catalog_years', 'class_credits', 'min_residency', 'min_grade', 'min_gpa',

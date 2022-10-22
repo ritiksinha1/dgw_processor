@@ -11,20 +11,15 @@ import re
 import sys
 
 from argparse import ArgumentParser
-from blockinfo import BlockInfo
 from catalogyears import catalog_years
 from collections import namedtuple, defaultdict
 from psycopg.rows import namedtuple_row
 from recordclass import recordclass
 from typing import Any
 
-from activeblocks import active_blocks, active_plans, active_subplans
+from activeplans import active_plans
 from coursescache import courses_cache
 from dgw_parser import parse_block
-
-from quarantine_manager import QuarantineManager
-
-quarantine_dict = QuarantineManager()
 
 """ Logging/Development Reports
       analysis_file:      Analsis of as-yet-unhandled constructs.
@@ -61,6 +56,7 @@ programs_writer = csv.writer(programs_file)
 requirements_writer = csv.writer(requirements_file)
 map_writer = csv.writer(mapping_file)
 
+generated_date = str(datetime.date.today())
 
 # def dict_factory():
 #   """ Support for three index levels, as in courses_by_institution and subplans_by_institution.
@@ -77,8 +73,29 @@ number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', '
 number_ordinals = ['zeroth', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh',
                    'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth']
 
+_parse_trees = defaultdict(dict)
+
 
 # =================================================================================================
+
+# get_parse_tree()
+# -------------------------------------------------------------------------------------------------
+def get_parse_tree(dap_req_block_key: tuple) -> dict:
+  """ Look up the parse tree for a dap_req_block.
+      Cache it, and return it.
+  """
+  if dap_req_block_key not in _parse_trees.keys():
+    with psycopg.connect('dbname=cuny_curriculum') as conn:
+      with conn.cursor(row_factory=namedtuple_row) as cursor:
+        cursor.execute("""
+        select parse_tree
+          from requirement_blocks
+         where institution ~* %s
+           and requirement_id = %s
+        """, dap_req_block_key)
+        assert cursor.rowcount == 1
+        _parse_trees[dap_req_block_key] = cursor.fetchone().parse_tree
+    return _parse_trees[dap_req_block_key]
 
 
 # letter_grade()
@@ -201,7 +218,7 @@ def format_group_description(num_groups: int, num_required: int):
 
 # header_minres()
 # -------------------------------------------------------------------------------------------------
-def header_minres(block_info, value):
+def header_minres(value):
   """
   """
   min_classes = value['minres']['min_classes']
@@ -211,9 +228,9 @@ def header_minres(block_info, value):
     case [None, None]:
       print(f'Invalid minres {block_info}', file=sys.stderr)
     case [None, credits]:
-      block_info.min_residency = f'{float(credits):.1f} credits'
+      return f'{float(credits):.1f} credits'
     case [classes, None]:
-      block_info.min_residency = f'{int(classes)} classes'
+      return f'{int(classes)} classes'
     case _:
       print(f'Invalid minres {block_info}', file=sys.stderr)
 
@@ -286,7 +303,7 @@ Requirement Key, Course ID, Career, Course, With
                         f'{key}: {value.title}|{with_clause}')
     requirement_info['num_courses'] = len(courses_set)
     for course in courses_set:
-      map_writer.writerow([requirement_index] + course.split('|'))
+      map_writer.writerow([requirement_index] + course.split('|'), generated_date)
 
   if requirement_info['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
@@ -295,7 +312,8 @@ Requirement Key, Course ID, Career, Course, With
     # list (is this ever actually used?).
     requirement_id = context_list[0]['block_info']['requirement_id']
     data_row = [institution, requirement_id, requirement_index, requirement_name,
-                json.dumps(context_list + [{'requirement': requirement_info}], ensure_ascii=False)]
+                json.dumps(context_list + [{'requirement': requirement_info}], ensure_ascii=False),
+                generated_date]
     requirements_writer.writerow(data_row)
 
 
@@ -332,204 +350,170 @@ def get_restrictions(node: dict) -> dict:
 
 # process_block()
 # =================================================================================================
-def process_block(row: namedtuple, context_list: list = [], plan_info: dict = None):
-  """ Given (parts of) a row from the requirement_blocks db table, traverse the header and body
-      lists.
-      Development pain point: the "other" argument is a catch-all for information not originally
-      captured in the programs table. It is structured as a dict, with the following optional keys
-      currently defined:
+def process_block(requirement_block: dict,
+                  context_list: list = [],
+                  plan_dict: dict = None,
+                  subplan_dict: dict = None):
+  """ Process a dap_req_block.
+      The block will be:
+        - An academic plan (major or minor)
+        - A subplan (concentration)
+        - A nested requirement referenced from a plan or subplan.
 
-        plan_info   Information about a plan and its subplan if this is a top-level block (a major
-                    or minor, but not a concentration)
-        mincredit   |
-        minclass    | These are possibly empty lists of dicts of their respective types
-        minperdisc. |
-        maxperdisc  |
+      Plans are special: they are the top level of a program, and get entered into the programs
+      table. The context list for requirements get initialized here with information about the
+      program, including header-level requirements/restrictions, and a list of active subplans
+      associated with the plan. When the plan's parse tree is processed, any block referenced by
+      a block, block_type, or copy_rules clause will be checked and, if it is of type CONC, verified
+      against the plan's list of active subplans.
+
+      Orphans are subplans (concentrations) that are never referenced by its plan's requirements.
   """
-  global quarantine_plan_count, quarantine_subplan_count
 
-  # Be sure the block is available
-  if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
-    quarantine_plan_count += 1
-    print(row.institution, row.requirement_id, 'Quarantined block', file=fail_file)
+  # Every block has to have an error-free parse_tree
+  institution = requirement_block['institution']
+  requirement_id = requirement_block['requirement_id']
+  dap_req_block_key = (institution, requirement_id)
+  parse_tree = get_parse_tree(dap_req_block_key)
+  if 'error' in parse_tree.keys():
+    print(f'{institution} {requirement_id} Parse Error', file=fail_file)
     return
-
-  # Be sure the block was parsed successfully (Quarantined should have handled this, but there might
-  # be timeouts.)
-  if 'error' in row.parse_tree.keys():
-    print(row.institution, row.requirement_id, 'Parser Error', file=fail_file)
-    return
+  header_dict = traverse_header(institution, requirement_id, parse_tree)
 
   # Characterize blocks as top-level or nested for reporting purposes; use capitalization to sort
   # top-level before nested.
-  toplevel_str = 'Top-level' if plan_info else 'nested'
-  print(f'{row.institution} {row.requirement_id} {toplevel_str}', file=blocks_file)
+  toplevel_str = 'Top-level' if plan_dict else 'nested'
+  print(f'{institution} {requirement_id} {toplevel_str}', file=blocks_file)
 
-  # A BlockInfo object contains block metadata from the requirement_blocks table, program and
-  # subprogram tables, and will be augmented with additional information found in the block’s header
-  args_dict = {}
-  # DGW metadata for the block, except catalog_years, major1, and parse_tree.
-  for key, value in row._asdict().items():
-    if key in ['period_start', 'period_stop', 'major1', 'parse_tree']:
-      continue
-    args_dict[key] = value
+  """ A block_info object contains information about a dap_req_block. When blocks are nested, either
+      as a subplan of a plan, or when referenced by a blocktype, block, or copy_rules construct, a
+      block_info object is pushed onto the context_list.
 
-  # Catalog years string is based on period_start and period_stop
-  args_dict['catalog_years'] = catalog_years(row.period_start, row.period_stop)._asdict()
+      Information for block_info comes from:
+        * dap_req_block metadata
+        * acad_plan and acad_subplan tables
+        * parse_tree header
 
-  # The ignomious 'other' column.
-  other_dict = {'maxclass': [],
-                'maxcredit': [],
-                'maxperdisc': [],
-                'minclass': [],
-                'mincredit': [],
-                'minperdisc': [],
-                'conditional': []}
+      plan_dict:
+       plan_name, plan_type, plan_description, plan_cip_code, plan_effective_date,
+       requirement_block, subplans_list
 
-  # Program and subprogram info, if available
-  if plan_info:
-    # Expand subplans to include requirement_ids and dap_req_block info, if available.
-    plan_dict = plan_info['plan_info']
-    plan_requirement_id = plan_dict['requirement_id']
+      subplans_list:
+        subplan_dict:
+          subplan_name, subplan_type, subplan_description, subplan_cip_code, subplan_effective_date,
+          requirement_block
 
-    if plan_dict['subplans']:
-      institution = row.institution
-      plan_code = plan_dict['plan']
-      subplan_dicts = plan_dict['subplans']
+      requirement_block: (Will appear in plan_dicts, subplan_dicts, and nested dicts)
+        institution, requirement_id, block_type, block_value, block_title, catalog_years_str,
+        num_active_terms, enrollment
 
-      for subplan_dict in subplan_dicts:
-        with psycopg.connect('dbname=cuny_curriculum') as conn:
-          with conn.cursor(row_factory=namedtuple_row) as cursor:
-            # Look up all the requirement blocks for the subplan.
-            cursor.execute("""
-            select s.plan, s.subplan, s.subplan_type, s.cip_code,
-                   r.institution, r.requirement_id, r.block_type, r.block_value, r.major1, r.title
-              from cuny_acad_subplan_tbl s, requirement_blocks r
-             where s.institution = %s
-               and r.institution = s.institution
-               and s.plan =%s
-               and s.subplan = %s
-               and (r.block_value = %s and r.block_type = 'CONC')
-               and r.period_stop ~* '^9'
-            """, (institution, plan_code, subplan_dict['subplan'], subplan_dict['subplan']))
+      header_dict: (Not part of block_info: used to populate program table, and handled here if
+                    a plan_dict is received.)
+        class_credits, min_residency, min_grade, min_gpa, max_transfer, max_classes,
+        max_credits, other
+  """
+  catalog_years_str = catalog_years(requirement_block['period_start'],
+                                    requirement_block['period_stop']).text
 
-            # There _should_ be exactly one requirement block for each subplan, but that doesn't
-            # always happen.
-            subplan_rows = [row for row in cursor.fetchall()]
-            num_rows = len(subplan_rows)
-            if num_rows == 0:
-              # Missing requirement block
-              subplan_dict['requirement_id'] = []
-              print(f'{institution} {plan_requirement_id} Subplan: 0 requirement_ids',
-                    file=fail_file)
-            elif num_rows == 1:
-              # Expected case
-              subplan_row = subplan_rows[0]
-              subplan_dict['subplan_type'] = subplan_row.subplan_type
-              subplan_dict['cip_code'] = subplan_row.cip_code
-              subplan_dict['requirement_id'] = [subplan_row.requirement_id]
-              subplan_dict['block_type'] = subplan_row.block_type
-              subplan_dict['block_value'] = subplan_row.block_value
-              subplan_dict['major1'] = [subplan_row.major1]
-              subplan_dict['title'] = [subplan_row.title]
-            else:
-              # Multiple matches
-              # It might be possible to select the correct block by matching the major1 value to
-              # the plan, but that doesn't always work. When it fails, report requirement_id, title,
-              # and major1 as lists.
-              for index, subplan_row in enumerate(subplan_rows):
-                if index == 0:
-                  subplan_dict['subplan_type'] = subplan_row.subplan_type
-                  subplan_dict['cip_code'] = subplan_row.cip_code
-                  subplan_dict['requirement_id'] = [subplan_row.requirement_id]
-                  subplan_dict['block_type'] = subplan_row.block_type
-                  subplan_dict['block_value'] = subplan_row.block_value
-                  subplan_dict['major1'] = [subplan_row.major1]
-                  subplan_dict['title'] = [subplan_row.title]
-                else:
-                  subplan_dict['requirement_id'].append(subplan_row.requirement_id)
-                  subplan_dict['major1'].append(subplan_row.major1)
-                  subplan_dict['title'].append(subplan_row.title)
+  block_info_dict = {'institution': institution,
+                     'requirement_id': requirement_id,
+                     'block_type': requirement_block['block_type'],
+                     'block_value': requirement_block['block_value'],
+                     'block_title': requirement_block['block_title'],
+                     'catalog_years': catalog_years_str}
 
-              # Perhaps exactly one major1 value matched the plan_code?
-              for sub_index, requirement_id in enumerate(subplan_dict['requirement_id']):
-                if subplan_dict['major1'][sub_index] == plan_code:
-                  subplan_dict['requirement_id'] = [requirement_id]
-                  subplan_dict['major1'] = [subplan_dict['major1'][sub_index]]
-                  subplan_dict['title'] = [subplan_dict['title'][sub_index]]
-                  break
-                else:
-                  # Another possibility is that the title string somehow matches the program code.
-                  # But that seems like risky territory, and is not attempted here.
-                  num = len(subplan_dict['requirement_id'])
-                  s = '' if num == 1 else 's'
-                  print(f'{institution} {plan_requirement_id} Subplan: {num} requirement_id{s}',
-                        file=fail_file)
-                  pass
-            # save the result
-            subplans_list.append(subplan_dict)
-    plan_info['plan_info']['subplans'] = subplans_list
-  try:
-    other_dict.update(plan_info)
-  except TypeError as err:
-    # There is no plan_info for this block
-    other_dict['plan_info'] = 'None'
+  if plan_dict:
+    """ For plans, the block_info_dict gets updated with info about the plan and its subplans.
+    """
+    plan_info_dict = {'requirement_id': requirement_id,
+                      'plan_name': plan_dict['plan'],
+                      'plan_type': plan_dict['type'],
+                      'plan_description': plan_dict['description'],
+                      'plan_effective_date': plan_dict['effective_date'],
+                      'plan_cip_code': plan_dict['cip_code'],
+                      'plan_active_terms': requirement_block['num_recent_active_terms'],
+                      'plan_enrollment': requirement_block['recent_enrollment'],
+                      'subplans': []
+                      }
 
-  args_dict['other'] = other_dict
+    for subplan in plan_dict['subplans']:
+      rb = subplan['requirement_block']
+      subplan_dict = {'requirement_id': rb['requirement_id'],
+                      'subplan_name': subplan['subplan'],
+                      'subplan_type': subplan['type'],
+                      'subplan_description': subplan['description'],
+                      'subplan_effective_date': subplan['effective_date'],
+                      'subplan_cip_code': subplan['cip_code'],
+                      'subplan_active_terms': rb['num_recent_active_terms'],
+                      'subplan_enrollement': rb['recent_enrollment'],
+                      }
+      plan_info_dict['subplans'].append(subplan_dict)
+    header_dict['other']['plan_info'] = plan_info_dict
 
-  # Empty strings for default values that might or might not be found in the header.
-  for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
-    args_dict[key] = ''
-  # Empty lists as default limits that might or might not be specified in the header.
-  for key in ['max_transfer', 'max_classes', 'max_credits']:
-    args_dict[key] = []
+    # Enter the plan in the programs table
+    programs_writer.writerow([f'{institution[0:3]}',
+                              f'{requirement_id}',
+                              f'{block_info_dict["block_type"]}',
+                              f'{block_info_dict["block_value"]}',
+                              f'{block_info_dict["block_title"]}',
+                              f'{header_dict["class_credits"]}',
+                              f'{header_dict["max_transfer"]}',
+                              f'{header_dict["min_residency"]}',
+                              f'{header_dict["min_grade"]}',
+                              f'{header_dict["min_gpa"]}',
+                              json.dumps(header_dict['other'], ensure_ascii=False),
+                              generated_date
+                              ])
 
-  block_info = BlockInfo(**args_dict)
+    return
+  # # The ignomious 'other' column.
+  # other_dict = {'maxclass': [],
+  #               'maxcredit': [],
+  #               'maxperdisc': [],
+  #               'minclass': [],
+  #               'mincredit': [],
+  #               'minperdisc': [],
+  #               'conditional': []}
+
+  # # Empty strings for default values that might or might not be found in the header.
+  # for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
+  #   args_dict[key] = ''
+  # # Empty lists as default limits that might or might not be specified in the header.
+  # for key in ['max_transfer', 'max_classes', 'max_credits']:
+  #   args_dict[key] = []
+
+  # block_info = BlockInfo(**args_dict)
 
   # traverse_header() is a one-pass procedure that updates the block_info record with parameters
   # found in the header list.
-  # if block_info.institution == 'BAR01' and block_info.requirement_id == 'RA001577':
-  #   breakpoint()
-  try:
-    header_list = row.parse_tree['header_list']
-    if len(header_list) > 0:
-      try:
-        traverse_header(block_info, header_list)
-      except KeyError as ke:
-        exit(f'{row.institution} {row.requirement_id} Header KeyError {ke}')
-    else:
-      print(row.institution, row.requirement_id, 'Empty Header', file=log_file)
-  except KeyError:
-    print(row.institution, row.requirement_id, 'Missing Header', file=fail_file)
+  # try:
+  #   header_list = parse_tree['header_list']
+  #   # if len(header_list) > 0:
+  #   #   try:
+  #   #     traverse_header(block_info, header_list)
+  #   #   except KeyError as ke:
+  #   #     exit(f'{institution} {requirement_id} Header KeyError {ke}')
+  #   # else:
+  #   #   print(row.institution, row.requirement_id, 'Empty Header', file=log_file)
+  # except KeyError:
+  #   print(row.institution, row.requirement_id, 'Missing Header', file=fail_file)
 
   # Only top-level blocks get entries in the programs table.
   if plan_info:
-    programs_writer.writerow([f'{block_info.institution[0:3]}',
-                              f'{block_info.requirement_id}',
-                              f'{block_info.block_type}',
-                              f'{block_info.block_value}',
-                              f'{block_info.block_title}',
-                              f'{block_info.class_credits}',
-                              f'{block_info.max_transfer}',
-                              f'{block_info.min_residency}',
-                              f'{block_info.min_grade}',
-                              f'{block_info.min_gpa}',
-                              json.dumps(block_info.other, ensure_ascii=False),
-                              ])
 
-  # But but all blocks get added to the context list.
-  context_list.append({'block_info': block_info._asdict()})
+    # But but all blocks get added to the context list.
+    context_list.append({'block_info': block_info._asdict()})
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
   # invoked from within traverse_body() to handle block, blocktype and copy_rules constructs.
   try:
-    body_list = row.parse_tree['body_list']
+    body_list = parse_tree['body_list']
   except KeyError as ke:
-    print(row.institution, row.requirement_id, 'Missing Body', file=fail_file)
+    print(institution, requirement_id, 'Missing Body', file=fail_file)
     return
   if len(body_list) == 0:
-    print(row.institution, row.requirement_id, 'Empty Body', file=log_file)
+    print(institution, requirement_id, 'Empty Body', file=log_file)
   else:
     item_context = context_list + [{'block_info': block_info._asdict()}]
     for body_item in body_list:
@@ -539,219 +523,242 @@ def process_block(row: namedtuple, context_list: list = [], plan_info: dict = No
 
 # traverse_header()
 # =================================================================================================
-def traverse_header(block_info: namedtuple, header_list: list) -> None:
+def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> dict:
   """ Extract program-wide qualifiers, and update block_info with the values found. Handles only
       fields deemed relevant to transfer.
   """
 
-  institution, requirement_id, block_type, *_ = (block_info.institution,
-                                                 block_info.requirement_id,
-                                                 block_info.block_type)
-  for header_item in header_list:
+  return_dict = dict()
+  # Empty strings for default values that might or might not be found.
+  for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
+    return_dict[key] = ''
+  # Empty lists as default limits that might or might not be specified in the header.
+  for key in ['max_transfer', 'max_classes', 'max_credits']:
+    return_dict[key] = []
+  # The ignomious 'other' column.
+  return_dict['other'] = {'maxclass': [],
+                          'maxcredit': [],
+                          'maxperdisc': [],
+                          'minclass': [],
+                          'mincredit': [],
+                          'minperdisc': [],
+                          'conditional': []}
+  try:
+    if len(parse_tree['header_list']) == 0:
+      print(f'{institution} {requirement_id} Empty Header', file=log_file)
+      return return_dict
+  except KeyError as ke:
+    print(parse_tree)
+    exit(f'{institution} {requirement_id} Header {ke} KeyError')
+
+  for header_item in parse_tree['header_list']:
 
     if not isinstance(header_item, dict):
-      print(header_item, 'is not a dict', file=sys.stderr)
+      exit(f'{institution} {requirement_id} Header “{header_item}” is not a dict')
 
-    else:
-      for key, value in header_item.items():
-        match key:
+    for key, value in header_item.items():
+      match key:
 
-          case 'header_class_credit':
-            if label_str := value['label']:
-              print(f'{institution} {requirement_id}: Header class_credit label: {label_str}',
-                    file=todo_file)
-            min_classes = None if value['min_classes'] is None else int(value['min_classes'])
-            min_credits = None if value['min_credits'] is None else float(value['min_credits'])
-            max_classes = None if value['max_classes'] is None else int(value['max_classes'])
-            max_credits = None if value['max_credits'] is None else float(value['max_credits'])
-            assert not (min_credits and max_credits is None), f'{min_credits} {max_credits}'
-            assert not (min_credits is None and max_credits), f'{min_credits} {max_credits}'
-            assert not (min_classes and max_classes is None), f'{min_classes} {max_classes}'
-            assert not (min_classes is None and max_classes), f'{min_classes} {max_classes}'
-            class_credit_list = []
-            if min_classes and max_classes:
-              if min_classes == max_classes:
-                class_credit_list.append(f'{max_classes} classes')
-              else:
-                class_credit_list.append(f'{min_classes}-{max_classes} classes')
+        case 'header_class_credit':
+          if return_dict['class_credits']:
+            print(f'{institution} {requirement_id}: Header repeated class-credit declaration',
+                  file=todo_file)
 
-            if min_credits and max_credits:
-              if min_credits == max_credits:
-                class_credit_list.append(f'{max_credits:.1f} credits')
-              else:
-                class_credit_list.append(f'{min_credits:.1f}-{max_credits:.1f} credits')
-              try:
-                proxy_advice = value['proxy_advice']
-                if do_proxy_advice:
-                  print(f'{institution} {requirement_id} Header {key} proxy_advice',
-                        file=todo_file)
-                else:
-                  print(f'{institution} {requirement_id} Header {key} proxy_advice (ignored)',
-                        file=log_file)
-              except KeyError:
-                # No proxy-advice (normal))
-                pass
-            block_info.class_credits = ' and '.join(class_credit_list)
-
-          case 'conditional':
-            """ Observed:
-                  No course list items
-                   58   T: ['header_class_credit']
-                   30   F: ['header_class_credit']
-                   49   T: ['header_share']
-                   49   F: ['header_share']
-                    7   T: ['header_minres']
-
-                  Items with course lists
-                  The problem is that many of these expand to un-useful lists of courses, but others
-                  are meaningful. Need to look at them in more detail.
-                   15   T: ['header_maxcredit']
-                    1   T: ['header_maxtransfer']
-                    2   T: ['header_minclass']
-                    5   T: ['header_mincredit']
-                    1   F: ['header_mincredit']
-
-                  Recursive item
-                   28   F: ['conditional']
-            """
-            print(f'{institution} {requirement_id} Header conditional', file=todo_file)
-
-            conditional_dict = header_item['conditional']
-            condition_str = conditional_dict['condition_str']
-            print(f'\n{institution} {requirement_id} Header conditional: {condition_str}',
-                  file=debug_file)
-            if_true_list = conditional_dict['if_true']
-            for item in if_true_list:
-              print(f'  T: {list(item.keys())}', file=debug_file)
-            try:
-              if_false_list = conditional_dict['if_false']
-              for item in if_false_list:
-                print(f'    F: {list(item.keys())}', file=debug_file)
-            except KeyError:
-              if_false_list = []
-
-          case 'header_lastres':
-            # A subset of residency requirements
-            print(f'{institution} {requirement_id} Header lastres (ignored', file=log_file)
-            pass
-
-          case 'header_maxclass':
-            print(f'{institution} {requirement_id} Header maxclass', file=log_file)
-            for cruft_key in ['institution', 'requirement_id']:
-              del(value['maxclass']['course_list'][cruft_key])
-
-            number = int(value['maxclass']['number'])
-            course_list = value['maxclass']['course_list']
-            course_list['courses'] = [{'course_id': f'{k[0]:06}:{k[1]}',
-                                       'course': v[0],
-                                       'with': v[1]}
-                                      for k, v in expand_course_list(institution,
-                                                                     requirement_id,
-                                                                     course_list).items()]
-            limit_dict = {'number': number,
-                          'courses': course_list
-                          }
-            block_info.other['maxclass'].append(limit_dict)
-
-          case 'header_maxcredit':
-            for cruft_key in ['institution', 'requirement_id']:
-              del(value['maxcredit']['course_list'][cruft_key])
-
-            number = float(value['maxcredit']['number'])
-            course_list = value['maxcredit']['course_list']
-            course_list['courses'] = [{'course_id': f'{k[0]:06}:{k[1]}',
-                                       'course': v[0],
-                                       'with': v[1]}
-                                      for k, v in expand_course_list(institution,
-                                                                     requirement_id,
-                                                                     course_list).items()]
-            limit_dict = {'number': number,
-                          'courses': course_list
-                          }
-            block_info.other['maxcredit'].append(limit_dict)
-            print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
-
-          case 'header_maxpassfail':
-            print(f'{institution} {requirement_id} Header maxpassfail', file=log_file)
-            assert 'maxpassfail' not in block_info.other.keys()
-            block_info.other['maxpassfail'] = value['maxpassfail']
-
-          case 'header_maxperdisc':
-            print(f'{institution} {requirement_id} Header maxperdisc', file=log_file)
-            block_info.other['maxperdisc'].append(value['maxperdisc'])
-
-          case 'header_maxtransfer':
-            print(f'{institution} {requirement_id} Header maxtransfer', file=log_file)
-            if label_str := value['label']:
-              print(f'{institution} {requirement_id} Header maxtransfer label', file=todo_file)
-
-            transfer_limit = {}
-            number = float(value['maxtransfer']['number'])
-            class_or_credit = value['maxtransfer']['class_or_credit']
-            if class_or_credit == 'credit':
-              transfer_limit['limit'] = f'{number:3.1f} credits'
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id}: Header class_credit label: {label_str}',
+                  file=todo_file)
+          min_classes = None if value['min_classes'] is None else int(value['min_classes'])
+          min_credits = None if value['min_credits'] is None else float(value['min_credits'])
+          max_classes = None if value['max_classes'] is None else int(value['max_classes'])
+          max_credits = None if value['max_credits'] is None else float(value['max_credits'])
+          assert not (min_credits and max_credits is None), f'{min_credits} {max_credits}'
+          assert not (min_credits is None and max_credits), f'{min_credits} {max_credits}'
+          assert not (min_classes and max_classes is None), f'{min_classes} {max_classes}'
+          assert not (min_classes is None and max_classes), f'{min_classes} {max_classes}'
+          class_credit_list = []
+          if min_classes and max_classes:
+            if min_classes == max_classes:
+              class_credit_list.append(f'{max_classes} classes')
             else:
-              suffix = '' if int(number) == 1 else 'es'
-              transfer_limit['limit'] = f'{int(number):3} class{suffix}'
+              class_credit_list.append(f'{min_classes}-{max_classes} classes')
+
+          if min_credits and max_credits:
+            if min_credits == max_credits:
+              class_credit_list.append(f'{max_credits:.1f} credits')
+            else:
+              class_credit_list.append(f'{min_credits:.1f}-{max_credits:.1f} credits')
             try:
-              transfer_limit['transfer_types'] = value['transfer_types']
+              proxy_advice = value['proxy_advice']
+              if do_proxy_advice:
+                print(f'{institution} {requirement_id} Header {key} proxy_advice',
+                      file=todo_file)
+              else:
+                print(f'{institution} {requirement_id} Header {key} proxy_advice (ignored)',
+                      file=log_file)
             except KeyError:
+              # No proxy-advice (normal))
               pass
-            block_info.max_transfer.append(transfer_limit)
+          return_dict['class_credits'] = ' and '.join(class_credit_list)
 
-          case 'header_minclass':
-            print(f'{institution} {requirement_id} Header minclass', file=log_file)
-            block_info.other['minclass'].append(value['minclass'])
+        case 'conditional':
+          """ Observed:
+                No course list items
+                 58   T: ['header_class_credit']
+                 30   F: ['header_class_credit']
+                 49   T: ['header_share']
+                 49   F: ['header_share']
+                  7   T: ['header_minres']
 
-          case 'header_mincredit':
-            print(f'{institution} {requirement_id} Header mincredit', file=log_file)
-            block_info.other['mincredit'].append(value['mincredit'])
+                Items with course lists
+                The problem is that many of these expand to un-useful lists of courses, but others
+                are meaningful. Need to look at them in more detail.
+                 15   T: ['header_maxcredit']
+                  1   T: ['header_maxtransfer']
+                  2   T: ['header_minclass']
+                  5   T: ['header_mincredit']
+                  1   F: ['header_mincredit']
 
-          case 'header_mingpa':
-            print(f'{institution} {requirement_id} Header mingpa', file=log_file)
-            if label_str := value['label']:
-              print(f'{institution} {requirement_id} Header mingpa label', file=todo_file)
-            mingpa = float(value['mingpa']['number'])
-            block_info.min_gpa = f'{mingpa:4.2f}'
+                Recursive item
+                 28   F: ['conditional']
+          """
+          print(f'{institution} {requirement_id} Header conditional', file=todo_file)
 
-          case 'header_mingrade':
-            print(f'{institution} {requirement_id} Header mingrade', file=log_file)
-            if label_str := value['label']:
-              print(f'{institution} {requirement_id} Header mingrade label', file=todo_file)
-            block_info.min_grade = letter_grade(float(value['mingrade']['number']))
+          conditional_dict = header_item['conditional']
+          condition_str = conditional_dict['condition_str']
+          print(f'\n{institution} {requirement_id} Header conditional: {condition_str}',
+                file=debug_file)
+          if_true_list = conditional_dict['if_true']
+          for item in if_true_list:
+            print(f'  T: {list(item.keys())}', file=debug_file)
+          try:
+            if_false_list = conditional_dict['if_false']
+            for item in if_false_list:
+              print(f'    F: {list(item.keys())}', file=debug_file)
+          except KeyError:
+            if_false_list = []
 
-          case 'header_minperdisc':
-            if label := value['label']:
-              print(f'{institution} {requirement_id} Header minperdisc label', file=todo_file)
-            block_info.other['minperdisc'].append(value['minperdisc'])
-            print(f'{institution} {requirement_id} Header minperdisc', file=log_file)
+        case 'header_lastres':
+          # A subset of residency requirements
+          print(f'{institution} {requirement_id} Header lastres (ignored)', file=log_file)
+          pass
 
-          case 'header_minres':
-            print(f'{institution} {requirement_id} Header minres', file=log_file)
-            header_minres(block_info, value)
+        case 'header_maxclass':
+          print(f'{institution} {requirement_id} Header maxclass', file=log_file)
+          for cruft_key in ['institution', 'requirement_id']:
+            del(value['maxclass']['course_list'][cruft_key])
 
-          case 'proxy_advice':
-            if do_proxy_advice:
-              print(f'{institution} {requirement_id} Header {key}', file=todo_file)
-            else:
-              print(f'{institution} {requirement_id} Header {key} (ignored)', file=log_file)
+          number = int(value['maxclass']['number'])
+          course_list = value['maxclass']['course_list']
+          course_list['courses'] = [{'course_id': f'{k[0]:06}:{k[1]}',
+                                     'course': v[0],
+                                     'with': v[1]}
+                                    for k, v in expand_course_list(institution,
+                                                                   requirement_id,
+                                                                   course_list).items()]
+          limit_dict = {'number': number,
+                        'courses': course_list
+                        }
+          return_dict['other']['maxclass'].append(limit_dict)
 
-          case 'remark':
-            # (Not observed to occur)
-            print(f'{institution} {requirement_id} Header remark', file=log_file)
-            assert 'remark' not in block_info.other.keys()
-            block_info.other['remark'] = value['remark']
+        case 'header_maxcredit':
+          for cruft_key in ['institution', 'requirement_id']:
+            del(value['maxcredit']['course_list'][cruft_key])
 
-          case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | \
-               'rule_complete' | 'standalone' | 'header_share' | 'header_tag':
-            # Intentionally ignored
-            print(f'{institution} {requirement_id} Header {key} (ignored)', file=log_file)
+          number = float(value['maxcredit']['number'])
+          course_list = value['maxcredit']['course_list']
+          course_list['courses'] = [{'course_id': f'{k[0]:06}:{k[1]}',
+                                     'course': v[0],
+                                     'with': v[1]}
+                                    for k, v in expand_course_list(institution,
+                                                                   requirement_id,
+                                                                   course_list).items()]
+          limit_dict = {'number': number,
+                        'courses': course_list
+                        }
+          return_dict['other']['maxcredit'].append(limit_dict)
+          print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
+
+        case 'header_maxpassfail':
+          print(f'{institution} {requirement_id} Header maxpassfail', file=log_file)
+          assert 'maxpassfail' not in return_dict['other'].keys()
+          return_dict['other']['maxpassfail'] = value['maxpassfail']
+
+        case 'header_maxperdisc':
+          print(f'{institution} {requirement_id} Header maxperdisc', file=log_file)
+          return_dict['other']['maxperdisc'].append(value['maxperdisc'])
+
+        case 'header_maxtransfer':
+          print(f'{institution} {requirement_id} Header maxtransfer', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header maxtransfer label', file=todo_file)
+
+          transfer_limit = {}
+          number = float(value['maxtransfer']['number'])
+          class_or_credit = value['maxtransfer']['class_or_credit']
+          if class_or_credit == 'credit':
+            transfer_limit['limit'] = f'{number:3.1f} credits'
+          else:
+            suffix = '' if int(number) == 1 else 'es'
+            transfer_limit['limit'] = f'{int(number):3} class{suffix}'
+          try:
+            transfer_limit['transfer_types'] = value['transfer_types']
+          except KeyError:
             pass
+          return_dict['max_transfer'].append(transfer_limit)
 
-          case _:
-            print(f'{institution} {requirement_id}: Unexpected {key} in header', file=sys.stderr)
+        case 'header_minclass':
+          print(f'{institution} {requirement_id} Header minclass', file=log_file)
+          return_dict['other']['minclass'].append(value['minclass'])
 
-  return
+        case 'header_mincredit':
+          print(f'{institution} {requirement_id} Header mincredit', file=log_file)
+          return_dict['other']['mincredit'].append(value['mincredit'])
+
+        case 'header_mingpa':
+          print(f'{institution} {requirement_id} Header mingpa', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header mingpa label', file=todo_file)
+          mingpa = float(value['mingpa']['number'])
+          return_dict['min_gpa'] = f'{mingpa:4.2f}'
+
+        case 'header_mingrade':
+          print(f'{institution} {requirement_id} Header mingrade', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header mingrade label', file=todo_file)
+          return_dict['min_grade'] = letter_grade(float(value['mingrade']['number']))
+
+        case 'header_minperdisc':
+          if label := value['label']:
+            print(f'{institution} {requirement_id} Header minperdisc label', file=todo_file)
+          return_dict['other']['minperdisc'].append(value['minperdisc'])
+          print(f'{institution} {requirement_id} Header minperdisc', file=log_file)
+
+        case 'header_minres':
+          print(f'{institution} {requirement_id} Header minres', file=log_file)
+          return_dict['min_residency'] = header_minres(value)
+
+        case 'proxy_advice':
+          if do_proxy_advice:
+            print(f'{institution} {requirement_id} Header {key}', file=todo_file)
+          else:
+            print(f'{institution} {requirement_id} Header {key} (ignored)', file=log_file)
+
+        case 'remark':
+          # (Not observed to occur)
+          print(f'{institution} {requirement_id} Header remark', file=log_file)
+          assert 'remark' not in return_dict['other'].keys()
+          return_dict['other']['remark'] = value['remark']
+
+        case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | \
+             'rule_complete' | 'standalone' | 'header_share' | 'header_tag':
+          # Intentionally ignored
+          print(f'{institution} {requirement_id} Header {key} (ignored)', file=log_file)
+          pass
+
+        case _:
+          print(f'{institution} {requirement_id}: Unexpected {key} in header', file=sys.stderr)
+
+  return return_dict
 
 
 # traverse_body()
@@ -1475,13 +1482,16 @@ def traverse_body(node: Any, context_list: list) -> None:
 # main()
 # -------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
-  """ For all active CUNY undergraduate plans/subplans and their requirements, generate
+  """ For all recently active CUNY undergraduate plans/subplans and their requirements, generate
       CSV tables for the programs, their requirements, and course-to-requirement mappings.
 
-      For a plan/subplan to be considered "active" it must be marked active in the CUNYfirst
-      ACAD_(SUB)PLAN_TBL, AND must either have non-zero enrollment in ACAD_(SUB)PLAN_ENRLMNT or be a
-      new a new plan/subplan that hasn’t had a chance to enroll students yet, AND it must have an
-      active DGW requirement block, as given by the ir_dgw_active_blocks list.
+      An academic plan may be eithr a major or a minor. Note, however, that minors are not required
+      for a degree, but at least one major is required.
+
+      For a plan/subplan to be mapped here, it must be recently-active as defined in activeplans.py.
+      That is, it must an approved program with a current dap_req_block giving the requireents for
+      the program, and there must be students currently attending the institution who have declared
+      their enrollment in the plan or subplan.
   """
   start_time = datetime.datetime.now()
   parser = ArgumentParser()
@@ -1514,163 +1524,176 @@ if __name__ == "__main__":
                             'Min Residency',
                             'Min Grade',
                             'Min GPA',
-                            'Other'])
+                            'Other',
+                            'Generate Date'])
 
   requirements_writer.writerow(['Institution',
                                 'Requirement ID',
                                 'Requirement Key',
                                 'Program Name',
-                                'Context'])
+                                'Context',
+                                'Generate Date'])
 
   map_writer.writerow(['Requirement Key',
                        'Course ID',
                        'Career',
                        'Course',
-                       'With'])
+                       'With',
+                       'Generate Date'])
 
-  # These are the names of the values to obtain from the requirement_blocks, acad_plan_tbl,
-  # acad_subplan_tbl, and plan/subplan enrollment tables
-  dgw_keys = ['institution', 'requirement_id', 'block_type', 'block_value', 'block_title',
-              'period_start', 'period_stop', 'parse_tree']
-  plan_keys = ['institution', 'plan', 'plan_type', 'description', 'effective_date', 'cip_code',
-               'hegis_code', 'subplans', 'enrollment']
+  missing_plan_req_block_count = 0
+  inactive_plan_req_block_count = 0
+  new_plan_count = 0
+  missing_subplan_req_block_count = 0
+  inactive_subplan_req_block_count = 0
+  new_subplan_count = 0
+  programs_count = 0
+  quarantine_plan_count = 0
+  quarantine_subplan_count = 0
+  block_types = defaultdict(int)
 
-  DGW_Row = namedtuple('DGW_Row', dgw_keys)
+  # # These are the names of the values to obtain from the requirement_blocks, acad_plan_tbl,
+  # # acad_subplan_tbl, and plan/subplan enrollment tables
+  # dgw_keys = ['institution', 'requirement_id', 'block_type', 'block_value', 'block_title',
+  #             'period_start', 'period_stop', 'parse_tree']
+  # plan_keys = ['institution', 'plan', 'plan_type', 'description', 'effective_date', 'cip_code',
+  #              'hegis_code', 'subplans', 'enrollment']
 
-  with psycopg.connect('dbname=cuny_curriculum') as conn:
-    with conn.cursor(row_factory=namedtuple_row) as cursor:
-      """ Use the CUNYfirst plan and subplan tables to look up all CUNY majors and minors (plans).
-          their associated subplans (if any), and each plan's associated requirement block (if any).
-      """
-      missing_plan_req_block_count = 0
-      inactive_plan_req_block_count = 0
-      new_plan_count = 0
-      missing_subplan_req_block_count = 0
-      inactive_subplan_req_block_count = 0
-      new_subplan_count = 0
-      programs_count = 0
-      quarantine_plan_count = 0
-      quarantine_subplan_count = 0
-      block_types = defaultdict(int)
-      cursor.execute(r"""
-      select p.*, string_agg(s.subplan||':'||ss.enrollment, ',') as subplans,
-             r.requirement_id, r.block_type, r.block_value, r.title as block_title,
-             r.period_start, r.period_stop, r.parse_date, r.parse_tree,
-             e.enrollment
-        from cuny_acad_plan_tbl p
-             left join cuny_acad_plan_enrollments e
-                    on p.institution = e.institution
-                   and p.plan = e.plan
-             left join cuny_acad_subplan_tbl s
-                    on p.institution = s.institution
-                   and p.plan = s.plan
-             left join cuny_acad_subplan_enrollments ss
-                    on ss.institution = s.institution
-                   and ss.plan = s.plan
-                   and ss.subplan = s.subplan
-             left join requirement_blocks r
-                    on p.institution = r.institution
-                   and p.plan = r.block_value
-                   and r.period_stop ~* '^9'
-      where p.plan !~* '^(mhc|cbuis)'
-        and p.plan ~* '\-[AB]' -- Must lead to bachelor or associate degree
-        and p.description !~* '^Unde'
-      group by p.institution, p.plan, p.plan_type, p.description, p.effective_date, p.cip_code,
-               p.hegis_code, r.requirement_id, r.block_type, r.block_value, block_title,
-               r.period_start, r.period_stop, r.parse_date, r.parse_tree, e.enrollment
-      order by institution, plan
-      """)
-      num_programs = cursor.rowcount
-      for row in cursor:
-        if args.progress:
-          print(f'\r{cursor.rownumber:,}/{num_programs:,} programs {row.institution[0:3]}', end='')
+  # DGW_Row = namedtuple('DGW_Row', dgw_keys)
 
-        # plan_dict collects fields from the plan and plan_enrollments tables
-        plan_dict = dict()
-        # dgw_dict is used to determine current-active requirement blocks
-        dgw_dict = dict()
+  # with psycopg.connect('dbname=cuny_curriculum') as conn:
+  #   with conn.cursor(row_factory=namedtuple_row) as cursor:
+  #     """ Use the CUNYfirst plan and subplan tables to look up all CUNY majors and minors (plans).
+  #         their associated subplans (if any), and each plan's associated requirement block (if any).
+  #     """
+  #     missing_plan_req_block_count = 0
+  #     inactive_plan_req_block_count = 0
+  #     new_plan_count = 0
+  #     missing_subplan_req_block_count = 0
+  #     inactive_subplan_req_block_count = 0
+  #     new_subplan_count = 0
+  #     programs_count = 0
+  #     quarantine_plan_count = 0
+  #     quarantine_subplan_count = 0
+  #     block_types = defaultdict(int)
+  #     cursor.execute(r"""
+  #     select p.*, string_agg(s.subplan,':') as subplan_names,
+  #            r.requirement_id, r.block_type, r.block_value, r.title as block_title,
+  #            r.period_start, r.period_stop, r.parse_date, r.parse_tree,
+  #            e.enrollment
+  #       from cuny_acad_plan_tbl p
+  #            left join cuny_acad_plan_enrollments e
+  #                   on p.institution = e.institution
+  #                  and p.plan = e.plan
+  #            left join cuny_acad_subplan_tbl s
+  #                   on p.institution = s.institution
+  #                  and p.plan = s.plan
+  #            left join cuny_acad_subplan_enrollments ss
+  #                   on ss.institution = s.institution
+  #                  and ss.plan = s.plan
+  #                  and ss.subplan = s.subplan
+  #            left join requirement_blocks r
+  #                   on p.institution = r.institution
+  #                  and p.plan = r.block_value
+  #                  and r.period_stop ~* '^9'
+  #     where p.plan !~* '^(mhc|cbuis)'
+  #       and p.plan ~* '\-[AB]' -- Must lead to bachelor or associate degree
+  #       and p.description !~* '^Unde'
+  #     group by p.institution, p.plan, p.plan_type, p.description, p.effective_date, p.cip_code,
+  #              p.hegis_code, r.requirement_id, r.block_type, r.block_value, block_title,
+  #              r.period_start, r.period_stop, r.parse_date, r.parse_tree, e.enrollment
+  #     order by institution, plan
+  #     """)
+  #     num_programs = cursor.rowcount
+  #     for row in cursor:
+  #       if args.progress:
+  #         print(f'\r{cursor.rownumber:,}/{num_programs:,} programs {row.institution[0:3]}', end='')
 
-        # For each plan, check that it is active has non-zero enrollment or is new, and that it is
-        # deemed active by dap_active_blocks.
-        for key, value in row._asdict().items():
-          if key in plan_keys:
-            plan_dict[key] = str(value) if key.endswith('date') else value
-            # Convert the string_agg of subplans from the query to a list of dicts
-            subplans_list = []
-            if key == 'subplans':
-              if value is None:
-                # Just use the empty list initialized above
-                pass
-              else:
-                subplans = value.split(',')
-                for subplan in subplans:
-                  subplan_code, enrollment = subplan.split(':')
-                  subplans_list.append({'subplan': subplan_code, 'enrollment': int(enrollment)})
-              plan_dict['subplans'] = subplans_list
+  #       # plan_dict collects fields from the plan and plan_enrollments tables
+  #       plan_dict = dict()
+  #       # dgw_dict is used to determine current-active requirement blocks
+  #       dgw_dict = dict()
 
-          if key in dgw_keys:
-            dgw_dict[key] = str(value) if key.endswith('date') else value
+  #       # Populate the plan_dict and dgw_dict for this row
+  #       for key, value in row._asdict().items():
+  #         if key in plan_keys:
+  #           plan_dict[key] = str(value) if key.endswith('date') else value
+  #           # Convert the string_agg of subplan names to a list of names
+  #           subplans_list = []
+  #           if key == 'subplan_names':
+  #             if value is None:
+  #               pass
+  #             else:
+  #               subplans_list.append(value.split(':'))
+  #             plan_dict['subplans'] = subplans_list
 
-        # Skip Macaulay Honors College programs
-        # ... these were already filtered out of the local copy of acad_plan_tbl
-        # if plan_dict['plan'].lower().startswith('mhc'):
-        #   mhc_count += 1
-        #   continue
+  #         if key in dgw_keys:
+  #           dgw_dict[key] = str(value) if key.endswith('date') else value
 
-        # If there is no requirement_block, this plan is done
-        if row.requirement_id is None:
-          # Log the issue
-          print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
-                f"{plan_dict['description']}", file=missing_file)
-          missing_plan_req_block_count += 1
-          continue
+  #       # Skip Macaulay Honors College programs
+  #       # ... these were already filtered out by the query above
+  #       # if plan_dict['plan'].lower().startswith('mhc'):
+  #       #   mhc_count += 1
+  #       #   continue
 
-        # Note plans with zero enrollment, which might be too new to have students yet.
-        last_change = max(row.parse_date, row.effective_date)
-        if row.enrollment is None and (today - last_change) < gestation_period:
-          print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
-                f"{plan_dict['description']}", file=new_plan_file)
-          new_plan_count += 1
-        else:
-          # Is this an active requirement block, per ir_dgw_active_blocks?
-          try:
-            plan_info = active_plans[(row.institution, plan_dict['plan'])]
-          except KeyError:
-            # Plan not active: log the situation and ignore the plan
-            print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
-                  f"{plan_dict['description']}", file=inactive_plan_file)
-            inactive_plan_req_block_count += 1
-            continue
+  #       # If there is no requirement_block, this plan is done
+  #       if row.requirement_id is None:
+  #         # Log the issue
+  #         print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
+  #               f"{plan_dict['description']}", file=missing_file)
+  #         missing_plan_req_block_count += 1
+  #         continue
 
-          # Log, and skip plans where the scribe block has parse errors
-          if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
-            print(f'{row.institution} {row.requirement_id} Quarantined plan req_block',
-                  file=fail_file)
-            quarantine_plan_count += 1
-            continue
+  #       # Note plans with zero enrollment, which might be too new to have students yet.
+  #       last_change = max(row.parse_date, row.effective_date)
+  #       if row.enrollment is None and (today - last_change) < gestation_period:
+  #         print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
+  #               f"{plan_dict['description']}", file=new_plan_file)
+  #         new_plan_count += 1
+  #       else:
+  #         # Is this an active requirement block, per ir_dgw_active_blocks?
+  #         try:
+  #           plan_info = active_plans[(row.institution, plan_dict['plan'])]
+  #         except KeyError:
+  #           # Plan not active: log the situation and ignore the plan
+  #           print(f"  {plan_dict['institution']} {plan_dict['plan']:12} {plan_dict['plan_type']} "
+  #                 f"{plan_dict['description']}", file=inactive_plan_file)
+  #           inactive_plan_req_block_count += 1
+  #           continue
 
-          # We have a plan ...
-          plan_dict['requirement_id'] = row.requirement_id
+  #         # Log, and skip plans where the scribe block has parse errors
+  #         if quarantine_dict.is_quarantined((row.institution, row.requirement_id)):
+  #           print(f'{row.institution} {row.requirement_id} Quarantined plan req_block',
+  #                 file=fail_file)
+  #           quarantine_plan_count += 1
+  #           continue
 
-          # ... retain only those subplans that have and active req_block or are too new to attract
-          # students yet.
+  #         # We have a plan ...
+  #         plan_dict['requirement_id'] = row.requirement_id
 
-          # THIS WILL MAKE INTERNAL BLOCK PROCESSING CHECKS REDUNDANT, BUT ONLY FOR "OTHER"
-          # BLOCKTYPE REFERENCES (I THINK)
-          for subplan in plan_dict['subplans']:
-            print(row.institution, row.requirement_id, subplan)
+  #         # ... retain only those subplans that have and active req_block or are too new to attract
+  #         # students yet.
+  #         for subplan in plan_dict['subplans']:
+  #           print(row.institution, row.requirement_id, plan_dict['plan'], subplan)
+  #           # Find the dap_req_block for this plan, which could be multiple or missing (errors)...
 
-          # Process the scribe block for this program, subject to command line exclusions and errors
+  #           # Be sure the dap_req_block is active
 
-          dgw_row = DGW_Row._make([dgw_dict[k] for k in dgw_keys])
-          process_block(dgw_row, context_list=[], plan_info={'plan_info': plan_dict})
+  #         # Process the scribe block for this program, subject to command line exclusions and errors
 
-          programs_count += 1
-          block_types[dgw_row.block_type] += 1
-          if dgw_row.block_type != 'MAJOR':
-            # We can handle this, but it should be noted
-            print(' ', row.institution, row.requirement_id, row.block_type, row.block_value,
-                  row.block_title, file=anomaly_file)
+  #         dgw_row = DGW_Row._make([dgw_dict[k] for k in dgw_keys])
+  # process_block(dgw_row, context_list=[], plan_info={'plan_info': plan_dict})
+
+  for acad_plan in active_plans():
+    programs_count += 1
+    requirement_block = acad_plan['requirement_block']
+    block_types[requirement_block['block_type']] += 1
+    if requirement_block['block_type'] not in ['MAJOR', 'MINOR']:
+      # We can handle this, but it should be noted
+      print(' ', row.institution, row.requirement_id, row.block_type, row.block_value,
+            row.block_title, file=anomaly_file)
+    process_block(requirement_block, context_list=[], plan_dict=acad_plan)
+    # process_block(dgw_row, context_list=[], plan_info={'plan_info': plan_dict})
 
   if args.progress:
     print()
@@ -1684,8 +1707,7 @@ if __name__ == "__main__":
         f'{new_plan_count:5,} Zero-enrollment plan less than {gestation_days} days old\n'
         f'{missing_subplan_req_block_count:5,} Missing subplan dgw_req_block\n'
         f'{inactive_subplan_req_block_count:5,} Inactive subplan dgw_req_block\n'
-        f'{new_subplan_count:5,} Zero-enrollment subplan less than {gestation_days} days old\n'
-        f'{quarantine_plan_count:5,} Quarantined plan req_block\n')
+        f'{new_subplan_count:5,} Zero-enrollment subplan less than {gestation_days} days old\n')
 
   if args.timing:
     print(f'{(datetime.datetime.now() - start_time).seconds} seconds')

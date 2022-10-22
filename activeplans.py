@@ -21,7 +21,11 @@ import sys
 
 from argparse import ArgumentParser
 from collections import namedtuple, defaultdict
+from getch import getch, getche
 from psycopg.rows import namedtuple_row
+from quarantine_manager import QuarantineManager
+
+quarantined_dict = QuarantineManager()
 
 error_file = open('error.txt', 'w')
 inactive_file = open('inactive.txt', 'w')
@@ -29,8 +33,9 @@ log_file = open('log.txt', 'w')
 missing_file = open('missing.txt', 'w')
 
 
-# Same rhs for plan and subplan dicts
-PlanInfo = namedtuple('PlanInfo', 'type description effective_date cip_code')
+# RHS for plan and subplan dicts
+PlanInfo = namedtuple('PlanInfo', 'plan, type description effective_date cip_code')
+SubplanInfo = namedtuple('PlanInfo', 'subplan, type description effective_date cip_code')
 
 active_blocks = dict()
 
@@ -39,32 +44,57 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
   with conn.cursor(row_factory=namedtuple_row) as cursor:
 
     # Create dict of "current terms" from cuny_sessions
+    """ The CUNY session table has all the key dates for each session, both in the past and in the
+        future. We take as "current" the semester that started most recently.
+        Not all colleges follow the same academic calendar, so the current term has to be recorded
+        separately for each college.
+    """
     cursor.execute("""
-    -- The last row for each college will be its current term
-    select institution, term, census_date::date, (census_date::date - current_date) as diff
+    -- The first row for each college will be its current term
+    select distinct on (institution)
+           institution, term,
+           (session_beginning_date::date - current_date) as diff
       from cuny_sessions
-     where census_date::date - current_date > 0 and session = '1'
+     where (session_beginning_date::date - current_date) <= 0 and session = '1'
+       and institution !~* 'mhc' and institution !~* 'uapc' -- "Noise institutions"
      order by institution, diff desc
     """)
-    # The table has a history of active terms: the term value will be updated until the
-    # last row for that college is reached
     current_terms = {row.institution: int(row.term) for row in cursor.fetchall()}
 
-    # Create dict of currently-active requirement blocks.
-    cursor.execute("""
-    select *
-      from active_req_blocks
-    ;
-    """)
+    # Create dict of requirement blocks that have been active “recently,” and their enrollments.
+    # In T-Rex, ”recently offered” means within the past calendar year.
+    cursor.execute('select * from active_req_blocks;')
     for row in cursor:
-      latest_term = row.term_info[-1]
-      if latest_term['active_term'] < current_terms[row.institution]:
-        print(f'{row.institution} {row.requirement_id} Not currently active', file=inactive_file)
+      current_term = current_terms[row.institution]
+      first_recent_term = current_term - 10
+      recent_enrollment = 0
+      min_active_term = 99999
+      max_active_term = 0
+      num_recent_active_terms = 0
+      for term_info in row.term_info:
+        active_term = term_info['active_term']
+        if active_term < min_active_term:
+          min_active_term = active_term
+        if active_term > max_active_term:
+          max_active_term = active_term
+        if active_term >= first_recent_term:
+          # If available, include "next semester" in the count of active terms
+          num_recent_active_terms += 1
+          if active_term <= current_term:
+            # But count only students in this semester or earlier
+            # (If looking during add/drop period, count students who haven't added or dropped yet.)
+            recent_enrollment += term_info['distinct_students']
+      if num_recent_active_terms == 0:
+        print(f'{row.institution} {row.requirement_id} Inactive since {first_recent_term}',
+              file=inactive_file)
         continue
+
       row_dict = row._asdict()
       del row_dict['term_info']
-      row_dict['active_term'] = latest_term['active_term']
-      row_dict['enrollment'] = latest_term['distinct_students']
+      row_dict['first_active_term'] = min_active_term
+      row_dict['last_active_term'] = max_active_term
+      row_dict['num_recent_active_terms'] = num_recent_active_terms
+      row_dict['recent_enrollment'] = recent_enrollment
       active_blocks[(row.institution, row.requirement_id)] = row_dict
 
     # Dict of all plans
@@ -73,7 +103,8 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
       from cuny_acad_plan_tbl
     """)
     all_acad_plans = {(row.institution, row.plan):
-                      PlanInfo._make([row.plan_type,
+                      PlanInfo._make([row.plan,
+                                      row.plan_type,
                                       row.description,
                                       str(row.effective_date),
                                       row.cip_code])
@@ -84,15 +115,16 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
     select institution, plan, subplan, subplan_type, description, effective_date, cip_code
       from cuny_acad_subplan_tbl
     """)
-    acad_subplans = {(row.institution, row.plan, row.subplan):
-                     PlanInfo._make([row.subplan_type,
-                                     row.description,
-                                     str(row.effective_date),
-                                     row.cip_code])
-                     for row in cursor.fetchall()}
+    all_acad_subplans = {(row.institution, row.plan, row.subplan):
+                         SubplanInfo._make([row.subplan,
+                                            row.subplan_type,
+                                            row.description,
+                                            str(row.effective_date),
+                                            row.cip_code])._asdict()
+                         for row in cursor.fetchall()}
 
 
-def acad_plans():
+def active_plans():
   """ Get Plans of interest and their associated subplans
   """
   with psycopg.connect('dbname=cuny_curriculum') as conn:
@@ -109,8 +141,6 @@ def acad_plans():
       group by p.institution, p.plan
       order by p.institution, p.plan
       """)
-
-      print(f'{cursor.rowcount:5,} potential academic plans', file=log_file)
 
       # Build plan_dicts for active plans
       for row in cursor.fetchall():
@@ -145,8 +175,8 @@ def acad_plans():
                                                       block_row.requirement_id)])
             except KeyError:
               # Scribe error: a "current" block is not "active"
-              print(f'{row.institution} {block_row.requirement_id:>10} Current dap_req_block is not '
-                    f'active', file=error_file)
+              print(f'{row.institution} {block_row.requirement_id:>10} Current dap_req_block is '
+                    f'not active', file=error_file)
               continue
 
           match len(active_block_list):
@@ -191,8 +221,12 @@ def acad_plans():
                     print(f'{block_row.institution} {row.plan:>10} Current block is not active',
                           file=error_file)
 
-                # If there is a single active block for the subplan, add it to the plan_dict subplans
-                # list
+                # The dict to which the single matching requirement_block will be added, if found
+                subplan_dict = all_acad_subplans[(row.institution, row.plan, subplan_name)]
+
+                # If there is a single active block for the subplan, add it to the plan_dict
+                # subplans list
+
                 match len(active_subplan_list):
                   case 0:
                     # No active blocks for this subplan.
@@ -200,7 +234,8 @@ def acad_plans():
                           f'concentration {subplan_name}', file=missing_file)
 
                   case 1:
-                    plan_dict['subplans'].append(active_subplan_list[0])
+                    subplan_dict['requirement_block'] = active_subplan_list[0]
+                    plan_dict['subplans'].append(subplan_dict)
 
                   case _:
                     # Multiple active blocks for this subplan.
@@ -208,16 +243,17 @@ def acad_plans():
                     # match.
                     major1_match_list = []
                     for index, subplan_block in enumerate(active_subplan_list):
-                      if subplan_block.major1 == plan_dict['plan']:
+                      if subplan_block['major1'] == plan_dict['plan']:
                         major1_match_list.append(subplan_block)
                     match len(major1_match_list):
                       case 0:
-                        print(f'{row.institution} {row.plan:>10} Multiple active dap_req_blocks for '
-                              f'concentration {subplan_name} but no major1 matches',
+                        print(f'{row.institution} {row.plan:>10} Multiple active dap_req_blocks '
+                              f'for concentration {subplan_name} but no major1 matches',
                               file=missing_file)
 
                       case 1:
-                        plan_dict['subplans'].append(major1_match_list[0])
+                        subplan_dict['requirement_block'] = major1_match_list[0]
+                        plan_dict['subplans'].append(subplan_dict)
 
                       case _:
                         for index, subplan_block in enumerate(major1_match_list):
@@ -228,8 +264,9 @@ def acad_plans():
 
             case _:
               for index, active_block in enumerate(active_block_list):
-                print(f'{active_block["institution"]} {active_block["requirement_id"]:>10} Multiple '
-                      f'active dap_req_blocks for {row.plan} {index+1}/{len(active_block_list)}: '
+                print(f'{active_block["institution"]} {active_block["requirement_id"]:>10} '
+                      f'Multiple active dap_req_blocks for '
+                      f'{row.plan} {index+1}/{len(active_block_list)}: '
                       f'{active_block["block_type"]} {active_block["block_value"]} '
                       f'{active_block["block_title"]}',
                       file=error_file)
@@ -238,7 +275,8 @@ def acad_plans():
 
 
 if __name__ == '__main__':
-  """ Print "more" plan dicts
+  """ Interactively ("more") display plan dicts. Institution and/or requirement_id filters are
+      optional.
   """
   parser = ArgumentParser()
   parser.add_argument('-i', '--institution', default=None)
@@ -255,20 +293,22 @@ if __name__ == '__main__':
   else:
     requirement_id = None
 
-  for plan in acad_plans():
+  for plan in active_plans():
     if institution and plan['requirement_block']['institution'] != institution:
       continue
     if requirement_id:
-      # the block might be the plan block or one of the subplan's block
-      requirement_blocks = [subplan['requirement_id'] for subplan in plan['subplans']]
+      # the block might be the plan block or one of the subplans' blocks
+      requirement_blocks = [subplan['requirement_block']['requirement_id']
+                            for subplan in plan['subplans']]
       requirement_blocks.append(plan['requirement_block']['requirement_id'])
       if requirement_id not in requirement_blocks:
         continue
     print(plan)
     print('more? ', end='')
-    try:
-      reply = input()
-      if reply.lower().startswith('q'):
-        raise EOFError
-    except EOFError:
+    sys.stdout.flush()
+    ch = getch().lower()
+    # Blank line after each dict
+    print('\r     ')
+    # Esc or q to exit
+    if ch == 'q' or ch == '\u001b':
       exit()

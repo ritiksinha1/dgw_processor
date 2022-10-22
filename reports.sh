@@ -48,7 +48,7 @@ do
     then
       cut -c 16- ${r}.txt|ack -v '(ignored)'|sort|uniq -c|sort -r >> reports.txt
     else
-      cut -c 16- ${r}.txt|${ignore}sort|uniq -c|sort -r >> reports.txt
+      cut -c 16- ${r}.txt|sort|uniq -c|sort -r >> reports.txt
     fi
   fi
 done
