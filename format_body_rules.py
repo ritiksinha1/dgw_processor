@@ -519,7 +519,7 @@ def format_rule_complete(rule_complete_dict: dict) -> str:
             return_html += f'<p>For more information, see <a href="{value}">{value}</a></p>'
           case _:
             value_str = 'Unspecified' if value is None else value
-            rule_complete_str += f'<p>{key.lower()} is {value_str}</p>'
+            rule_complete_str += f'<p>Degree Audit {key.title()} is {value_str}</p>'
     # Show advice, even though it would not appear in an audit if the rule is complete.
     if advice_url:
       advice_text = advice_hint if advice_hint else 'More Information'

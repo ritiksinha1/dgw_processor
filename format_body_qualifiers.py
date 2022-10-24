@@ -354,7 +354,7 @@ def format_ruletag(rule_tag_obj: Any) -> str:
           return_html += f'<p>For more information, see <a href="{value}">{value}</a></p>'
         case _:
           value_str = 'Unspecified' if value is None else value
-          return_html += f'<p>{key.lower()} is {value_str}</p>'
+          return_html += f'<p>Degree Audit {key.title()} is {value_str}</p>'
 
   return return_html
 
