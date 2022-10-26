@@ -239,7 +239,8 @@ def format_conditional(conditional_dict: dict) -> str:
   try:
     for rule in conditional_dict['if_false']:
       for key, value in rule.items():
-        else_body += dispatch_body_rule(key, value)
+        if body_rule_str := dispatch_body_rule(key, value):
+          else_body += body_rule_str
     else_summary = f'<details><summary>Otherwise</summary>'
     else_body += '</details>'
   except KeyError:
@@ -439,38 +440,39 @@ def format_group_requirements(group_requirements: list) -> str:
 
 # format_noncourse()
 # -------------------------------------------------------------------------------------------------
-def format_noncourse(noncourse_list: Any) -> str:
+def format_noncourse(noncourse_dict: dict) -> str:
   """
   """
 
-  # Seeing cases where it's a list, others where it's a single dict.
-  if isinstance(noncourse_list, dict):
-    noncourse_list = [noncourse_list]
+  # # Seeing cases where it's a list, others where it's a single dict.
+  # if isinstance(noncourse_list, dict):
+  #   noncourse_list = [noncourse_list]
 
   return_str = ''
-  for noncourse_dict in noncourse_list:
-    assert isinstance(noncourse_dict, dict)
-    try:
-      label_str = noncourse_dict['label']
-      summary = f'<summary>{label_str}</summary>'
-    except KeyError:
-      summary = None
+  # for noncourse_dict in noncourse_list:
+  assert isinstance(noncourse_dict, dict)
 
-    number = int(noncourse_dict['number'])
-    suffix = '' if number == 1 else 's'
-    if number < len(format_utils.number_names):
-      number_str = format_utils.number_names[number].title()
-    else:
-      number_str = f'{number:,}'
+  try:
+    label_str = noncourse_dict['label']
+    summary = f'<summary>{label_str}</summary>'
+  except KeyError:
+    summary = None
 
-    expression = noncourse_dict['expression']
-    # Not interpreting the expression yet
-    noncourse_str = f'<p>{number_str} ({expression}){suffix}) required'
+  number = int(noncourse_dict['number'])
+  suffix = '' if number == 1 else 's'
+  if number < len(format_utils.number_names):
+    number_str = format_utils.number_names[number].title()
+  else:
+    number_str = f'{number:,}'
 
-    if summary:
-      return_str += f'<details>{summary}{noncourse_str}</details>'
-    else:
-      return_str += noncourse_str
+  # Not interpreting the expression yet
+  expression = noncourse_dict['expression']
+  noncourse_str = f'<p>{number_str} ({expression}){suffix}) required'
+
+  if summary:
+    return_str += f'<details>{summary}{noncourse_str}</details>'
+  else:
+    return_str += noncourse_str
 
   return return_str
 
@@ -594,15 +596,14 @@ def format_subset(subset_dict: dict) -> str:
   for requirement in subset_dict['requirements']:
     assert(len(requirement.keys()) == 1), (f'Requirement list item with {len(requirement.keys())} '
                                            f'keys')
-
+    # BLOCK AND NONCOURSE ARE CORRECT. CHECK/FIX ALL THE OTHERS!
     for key, value in requirement.items():
-
       match key:
         case 'conditional_list':
           subset_str += format_conditional_list(value)
 
         case 'block':
-          subset_str += format_block(value)
+          subset_str += format_block(value[key])
 
         case 'blocktype_list':
           subset_str += format_blocktype(value)
@@ -620,7 +621,7 @@ def format_subset(subset_dict: dict) -> str:
           subset_str += format_group_requirements(value)
 
         case 'noncourse':
-          subset_str += format_noncourse(value)
+          subset_str += format_noncourse(value[key])
 
         case 'rule_complete':
           subset_str += format_rule_complete(value)
@@ -713,6 +714,7 @@ def dispatch_body_rule(dict_key: str, rule_dict: dict) -> str:
   """ If this fails, the formatter is not one of the top-level ones, and will have to be called
       directly.
   """
+
   try:
     return _dispatch_table[dict_key](rule_dict)
   except KeyError as ke:
