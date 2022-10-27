@@ -130,13 +130,13 @@ def active_plans():
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
       cursor.execute(r"""
-      select p.institution, p.plan, coalesce(string_agg(s.subplan,':'), '') as subplans
+      select p.institution, p.plan, p.plan_type, coalesce(string_agg(s.subplan,':'), '') as subplans
         from cuny_acad_plan_tbl p
              left join cuny_acad_subplan_tbl s
                     on p.institution = s.institution
                    and p.plan = s.plan
       where p.plan !~* '^(mhc|cbuis)' -- Skip Honors College and CUNY BA/BS
-        and p.plan ~* '\-[AB]' -- Must lead to bachelor or associate degree
+        and (p.plan ~* '\-[AB]' or p.plan_type = 'MIN') -- Bachelor's/Associates' degree, or Minor
         and p.description !~* '^Unde' -- Skip “Undeclared” majors and minors
       group by p.institution, p.plan
       order by p.institution, p.plan

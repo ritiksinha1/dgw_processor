@@ -30,10 +30,10 @@ printf "   %'d %s\n" ${n_top} "Top Level" >> reports.txt
 printf "   %'d %s\n" ${n_nest} "Nested" >> reports.txt
 printf "   %'d %s\n" ${n_total/blocks.txt/} "Total" >> reports.txt
 
-echo -e "\n`wc -l anomalies.txt|awk '{print $1}'` MAJORS WITH NON-MAJOR BLOCK TYPES" >> reports.txt
+echo -e "\n`wc -l anomalies.txt|awk '{print $1}'` ACAD PLANS w/ WRONG BLOCK TYPES" >> reports.txt
 cat anomalies.txt >> reports.txt
 
-echo -e "\n`wc -l missing_ra.txt|awk '{print $1}'` MAJORS WITH NO SCRIBE BLOCKS" >> reports.txt
+echo -e "\n`wc -l missing_ra.txt|awk '{print $1}'` PLANS WITH NO SCRIBE BLOCKS" >> reports.txt
 cat missing_ra.txt >> reports.txt
 
 for r in log todo fail no_courses # debug analysis

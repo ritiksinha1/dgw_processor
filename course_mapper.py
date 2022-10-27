@@ -1727,12 +1727,11 @@ if __name__ == "__main__":
     programs_count += 1
     requirement_block = acad_plan['requirement_block']
     block_types[requirement_block['block_type']] += 1
-    if requirement_block['block_type'] != 'MAJOR':
-      print(requirement_block, file=sys.stderr)
     if requirement_block['block_type'] not in ['MAJOR', 'MINOR']:
-      # We can handle this, but it should be noted
-      print(' ', row.institution, row.requirement_id, row.block_type, row.block_value,
-            row.block_title, file=anomaly_file)
+      # We can handle this, but it should be noted.
+      print(f"{requirement_block['institution']} {requirement_block['requirement_id']} "
+            f"{requirement_block['block_value']} with block type {requirement_block['block_type']}",
+            file=anomaly_file)
     process_block(requirement_block, context_list=[], plan_dict=acad_plan)
     # process_block(dgw_row, context_list=[], plan_info={'plan_info': plan_dict})
 
