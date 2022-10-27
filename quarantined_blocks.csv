@@ -2,7 +2,7 @@ Institution,Requirement ID,Block Type,Catalog,Year,Explanation,Can Ellucian
 BAR01,RA000625,MAJOR,GRAD,Current,Empty block (all comments),No
 BCC01,RA000276,CONC,UGRD,Current,Nested subsets not allowed; PSEUDO incorrectly used in body.,Unknown
 BCC01,RA000597,MAJOR,UGRD,Current,Invalid credit range (1-2) on line 85,Yes
-BCC01,RA000686,OTHER,UGRD,Current,"Syntax Error on line 3738, column 0",unknown
+BKL01,RA002382,MAJOR,UGRD,Current,"Syntax Error on line 147, column 0",unknown
 BKL01,RA003670,MAJOR,UGRD,Current,Missing comma in course list on line 100,Unknown
 BMC01,RA000289,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Unknown
 BMC01,RA000291,OTHER,UGRD,Current,Missing BeginIf/EndIf in multiple places,Yes
@@ -14,6 +14,30 @@ CSI01,RA000575,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 54,unkn
 CSI01,RA000594,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 54,unknown
 CSI01,RA000606,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 32,unknown
 CSI01,RA000611,MAJOR,UGRD,Current,Malformed course (“10 @@”) on line 29,unknown
+HOS01,RA000287,OTHER,UGRD,Current,"Syntax Error on line 190, column 0",unknown
+HOS01,RA000296,MAJOR,UGRD,Current,"Syntax Error on line 187, column 0",unknown
+HOS01,RA000297,MAJOR,UGRD,Current,"Syntax Error on line 69, column 0",unknown
+HOS01,RA000300,MAJOR,UGRD,Current,"Syntax Error on line 84, column 0",unknown
+HOS01,RA000338,MAJOR,UGRD,Current,"Syntax Error on line 85, column 0",unknown
+HOS01,RA000341,OTHER,UGRD,Current,"Syntax Error on line 242, column 0",unknown
+HOS01,RA000356,MAJOR,UGRD,Current,"Syntax Error on line 85, column 0",unknown
+HOS01,RA000382,MAJOR,UGRD,Current,"Syntax Error on line 73, column 0",unknown
+HOS01,RA000388,MAJOR,UGRD,Current,"Syntax Error on line 53, column 0",unknown
+HOS01,RA000390,OTHER,UGRD,Current,"Syntax Error on line 389, column 0",unknown
+HOS01,RA000404,CONC,UGRD,Current,"Syntax Error on line 43, column 0",unknown
+HOS01,RA000410,OTHER,UGRD,Current,"Syntax Error on line 80, column 0",unknown
+HOS01,RA000411,OTHER,UGRD,Current,"Syntax Error on line 508, column 0",unknown
+HOS01,RA000415,OTHER,UGRD,Current,"Syntax Error on line 286, column 0",unknown
+HOS01,RA000416,OTHER,UGRD,Current,"Syntax Error on line 570, column 0",unknown
+HOS01,RA000446,OTHER,UGRD,Current,"Syntax Error on line 4701, column 0",unknown
+HOS01,RA000454,MAJOR,UGRD,Current,"Syntax Error on line 166, column 0",unknown
+HOS01,RA000457,CONC,UGRD,Current,"Syntax Error on line 68, column 0",unknown
+HOS01,RA000460,CONC,UGRD,Current,"Syntax Error on line 63, column 0",unknown
+HOS01,RA000468,OTHER,UGRD,Current,"Syntax Error on line 767, column 0",unknown
+HOS01,RA000469,MAJOR,UGRD,Current,"Syntax Error on line 103, column 0",unknown
+HOS01,RA000482,OTHER,UGRD,Current,"Syntax Error on line 55, column 0",unknown
+HOS01,RA000483,OTHER,UGRD,Current,"Syntax Error on line 1287, column 0",unknown
+HOS01,RA000484,OTHER,UGRD,Current,"Syntax Error on line 243, column 0",unknown
 JJC01,RA000617,OTHER,UGRD,Current,Fractional number of classes (not credits) on line 45.,Unknown
 JJC01,RA001698,MAJOR,UGRD,Current,“3Credits” is not valid on line 70,unknown
 JJC01,RA001699,MAJOR,UGRD,Current,“3Credits” is not valid on line 72,unknown
