@@ -339,7 +339,7 @@ def get_restrictions(node: dict) -> dict:
   # transferred, possibly with a list of "types" for which the limit applies. I think the type names
   # have to come from a dgw table somewhere.
   try:
-    transfer_dict = node.pop('maxtransfer')
+    transfer_dict = node['maxtransfer']
     return_dict['maxtransfer'] = transfer_dict
   except KeyError:
     pass
@@ -348,7 +348,7 @@ def get_restrictions(node: dict) -> dict:
   # list. It’s a float (like a GPA) in Scribe, but is replaced with a letter grade here.
   mingrade_dict = {}
   try:
-    mingrade_dict = node.pop('mingrade')
+    mingrade_dict = node['mingrade']
     number = float(mingrade_dict['number'])
     grade_str = letter_grade(number)
     return_dict['mingrade'] = grade_str
@@ -1263,12 +1263,12 @@ def traverse_body(node: Any, context_list: list) -> None:
           context_dict = get_restrictions(requirement_value)
 
           try:
-            context_dict['requirement_name'] = requirement_value.pop('label')
+            context_dict['requirement_name'] = requirement_value['label']
           except KeyError:
             context_dict['requirement_name'] = 'No requirement name available'
             print(f'{institution} {requirement_id} Subset with no label', file=fail_file)
           try:
-            context_dict['remark'] = requirement_value.pop('remark')
+            context_dict['remark'] = requirement_value['remark']
             print(f'{institution} {requirement_id} Subset remark', file=log_file)
           except KeyError:
             # Remarks are optional
@@ -1283,15 +1283,6 @@ def traverse_body(node: Any, context_list: list) -> None:
             assert len(requirement.keys()) == 1, f'{requirement.keys()}'
 
             for key, rule in requirement.items():
-              # try:
-              #   context_dict = get_restrictions(rule)
-              # except AssertionError as ae:
-              #   print('\n', requirement, '\n', rule, file=sys.stderr)
-              #   exit()
-              # try:
-              #   context_dict['requirement_name'] = rule.pop('label')
-              # except KeyError:
-              #   print(f'{key} object has no label', file=sys.stderr)
 
               match key:
 

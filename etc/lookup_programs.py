@@ -1,5 +1,7 @@
 #! /usr/local/bin/python3
-
+""" Attempt to use typed text to identify programs based on CIP codes.
+    Just shows how many matches there are as you type chars.
+"""
 import psycopg
 import sys
 import termios

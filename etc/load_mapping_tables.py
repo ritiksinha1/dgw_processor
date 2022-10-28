@@ -1,6 +1,6 @@
 #! /usr/local/bin/python3
 """ Load the three course mapping tables into the course_mapper database. Then you can use
-    getrequirments.py to see what requirements a course satisfies, for example.
+    get_course_mapping_info.py to see what requirements a course satisfies, for example.
 """
 
 import csv
@@ -9,6 +9,7 @@ import sys
 import psycopg
 
 from collections import namedtuple
+from datetime import date
 from pathlib import Path
 from psycopg.rows import namedtuple_row
 from time import time
@@ -24,7 +25,7 @@ def _count_generator(reader):
 if __name__ == '__main__':
   session_start = time()
   csv.field_size_limit(sys.maxsize)
-  with psycopg.connect('dbname=course_mappings') as conn:
+  with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
       tables = dict()
       csv_files = Path('/Users/vickery/Projects/dgw_processor').glob('c*v')
@@ -56,12 +57,18 @@ if __name__ == '__main__':
               values = [value.replace('\'', '’') for value in row_dict.values()]
               values = ','.join([f"'{value}'" for value in values])
               cursor.execute(f'insert into {table_name} values({values})')
+
+      cursor.execute(f"""
+        delete from updates where table_name = 'course_mappings'
+        """)
+      cursor.execute("""
+        insert into updates values ('course_mappings', %s)
+        """, (str(date.today()),))
   min, sec = divmod(time() - session_start, 60)
   hr, min = divmod(min, 60)
   csi = '\033['
   bold = f'{csi}1m{csi}38;2;255;0;255m'
   norm = f'{csi}38;0m'
-  print(f'\nTotal {int(hr):02}:{int(min):02}:{round(sec):02}\n\n'
-        f'Database: {bold}COURSE_MAPPINGS{norm}')
+  print(f'\nTotal {int(hr):02}:{int(min):02}:{round(sec):02}\n\n')
   for key, value in tables.items():
     print(f'{value:10,} {key}')
