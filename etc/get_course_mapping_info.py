@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 from psycopg.rows import namedtuple_row, dict_row
 
+schema_name = 'course_mappings'
 
 # Be sure course_mapping tables are current wrt the csv files
 programs_file = Path('/Users/vickery/Projects/dgw_processor/course_mapper.programs.csv')
@@ -29,22 +30,23 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
   with conn.cursor(row_factory=namedtuple_row) as cursor:
 
     # If mapping tables in db are not up to date, refresh them.
-    cursor.execute("""
-    select update_date from updates where table_name = 'course_mappings'
-    """)
-    update_date = None
-    if cursor.rowcount != 1:
-      print('Unable to stat course_mappings date')
-    else:
-      update_date = str(cursor.fetchone().update_date)
-    if update_date != file_date:
-      print(f'{update_date=} :: {file_date=} Update course_mapping tables (Yn)? ', end='')
-      reply = input()
-      if not reply.lower().startswith('n'):
-        subprocess.run('./load_mapping_tables.py')
-        update_date = str(date.today())
-    if update_date is None:
-      exit(f'Course mapping tables do not match course_mapping.*.csv\nQuitting')
+    if os.getenv('MAPPINGS_OK') is None:
+      cursor.execute("""
+      select update_date from updates where table_name = 'course_mappings'
+      """)
+      update_date = None
+      if cursor.rowcount != 1:
+        print('Unable to stat course_mappings date')
+      else:
+        update_date = str(cursor.fetchone().update_date)
+      if update_date != file_date:
+        print(f'{update_date=} :: {file_date=} Update course_mapping tables (Yn)? ', end='')
+        reply = input()
+        if not reply.lower().startswith('n'):
+          subprocess.run('./load_mapping_tables.py')
+          update_date = str(date.today())
+      if update_date is None:
+        exit(f'Course mapping tables do not match course_mapping.*.csv\nQuitting')
 
     # Cache GenEd info
     cursor.execute("""
@@ -105,16 +107,10 @@ def get_requirements(course_str: str) -> dict:
         raise ValueError(f'{course_str} matches {cursor.rowcount} courses')
       course_info_dict = cursor.fetchone()
       course_id_str = f'{course_info_dict["course_id"]:06}:{course_info_dict["offer_nbr"]}'
-      # copt = None
-      # course_info = {'course_id': row.course_id,
-      #                'offer_nbr': row.offer_nbr,
-      #                'course': f'{row.discipline} {row.catalog_number}',
-      #                'title': row.title,
-      #                'gened': gened}
 
       cursor.execute(f"""
       select program_name, context
-        from requirements r, course_mappings m
+        from {schema_name}.requirements r, {schema_name}.mappings m
        where m.course_id = '{course_id_str}'
          and m.requirement_key = r.requirement_key
       """)
@@ -131,19 +127,54 @@ if __name__ == '__main__':
       raise ValueError
     requirements_dict = get_requirements(' '.join(sys.argv[1:]))
 
-    print(f'Course Info')
+    print(f'Course Info:')
     course_info = requirements_dict['course_info']
     course = f"{course_info['discipline']} {course_info['catalog_number']}"
     gened = course_info['designation'] if course_info['designation'] in geneds.keys() else None
     print(f"{course_info['course_id']}:{course_info['offer_nbr']} {course} "
-          f"{course_info['title']}\nGenEd: {gened}")
+          f"{course_info['title']}\nGenEd Common Core: {gened}")
 
-    print('Requirements')
+    print('Requirements:')
     requirements = requirements_dict['requirements']
     for requirement in requirements:
-      print(f"  {requirement['program_name']}")
-    if len(requirements) == 0:
-      print('  None')
+      indent = ''  # Increase by two spaces for each nested block
+      # print(f"{indent}{requirement['program_name']}")
+      # if len(requirements) == 0:
+      #   print('  None')
+      # else:
+      for context in requirement['context']:
+        indent += '  '
+        for key, value in context.items():
+          match key:
+
+            case 'block_info':
+              print(f'{indent}{value["block_title"]}')
+
+            case 'requirement_name':
+              match value:
+                case 'if_true':
+                  print(f'{indent}  THEN')
+                case 'if_false':
+                  print(f'{indent}  ELSE')
+                case _:
+                  print(f'{indent}{value}')
+
+            case 'requirement':
+              num_alternatives = value['num_courses']
+              if num_alternatives == 1:
+                s = ''
+                satisfaction = 'satisfies'
+              else:
+                s = 's'
+                satisfaction = 'can satisfy'
+              print(f'{indent}  {num_alternatives} course{s} {satisfaction} this requirement')
+
+            case 'condition':
+              print(f'{indent}  IF {value}')
+
+            case _:
+              print(f'{indent}  {key}')
+
   except ValueError as ve:
     print(f"""
 Usage: {sys.argv[0]} course_str

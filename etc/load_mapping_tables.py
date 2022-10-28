@@ -25,8 +25,62 @@ def _count_generator(reader):
 if __name__ == '__main__':
   session_start = time()
   csv.field_size_limit(sys.maxsize)
+
+  schema_name = 'course_mappings'
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
+      cursor.execute(f'create schema if not exists {schema_name}')
+      cursor.execute(f"""
+      drop table if exists {schema_name}.programs,
+                           {schema_name}.requirements,
+                           {schema_name}.mappings;""")
+
+      cursor.execute(f"""
+      create table {schema_name}.programs (
+        institution     text,
+        requirement_id  text,
+        type            text,
+        code            text,
+        title           text,
+        total_credits   text,
+        max_transfer    text,
+        min_residency   text,
+        min_grade       text,
+        min_gpa         text,
+        other           jsonb,
+        generate_date   date,
+        primary key (institution, requirement_id)
+      )""")
+
+      cursor.execute(f"""
+      create table {schema_name}.requirements (
+        institution     text,
+        requirement_id  text,
+        requirement_key integer,
+        program_name    text,
+        context         jsonb,
+        generate_date   date,
+        primary key (institution, requirement_id, requirement_key)
+      )""")
+
+      cursor.execute(f"""
+      create table {schema_name}.mappings (
+        requirement_key  integer,
+        course_id        text,
+        career           text,
+        course           text,
+        with_exp         text,
+        generate_date    date,
+        primary key (requirement_key, course_id, with_exp)
+      )""")
+
+      cursor.execute(f"""
+        delete from updates where table_name = '{schema_name}'
+        """)
+      cursor.execute(f"""
+        insert into updates values ('{schema_name}', %s)
+        """, (str(date.today()),))
+
       tables = dict()
       csv_files = Path('/Users/vickery/Projects/dgw_processor').glob('c*v')
       for file in csv_files:
@@ -34,7 +88,9 @@ if __name__ == '__main__':
         with open(file, 'rb') as fp:
           c_generator = _count_generator(fp.raw.read)
           num_lines = sum(buffer.count(b'\n') for buffer in c_generator)
-        table_name = file.name.replace('course_mapper.', '').replace('.csv', '')
+        table_name = (file.name.replace('course_mapper.', '')
+                               .replace('course_', '')
+                               .replace('.csv', ''))
         print(f'\n{table_name}: {num_lines:,} lines')
         tables[table_name] = num_lines - 1
         nl = num_lines / 100.0
@@ -47,23 +103,17 @@ if __name__ == '__main__':
                                for col in line])
               field_names = Row._fields
               fields = ',\n'.join([f'{field_name} text' for field_name in field_names])
-              cursor.execute(f"""
-              drop table if exists {table_name};
-              create table {table_name} ({fields});
-              """)
             else:
               row = Row._make(line)
               row_dict = row._asdict()
               values = [value.replace('\'', '’') for value in row_dict.values()]
               values = ','.join([f"'{value}'" for value in values])
-              cursor.execute(f'insert into {table_name} values({values})')
+              cursor.execute(f"""insert into {schema_name}.{table_name} values({values})
+                              on conflict do nothing
+                              """)
+              if cursor.rowcount == 0:
+                print(f'{table_name} {values}', file=sys.stderr)
 
-      cursor.execute(f"""
-        delete from updates where table_name = 'course_mappings'
-        """)
-      cursor.execute("""
-        insert into updates values ('course_mappings', %s)
-        """, (str(date.today()),))
   min, sec = divmod(time() - session_start, 60)
   hr, min = divmod(min, 60)
   csi = '\033['
