@@ -126,7 +126,7 @@ def format_blocktype(blocktype_arg: Any) -> str:
 
 # format_class_credit()
 # -------------------------------------------------------------------------------------------------
-def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
+def format_class_credit(class_credit_dict: dict, prefix_str: str = None) -> str:
   """
       Grammar:
         body_class_credit : (num_classes | num_credits)
@@ -136,14 +136,15 @@ def format_class_credit(class_credit_arg: Any, prefix_str: str = None) -> str:
       Parse Tree:
 
   """
-  if isinstance(class_credit_arg, list):
-    if len(class_credit_arg) > 1:
-      print(f'Multiple class_credit requirements not expected {class_credit_arg}', file=sys.stderr)
-      return '<p class="error"> Multiple class/credit requirements not expected.</p>'
-    else:
-      class_credit_dict = class_credit_arg[0]
-  else:
-    class_credit_dict = class_credit_arg
+  assert isinstance(class_credit_dict, dict)
+  # if isinstance(class_credit_arg, list):
+  #   if len(class_credit_arg) > 1:
+  #     print(f'Multiple class_credit requirements not expected {class_credit_arg}', file=sys.stderr)
+  #     return '<p class="error"> Multiple class/credit requirements not expected.</p>'
+  #   else:
+  #     class_credit_dict = class_credit_arg[0]
+  # else:
+  #   class_credit_dict = class_credit_arg
 
   if prefix_str is None:
     prefix_str = ''
@@ -596,96 +597,38 @@ def format_subset(subset_dict: dict) -> str:
   for requirement in subset_dict['requirements']:
     assert(len(requirement.keys()) == 1), (f'Requirement list item with {len(requirement.keys())} '
                                            f'keys')
-    # BLOCK AND NONCOURSE ARE CORRECT. CHECK/FIX ALL THE OTHERS!
+
     for key, value in requirement.items():
       match key:
         case 'conditional_list':
-          subset_str += format_conditional_list(value)
+          subset_str += format_conditional_list(value[key])
 
         case 'block':
           subset_str += format_block(value[key])
 
         case 'blocktype_list':
-          subset_str += format_blocktype(value)
+          subset_str += format_blocktype(value[key])
 
         case 'class_credit':
           subset_str += format_class_credit(value)
 
         case 'copy_rules':
-          subset_str += format_copy_rules(value)
+          subset_str += format_copy_rules(value[key])
 
         case 'course_list_rule':
-          subset_str += format_course_list_rule(value)
+          subset_str += format_course_list_rule(value[key])
 
         case 'group_requirements':
-          subset_str += format_group_requirements(value)
+          subset_str += format_group_requirements(value[key])
 
         case 'noncourse':
           subset_str += format_noncourse(value[key])
 
         case 'rule_complete':
-          subset_str += format_rule_complete(value)
+          subset_str += format_rule_complete(value[key])
 
         case _:
           raise ValueError(f'Unhandled subset rule key: {key}')
-
-  # # Is this a non-course requirement?
-  # try:
-  #   subset_str += format_noncourse(subset_dict.pop('noncourse'))
-  # except KeyError:
-  #   pass
-
-  # # Block, blocktype, copy_rules, rule_complete
-  # try:
-  #   subset_str += format_block(subset_dict.pop('block'))
-  # except KeyError:
-  #   pass
-
-  # try:
-  #   subset_str += format_blocktype(subset_dict.pop('blocktype'))
-  # except KeyError:
-  #   pass
-
-  # try:
-  #   subset_str += format_copy_rules(subset_dict.pop('copy_rules'))
-  # except KeyError:
-  #   pass
-
-  # try:
-  #   subset_str += format_rule_complete(subset_dict.pop('rule_complete'))
-  # except KeyError:
-  #   pass
-
-  # # Course lists
-  # try:
-  #   course_lists = subset_dict.pop('course_lists')
-  #   for course_list in course_lists:
-  #     subset_str += format_utils.format_course_list(course_list)
-  # except KeyError:
-  #   pass
-
-  # # this leaves conditional, group, and class_credit_list
-  # try:
-  #   if conditional_list := subset_dict.pop('conditional_list'):
-  #     subset_str += format_conditional_list(conditional_list)
-  # except KeyError:
-  #   pass
-
-  # try:
-  #   subset_str += format_group_requirements(subset_dict.pop('group_requirements'))
-  # except KeyError:
-  #   pass
-
-  # try:
-  #   if class_credit_list := subset_dict.pop('class_credit_list'):
-  #     # The value of class_credit_list is a list of class_credit dicts.
-  #     for class_credit_dict in class_credit_list:
-  #       try:
-  #         subset_str += format_class_credit(class_credit_dict['class_credit'])
-  #       except KeyError as ke:
-  #         print('Missing class_credit key in class_credit_dict: {ke}', file=sys.stderr)
-  # except KeyError:
-  #   pass
 
   return (f'<details>{summary_element}'f'{subset_str}</details>')
 
