@@ -103,33 +103,34 @@ def parse_block(institution: str,
       parser.removeErrorListeners()
       parser.addErrorListener(DGW_ErrorListener())
       antlr_tree = parser.req_block()
-
-      # Walk the header and body parts of the parse tree, interpreting the parts to be saved.
-      header_list = []
-      if DEBUG:
-        print('\n*** PARSE HEAD ***', file=sys.stderr)
-
-      head_ctx = antlr_tree.header()
-      if head_ctx:
-        for child in head_ctx.getChildren():
-          obj = dispatch(child, institution, requirement_id)
-          if obj != {}:
-            header_list.append(obj)
-
-      body_list = []
-      if DEBUG:
-        print('\n*** PARSE BODY ***', file=sys.stderr)
-      body_ctx = antlr_tree.body()
-      if body_ctx:
-        for child in body_ctx.getChildren():
-          obj = dispatch(child, institution, requirement_id)
-          if obj != {}:
-            body_list.append(obj)
-
-      parse_tree['header_list'] = header_list
-      parse_tree['body_list'] = body_list
     except (ScribeError, ValueError) as err:
-      parse_tree = {'error': f'{err}'}
+      print(f'{institution} {requirement_id} ANTLR failure', file=sys.stderr)
+      parse_tree['error'] = str(err)
+
+    # Walk the header and body parts of the parse tree, interpreting the parts to be saved.
+    if 'error' not in parse_tree.keys():
+      try:
+        header_list = []
+        head_ctx = antlr_tree.header()
+        if head_ctx:
+          for child in head_ctx.getChildren():
+            obj = dispatch(child, institution, requirement_id)
+            if obj != {}:
+              header_list.append(obj)
+
+        body_list = []
+        body_ctx = antlr_tree.body()
+        if body_ctx:
+          for child in body_ctx.getChildren():
+            obj = dispatch(child, institution, requirement_id)
+            if obj != {}:
+              body_list.append(obj)
+
+        parse_tree['header_list'] = header_list
+        parse_tree['body_list'] = body_list
+      except Exception as err:
+        parse_tree['error'] = str(err)
+        print(f'{institution} {requirement_id} DGW failure', file=sys.stderr)
 
     elapsed_time = round((time.time() - start_time), 3)
     timestamp = time.strftime('%Y-%m-%d %H:%M', time.localtime())
