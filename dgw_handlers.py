@@ -440,8 +440,6 @@ def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
 # -------------------------------------------------------------------------------------------------
 def header_tag(ctx, institution, requirement_id):
   """ header_tag  : (HEADER_TAG nv_pair)+;
-      Unused function.
-      Header tags are currently ignored, but this method will handle them if that ever changes!
   """
   if DEBUG:
     print(f'*** header_tag({class_name(ctx)}, {institution}, {requirement_id})',
@@ -1317,6 +1315,7 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
   """
   which_part = 'header' if context_path(ctx).lower().startswith('head') else 'body'
   key = class_name(ctx).lower()
+  print(which_part, key, file=sys.stderr)
   try:
     if which_part == 'header':
       if key == 'header_rule':

@@ -140,6 +140,7 @@ header_rule         : header_class_credit
                     | remark
                     | rule_complete
                     | standalone
+                    | under
                     ;
 
 body_conditional  : IF expression THEN (body_rule | body_rule_group) body_else?;
