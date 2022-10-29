@@ -1315,7 +1315,6 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
   """
   which_part = 'header' if context_path(ctx).lower().startswith('head') else 'body'
   key = class_name(ctx).lower()
-  print(which_part, key, file=sys.stderr)
   try:
     if which_part == 'header':
       if key == 'header_rule':
