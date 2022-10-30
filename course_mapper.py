@@ -36,17 +36,17 @@ from dgw_parser import parse_block
       mapping_file        Spreadsheet of course-to-requirements mappings
 
 """
-analysis_file = open('analysis.txt', 'w')
-anomaly_file = open('anomalies.txt', 'w')
-blocks_file = open('blocks.txt', 'w')
-debug_file = open('debug.txt', 'w')
-fail_file = open('fail.txt', 'w')
-log_file = open('log.txt', 'w')
-missing_file = open(f'missing_ra.txt', 'w')
-new_plan_file = open(f'new_plans.txt', 'w')
-inactive_plan_file = open(f'inactive_plans.txt', 'w')
-no_courses_file = open('no_courses.txt', 'w')
-todo_file = open(f'todo.txt', 'w')
+analysis_file = open('/Users/vickery/Projects/dgw_processor/analysis.txt', 'w')
+anomaly_file = open('/Users/vickery/Projects/dgw_processor/anomalies.txt', 'w')
+blocks_file = open('/Users/vickery/Projects/dgw_processor/blocks.txt', 'w')
+debug_file = open('/Users/vickery/Projects/dgw_processor/debug.txt', 'w')
+fail_file = open('/Users/vickery/Projects/dgw_processor/fail.txt', 'w')
+log_file = open('/Users/vickery/Projects/dgw_processor/log.txt', 'w')
+missing_file = open(f'/Users/vickery/Projects/dgw_processor/missing_ra.txt', 'w')
+new_plan_file = open(f'/Users/vickery/Projects/dgw_processor/new_plans.txt', 'w')
+inactive_plan_file = open(f'/Users/vickery/Projects/dgw_processor/inactive_plans.txt', 'w')
+no_courses_file = open('/Users/vickery/Projects/dgw_processor/no_courses.txt', 'w')
+todo_file = open(f'/Users/vickery/Projects/dgw_processor/todo.txt', 'w')
 
 programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w', newline='')
 requirements_file = open(f'{__file__.replace(".py", ".requirements.csv")}', 'w', newline='')

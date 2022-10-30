@@ -27,10 +27,10 @@ from quarantine_manager import QuarantineManager
 
 quarantined_dict = QuarantineManager()
 
-error_file = open('error.txt', 'w')
-inactive_file = open('inactive.txt', 'w')
-log_file = open('log.txt', 'w')
-missing_file = open('missing.txt', 'w')
+error_file = open('/Users/vickery/Projects/dgw_processor/error.txt', 'w')
+inactive_file = open('/Users/vickery/Projects/dgw_processor/inactive.txt', 'w')
+log_file = open('/Users/vickery/Projects/dgw_processor/log.txt', 'w')
+missing_file = open('/Users/vickery/Projects/dgw_processor/missing.txt', 'w')
 
 
 # RHS for plan and subplan dicts
