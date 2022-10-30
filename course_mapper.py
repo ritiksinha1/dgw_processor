@@ -551,7 +551,7 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
                           'minclass': [],
                           'mincredit': [],
                           'minperdisc': [],
-                          'conditional': []}
+                          'conditional_dict': []}
   try:
     if len(parse_tree['header_list']) == 0:
       print(f'{institution} {requirement_id} Empty Header', file=log_file)
@@ -610,7 +610,7 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
               pass
           return_dict['class_credits'] = ' and '.join(class_credit_list)
 
-        case 'conditional':
+        case 'conditional_dict':
           """ Observed:
                 No course list items
                  58   T: ['header_class_credit']
@@ -629,13 +629,13 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
                   1   F: ['header_mincredit']
 
                 Recursive item
-                 28   F: ['conditional']
+                 28   F: ['conditional_dict']
           """
-          print(f'{institution} {requirement_id} Header conditional', file=todo_file)
+          print(f'{institution} {requirement_id} Header conditional_dict', file=todo_file)
 
-          conditional_dict = header_item['conditional']
+          conditional_dict = header_item['conditional_dict']
           condition_str = conditional_dict['condition_str']
-          print(f'\n{institution} {requirement_id} Header conditional: {condition_str}',
+          print(f'\n{institution} {requirement_id} Header conditional_dict: {condition_str}',
                 file=debug_file)
           if_true_list = conditional_dict['if_true']
           for item in if_true_list:
@@ -764,10 +764,10 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
           # (Not observed to occur)
           print(f'{institution} {requirement_id} Header remark', file=log_file)
           assert 'remark' not in return_dict['other'].keys()
-          return_dict['other']['remark'] = value['remark']
+          return_dict['other']['remark'] = value
 
         case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | \
-             'rule_complete' | 'standalone' | 'header_share' | 'header_tag':
+             'rule_complete' | 'standalone' | 'header_share' | 'header_tag' | 'under':
           # Intentionally ignored
           print(f'{institution} {requirement_id} Header {key} (ignored)', file=log_file)
           pass
@@ -860,7 +860,7 @@ def traverse_body(node: Any, context_list: list) -> None:
         context_dict['requirement_name'] = requirement_value['label']
       except KeyError:
         # Unless a conditional, if there is no label, add a placeholder name, and log the situation
-        if requirement_type != 'conditional':
+        if requirement_type != 'conditional_dict':
           context_dict['requirement_name'] = 'Unnamed Requirement'
           if requirement_type not in ['copy_rules']:  # There may be others (?) ...
             print(f'{institution} {requirement_id} Body {requirement_type} with no label',
@@ -1022,7 +1022,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             # Course List is an optional part of ClassCredit
             pass
 
-        case 'conditional':
+        case 'conditional_dict':
           assert isinstance(requirement_value, dict)
           # Use the condition as the pseudo-name of this requirement
           condition = requirement_value['condition_str']
@@ -1331,12 +1331,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                   print(f'{institution} {requirement_id} Subset blocktype (ignored)',
                         file=todo_file)
 
-                case 'conditional_list':
-                  print(f'{institution} {requirement_id} Subset conditional_list', file=log_file)
-                  # if isinstance(rule, list):
-                  #   conditional_dict = rule[0]
-                  # else:
-                  #   conditional_dict = rule
+                case 'conditional_dict':
+                  print(f'{institution} {requirement_id} Subset conditional_dict', file=log_file)
                   traverse_body(rule, context_list + subset_context)
 
                   # # Use the condition as the pseudo-name of this requirement
