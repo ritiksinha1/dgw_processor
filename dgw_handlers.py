@@ -241,7 +241,7 @@ def header_conditional(ctx, institution, requirement_id):
       return_dict['if_false'] = get_rules(ctx.header_else().header_rule_group().header_rule(),
                                           institution, requirement_id)
 
-  return {'conditional': return_dict}
+  return {'conditional_dict': return_dict}
 
 
 # body_conditional()
@@ -298,7 +298,7 @@ def body_conditional(ctx, institution, requirement_id):
       # This can't happen
       return_dict['if_false'] = 'Missing False Part'
 
-  return {'conditional': return_dict}
+  return {'conditional_dict': return_dict}
 
 
 # copy_rules()
@@ -1194,7 +1194,7 @@ def subset(ctx, institution, requirement_id):
                                                                         requirement_id)})
 
       case 'body_conditional':
-         return_dict['requirements'].append({'conditional_list': body_conditional(child,
+         return_dict['requirements'].append({'conditional_dict': body_conditional(child,
                                                                                   institution,
                                                                                   requirement_id)})
 

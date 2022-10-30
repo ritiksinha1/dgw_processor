@@ -79,6 +79,7 @@ def dict_to_html(info: dict, section=None) -> str:
       if html_str := format_body_rules.dispatch_body_rule(key, value):
         body_rules.append(html_str)
       else:
+        # print(key, value)
         body_rules.append(f'<p class="error">{key} not dispatchable from body_list')
     return_str = '\n'.join(body_rules)
     return return_str

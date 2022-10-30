@@ -54,9 +54,9 @@ DEBUG = os.getenv('DEBUG_HEADER')
 """
 
 
-# _format_conditional()
+# _format_conditional_dict()
 # -------------------------------------------------------------------------------------------------
-def _format_conditional(conditional_dict: dict) -> str:
+def _format_conditional_dict(conditional_dict: dict) -> str:
   """
   """
   return_str = f'<details><summary>If {conditional_dict["condition_str"]} is true</summary>'
@@ -602,7 +602,7 @@ def _nop(nop_dict: dict) -> str:
 # dispatch_table {}
 # -------------------------------------------------------------------------------------------------
 dispatch_table = {'header_class_credit': _format_class_credit,
-                  'conditional': _format_conditional,
+                  'conditional_dict': _format_conditional_dict,
                   'header_lastres': _format_lastres,
                   'header_maxclass': _format_maxclass_head,
                   'header_maxcredit': _format_maxcredit_head,

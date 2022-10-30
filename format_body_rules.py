@@ -209,10 +209,10 @@ def format_class_credit(class_credit_dict: dict, prefix_str: str = None) -> str:
     return f'{prefix_str}{class_credit_str}'
 
 
-# format_conditional()
+# format_conditional_dict()
 # -------------------------------------------------------------------------------------------------
-def format_conditional(conditional_dict: dict) -> str:
-  """ Format a single conditional item from a list of them.
+def format_conditional_dict(conditional_dict: dict) -> str:
+  """ Format a single conditional item.
   """
   # Preconditions
   assert isinstance(conditional_dict, dict)
@@ -250,30 +250,30 @@ def format_conditional(conditional_dict: dict) -> str:
   return f'<details>{summary_str}{conditional_body}{else_summary}{else_body}</details>'
 
 
-# format_conditional_list()
+# format_conditional_dict()
 # -------------------------------------------------------------------------------------------------
-def format_conditional_list(conditional_list: list) -> str:
-  """ Expect a conditional expression string, an if_true list of rules, and an optional if_false
-      list of rules. (Note: conditionals don't have labels: they aren't requirements per se.)
-      As a reminder of work to be done, we call format_conditional() to interpret the condition
-      string and return a list of conditions required. But that function is only a stub, pending
-      determination of what should actually be done to interpret the condition string.
+# def format_conditional_dict(conditional_dict: dict) -> str:
+#   """ Expect a conditional expression string, an if_true list of rules, and an optional if_false
+#       list of rules. (Note: conditionals don't have labels: they aren't requirements per se.)
+#       As a reminder of work to be done, we call format_conditional() to interpret the condition
+#       string and return a list of conditions required. But that function is only a stub, pending
+#       determination of what should actually be done to interpret the condition string.
 
-      The list of rules gets dispatched back into this module, which requires this function to
-      determine whether to dispatch through format_header_productions of format_body_rules.
-  """
-  assert isinstance(conditional_list, list), (f'conditional_list is {type(conditional_list)}, not '
-                                              f'list')
-  return_str = ''
-  for conditional_item in conditional_list:
-    try:
-      conditional_dict = conditional_item['conditional']
-    except KeyError:
-      raise ValueError(f'Conditional item with no conditional key in [{conditional_item.keys()}]')
+#       The list of rules gets dispatched back into this module, which requires this function to
+#       determine whether to dispatch through format_header_productions or format_body_rules.
+#   """
+#   assert isinstance(conditional_dict, dict), (f'conditional_dict is {type(conditional_dict)}, not '
+#                                               f'dict')
+#   return_str = ''
+#   for conditional_item in conditional_dict:
+#     try:
+#       conditional_dict = conditional_item['conditional']
+#     except KeyError:
+#       raise ValueError(f'Conditional item with no conditional key in [{conditional_item.keys()}]')
 
-    return_str += format_conditional(conditional_dict)
+#     return_str += format_conditional(conditional_dict)
 
-  return return_str
+#   return return_str
 
 
 # format_copy_rules()
@@ -544,7 +544,7 @@ def format_rule_complete(rule_complete_dict: dict) -> str:
 def format_subset(subset_dict: dict) -> str:
   """                     Grammar                 Dict Key(s)
       subset            : BEGINSUB
-                        ( body_conditional        conditional_list
+                        ( body_conditional        conditional_dict
                           | block                 block
                           | blocktype             blocktype_list
                           | body_class_credit     class_credit
@@ -600,8 +600,8 @@ def format_subset(subset_dict: dict) -> str:
 
     for key, value in requirement.items():
       match key:
-        case 'conditional_list':
-          subset_str += format_conditional_list(value[key])
+        case 'conditional_dict':
+          subset_str += format_conditional_dict(value[key])
 
         case 'block':
           subset_str += format_block(value[key])
@@ -638,8 +638,8 @@ def format_subset(subset_dict: dict) -> str:
 _dispatch_table = {'block': format_block,
                    'blocktype': format_blocktype,
                    'class_credit': format_class_credit,
-                   'conditional': format_conditional,
-                   'conditional_list': format_conditional_list,
+                   # 'conditional': format_conditional,
+                   'conditional_dict': format_conditional_dict,
                    'copy_rules': format_copy_rules,
                    'course_list_rule': format_course_list_rule,
                    'group_requirements': format_group_requirements,
