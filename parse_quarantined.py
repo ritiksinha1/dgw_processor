@@ -59,9 +59,10 @@ if __name__ == '__main__':
                 print(f'{institution} {requirement_id} Timeout: {error_msg}')
 
               # Restore the original error message
+              analysis_text = row.analysis_text.replace("'", '|')
               restore_query = f"""
               update requirement_blocks
-                     set parse_tree = jsonb_set(parse_tree, '{error_word}', '"{row.analysis_text}"')
+                     set parse_tree = jsonb_set(parse_tree, '{error_word}', '"{analysis_text}"')
                where institution = '{institution}'
                  and requirement_id = '{requirement_id}'"""
               update_cursor.execute(restore_query)
