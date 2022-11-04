@@ -21,23 +21,35 @@ def dict_factory():
 
 
 _courses_cache = defaultdict(dict_factory)
-CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr title credits career')
+CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr discipline catalog_number title '
+                         'credits designation career')
 
 
 # courses_cache()
 # -------------------------------------------------------------------------------------------------
-def courses_cache(idc_tuple: tuple) -> dict:
-  """ If the institution hasn't been cached yet, add its courses to the cache.
-      Return a possibly-empty dict of the (course_id, offer_nbr, title, career) namedtuples for the
-      institution/discipline/catalog_nbr. Scribe language wildcards and ranges are allowed.
+def courses_cache(institution: str, discipline: str, catalog_number: str) -> list:
   """
-  institution, discipline, catalog_number = idc_tuple
+      Cached access to a list of an institution's courses based on Scribed course item: (discipline
+      and catalog number), with possible wildcards (@) expanded.
+
+      Each institution's courses are added to the cache the first time the institution is
+      encountered.
+
+      Returns a possibly-empty list of CourseTuples.
+  """
   if institution not in _courses_cache.keys():
     with psycopg.connect('dbname=cuny_curriculum') as conn:
       with conn.cursor(row_factory=namedtuple_row) as cursor:
         cursor.execute("""
-          select institution, course_id, offer_nbr,
-                discipline, catalog_number, title, max_credits as credits, career
+          select institution,
+                 course_id,
+                 offer_nbr,
+                 discipline,
+                 catalog_number,
+                 title,
+                 max_credits as credits,
+                 designation,
+                 career
             from cuny_courses
            where institution = %s
              and course_status = 'A'
@@ -50,18 +62,20 @@ def courses_cache(idc_tuple: tuple) -> dict:
         for row in cursor:
           info = CourseTuple._make([row.course_id,
                                     row.offer_nbr,
+                                    row.discipline,
+                                    row.catalog_number,
                                     row.title,
                                     row.credits,
+                                    row.designation,
                                     row.career])
           _courses_cache[row.institution][row.discipline][row.catalog_number] = info
 
   # Simple Case
   if not ('@' in discipline or '@' in catalog_number or ':' in catalog_number):
     try:
-      return {f'{discipline} {catalog_number}':
-              _courses_cache[institution][discipline][catalog_number]}
+      return [_courses_cache[institution][discipline][catalog_number]]
     except KeyError:
-      return {}
+      return []
 
   # Generate list of matching disciplines
   if '@' in discipline:
@@ -85,21 +99,20 @@ def courses_cache(idc_tuple: tuple) -> dict:
 
   regex = f'^{catalog_number}$'.replace('@', '.+')
 
-  return_dict = {}
+  return_list = []
   for discipline in disciplines:
     for cat_num in _courses_cache[institution][discipline].keys():
       if re.match(regex, cat_num):
-        return_dict[f'{discipline} {cat_num}'] = _courses_cache[institution][discipline][cat_num]
+        return_list.append(_courses_cache[institution][discipline][cat_num])
       elif low_val is not None:
         try:
           cat_num_val = float(cat_num)
           if cat_num_val >= low_val and cat_num_val <= hi_val:
-            return_dict[f'{discipline} {cat_num}'] = \
-                _courses_cache[institution][discipline][cat_num]
+            return_list.append(_courses_cache[institution][discipline][cat_num])
         except ValueError:
           pass
 
-  return return_dict
+  return return_list
 
 
 # main()
@@ -112,25 +125,29 @@ if __name__ == '__main__':
   catalog_number = '101'
   print('? ', end='')
   while command := input():
-    if command == '' or command[0].lower() == 'q':
+    if command == '' or command.lower() == 'q':
       exit()
-    command = command.replace(' ', '=').replace('-', '=')
-    cmd, value = command.split('=')
-    match cmd[0].lower():
-      case 'i':
-        institution = value.upper().strip('01') + '01'
-      case 'd':
-        discipline = value.upper()
-      case 'c':
-        catalog_number = value
-      case q:
-        break
-
+    parts = command.split()
+    match len(parts):
+      case 1:
+        discipline = parts[0]
+      case 2:
+        discipline, catalog_number = parts
+      case 3:
+        institution, discipline, catalog_number = parts
+      case _:
+        print('discipline | discipline catalog # | institution discipline catalog #')
+        continue
     if institution and discipline and catalog_number:
-      print(institution, discipline, catalog_number)
+      institution = institution.strip('01').upper() + '01'
+      discipline = discipline.upper()
+      catalog_number = catalog_number.upper()
+      print(institution, discipline, catalog_number, '\n')
       try:
-        for course, value in courses_cache((institution, discipline, catalog_number)).items():
-          print(f'{course:10}: {value.title}')
+        for course_tuple in courses_cache(institution, discipline, catalog_number):
+          print(f'[{course_tuple.course_id:06}:{course_tuple.offer_nbr}] {course_tuple.discipline} '
+                f'{course_tuple.catalog_number}: {course_tuple.title} '
+                f'{course_tuple.credits}cr {course_tuple.designation} {course_tuple.career}')
       except ValueError as ve:
         print(ve)
       print('\n? ', end='')
