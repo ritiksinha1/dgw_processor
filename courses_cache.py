@@ -2,7 +2,7 @@
 """ Manage a cache of information about courses.
     The cache is indexed by [institution][discipline][catalog_number], is populated on demand by
     institution, and includes only active, non-message/non-bkcr courses. Cached info is course_id,
-    offer_nbr, title, and career.
+    offer_nbr, discipline, catalog_number, title, (max)credits, designation, and career.
 """
 
 import os
@@ -21,16 +21,20 @@ def dict_factory():
 
 
 _courses_cache = defaultdict(dict_factory)
-CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr discipline catalog_number title '
-                         'credits designation career')
+
+CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr discipline catalog_number '
+                         'course_title credits designation career')
 
 
 # courses_cache()
 # -------------------------------------------------------------------------------------------------
 def courses_cache(institution: str, discipline: str, catalog_number: str) -> list:
   """
-      Cached access to a list of an institution's courses based on Scribed course item: (discipline
-      and catalog number), with possible wildcards (@) expanded.
+      Cached access to a list of an institution's courses based on Scribed course item (discipline
+      and catalog number), with possible wildcards (@) expanded. Neither with clauses nor exclude
+      clauses are handled here. The mogrify_course_list() function in the course_mapper module is an
+      example of a method that takes care of managing those two aspects of the lists returned by
+      this method.
 
       Each institution's courses are added to the cache the first time the institution is
       encountered.

@@ -18,7 +18,7 @@ from recordclass import recordclass
 from typing import Any
 
 from activeplans import active_plans
-from coursescache import courses_cache
+from courses_cache import courses_cache
 from dgw_parser import parse_block
 
 """ Logging/Development Reports
@@ -58,14 +58,6 @@ map_writer = csv.writer(mapping_file)
 
 generated_date = str(datetime.date.today())
 
-# def dict_factory():
-#   """ Support for three index levels, as in courses_by_institution and subplans_by_institution.
-#   """
-#   return defaultdict(dict)
-
-
-# courses_by_institution = defaultdict(dict_factory)
-# subplans_by_institution = defaultdict(dict_factory)
 
 requirement_index = 0
 number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
@@ -77,6 +69,8 @@ _parse_trees = defaultdict(dict)
 
 dap_block_counts = defaultdict(int)
 subplan_references = defaultdict(dict)
+
+MogrifiedInfo = namedtuple('MogrifiedInfo', 'course_id_str course_str career with_clause')
 
 
 # =================================================================================================
@@ -133,60 +127,86 @@ def letter_grade(grade_point: float) -> str:
   return letter + suffix
 
 
-# expand_course_list()
+# mogrify_course_list()
 # -------------------------------------------------------------------------------------------------
-def expand_course_list(institution: str, requirement_id: str, course_dict: dict) -> dict:
-  """ Generate a dict of active courses that match a scribed list with except courses removed (and
-      include courses ignored), taking wildcards and ranges into account. Dict keys are (course_id,
-      offer_nbr) tuples; values are with-clause expressions (which may be null).
+def mogrify_course_list(institution: str, requirement_id: str, course_dict: dict) -> list:
+  """
+      This gets called from traverse_header (max_classes, max_credits), and map_courses (via various
+      body rules) to turn a scribed course_list into information needed for populating the programs
+      table (header info) or mapping table (body rules).
 
-      With-expressions can appear within the scribed list and/or the except list.
-        scribed PHYS @
-        except  @ 1@ with dwgrade < 2.0 or dwtransfer = y
-      Unable to evaluate except list where there are wildcards and the with-expression is not empty,
-      so log those cases. But if there is no with-expression, even with wildcards, the matching
-      courses get deleted from the return dict.
+      First flatten the dict of scribed courses to get rid of the areas structure.
+        Log cases where there is more than one area
+      Create a set of courses (eliminates duplicates)
+      Use courses_cache() to look up catalog_information for each course in the courses set.
+      The courses_cache handles wildcard expansion.
+
+      Use courses_cache to look up catalog information for all matchig courses for each course in
+      the exclude list.
+      Remove excluded courses from the courses_set.
+      Distribute certain with_clauses onto courses; ignore others
+      return the list of CourseInfo items.
 
   """
-  # Check for empty list
+  # Check for empty dict
   if not course_dict:
-    return None
+    return []
 
-  # Get the scribed list and flatten it
+  # Get the scribed list and flatten it. Each scribed course is a {discipline, catalog_number,
+  # with_clause} tuple
   course_list = course_dict['scribed_courses']
-  courses = [course for area in course_list for course in area]
-
+  courses = [tuple(course) for area in course_list for course in area]
+  # Get rid of redundant scribes
+  courses_set = set([course for course in courses])
+  #
+  # THE COURSES_SET HAS WITH CLAUSES, WHICH HAVE TO BE IGNORED WHEN EXCLUDING COURSES. BUT YOU
+  # SHOULD CHECK THAT THAT IS RIGHT BY LOOKING AT A BLOCK THAT HAS EXCEPT CLAUSES.
+  #   CSI01 RA001460 Exclude course based on DWTerm (ignored)
+  #   CSI01 RA001791 Exclude course based on DWTerm (ignored)
+  #   CSI01 RA001598 Exclude course based on DWTerm (ignored)
+  #   CTY01 RA000718 Exclude course
+  #   CTY01 RA000718 Exclude course
+  #   CTY01 RA000718 Exclude course
+  #   CTY01 RA000718 Exclude course
+  #   HTR01 RA002566 Exclude course
+  #   HTR01 RA002617 Exclude course
+  #
   # Create set of (course_id, offer_nbr) tuples for exclude courses that have no with-expressions
   exclude_list = course_dict['except_courses']
-  exclude_set = set()
-  for item in exclude_list:
-    if with_expression := item[2]:
-      # Ignore cases where the with clause references DWTerm
-      if 'dwterm' in with_expression.lower():
+  exclude_set = set([tuple(course) for course in exclude_list])
+  for discipline, catalog_number, with_clause in exclude_list:
+    if with_clause:
+      # Ignore cases where the with clause references DWTerm: they look like COVID special cases
+      if 'dwterm' in with_clause.lower():
         print(f'{institution} {requirement_id} Exclude course based on DWTerm (ignored)',
               file=log_file)
         continue
       # Log and skip remaining cases that have with-expressions
-      print(f'{institution} {requirement_id} expand_course_list(): exclude w/ with',
+      """ If there is a grade or transfer restriction, one might be able to invert it and simply add
+          it to the with clause of all the scribed_courses. But for now, we're just finding out
+          whether it is a real issue or not.
+      """
+      print(f'{institution} {requirement_id} mogrify_course_list(): exclude {with_clause}',
             file=todo_file)
-      print(f'{institution} {requirement_id} expand_course_list(): exclude {with_expression}',
-            file=debug_file)
     else:
       print(f'{institution} {requirement_id} Exclude course', file=log_file)
-      for k, v in courses_cache((institution, item[0].strip(), item[1].strip())).items():
-        exclude_set.add(k)
+      for exclude_course in courses_cache((institution, item[0].strip(), item[1].strip())):
+        exclude_set.add((exclude_course.course_id, exclude_course.offer_nbr))
 
-  # Get rid of redundant scribes
-  courses_set = set([tuple(course) for course in courses])
-
-  # Dict of active scribed courses
-  return_dict = {}
+  # DICT OF ACTIVE SCRIBED COURSES
+  """ In the body, the return dict should be indexed by the course_id for mapping courses to
+      requirements. In the header, the course list should include ???
+  """
+  return_list = []
   for discipline, catalog_nbr, with_clause in courses_set:
-    for k, v in courses_cache((institution, discipline, catalog_nbr)).items():
-      if k not in exclude_set:
-        return_dict[(v.course_id, v.offer_nbr)] = (k, with_clause)
-
-  return return_dict
+    for course in courses_cache(institution, discipline, catalog_nbr):
+      # MogrifiedInfo = namedtuple('MogrifiedInfo', 'course_id_str course_str career with_clause')
+      mogrified_info = MogrifiedInfo._make([f'{course.course_id:06}:{course.offer_nbr}',
+                                            f'{course.discipline} {course.catalog_number}: '
+                                            f'{course.course_title}',
+                                            course.career,
+                                            with_clause])
+  return return_list
 
 
 # format_group_description()
@@ -274,7 +294,8 @@ Requirement Key, Course ID, Career, Course, With
     course_list = requirement_info['course_list']
   except KeyError:
     # Sometimes the course_list _is_ the requirement. In these cases, all scribed courses are
-    # required. So create a requirement_info dict with a set of values to reflect this.
+    # (assumed to be) required. So create a requirement_info dict with a set of values to reflect
+    # this.
     course_list = requirement_dict
     num_scribed = sum([len(area) for area in course_list['scribed_courses']])
     requirement_info = {'label': None,
@@ -287,40 +308,52 @@ Requirement Key, Course ID, Career, Course, With
                         'allow_classes': None,
                         'allow_credits': None}
     try:
-      # Ignore context_path, if it is present. (It makes the course list harder to read)
+      # Ignore context_path provided by dgw_parser, if it is present. (It just makes the course list
+      # harder to read)
       del course_list['context_path']
     except KeyError:
       pass
 
-  # Filter out duplicated courses: people scribe course lists that include the same course(s) more
-  # than once.
-  courses_set = set()
-  for course_area in range(len(course_list['scribed_courses'])):
-    for course_tuple in course_list['scribed_courses'][course_area]:
-      # Unless there is a With clause, skip "any course" wildcards (@ @)
-      if ['@', '@', None] == course_tuple:
-        continue
-      discipline, catalog_number, with_clause = course_tuple
-      if with_clause is not None:
-        with_clause = f'With ({with_clause})'
+  # Put the course_list into "canonical form"
+  canonical_course_list = mogrify_course_list(institution, requirement_id, course_list)
+  requirement_info['num_courses'] = len(canonical_course_list)
+  for course_info in canonical_course_list:
+    row = [requirement_index,
+           course_info.course_id_str,
+           course_info.career,
+           course_info.course_str,
+           course_info.with_clause,
+           generated_date]
+    map_writer.writerow(row)
 
-      courses_dict = courses_cache((institution, discipline, catalog_number))
-      for key, value in courses_dict.items():
-        courses_set.add(f'{value.course_id:06}:{value.offer_nbr}|{value.career}|'
-                        f'{key}: {value.title}|{with_clause}')
-    requirement_info['num_courses'] = len(courses_set)
-    for course in courses_set:
-      map_writer.writerow([requirement_index] + course.split('|') + [generated_date])
+  # courses_set = set()
+  # for course_area in range(len(course_list['scribed_courses'])):
+  #   for course_tuple in course_list['scribed_courses'][course_area]:
+  #     # Unless there is a With clause, skip "any course" wildcards (@ @)
+  #     if ['@', '@', None] == course_tuple:
+  #       continue
+  #     discipline, catalog_number, with_clause = course_tuple
+  #     if with_clause is not None:
+  #       with_clause = f'With ({with_clause})'
+
+  #     courses_dict = courses_cache(institution, discipline, catalog_number)
+  #     for value in courses_dict:
+  #       courses_set.add(f'{value.course_id:06}:{value.offer_nbr}|{value.career}|'
+  #                       f'{value.title}|{with_clause}')
+  #   requirement_info['num_courses'] = len(courses_set)
+  #   for course in courses_set:
+  #     map_writer.writerow([requirement_index] + course.split('|') + [generated_date])
 
   if requirement_info['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
   else:
     # The requirement_id has to come from the first block_info in the context
-    # list (is this ever actually used?).
+    # list (is this ever actually used? (maybe for debugging/verification)).
     try:
       requirement_id = context_list[0]['block_info']['requirement_id']
     except KeyError as err:
-      breakpoint()
+      exit(f'Missing requirement_id at base of context_list')
+
     data_row = [institution, requirement_id, requirement_index, requirement_name,
                 json.dumps(context_list + [{'requirement': requirement_info}], ensure_ascii=False),
                 generated_date]
@@ -663,12 +696,12 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
 
           number = int(value['maxclass']['number'])
           course_list = value['maxclass']['course_list']
-          course_list['courses'] = [{'course_id': f'{k[0]:06}:{k[1]}',
-                                     'course': v[0],
-                                     'with': v[1]}
-                                    for k, v in expand_course_list(institution,
-                                                                   requirement_id,
-                                                                   course_list).items()]
+          course_list['courses'] = [{'course_id': course_info.course_id_str,
+                                     'course': course_info.course_str,
+                                     'with': course_info.with_clause}
+                                    for course_info in mogrify_course_list(institution,
+                                                                           requirement_id,
+                                                                           course_list)]
           limit_dict = {'number': number,
                         'courses': course_list
                         }
@@ -683,12 +716,13 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
 
           number = float(value['maxcredit']['number'])
           course_list = value['maxcredit']['course_list']
-          course_list['courses'] = [{'course_id': f'{k[0]:06}:{k[1]}',
-                                     'course': v[0],
-                                     'with': v[1]}
-                                    for k, v in expand_course_list(institution,
-                                                                   requirement_id,
-                                                                   course_list).items()]
+          course_list['courses'] = [{'course_id': course_info.course_id_str,
+                                     'course': course_info.course_str,
+                                     'with': course_info.with_clause}
+                                    for course_info in mogrify_course_list(institution,
+                                                                           requirement_id,
+                                                                           course_list)]
+
           limit_dict = {'number': number,
                         'courses': course_list
                         }
