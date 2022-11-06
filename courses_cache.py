@@ -30,11 +30,14 @@ CourseTuple = namedtuple('CourseTuple', 'course_id offer_nbr discipline catalog_
 # -------------------------------------------------------------------------------------------------
 def courses_cache(institution: str, discipline: str, catalog_number: str) -> list:
   """
-      Cached access to a list of an institution's courses based on Scribed course item (discipline
-      and catalog number), with possible wildcards (@) expanded. Neither with clauses nor exclude
-      clauses are handled here. The mogrify_course_list() function in the course_mapper module is an
-      example of a method that takes care of managing those two aspects of the lists returned by
-      this method.
+      Return a list of an institution's active courses based on one courses discipline and catalog
+      number, which may include wildcards (@) in the discipline and/or catalog_number, and ranges
+      (:) in the catalog number.
+
+      Reminder to self: neither with clauses nor exclude clauses are handled here. The
+      mogrify_course_list() function in the course_mapper module is an example of a method that
+      takes care of managing those two aspects of scribed course lists using this method to expand
+      individual course references.
 
       Each institution's courses are added to the cache the first time the institution is
       encountered.

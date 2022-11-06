@@ -155,57 +155,104 @@ def mogrify_course_list(institution: str, requirement_id: str, course_dict: dict
   # Get the scribed list and flatten it. Each scribed course is a {discipline, catalog_number,
   # with_clause} tuple
   course_list = course_dict['scribed_courses']
-  courses = [tuple(course) for area in course_list for course in area]
+  # Course tuples are (0: discipline, 1: catalog_number, 2: with_clause)
+  course_tuples = [tuple(course) for area in course_list for course in area]
   # Get rid of redundant scribes
-  courses_set = set([course for course in courses])
+  course_tuples_set = set([course_tuple for course_tuple in course_tuples])
+  course_info_set = set()
+  with_clauses = dict()
+  for course_tuple in course_tuples_set:
+    course_infos = courses_cache(institution, course_tuple[0], course_tuple[1])
+    for course_info in course_infos:
+      if course_tuple[2]:
+        with_clause = course_tuple[2].lower()
+        if 'dwterm' in with_clause or 'attribute' in with_clause:
+          continue
+        with_key = (course_info.course_id, course_info.offer_nbr)
+        if with_key in with_clauses.keys() and with_clauses[with_key] != course_tuple[2].lower():
+          print(f'{institution} {requirement_id} Mogrify: multiple with-clauses. '
+                f'{with_clauses[with_key]} != {course_tuple[2].lower()}',
+                file=debug_file)
+        with_clauses[with_key] = course_tuple[2].lower()
+      course_info_set.add(course_info)
+
+  # THE COURSES_SET HAS WITH CLAUSES, WHICH HAVE TO BE IGNORED WHEN EXCLUDING COURSES, BUT HAVE TO
+  # BE RETAINED IN THE RETURN DICT FOR THE MAPPER. HOWEVER, ANY WITH CLAUSE THAT REFERENCES DWTERM
+  # OR A COURSE ATTRIBUTE IS IGNORED.
   #
-  # THE COURSES_SET HAS WITH CLAUSES, WHICH HAVE TO BE IGNORED WHEN EXCLUDING COURSES. BUT YOU
-  # SHOULD CHECK THAT THAT IS RIGHT BY LOOKING AT A BLOCK THAT HAS EXCEPT CLAUSES.
   #   CSI01 RA001460 Exclude course based on DWTerm (ignored)
-  #   CSI01 RA001791 Exclude course based on DWTerm (ignored)
-  #   CSI01 RA001598 Exclude course based on DWTerm (ignored)
-  #   CTY01 RA000718 Exclude course
-  #   CTY01 RA000718 Exclude course
-  #   CTY01 RA000718 Exclude course
-  #   CTY01 RA000718 Exclude course
-  #   HTR01 RA002566 Exclude course
-  #   HTR01 RA002617 Exclude course
+  #     MaxCredits 0 in @ @ (With DWPassfail=Y)
+  #       Except @ @ (With DWTerm = 1202) # allow p/f classes in spring 2020 to apply
   #
-  # Create set of (course_id, offer_nbr) tuples for exclude courses that have no with-expressions
+  #   CTY01 RA000718 Exclude course
+  #     MaxCredits 6 in @ @ (With DWTransfer=Y)
+  #     EXCEPT PHYS 20300, 20400, 20700, 20800 ## Updated as of 1/13/20
+  #
+  #   HTR01 RA002566 Exclude course
+  #     MaxCredits 30 in ARTCR 1@, 2@, 3@, 4@ Except ARTCR 10100
+  #
+  #   HTR01 RA002617 Exclude course
+  #     MaxCredits 3 in ECO 1@ Except ECO 10000
+  #
+  #   NYT01 RA000727
+  #     BeginSub
+  #           2 Classes in ARTH 1@, AFR 1301, 1304
+  #       Label 1.1 "ARTH 1100-SERIES OR AFR 1301, 1304";
+  #           1 Class in ARTH 3311,
+  #             {HIDE @ (WITH ATTRIBUTE=FCER and DWTransfer = Y),}
+  #             {HIDE @ (WITH ATTRIBUTE=FCEC and DWTransfer = Y),}
+  #             {HIDE @ (WITH ATTRIBUTE=FCED and DWTransfer = Y)}
+  #      RuleTag Category=FCCE1
+  #      Label 1.2 "Creative Expression";
+  #     EndSub
+  #      Label 1.0 "Required Gen. Ed.";
+  #        Remark "Transferred students are allowed to fulfill the Creative Expression area with any
+  #        approved Creative Expression from their prior school.";
+
+  # Create set of exclude courses (there is no areas structure in exclude lists)
   exclude_list = course_dict['except_courses']
-  exclude_set = set([tuple(course) for course in exclude_list])
+  exclude_tuples_set = set([tuple(course) for course in exclude_list])
+  exclude_info_set = set()
+  for exclude_tuple in exclude_tuples_set:
+    course_infos = courses_cache(institution, exclude_tuple[0], exclude_tuple[1])
+    for course_info in course_infos:
+      exclude_info_set.add(course_info)
+
+  if (set_len := len(exclude_info_set)) > 0:
+    s = '' if set_len == 1 else 'es'
+    print(f'{institution} {requirement_id} Exclude {set_len} course{s}', file=debug_file)
+
+  # Log any with clauses in the exclude list to determine whether they need to be dealt with.
   for discipline, catalog_number, with_clause in exclude_list:
     if with_clause:
-      # Ignore cases where the with clause references DWTerm: they look like COVID special cases
+      # Ignore cases where the with clause references DWTerm: they look like COVID special cases,
+      # and even if they are not, they can’t be “program requirements”
       if 'dwterm' in with_clause.lower():
         print(f'{institution} {requirement_id} Exclude course based on DWTerm (ignored)',
               file=log_file)
-        continue
-      # Log and skip remaining cases that have with-expressions
-      """ If there is a grade or transfer restriction, one might be able to invert it and simply add
-          it to the with clause of all the scribed_courses. But for now, we're just finding out
-          whether it is a real issue or not.
-      """
-      print(f'{institution} {requirement_id} mogrify_course_list(): exclude {with_clause}',
-            file=todo_file)
-    else:
-      print(f'{institution} {requirement_id} Exclude course', file=log_file)
-      for exclude_course in courses_cache((institution, item[0].strip(), item[1].strip())):
-        exclude_set.add((exclude_course.course_id, exclude_course.offer_nbr))
+      else:
+        # Log and skip remaining cases that have with-expressions
+        """ If there is a grade or transfer restriction, one might be able to invert it and simply
+            add it to the with clause of all the scribed_courses. But for now, we're just finding
+            out whether it is a real issue or not.
+        """
+        print(f'{institution} {requirement_id} mogrify_course_list(): exclude {with_clause}',
+              file=todo_file)
 
-  # DICT OF ACTIVE SCRIBED COURSES
-  """ In the body, the return dict should be indexed by the course_id for mapping courses to
-      requirements. In the header, the course list should include ???
-  """
+  # Remove excluded courses from the courses
+  course_info_set -= exclude_info_set
+
   return_list = []
-  for discipline, catalog_nbr, with_clause in courses_set:
-    for course in courses_cache(institution, discipline, catalog_nbr):
-      # MogrifiedInfo = namedtuple('MogrifiedInfo', 'course_id_str course_str career with_clause')
-      mogrified_info = MogrifiedInfo._make([f'{course.course_id:06}:{course.offer_nbr}',
-                                            f'{course.discipline} {course.catalog_number}: '
-                                            f'{course.course_title}',
-                                            course.career,
-                                            with_clause])
+  for course in course_info_set:
+    with_key = (course_info.course_id, course_info.offer_nbr)
+    with_clause = with_clauses[with_key] if with_key in with_clauses.keys() else ''
+    # MogrifiedInfo = namedtuple('MogrifiedInfo', 'course_id_str course_str career with_clause')
+    mogrified_info = MogrifiedInfo._make([f'{course.course_id:06}:{course.offer_nbr}',
+                                          f'{course.discipline} {course.catalog_number}: '
+                                          f'{course.course_title}',
+                                          course.career,
+                                          with_clause])
+    return_list.append(mogrified_info)
   return return_list
 
 
