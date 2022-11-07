@@ -140,7 +140,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
         exclude_with_str = ''
       else:
         exclude_with_str = f'with {with_clause}'
-      for course in courses_cache((institution, discipline, catalog_number)):
+      for course in courses_cache(institution, discipline, catalog_number):
         exclude_courses[course] = exclude_with_str
 
     # Display the list of courses that must be included
@@ -188,7 +188,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
               continue
 
         # A scribed course could expand to 0, 1, or multiple active, non-administrative courses
-        active_courses = courses_cache((institution, discipline, catalog_number))
+        active_courses = courses_cache(institution, discipline, catalog_number)
         num_courses = len(active_courses)
         total_courses += num_courses
         match num_courses:
