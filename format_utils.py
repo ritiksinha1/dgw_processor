@@ -181,7 +181,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
               match lhs.lower():
                 case 'dwresident':
                   assert op == '=' and rhs in 'yn', f'Bad expression: {expression}'
-                  residency_req = ' <em>Must take at {institution[0:3]}.</em>'
+                  residency_req = f' <em>Must take at {institution[0:3]}.</em>'
                 case 'dwgrade':
                   grade_req = f' <em>Minimum grade {op} {rhs} required.</em>'
                 case _:

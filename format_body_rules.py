@@ -613,7 +613,7 @@ def format_subset(subset_dict: dict) -> str:
           subset_str += format_class_credit(value)
 
         case 'copy_rules':
-          subset_str += format_copy_rules(value[key])
+          subset_str += format_copy_rules(value)
 
         case 'course_list_rule':
           subset_str += format_course_list_rule(value[key])
