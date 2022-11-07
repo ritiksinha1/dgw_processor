@@ -140,8 +140,10 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
         exclude_with_str = ''
       else:
         exclude_with_str = f'with {with_clause}'
-      for course in courses_cache(institution, discipline, catalog_number):
-        exclude_courses[course] = exclude_with_str
+      for course in [CourseTuple._make(c) for c in courses_cache(institution,
+                                                                 discipline,
+                                                                 catalog_number)]:
+        exclude_courses[(course.discipline, course.catalog_number)] = exclude_with_str
 
     # Display the list of courses that must be included
     if len(include_courses) > 0:
@@ -188,7 +190,9 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
               continue
 
         # A scribed course could expand to 0, 1, or multiple active, non-administrative courses
-        active_courses = courses_cache(institution, discipline, catalog_number)
+        active_courses = [CourseTuple._make(c) for c in courses_cache(institution,
+                                                                      discipline,
+                                                                      catalog_number)]
         num_courses = len(active_courses)
         total_courses += num_courses
         match num_courses:
@@ -198,55 +202,60 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
                          f'active, non-administrative courses found.</span></p>')
 
           case 1:
-            key, value = active_courses.popitem()
-            if key in exclude_courses:
-              html_str += f'<p>{key} may not be used for this requirement.</p>'
+            active_course = active_courses[0]
+            key = (active_course.discipline, active_course.catalog_number)
+            if key in exclude_courses.keys():
+              html_str += f'<p>{key[0]} {key[1]} may not be used for this requirement.</p>'
             else:
-              match value.career:
+              match active_course.career:
                 case 'UGRD' | 'UKCC' | 'ULAG':
                   career_str = ''
                 case 'GRAD':
                   career_str = f' <em class="error">Graduate course</em>'
                 case _:
-                  career_str = f' <em class="error">{value.career} course</em>'
-              html_str += (f'<p>{course_str}: <em>“{value.title}”</em> {value.credits} cr.'
+                  career_str = f' <em class="error">{active_course.career} course</em>'
+              html_str += (f'<p>{course_str}: <em>“{active_course.course_title}”</em> '
+                           f'{active_course.credits} cr.'
                            f'{grade_req}{residency_req}{career_str}</p>')
 
           case _:
             details_body = ''
             num_excluded = 0
             exclude_with_set = set()
-            for key, value in active_courses.items():
+            for active_course in active_courses:
+              key = (active_course.discipline, active_course.catalog_number)
               if key in exclude_courses.keys():
                 num_excluded += 1
                 if exclude_courses[key]:
                   exclude_with_set.add(exclude_courses[key])
                 continue
-              match value.career:
+              match active_course.career:
                 case 'UGRD' | 'UKCC' | 'ULAG':
                   career_str = ''
                 case 'GRAD':
                   career_str = f' <em class="error">Graduate course</em>'
                 case _:
-                  career_str = f' <em class="error">{value.career} course</em>'
-              details_body += (f'<p>{key}: <em>“{value.title}”</em> {value.credits} cr.'
+                  career_str = f' <em class="error">{active_course.career} course</em>'
+              details_body += (f'<p>{key}: <em>“{active_course.course_title}”</em> '
+                               f'{active_course.credits} cr.'
                                f'{grade_req}{residency_req}{career_str}</p>')
             # Report any exclusions
             if num_excluded > 0:
               s = '' if num_excluded == 1 else 's'
               num_withs = len(exclude_with_set)
               ws = '' if num_withs == 1 else 's'
-              withs = ', '.join(exclude_with_set)
-              match withs.count(','):
+              with_str = ', '.join(exclude_with_set)
+              match with_str.count(','):
                 case 0:
                   pass
                 case 1:
-                  withs = withs.replace(',', ' and')
+                  with_str = with_str.replace(',', ' and')
                 case _:
-                  r = withs.rindex(',') + 1
-                  withs = withs[0:r] + ' and' + withs[r:]
+                  r = with_str.rindex(',') + 1
+                  with_str = with_str[0:r] + ' and' + with_str[r:]
 
-              with_span = f' <span>Restriction{ws} found: {withs}</span>' if num_withs > 0 else ''
+              with_span = (f' <span>Restriction{ws} found: {with_str}</span>'
+                           if num_withs > 0 else '')
               html_str += f'<p>{num_excluded} course{s} excluded.{with_span}</p>'
 
             # If there is only one course remaining after exclusions, no need for a details element

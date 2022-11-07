@@ -619,7 +619,7 @@ def format_subset(subset_dict: dict) -> str:
           subset_str += format_course_list_rule(value[key])
 
         case 'group_requirements':
-          subset_str += format_group_requirements(value[key])
+          subset_str += format_group_requirements(value)
 
         case 'noncourse':
           subset_str += format_noncourse(value[key])
