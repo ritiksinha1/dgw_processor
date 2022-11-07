@@ -15,7 +15,7 @@ import format_body_qualifiers
 import html_utils
 
 from collections import namedtuple, defaultdict
-from coursescache import courses_cache, CourseTuple
+from courses_cache import courses_cache, CourseTuple
 from traceback import print_exception, print_stack
 
 if os.getenv('DEBUG_FORMAT_UTILS'):
