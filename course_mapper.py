@@ -9,6 +9,7 @@ import json
 import psycopg
 import re
 import sys
+import traceback
 
 from argparse import ArgumentParser
 from catalogyears import catalog_years
@@ -67,8 +68,9 @@ number_ordinals = ['zeroth', 'first', 'second', 'third', 'fourth', 'fifth', 'six
 
 _parse_trees = defaultdict(dict)
 
-dap_block_counts = defaultdict(int)
-subplan_references = defaultdict(dict)
+reference_counts = defaultdict(int)
+reference_callers = defaultdict(list)
+Reference = namedtuple('Reference', 'name lineno')
 
 MogrifiedInfo = namedtuple('MogrifiedInfo', 'course_id_str course_str career with_clause')
 
@@ -147,18 +149,72 @@ def mogrify_course_list(institution: str, requirement_id: str, course_dict: dict
       Distribute certain with_clauses onto courses; ignore others
       return the list of CourseInfo items.
 
-  """
-  # Check for empty dict
-  if not course_dict:
-    return []
+  The course_dict has three course lists to be managed: scribed, include, and exclude. (Terminology
+  note: the Scribe language uses “except” for what I’m calling “exclude.”) The include and exclude
+  lists may be empty. Each list consists of 3-tuples: {discipline, catalog_number, with-clause}.
+  Disciplines and catalog numbers can contain wildcards (@), and catalog_numbers can specify ranges
+  (:). With-clauses are optional (i.e., can be None).
 
-  # Get the scribed list and flatten it. Each scribed course is a {discipline, catalog_number,
-  # with_clause} tuple
+  We ignore include lists here, but log them for possible future action.
+
+  With-clauses in the scribed list are distributed across all courses in the list after wildcard and
+  range expansion.
+
+  With-clauses might or might not be significant. Based on samples examined (see below), two cases
+  are currently logged but otherwise ignored: references to DWTerm (because they seem to refer to
+  special policies during the COVID pandemic) and references to course attributes. Attributes might
+  actually specify requirements, such as writing intensive courses, although the cases seen so far
+  only apply to some hidden requirements referring to Pathways requirements. Note, however, that the
+  use of ATTRIBUTE=FCER, etc. in the examples found don't make sense: FCER is a requirement
+  designation, not a course attribute.
+
+  Sample cases encountered across CUNY:
+
+    CSI01 RA001460 Exclude course based on DWTerm (ignored)
+      MaxCredits 0 in @ @ (With DWPassfail=Y)
+        Except @ @ (With DWTerm = 1202) # allow p/f classes in spring 2020 to apply
+
+    CTY01 RA000718 Exclude course
+      MaxCredits 6 in @ @ (With DWTransfer=Y)
+      EXCEPT PHYS 20300, 20400, 20700, 20800 ## Updated as of 1/13/20
+
+    HTR01 RA002566 Exclude course
+      MaxCredits 30 in ARTCR 1@, 2@, 3@, 4@ Except ARTCR 10100
+
+    HTR01 RA002617 Exclude course
+      MaxCredits 3 in ECO 1@ Except ECO 10000
+
+    NYT01 RA000727
+      BeginSub
+            2 Classes in ARTH 1@, AFR 1301, 1304
+        Label 1.1 "ARTH 1100-SERIES OR AFR 1301, 1304";
+            1 Class in ARTH 3311,
+              {HIDE @ (WITH ATTRIBUTE=FCER and DWTransfer = Y),}
+              {HIDE @ (WITH ATTRIBUTE=FCEC and DWTransfer = Y),}
+              {HIDE @ (WITH ATTRIBUTE=FCED and DWTransfer = Y)}
+       RuleTag Category=FCCE1
+       Label 1.2 "Creative Expression";
+      EndSub
+       Label 1.0 "Required Gen. Ed.";
+         Remark "Transferred students are allowed to fulfill the Creative Expression area with any
+         approved Creative Expression from their prior school.";
+
+  """
+  # There has to be a course_dict to mogrify
+  assert course_dict, 'Empty course_dict in mogrify_course_dict'
+
+  # Log non-empty include lists
+  if course_dict['include_courses']:
+    print(f'{institution} {requirement_id} Non-empty include_courses (ignored)', file=log_file)
+
+  # Get the scribed list, which is divided into areas even if there are nont, and flatten it.
   course_list = course_dict['scribed_courses']
   # Course tuples are (0: discipline, 1: catalog_number, 2: with_clause)
   course_tuples = [tuple(course) for area in course_list for course in area]
   # Get rid of redundant scribes
   course_tuples_set = set([course_tuple for course_tuple in course_tuples])
+
+  # Create a set of active courses and a dict of corresponding with-clauses
   course_info_set = set()
   with_clauses = dict()
   for course_tuple in course_tuples_set:
@@ -176,39 +232,6 @@ def mogrify_course_list(institution: str, requirement_id: str, course_dict: dict
         with_clauses[with_key] = course_tuple[2].lower()
       course_info_set.add(course_info)
 
-  # THE COURSES_SET HAS WITH CLAUSES, WHICH HAVE TO BE IGNORED WHEN EXCLUDING COURSES, BUT HAVE TO
-  # BE RETAINED IN THE RETURN DICT FOR THE MAPPER. HOWEVER, ANY WITH CLAUSE THAT REFERENCES DWTERM
-  # OR A COURSE ATTRIBUTE IS IGNORED.
-  #
-  #   CSI01 RA001460 Exclude course based on DWTerm (ignored)
-  #     MaxCredits 0 in @ @ (With DWPassfail=Y)
-  #       Except @ @ (With DWTerm = 1202) # allow p/f classes in spring 2020 to apply
-  #
-  #   CTY01 RA000718 Exclude course
-  #     MaxCredits 6 in @ @ (With DWTransfer=Y)
-  #     EXCEPT PHYS 20300, 20400, 20700, 20800 ## Updated as of 1/13/20
-  #
-  #   HTR01 RA002566 Exclude course
-  #     MaxCredits 30 in ARTCR 1@, 2@, 3@, 4@ Except ARTCR 10100
-  #
-  #   HTR01 RA002617 Exclude course
-  #     MaxCredits 3 in ECO 1@ Except ECO 10000
-  #
-  #   NYT01 RA000727
-  #     BeginSub
-  #           2 Classes in ARTH 1@, AFR 1301, 1304
-  #       Label 1.1 "ARTH 1100-SERIES OR AFR 1301, 1304";
-  #           1 Class in ARTH 3311,
-  #             {HIDE @ (WITH ATTRIBUTE=FCER and DWTransfer = Y),}
-  #             {HIDE @ (WITH ATTRIBUTE=FCEC and DWTransfer = Y),}
-  #             {HIDE @ (WITH ATTRIBUTE=FCED and DWTransfer = Y)}
-  #      RuleTag Category=FCCE1
-  #      Label 1.2 "Creative Expression";
-  #     EndSub
-  #      Label 1.0 "Required Gen. Ed.";
-  #        Remark "Transferred students are allowed to fulfill the Creative Expression area with any
-  #        approved Creative Expression from their prior school.";
-
   # Create set of exclude courses (there is no areas structure in exclude lists)
   exclude_list = course_dict['except_courses']
   exclude_tuples_set = set([tuple(course) for course in exclude_list])
@@ -218,11 +241,10 @@ def mogrify_course_list(institution: str, requirement_id: str, course_dict: dict
     for course_info in course_infos:
       exclude_info_set.add(course_info)
 
-  if (set_len := len(exclude_info_set)) > 0:
-    s = '' if set_len == 1 else 'es'
-    print(f'{institution} {requirement_id} Exclude {set_len} course{s}', file=debug_file)
+  if len(exclude_info_set):
+    print(f'{institution} {requirement_id} Non-empty exclude list', file=log_file)
 
-  # Log any with clauses in the exclude list to determine whether they need to be dealt with.
+  # Log any with-clauses in the exclude list to determine whether they need to be dealt with.
   for discipline, catalog_number, with_clause in exclude_list:
     if with_clause:
       # Ignore cases where the with clause references DWTerm: they look like COVID special cases,
@@ -236,7 +258,7 @@ def mogrify_course_list(institution: str, requirement_id: str, course_dict: dict
             add it to the with clause of all the scribed_courses. But for now, we're just finding
             out whether it is a real issue or not.
         """
-        print(f'{institution} {requirement_id} mogrify_course_list(): exclude {with_clause}',
+        print(f'{institution} {requirement_id} mogrify_course_list(): exclude with {with_clause}',
               file=todo_file)
 
   # Remove excluded courses from the courses
@@ -373,24 +395,6 @@ Requirement Key, Course ID, Career, Course, With
            generated_date]
     map_writer.writerow(row)
 
-  # courses_set = set()
-  # for course_area in range(len(course_list['scribed_courses'])):
-  #   for course_tuple in course_list['scribed_courses'][course_area]:
-  #     # Unless there is a With clause, skip "any course" wildcards (@ @)
-  #     if ['@', '@', None] == course_tuple:
-  #       continue
-  #     discipline, catalog_number, with_clause = course_tuple
-  #     if with_clause is not None:
-  #       with_clause = f'With ({with_clause})'
-
-  #     courses_dict = courses_cache(institution, discipline, catalog_number)
-  #     for value in courses_dict:
-  #       courses_set.add(f'{value.course_id:06}:{value.offer_nbr}|{value.career}|'
-  #                       f'{value.title}|{with_clause}')
-  #   requirement_info['num_courses'] = len(courses_set)
-  #   for course in courses_set:
-  #     map_writer.writerow([requirement_index] + course.split('|') + [generated_date])
-
   if requirement_info['num_courses'] == 0:
     print(institution, requirement_id, requirement_name, file=no_courses_file)
   else:
@@ -459,18 +463,21 @@ def process_block(block_info: dict,
       Orphans are subplans (concentrations) that are never referenced by its plan's requirements.
   """
 
-  # Every block has to have an error-free parse_tree
   institution = block_info['institution']
   requirement_id = block_info['requirement_id']
   dap_req_block_key = (institution, requirement_id)
+  reference_counts[dap_req_block_key] += 1
+
+  caller_frame = traceback.extract_stack()[-2]
+  reference_callers[dap_req_block_key].append((Reference._make((caller_frame.name,
+                                                                caller_frame.lineno))))
+
+  # Every block has to have an error-free parse_tree
   parse_tree = get_parse_tree(dap_req_block_key)
   if 'error' in parse_tree.keys():
     print(f'{institution} {requirement_id} Parse Error', file=fail_file)
     return
   header_dict = traverse_header(institution, requirement_id, parse_tree)
-
-  # How many times do blocks get processed?
-  dap_block_counts[dap_req_block_key + (block_info['block_type'], )] += 1
 
   # Characterize blocks as top-level or nested for reporting purposes; use capitalization to sort
   # top-level before nested.
@@ -529,8 +536,11 @@ def process_block(block_info: dict,
                       'subplans': []
                       }
 
+    subplan_reference_counts = dict()
     for subplan in plan_dict['subplans']:
       rb = subplan['requirement_block']
+      subplan_key = (institution, rb['requirement_id'])
+      subplan_reference_counts[subplan_key] = reference_counts[subplan_key]
       subplan_name = subplan['subplan']
       subplan_dict = {'requirement_id': rb['requirement_id'],
                       'subplan_name': subplan_name,
@@ -543,14 +553,14 @@ def process_block(block_info: dict,
                       }
       plan_info_dict['subplans'].append(subplan_dict)
 
-      subplan_reference_key = (institution, plan_name)
-      if subplan_name in subplan_references[subplan_reference_key].keys():
-        print(f'{institution} {requirement_id} Multiple references to subplan {subplan_name}',
-              file=fail_file)
-        return
-      subplan_reference_dict = {subplan_name: {'requirement_id': rb['requirement_id'],
-                                               'reference_count': 0}}
-      subplan_references[subplan_reference_key] = subplan_reference_dict
+      # subplan_reference_key = (institution, plan_name)
+      # if subplan_name in subplan_references[subplan_reference_key].keys():
+      #   print(f'{institution} {requirement_id} Multiple references to subplan {subplan_name}',
+      #         file=fail_file)
+      #   return
+      # subplan_reference_dict = {subplan_name: {'requirement_id': rb['requirement_id'],
+      #                                          'reference_count': 0}}
+      # subplan_references[subplan_reference_key] = subplan_reference_dict
 
     block_info_dict['plan_info'] = plan_info_dict
 
@@ -572,19 +582,6 @@ def process_block(block_info: dict,
                               generated_date
                               ])
 
-    # THE UNRESOLVED ISSUE IS WHEN TO PROCESS CONC BLOCKS. DO ALL THE SUBPLANS WITHIN THE PROCESSING
-    # FOR A PLAN, OR WAIT FOR THEM TO BE CALLED FROM WITHIN THE PLAN REQUIREMENTS? I LIKE THE IDEA
-    # OF DOING THEM HERE AND THEN FLAGGING ANY UN-PROCESSED ONES WHEN A BLOCKTYPE(CONC) APPEARS.
-    # THIS ALSO RESOLVES THE ISSUE OF MULTIPLE SUBPLANS, WHICH ONE TO USE? IT'S ANY ONE OF THE ONES
-    # THAT ARE ACTIVE. STILL, NEED TO CHECK FOR BLOCKTYPE WITH N OTHER THAN 1 TO BE SURE IT DOESN'T
-    # OCCUR. SO, EVERY ACTIVE CONC SHOULD BE MAPPED, BUT ANOMALIES OCCUR WHEN THERE IS A CONC
-    # REQUIRED BUT NONE ACTIVE. BUT WHERE THERE ARE LOTS OF OPTIONS AND WE CAN'T FIGURE OUT WHICH
-    # "ONE," THAT'S OK BECAUSE THE T-REX USER WILL PICK ONE TO LOOK AT AND WE WILL HAVE MAPPED THEM
-    # ALL.
-    # OK, SO WE SET UP A GLOBAL DICT OF ACTIVE SUBPLANS HERE, KEYED BY INSTITUTION, PLAN. THEN
-    # BLOCKTYPE MAKES SURE THERE IS AT LEAST ONE AVAILABLE. BUMP THE REFERENCE COUNTS OF ALL
-    # POSSIBLE ONES. AT THE END, NOTE ORPHANS.
-
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
   # invoked from within traverse_body() to handle block, blocktype and copy_rules constructs.
@@ -601,13 +598,17 @@ def process_block(block_info: dict,
       # traverse_body(body_item, item_context)
       traverse_body(body_item, context_list)
 
-  # Finally, if this is a plan block, map all the subplans, if there are any.
+  # Finally, if this is a plan block, check whether its subplans have been processed explicitly.
   if plan_dict:
     for subplan in plan_dict['subplans']:
-      # THIS DOESN'T WORK: WHAT IF THE SUBPLAN IS DETERMINED CONDITIONALLY?
-      # CHECK THIS WHEN THERE IS A BLOCKTYPE CONC, SEE WHAT THE CONTEXT IS. IF IT'S NOT DIRECTLY
-      # UNDER A PLAN BLOCK, ... WELL, DO SOMETHING SMART.
-      process_block(subplan['requirement_block'], [{'block_info': block_info_dict}])
+      subplan_id = subplan['requirement_block']['requirement_id']
+      subplan_key = (institution, subplan_id)
+      num_references = subplan_reference_counts[subplan_key]
+      s = '' if num_references == 1 else 's'
+      print(f'{institution} {subplan_id} Subplan was referenced {num_references} time{s}',
+            file=debug_file)
+
+      # process_block(subplan['requirement_block'], [{'block_info': block_info_dict}])
 
 
 # traverse_header()
@@ -1026,11 +1027,8 @@ def traverse_body(node: Any, context_list: list) -> None:
             preconditions = False
 
           if preconditions:
-            # Add one to the reference counts for each of the plan's subplans
-            subplan_references_key = (institution,
-                                      context_list[0]['block_info']['plan_info']['plan_name'])
-            for subplan_reference in subplan_references[subplan_references_key]:
-              subplan_references[subplan_references_key][subplan_reference]['reference_count'] += 1
+            # THIS IS WHERE YOU WILL CALL process_block()
+            pass
 
             # try:
             #   # The subplans list comes from the top-level (plan) block_info, even if the rule comes
@@ -1686,9 +1684,9 @@ if __name__ == "__main__":
         f'{new_subplan_count:5,} Zero-enrollment subplan less than {gestation_days} days old\n')
   with open('block_counts.txt', 'w') as counts_file:
     print('Block                   Count', file=counts_file)
-    for key, value in dap_block_counts.items():
+    for key, value in reference_counts.items():
       if value > 1:
-        i, r, t = key
-        print(f'{i} {r} {t:7} {value:2}', file=counts_file)
+        i, r = key
+        print(f'{i} {r} {value:2}', file=counts_file)
   if args.timing:
     print(f'{(datetime.datetime.now() - start_time).seconds} seconds')
