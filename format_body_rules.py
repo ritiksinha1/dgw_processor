@@ -422,6 +422,8 @@ def format_group_requirements(group_requirements: list) -> str:
             group_requirement_str += format_class_credit(requirement[key], prefix_str)
           case 'course_list':
             group_requirement_str += format_course_list(requirement[key])
+          case 'course_list_rule':
+            group_requirement_str += format_course_list_rule(requirement[key])
           case 'group_requirements':
             group_requirement_str += format_group_requirements(requirement[key])
           case 'noncourse':
@@ -432,8 +434,9 @@ def format_group_requirements(group_requirements: list) -> str:
             pass  # Labels are extracted by one of the above matches
           case _:
             # Remarks will show up here? Or are they handled like labels??
-            group_requirement_str += (f'<p>{key.title()}: {requirement[key]} requirement not '
-                                      f'implemented.</p>')
+            group_requirement_str += (f'<p class="error">{key.title()}: '
+                                      f'requirement not implemented yet.</p>'
+                                      f'<pre>{requirement[key]}</pre>')
     group_requirements_str += f'<details>{summary_element}{group_requirement_str}</details>'
 
   return group_requirements_str
