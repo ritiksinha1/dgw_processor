@@ -11,16 +11,17 @@ import re
 import sys
 import traceback
 
+from activeplans import active_plans
 from argparse import ArgumentParser
 from catalogyears import catalog_years
 from collections import namedtuple, defaultdict
+from courses_cache import courses_cache
+from dgw_parser import parse_block
 from psycopg.rows import namedtuple_row, dict_row
+from quarantine_manager import QuarantineManager
 from recordclass import recordclass
 from typing import Any
 
-from activeplans import active_plans
-from courses_cache import courses_cache
-from dgw_parser import parse_block
 
 """ Logging/Development Reports
       analysis_file:      Analsis of as-yet-unhandled constructs.
@@ -66,6 +67,7 @@ number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', '
 number_ordinals = ['zeroth', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh',
                    'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth']
 
+quarantine_manager = QuarantineManager()
 _parse_trees = defaultdict(dict)
 
 reference_counts = defaultdict(int)
@@ -473,10 +475,15 @@ def process_block(block_info: dict,
                                                                 caller_frame.lineno))))
 
   # Every block has to have an error-free parse_tree
+  if quarantine_manager.is_quarantined(dap_req_block_key):
+    print(f'{institution} {requirement_id} Quarantined block (ignored)', file=log_file)
+    return
   parse_tree = get_parse_tree(dap_req_block_key)
   if 'error' in parse_tree.keys():
+    # Should not occur
     print(f'{institution} {requirement_id} Parse Error', file=fail_file)
     return
+
   header_dict = traverse_header(institution, requirement_id, parse_tree)
 
   # Characterize blocks as top-level or nested for reporting purposes; use capitalization to sort
@@ -525,8 +532,7 @@ def process_block(block_info: dict,
     """ For plans, the block_info_dict gets updated with info about the plan and its subplans.
     """
     plan_name = plan_dict['plan']
-    plan_info_dict = {'requirement_id': requirement_id,
-                      'plan_name': plan_name,
+    plan_info_dict = {'plan_name': plan_name,
                       'plan_type': plan_dict['type'],
                       'plan_description': plan_dict['description'],
                       'plan_effective_date': plan_dict['effective_date'],
@@ -538,18 +544,18 @@ def process_block(block_info: dict,
 
     subplan_reference_counts = dict()
     for subplan in plan_dict['subplans']:
-      rb = subplan['requirement_block']
-      subplan_key = (institution, rb['requirement_id'])
+      subplan_block_info = subplan['requirement_block']
+      subplan_key = (institution, subplan_block_info['requirement_id'])
       subplan_reference_counts[subplan_key] = reference_counts[subplan_key]
       subplan_name = subplan['subplan']
-      subplan_dict = {'requirement_id': rb['requirement_id'],
+      subplan_dict = {'block_info': subplan_block_info,
                       'subplan_name': subplan_name,
                       'subplan_type': subplan['type'],
                       'subplan_description': subplan['description'],
                       'subplan_effective_date': subplan['effective_date'],
                       'subplan_cip_code': subplan['cip_code'],
-                      'subplan_active_terms': rb['num_recent_active_terms'],
-                      'subplan_enrollment': rb['recent_enrollment'],
+                      'subplan_active_terms': subplan_block_info['num_recent_active_terms'],
+                      'subplan_enrollment': subplan_block_info['recent_enrollment'],
                       }
       plan_info_dict['subplans'].append(subplan_dict)
 
@@ -568,6 +574,7 @@ def process_block(block_info: dict,
     header_dict['other']['plan_info'] = plan_info_dict
 
     # Enter the plan in the programs table
+    other_col = json.dumps(header_dict['other'], ensure_ascii=False)
     programs_writer.writerow([f'{institution[0:3]}',
                               f'{requirement_id}',
                               f'{block_info_dict["block_type"]}',
@@ -578,7 +585,7 @@ def process_block(block_info: dict,
                               f'{header_dict["min_residency"]}',
                               f'{header_dict["min_grade"]}',
                               f'{header_dict["min_gpa"]}',
-                              json.dumps(header_dict['other'], ensure_ascii=False),
+                              other_col,
                               generated_date
                               ])
 
@@ -999,96 +1006,42 @@ def traverse_body(node: Any, context_list: list) -> None:
                         file=log_file)
 
         case 'blocktype':
-          # Presumably, this is a reference to a subplan (concentration), which has already been
-          # mapped as part of the plan's processing. If not, it's either an error or a problem.
+          # Presumably, this is a reference to a subplan (concentration) for a plan.
+          # Preconditions are:
+          #   This block is for a plan
+          #   This plan has at least one active plan
+          #   There is at least one matching concentration for this plan
 
           preconditions = True
-          # Crash if multiple blocks required
-          num_required = int(requirement_value['number'])
-          if num_required != 1:
-            print(f'{institution} {requirement_id} Body blocktype num_required ({num_required}) is '
-                  f'not unity', file=fail_file)
-            preconditions = False
 
+          # Is this a plan with active subplans?:
+          try:
+            active_subplans = block_info['plan_info']['subplans']
+          except KeyError as err:
+            preconditions = False
+            print(f'{institution} {requirement_id} Body blocktype: from non-plan block',
+                  file=fail_file)
+          if len(active_subplans) < 1:
+            preconditions = False
+            print(f'{institution} {requirement_id} Body blocktype: plan has no active subplans',
+                  file=log_file)
+
+          # Log cases where multiple blocks are required
+          num_required = int(requirement_value['number'])
+          if num_required > 1:
+            print(f'{institution} {requirement_id} Body blocktype: {num_required} subplans '
+                  f'required', file=log_file)
+
+          # Log cases where the required blocktype is not CONC, but do it anyway
           required_blocktype = requirement_value['block_type']
           if required_blocktype != 'CONC':
-            print(f'{institution} {requirement_id} Body blocktype Required blocktype '
-                  f'({required_blocktype}) is not “CONC”', file=fail_file)
-            preconditions = False
-
-          try:
-            subplans_list = context_list[0]['block_info']['plan_info']['subplans']
-          except KeyError as err:
-            print(f'{institution} {requirement_id} Body blocktype KeyError ({err})', file=fail_file)
-            preconditions = False
-
-          if len(subplans_list) < 1:
-            print(f'{institution} {requirement_id} Body blocktype no subplans ', file=fail_file)
+            print(f'{institution} {requirement_id} Body blocktype: required blocktype is '
+                  f'{required_blocktype} (ignored)', file=log_file)
             preconditions = False
 
           if preconditions:
-            # THIS IS WHERE YOU WILL CALL process_block()
-            pass
-
-            # try:
-            #   # The subplans list comes from the top-level (plan) block_info, even if the rule comes
-            #   # from a nested context.
-            #   subplans_list = context_list[0]['block_info']['plan_info']['subplans']
-            # except KeyError:
-            #   subplans_list = []
-            # plan_enrollment = context_list[0]['block_info']['plan_info']['plan_enrollment']
-            # if plan_enrollment is None:
-            #   plan_enrollment = 0
-            # else:
-            #   plan_enrollment = int(plan_enrollment)
-            # s = '' if plan_enrollment == 1 else 's'
-            # plan_enrollment_str = f'{plan_enrollment:,} student{s}.'
-            # num_subplans = len(subplans_list)
-            # s = '' if num_subplans == 1 else 's'
-            # if num_subplans < num_required:
-            #   print(f'{institution} {requirement_id} Body blocktype: program has {num_subplans} '
-            #         f'subplan{s} but {num_required} needed. {plan_enrollment_str}',
-            #         file=fail_file)
-            # else:
-            #   # Look up all matching subplans
-            #   try:
-            #     subplan_names, enrollments = zip(*[(s['subplan'], s['enrollment'])
-            #                                      for s in subplans_list])
-            #   except ValueError as ve:
-            #     exit(f'{institution} {requirement_id} Unexpected ValueError {ve} in Body blocktype')
-            #   block_value_list = ','.join([f"'{name}'" for name in subplan_names])
-            #   with psycopg.connect('dbname=cuny_curriculum') as conn:
-            #     with conn.cursor(row_factory=namedtuple_row) as cursor:
-            #       cursor.execute(f"""
-            #       select institution, requirement_id, block_type, block_value, title as block_title,
-            #              period_start, period_stop, parse_tree
-            #         from requirement_blocks
-            #        where institution = %s
-            #          and block_type = %s
-            #          and block_value in ({block_value_list})
-            #          and period_stop ~* '^9'
-            #       """, (institution, required_blocktype))
-            #       s = '' if num_required == 1 else 's'
-            #       if cursor.rowcount < num_required:
-            #         print(f'{institution} {requirement_id} Body blocktype {num_required} block{s} '
-            #               f'needed but no more than {cursor.rowcount} found.'
-            #               f' {plan_enrollment_str}', file=fail_file)
-            #       else:
-            #         requirement_name = f'{num_required} concentration{s} required'
-            #         choice_context = {'choice': {'num_choices': num_subplans,
-            #                                      'num_required': num_required,
-            #                                      'index': 0,
-            #                                      'block_type': required_blocktype}}
-            #         block_values = []
-            #         for row in cursor:
-            #           choice_context['choice']['index'] += 1
-            #           if row.block_value in block_values:
-            #             print(f'{institution} {requirement_id} Body blocktype Duplicate '
-            #                   f'{row.block_value} with {row.block_title}. {plan_enrollment_str}',
-            #                   file=fail_file)
-            #             continue
-            #           block_values.append(row.block_value)
-            #           process_block(row, context_list + requirement_context + [choice_context])
+            for active_subplan in active_subplans:
+              process_block(active_subplan['block_info'], context_list + requirement_context)
 
         case 'class_credit':
           print(institution, requirement_id, 'Body class_credit', file=log_file)
@@ -1646,16 +1599,8 @@ if __name__ == "__main__":
                        'With',
                        'Generate Date'])
 
-  missing_plan_req_block_count = 0
-  inactive_plan_req_block_count = 0
-  new_plan_count = 0
-  missing_subplan_req_block_count = 0
-  inactive_subplan_req_block_count = 0
-  new_subplan_count = 0
-  programs_count = 0
-  quarantine_plan_count = 0
-  quarantine_subplan_count = 0
   block_types = defaultdict(int)
+  programs_count = 0
 
   for acad_plan in active_plans():
     programs_count += 1
@@ -1667,7 +1612,6 @@ if __name__ == "__main__":
             f"{requirement_block['block_value']} with block type {requirement_block['block_type']}",
             file=anomaly_file)
     process_block(requirement_block, context_list=[], plan_dict=acad_plan)
-    # process_block(dgw_row, context_list=[], plan_info={'plan_info': plan_dict})
 
   if args.progress:
     print()
@@ -1675,18 +1619,22 @@ if __name__ == "__main__":
   print(f'{programs_count:5,} Blocks')
   for k, v in block_types.items():
     print(f'{v:5,} {k.title()}')
-  print(f'-----\n'
-        f'{missing_plan_req_block_count:5,} Missing plan dgw_req_block\n'
-        f'{inactive_plan_req_block_count:5,} Inactive plan dgw_req_block\n'
-        f'{new_plan_count:5,} Zero-enrollment plan less than {gestation_days} days old\n'
-        f'{missing_subplan_req_block_count:5,} Missing subplan dgw_req_block\n'
-        f'{inactive_subplan_req_block_count:5,} Inactive subplan dgw_req_block\n'
-        f'{new_subplan_count:5,} Zero-enrollment subplan less than {gestation_days} days old\n')
+
   with open('block_counts.txt', 'w') as counts_file:
-    print('Block                   Count', file=counts_file)
+    print('Block           Count', file=counts_file)
     for key, value in reference_counts.items():
-      if value > 1:
-        i, r = key
-        print(f'{i} {r} {value:2}', file=counts_file)
+      i, r = key
+      print(f'{i} {r} {value:2}', file=counts_file)
+
+  with open('caller_lists.txt', 'w') as caller_file:
+    print('Block          List', file=caller_file)
+    for key, values in reference_callers.items():
+      institution, requirement_id = key
+      counts = defaultdict(int)
+      for value in values:
+        counts[value.lineno] += 1
+      counts_str = '; '.join([f'{value.lineno}={counts[value.lineno]}'])
+      print(institution, requirement_id, counts_str, file=caller_file)
+
   if args.timing:
     print(f'{(datetime.datetime.now() - start_time).seconds} seconds')
