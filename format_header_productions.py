@@ -25,11 +25,15 @@
 import os
 import sys
 
-from typing import Any
 
 import format_body_rules
 import format_body_qualifiers
 import format_utils
+import psycopg
+
+from catalogyears import catalog_years
+from psycopg.rows import namedtuple_row
+from typing import Any
 
 DEBUG = os.getenv('DEBUG_HEADER')
 
@@ -68,6 +72,50 @@ def _format_conditional_dict(conditional_dict: dict) -> str:
       else_details += '\n'.join([item for item in dispatch_header_productions(rule_dict)])
     else_details += '</details>'
     return_str += else_details
+
+  return return_str + '</details>'
+
+
+# _format_copy_header()
+# -------------------------------------------------------------------------------------------------
+def _format_copy_header(copy_header_dict: dict) -> str:
+  """
+  """
+  institution = copy_header_dict['institution']
+  requirement_id = copy_header_dict['requirement_id']
+
+  # Get the (parsed) header_list from the target block
+  return_str = f'<details><summary>Header Copied From {requirement_id}</summary>'
+  with psycopg.connect('dbname=cuny_curriculum') as conn:
+    with conn.cursor(row_factory=namedtuple_row) as cursor:
+      cursor.execute("""
+      select institution, requirement_id, block_type, block_value, title as block_title,
+             period_start, period_stop, parse_tree
+        from requirement_blocks
+       where institution = %s
+         and requirement_id = %s
+      """, (institution, requirement_id))
+      if cursor.rowcount != 1:
+        return f'<p class="error">Copy Header references non-existent block ({requirement_id})</p>'
+      row = cursor.fetchone()
+
+      if not row.period_stop.startswith('9'):
+        years_text = catalog_years(row.period_start, row.period_stop).text
+        return f'<p class="error">Copy Header: {requirement_id} is not current ({years_text})</p>'
+
+      parse_tree = row.parse_tree
+      try:
+        header_list = parse_tree['header_list']
+      except KeyError:
+        parse_tree = dgw_parser(institution, requirement_id)
+        if 'error' in parse_tree:
+          return f'<p class="error">Copy Header: Error parsing header from {requirement_id}</p>'
+        else:
+          header_list = parse_tree['header_list']
+
+  # Process the header list
+  for rule_dict in header_list:
+    return_str += '\n'.join([item for item in dispatch_header_productions(rule_dict)])
 
   return return_str + '</details>'
 
@@ -601,7 +649,8 @@ def _nop(nop_dict: dict) -> str:
 
 # dispatch_table {}
 # -------------------------------------------------------------------------------------------------
-dispatch_table = {'header_class_credit': _format_class_credit,
+dispatch_table = {'copy_header': _format_copy_header,
+                  'header_class_credit': _format_class_credit,
                   'conditional_dict': _format_conditional_dict,
                   'header_lastres': _format_lastres,
                   'header_maxclass': _format_maxclass_head,
@@ -630,7 +679,7 @@ dispatch_table = {'header_class_credit': _format_class_credit,
 # -------------------------------------------------------------------------------------------------
 def _dispatch_production(production: str, production_info: Any) -> str:
   """ Dispatch a dict key:value pair, where the key is the name of a production, use the matching
-      _format_xxx function to format the value into an English string.
+      _format_xxx function to format the value into an HTML natural language string.
   """
   if DEBUG:
     print(f'*** _dispatch_production({production}, {production_info=})',
@@ -641,8 +690,8 @@ def _dispatch_production(production: str, production_info: Any) -> str:
 # dispatch_header_productions()
 # -------------------------------------------------------------------------------------------------
 def dispatch_header_productions(node: dict) -> list:
-  """ Given a dict that may or may not have keys for known productions remove all known productions
-      from the dict, and return a list of formatted strings representing them.
+  """ Given a dict that may or may not have keys for known productions return a list of formatted
+      strings representing them.
   """
   if DEBUG:
     print(f'*** dispatch_header_productions(keys: {list(node.keys())}', file=sys.stderr)
