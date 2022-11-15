@@ -14,7 +14,7 @@ from collections import namedtuple
 
 from pgconnection import PgConnection
 from quarantine_manager import QuarantineManager
-from dgw_filter import dgw_filter
+from dgw_preprocessor import dgw_filter
 
 # Parse args
 parser = argparse.ArgumentParser(description='Generate test data for ReqBlock.g4')

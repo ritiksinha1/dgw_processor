@@ -21,16 +21,16 @@ run_args :=
 default: run
 
 run: ./classes/ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | ../dgw_filter.py | $(grun) ReqBlock req_block $(run_args)
+	cat $(TEST_DATA) | ../dgw_preprocessor.py | $(grun) ReqBlock req_block $(run_args)
 
 gui: ./classes/ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | ../dgw_filter.py | $(grun) ReqBlock req_block $(run_args) -gui
+	cat $(TEST_DATA) | ../dgw_preprocessor.py | $(grun) ReqBlock req_block $(run_args) -gui
 
 tree: ./classes/ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | ../dgw_filter.py | $(grun) ReqBlock req_block $(run_args) -tree > tree
+	cat $(TEST_DATA) | ../dgw_preprocessor.py | $(grun) ReqBlock req_block $(run_args) -tree > tree
 
 tokens: ./classes/ReqBlockParser.class $(TEST_DATA)
-	cat $(TEST_DATA) | ../dgw_filter.py | $(grun) ReqBlock req_block $(run_args) -tokens > tokens
+	cat $(TEST_DATA) | ../dgw_preprocessor.py | $(grun) ReqBlock req_block $(run_args) -tokens > tokens
 
 atn: ReqBlock.g4
 	$(antlr4) -atn ReqBlock.g4

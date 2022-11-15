@@ -9,7 +9,7 @@ import sys
 
 from pathlib import Path
 
-from dgw_filter import dgw_filter
+from dgw_preprocessor import dgw_filter
 from quarantine_manager import QuarantineManager
 
 quarantined_dict = QuarantineManager()

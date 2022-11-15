@@ -12,7 +12,7 @@ import time
 from argparse import ArgumentParser
 from pathlib import Path
 
-from dgw_filter import dgw_filter
+from dgw_preprocessor import dgw_filter
 
 DEBUG = os.getenv('DEBUG_RUN')
 
