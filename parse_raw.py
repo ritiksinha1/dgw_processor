@@ -16,6 +16,7 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Parse DGW Scribe Blocks')
   parser.add_argument('-j', '--json', action='store_true')
   parser.add_argument('-r', '--raw_file', default=None)
+  parser.add_argument('-t', '--timelimit', type=int, default=180)
   args = parser.parse_args()
 
   institution = 'TST01'
@@ -28,7 +29,9 @@ if __name__ == '__main__':
 
   text_to_parse = ''.join(raw_file.readlines())
 
-  parse_tree = parse_block(institution, requirement_id, '2000-2022U', '999999', text_to_parse)
+  parse_tree = parse_block(institution, requirement_id,
+                           '2000-2022U', '999999',
+                           text_to_parse, timelimit=args.timelimit)
 
   if args.json:
     with open('extracts/TST01_RA000000.json', 'w') as json_file:
