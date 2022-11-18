@@ -17,6 +17,7 @@ if __name__ == '__main__':
   # You are going to see ANTLR/DGW, etc messages for each file anyway.
   parser = argparse.ArgumentParser('Try to re-parse quarantined dap_req_blocks')
   parser.add_argument('-p', '--show-progress', action='store_true')
+  parser.add_argument('-t', '--timelimit', type=int, default=180)
   args = parser.parse_args()
 
   quarantined_dict = QuarantineManager()
@@ -51,7 +52,7 @@ if __name__ == '__main__':
             print(f'{institution} {requirement_id} Dequarantined: No longer current')
             continue
           parse_tree = parse_block(institution, requirement_id, row.period_start, row.period_stop,
-                                   row.requirement_text)
+                                   row.requirement_text, timelimit=args.timelimit)
           try:
             if error_msg := parse_tree['error']:
               num_fail += 1
