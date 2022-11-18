@@ -23,10 +23,10 @@ import psycopg
 from psycopg.rows import namedtuple_row
 
 from catalogyears import catalog_years
-from dgw_filter import dgw_filter
-from scriberror import ScribeError
 from dgw_handlers import dispatch
+from dgw_preprocessor import dgw_filter
 from quarantine_manager import QuarantineManager
+from scriberror import ScribeError
 
 DEBUG = os.getenv('DEBUG_PARSER')
 
