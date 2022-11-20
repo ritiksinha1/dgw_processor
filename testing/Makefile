@@ -34,8 +34,7 @@ tokens: ./classes/ReqBlockParser.class $(TEST_DATA)
 
 atn: ReqBlock.g4
 	$(antlr4) -atn ReqBlock.g4
-	dot_to_svg
-	ls -lF *.svg
+	ls -lF *.dot | echo "Congratulations, you now have `wc -l` dot files!"
 
 parser: ./classes/ReqBlockParser.class
 
