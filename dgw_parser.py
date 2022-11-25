@@ -111,16 +111,14 @@ def parse_block(institution: str,
     if 'error' not in parse_tree.keys():
       try:
         header_list = []
-        head_ctx = antlr_tree.header()
-        if head_ctx:
+        if head_ctx := antlr_tree.header():
           for child in head_ctx.getChildren():
             obj = dispatch(child, institution, requirement_id)
             if obj != {}:
               header_list.append(obj)
 
         body_list = []
-        body_ctx = antlr_tree.body()
-        if body_ctx:
+        if body_ctx := antlr_tree.body():
           for child in body_ctx.getChildren():
             obj = dispatch(child, institution, requirement_id)
             if obj != {}:
@@ -265,7 +263,7 @@ if __name__ == '__main__':
             continue
 
           print(f'\r{cursor.rownumber:6,}/{cursor.rowcount:,} '
-                f'{row.institution} {row.requirement_id}', end='')
+                f'{row.institution} {row.requirement_id} ', end='')
           parsing_start = time.time()
           parse_tree = parse_block(row.institution,
                                    row.requirement_id,

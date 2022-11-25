@@ -128,30 +128,25 @@ def format_blocktype(blocktype_arg: Any) -> str:
 # -------------------------------------------------------------------------------------------------
 def format_class_credit(class_credit_dict: dict, prefix_str: str = None) -> str:
   """
-      Grammar:
-        body_class_credit : (num_classes | num_credits)
-                            (logical_op (num_classes | num_credits))? course_list_body?
-                            (display | proxy_advice | remark | share | rule_tag | label | tag )*
-                          ;
-      Parse Tree:
+body_class_credit : (num_classes | num_credits)
+                    (logical_op (num_classes | num_credits))? course_list_body?
+                    (display | hide_rule | proxy_advice | remark | share | rule_tag | label | tag )*
+                  ;
 
   """
   assert isinstance(class_credit_dict, dict)
-  # if isinstance(class_credit_arg, list):
-  #   if len(class_credit_arg) > 1:
-  #     print(f'Multiple class_credit requirements not expected {class_credit_arg}', file=sys.stderr)
-  #     return '<p class="error"> Multiple class/credit requirements not expected.</p>'
-  #   else:
-  #     class_credit_dict = class_credit_arg[0]
-  # else:
-  #   class_credit_dict = class_credit_arg
 
   if prefix_str is None:
     prefix_str = ''
 
+  if 'hide_rule' in class_credit_dict.keys():
+    hidden_str = f'<br><span class="error">This rule will not appear in a degree audit.</span>'
+  else:
+    hidden_str = ''
+
   try:
     label_str = class_credit_dict['label']
-    summary = f'<summary>{prefix_str}{label_str}</summary>'
+    summary = f'<summary>{prefix_str}{label_str}{hidden_str}</summary>'
   except KeyError:
     summary = None
 
@@ -376,70 +371,76 @@ def format_course_list_rule(course_list_rule: dict) -> str:
   return f'<details>{summary_element}{course_list_rule_str}</details>'
 
 
-# format_group_requirements()
+# format_group_requirement()
 # -------------------------------------------------------------------------------------------------
-def format_group_requirements(group_requirements: list) -> str:
-  """ Each group requirement has a group_list, label, and number
-      Each group_list is a list of groups(!)
+def format_group_requirement(group_requirement_dict: dict) -> str:
+  """ A group_requirement must have a number and a list of groups; There should be a label, and
+      might be hide_rule, proxy_advice, and/or remarks.
+
       Each group can be a block, blocktype, class_credit, course_list, group_requirement,
-                        noncourse, or rule_complete)
+                        noncourse, or rule_complete
   """
-  assert isinstance(group_requirements, list), (f'{type(group_requirements)} is not list '
-                                                f'in format_group_requirements')
+  assert isinstance(group_requirement_dict, dict), f'{type(group_requirements)} is not doct'
 
-  group_requirements_str = ''
+  try:
+    num_required = int(group_requirement_dict['number'])
+    num_groups = len(group_requirement_dict['group_list'])
+    description = format_utils.format_group_description(num_groups, num_required)
+  except KeyError as err:
+    return f'<p class="error">KeyError in format_group_requirement: {err}</p>'
 
-  for group_requirement in [gr['group_requirement'] for gr in group_requirements]:
-    group_requirement_str = ''
-    try:
-      label_str = group_requirement['label']
-      summary_element = f'<summary>{label_str}</summary>'
-    except KeyError:
-      summary_element = '<summary class="error">Group Requirement Has No Name</summary>'
+  try:
+    label_str = group_requirement_dict['label']
+  except KeyError:
+    label_str = '<span class="error">Group Requirement with No Label</span>'
 
-    num_required = int(group_requirement['number'])
-    num_groups = len(group_requirement['group_list'])
+  return_str = f'<details><summary>{label_str}<br>{description}</summary>'
 
-    try:
-      group_requirement_str += format_remark(group_requirement['remark'])
-    except KeyError:
-      pass
+  if 'hide_rule' in group_requirement_dict.keys():
+    return_str += '<p><em>This requirement is hidden from degree audit reports</em></p>'
 
-    # Standardized descriptioin of the group requirement structure.
-    text_description = format_utils.format_group_requirement(num_groups, num_required)
-    group_requirement_str += f'<p>{text_description}</p>'
+  try:
+    remark_str = group_requirement_dict['remark']
+    return_str += f'<p><strong>Remark: {remark_str}</strong></p>'
+  except KeyError:
+    pass
 
-    for index, requirement in enumerate(group_requirement['group_list']):
+  try:
+    proxy_str = group_requirement_dict['proxy_advice']['proxy_str']
+    return_string += f'<p><strong>Advice: {proxy_str}</strong></p>'
+  except KeyError:
+    pass
 
+  for index, requirements in enumerate(group_requirement_dict['group_list']):
+    for requirement in requirements:
       for key in requirement.keys():
         match key:
           case 'block':
-            group_requirement_str += format_block(requirement[key])
+            return_str += format_block(requirement[key])
           case 'blocktype':
-            group_requirement_str += format_blocktype(requirement[key])
+            return_str += format_blocktype(requirement[key])
           case 'class_credit':
             prefix_str = f'Group {format_utils.to_roman(index + 1)}: '
-            group_requirement_str += format_class_credit(requirement[key], prefix_str)
+            return_str += format_class_credit(requirement[key], prefix_str)
           case 'course_list':
-            group_requirement_str += format_course_list(requirement[key])
+            return_str += format_course_list(requirement[key])
           case 'course_list_rule':
-            group_requirement_str += format_course_list_rule(requirement[key])
+            return_str += format_course_list_rule(requirement[key])
           case 'group_requirements':
-            group_requirement_str += format_group_requirements(requirement[key])
+            return_str += format_group_requirements(requirement[key])
           case 'noncourse':
-            group_requirement_str += format_noncourse(requirement[key])
+            return_str += format_noncourse(requirement[key])
           case 'rule_complete':
-            group_requirement_str += format_rule_complete(requirement[key])
+            return_str += format_rule_complete(requirement[key])
           case 'label':
             pass  # Labels are extracted by one of the above matches
           case _:
             # Remarks will show up here? Or are they handled like labels??
-            group_requirement_str += (f'<p class="error">{key.title()}: '
-                                      f'requirement not implemented yet.</p>'
-                                      f'<pre>{requirement[key]}</pre>')
-    group_requirements_str += f'<details>{summary_element}{group_requirement_str}</details>'
+            return_str += (f'<p class="error">{key.title()}: '
+                           f'requirement not implemented yet.</p>'
+                           f'<pre>{requirement[key]}</pre>')
 
-  return group_requirements_str
+  return return_str + '</details>'
 
 
 # format_noncourse()
@@ -645,7 +646,7 @@ _dispatch_table = {'block': format_block,
                    'conditional_dict': format_conditional_dict,
                    'copy_rules': format_copy_rules,
                    'course_list_rule': format_course_list_rule,
-                   'group_requirements': format_group_requirements,
+                   'group_requirement': format_group_requirement,
                    'noncourse': format_noncourse,
                    'proxy_advice': format_body_qualifiers.format_proxyadvice,
                    'remark': format_remark,

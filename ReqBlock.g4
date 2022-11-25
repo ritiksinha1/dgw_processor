@@ -41,7 +41,7 @@ grammar ReqBlock;
  * The body contains _rules_ that specify what courses must be taken to satisfy the block’s
  * requirements.
  */
-req_block   : .*? BEGIN header (SEMICOLON body)? ENDOT .*? EOF;
+req_block   : .*? BEGIN header (SEMICOLON body)? ENDOT EOF;
 header      : header_rule* ;
 body        : body_rule* ;
 
@@ -80,10 +80,11 @@ discipline      : symbol
                 | BLOCK
                 | IS;
 
-course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
+course_list_body  : course_list ((qualifier tag?) | proxy_advice | remark)*;
 course_list_rule  : course_list_body label?;
 
-qualifier         : maxpassfail
+qualifier         : hide_rule
+                  | maxpassfail
                   | maxperdisc
                   | maxspread
                   | maxtransfer
@@ -101,10 +102,10 @@ qualifier         : maxpassfail
                   | share
                   ;
 
-//  conditional
+//  Conditionals
 //  -----------------------------------------------------------------------------------------------
 /*  Observed anomaly: the documentation says that the begin_if/end_if brackets are optional when
- *. an if or end_if body has only a single rule. Howerver, we see blocks where they are omitted
+ *. an if or end_if body has only a single rule. However, we see blocks where they are omitted
  *  with multiple rules before the ELSE clause. We treat those blocks as un-parsable and quarantine
  *. them.
  */
@@ -112,13 +113,11 @@ begin_if          : BEGINIF | BEGINELSE;
 end_if            : ENDIF | ENDELSE;
 
 header_conditional  : IF expression THEN (header_rule | header_rule_group ) header_else?;
-//                    (proxy_advice)* label? else_head?;
 header_else         : ELSE (header_rule | header_rule_group);
-//                    (proxy_advice | label)*;
 header_rule_group   : (begin_if header_rule+ end_if);
-header_rule         : header_class_credit
+header_rule         : copy_header
+                    | header_class_credit
                     | header_conditional
-                    | header_lastres
                     | header_maxclass
                     | header_maxcredit
                     | header_maxpassfail
@@ -134,19 +133,19 @@ header_rule         : header_class_credit
                     | header_minterm
                     | header_share
                     | header_tag
+                    | lastres
                     | noncourse
                     | optional
                     | proxy_advice
-                    | remark
                     | rule_complete
                     | standalone
                     | under
                     ;
 
 body_conditional  : IF expression THEN (body_rule | body_rule_group) body_else?;
-//                    (qualifier tag? | proxy_advice | remark)* label? body_else?;
+//                    ((qualifier tag?) | proxy_advice | remark)* label? body_else?;
 body_else         : ELSE (body_rule | body_rule_group) ;
-//                    (qualifier tag? | proxy_advice | remark)* label?;
+//                    ((qualifier tag?) | proxy_advice | remark)* label?;
 body_rule_group : (begin_if body_rule+ end_if);
 
 body_rule       : block
@@ -167,8 +166,12 @@ body_rule       : block
 //  -----------------------------------------------------------------------------------------------
 /*  Body Only: n of m groups required
  */
-group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark | label)*;
-groups            : group (logical_op group)*; // But only OR should occur
+group_requirement : NUMBER GROUP group_list ((qualifier tag?)
+                                             | hide_rule
+                                             | proxy_advice
+                                             | remark
+                                             | label)*;
+group_list        : group (logical_op group)*; // But only OR should occur
 group             : LP
                    ( block
                    | blocktype
@@ -176,7 +179,7 @@ group             : LP
                    | course_list_rule
                    | group_requirement
                    | noncourse
-                   | rule_complete ) (qualifier tag? | proxy_advice | remark | label)* RP ;
+                   | rule_complete ) RP ;
 
 //  Rule Subset (body only)
 //  -----------------------------------------------------------------------------------------------
@@ -191,34 +194,52 @@ subset            : BEGINSUB
                     | noncourse
                     | rule_complete
                   )+
-                  ENDSUB (qualifier tag? | proxy_advice | remark | label)*;
+                  ENDSUB ((qualifier tag?)
+                          | hide_rule
+                          | proxy_advice
+                          | remark
+                          | label)*;
 
 // Blocks
 // ------------------------------------------------------------------------------------------------
 /* The Block rule pulls another requirements block into audit.
  * The Blocktype rule specifies that a block with the specified type must exist in the audit.
  */
-block           : NUMBER BLOCK expression rule_tag? proxy_advice? label;
-blocktype       : NUMBER BLOCKTYPE expression proxy_advice? label;
+block           : NUMBER BLOCK expression (hide_rule | proxy_advice | rule_tag | label)*;
+blocktype       : NUMBER BLOCKTYPE expression (hide_rule | proxy_advice | rule_tag | label)*;
 
-/* Other Rules and Rule Components
+// NonCourse & RuleComplete
+// ------------------------------------------------------------------------------------------------
+
+noncourse       : NUMBER NONCOURSE (LP expression RP)? ( hide_rule
+                                                       | proxy_advice
+                                                       | rule_tag
+                                                       | label)*;
+
+rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE)  ( hide_rule
+                                                     | proxy_advice
+                                                     | rule_tag
+                                                     | label)*;
+
+under           : UNDER NUMBER class_or_credit course_list ( proxy_advice | header_label )*;
+
+/* Rule Components
  * ------------------------------------------------------------------------------------------------
  */
 allow_clause        : LP allow NUMBER RP;
 
 header_class_credit : (num_classes | num_credits)
                       (logical_op (num_classes | num_credits))?
-                      (IS? pseudo | display | proxy_advice | header_tag | tag)* header_label?
+                      (IS? pseudo | proxy_advice | header_tag | tag)* header_label?
                     ;
 
 body_class_credit : (num_classes | num_credits)
                     (logical_op (num_classes | num_credits))? course_list_body?
-                    (display | proxy_advice | remark | share | rule_tag | label | tag )*
+                    (hide_rule | proxy_advice | share | rule_tag | (label remark?) | tag )*
                   ;
 
 // Header-only productions: same as rule qualifiers, but these allow a label.
 // ------------------------------------------------------------------------------------------------
-header_lastres      : lastres header_label?;
 header_maxclass     : maxclass header_label?;
 header_maxcredit    : maxcredit header_label?;
 header_maxpassfail  : maxpassfail header_label?;
@@ -234,20 +255,33 @@ header_minres       : minres header_label?;
 header_minterm      : minterm header_label?;
 header_share        : share header_label?;
 
+
 // Other parser productions
 // ------------------------------------------------------------------------------------------------
 allow           : (ALLOW | ACCEPT);
 area_end        : R_SQB;
 area_start      : L_SQB;
 class_or_credit : (CLASS | CREDIT);
+copy_header     : COPY_HEADER expression;
 copy_rules      : COPY_RULES expression SEMICOLON?;
+
 // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
 // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
-display         : DISPLAY string SEMICOLON?;
+
+// The Display text will appear in the same section where the Remarks appear; the Display text does
+// not appear next to the corresponding qualifier.
+
+// Display must come before ProxyAdvice - not after it.
+
+advice          : (PROXY_ADVICE string)+;
+display         : (DISPLAY string)+;
+proxy_advice    : display | display advice | advice ;
+
 header_tag      : (HEADER_TAG nv_pair)+;
-header_label    : LABEL string ;
+header_label    : LABEL string; // No semicolon allowed
+hide_rule       : HIDE_RULE;
 label           : LABEL string SEMICOLON?;
-lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? display* proxy_advice?;
+lastres         : LASTRES NUMBER (OF NUMBER)? class_or_credit course_list? tag? proxy_advice? header_label?;
 maxclass        : MAXCLASS NUMBER course_list? tag?;
 maxcredit       : MAXCREDIT NUMBER course_list? tag?;
 
@@ -259,26 +293,23 @@ maxterm         : MAXTERM NUMBER class_or_credit course_list? tag?;
 maxtransfer     : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
 
 minarea         : MINAREA NUMBER tag?;
-minclass        : MINCLASS NUMBER course_list tag? display* proxy_advice?;
-mincredit       : MINCREDIT NUMBER course_list tag? display* proxy_advice?;
-mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice?;
+minclass        : MINCLASS NUMBER course_list tag? proxy_advice?;
+mincredit       : MINCREDIT NUMBER course_list tag? proxy_advice?;
+mingpa          : MINGPA NUMBER (course_list | expression)? tag? proxy_advice?;
 mingrade        : MINGRADE NUMBER;
-minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
-minres          : MINRES (num_classes | num_credits) display* proxy_advice? tag?;
+minperdisc      : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? proxy_advice?;
+minres          : MINRES (num_classes | num_credits) proxy_advice? tag?;
 minspread       : MINSPREAD NUMBER tag?;
-minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
+minterm         : MINTERM NUMBER class_or_credit course_list? tag? proxy_advice?;
 
-noncourse       : NUMBER NONCOURSE (LP expression RP)? (proxy_advice | rule_tag)* label?;
 num_classes     : NUMBER CLASS allow_clause?;
 num_credits     : NUMBER CREDIT allow_clause?;
-nv_pair         : (nv_lhs '=' nv_rhs?)+;
-nv_lhs          : SYMBOL;
-nv_rhs          : (STRING | SYMBOL);
+nv_pair         : nv_lhs '='? nv_rhs?;  // Allow “SYMBOL” and “SYMBOL =” CUNY quirks
+nv_lhs          : symbol;
+nv_rhs          : (string | symbol);
 optional        : OPTIONAL;
-proxy_advice    : (PROXY_ADVICE STRING)+;
-pseudo          : PSEUDO | PSUEDO;
+pseudo          : PSEUDO;
 remark          : (REMARK string SEMICOLON?)+;
-rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE) (proxy_advice | rule_tag | label)*;
 rule_tag        : (RULE_TAG nv_pair)+;
 samedisc        : SAME_DISC expression tag?;
 share           : (SHARE | DONT_SHARE) (NUMBER class_or_credit)? expression? tag?;
@@ -288,10 +319,10 @@ standalone      : STANDALONE;
 string          : STRING;
 symbol          : SYMBOL; // | (QUOTE SYMBOL QUOTE);
 tag             : TAG (EQ (NUMBER|SYMBOL|CATALOG_NUMBER))?;
-under           : UNDER NUMBER class_or_credit course_list display* proxy_advice? label?;
 with_clause     : LP WITH expression RP;
 
-expression      : expression relational_op expression
+expression      : NONCOURSE expression  // CUNY quirk
+                | expression relational_op expression
                 | expression logical_op expression
                 | expression ',' expression
                 | full_course
@@ -301,12 +332,12 @@ expression      : expression relational_op expression
                 | SYMBOL
                 | string
                 | CATALOG_NUMBER
-                | LP NONCOURSE? expression RP
+                | LP expression RP // I don't see NonCourse as anything but a rule in the manual.
                 ;
 
 // Operators and Separators
 logical_op    : (AND | OR);
-relational_op : (EQ | GE | GT | IS | ISNT | LE | LT | NE);
+relational_op : (EQ | GE | GT | IS | ISNOT | LE | LT | NE);
 list_or       : (COMMA | OR);
 list_and      : (PLUS | AND);
 
@@ -326,12 +357,11 @@ COMMENT         : HASH .*? '\n' -> skip;
 CURLY_BRACES    : [}{] -> skip;
 DECIDE          : '(' [Dd] [Ee] [Cc] [Ii] [Dd] [Ee] .+? ')' -> skip;
 DISPLAY         : [Dd][Ii][Ss][Pp][Ll][Aa][Yy];
-FROM            : [Ff][Rr][Oo][Mm] -> skip;
-FROM_ADVICE     : '-'?[Ff][Rr][Oo][Mm]'-'?[Aa][Dd][Vv][Ii][Cc][Ee] -> skip;
-// Preprocessor (dgw_filter.py) Now strips these
+// Preprocessor Removes these and any curly braces
 // HIDE            : ([Hh][Ii][Dd][Ee])?
 //                  ('-'?[Ff][Rr][Oo][Mm]'-'?[Aa][Dd][Vv][Ii][Cc][Ee])? -> skip;
-HIDE_RULE       : [Hh][Ii][Dd][Ee] '-'? [Rr][Uu][Ll][Ee] -> skip;
+//FROM_ADVICE     : '-'?[Ff][Rr][Oo][Mm]'-'?[Aa][Dd][Vv][Ii][Cc][Ee] -> skip;
+FROM            : [Ff][Rr][Oo][Mm] -> skip;
 HIGH_PRIORITY   : [Hh][Ii][Gg][Hh]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
 IN              : [Ii][Nn] -> skip;
 LOW_PRIORITY    : [Ll][Oo][Ww]([Ee][Ss][Tt])? [ -]? [Pp][Rr][Ii]([Oo][Rr][Ii][Tt][Yy])? -> skip;
@@ -365,6 +395,7 @@ BLOCK           : [Bb][Ll][Oo][Cc][Kk];
 BLOCKTYPE       : BLOCK [Tt][Yy][Pp][Ee][Ss]?;
 CLASS           : [Cc][Ll][Aa][Ss][Ss]([Ee][Ss])?
                 | [Cc][Oo][Uu][Rr][Ss][Ee][Ss]?;
+COPY_HEADER     : [Cc][Oo][Pp][Yy]'-'?[Hh][Ee][Aa][Dd][Ee][Rr]'-'?[Ff][Rr][Oo][Mm];
 COPY_RULES      : [Cc][Oo][Pp][Yy]'-'?[Rr][Uu][Ll][Ee][Ss]?'-'?[Ff][Rr][Oo][Mm];
 CREDIT          : [Cc][Rr][Ee][Dd][Ii][Tt][Ss]?;
 DONT_SHARE      : [Dd][Oo][Nn][Tt]'-'?[Ss][Hh][Aa][Rr][Ee]([Ww][Ii][Tt][Hh])?
@@ -374,6 +405,7 @@ ENDSUB          : [Ee][Nn][Dd][Ss][Uu][Bb];
 EXCEPT          : [Ee][Xx][Cc][Ee][Pp][Tt];
 GROUP           : [Gg][Rr][Oo][Uu][Pp][Ss]?;
 HEADER_TAG      : [Hh][Ee][Aa][Dd][Ee][Rr]'-'?[Tt][Aa][Gg];
+HIDE_RULE       : [Hh][Ii][Dd][Ee]'-'?[Rr][Uu][Ll][Ee];
 INCLUDING       : [Ii][Nn][Cc][Ll][Uu][Dd][Ii][Nn][Gg];
 LABEL           : [Ll][Aa][Bb][Ee][Ll]~'"'*;
 LASTRES         : [Ll][Aa][Ss][Tt][Rr][Ee][Ss];
@@ -396,12 +428,12 @@ MINRES          : [Mm][Ii][Nn][Rr][Ee][Ss];
 MINSPREAD       : [Mm][Ii][Nn][Ss][Pp][Rr][Ee][Aa][Dd];
 MINTERM         : [Mm][Ii][Nn][Tt][Ee][Rr][Mm];
 
-NONCOURSE       : [Nn][Oo][Nn] CLASS;
+NONCOURSE       : [Nn][Oo][Nn]CLASS;  // Allow NonClass(es): CUNY quirk
 OPTIONAL        : [Oo][Pp][Tt][Ii][Oo][Nn][Aa][Ll];
 OF              : [Oo][Ff];
 PROXY_ADVICE    : [Pp][Rr][Oo][Xx][Yy][\-]?[Aa][Dd][Vv][Ii][Cc][Ee];
-PSEUDO          : [Pp][Ss][Ee][Uu][Dd][Oo];
-PSUEDO          : [Pp][Ss][Uu][Ee][Dd][Oo]; // Scribe allows it, so we do too
+// Ellucian accepts common typo for “pseudo,” so we do too
+PSEUDO          : ([Pp][Ss][Ee][Uu][Dd][Oo])|([Pp][Ss][Uu][Ee][Dd][Oo]);
 REMARK          : [Rr][Ee][Mm][Aa][Rr][Kk];
 RULE_COMPLETE   : [Rr][Uu][Ll][Ee]'-'?[Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
 RULE_INCOMPLETE : [Rr][Uu][Ll][Ee]'-'?[Ii][Nn][Cc][Oo][Mm][Pp][Ll][Ee][Tt][Ee];
@@ -422,7 +454,7 @@ ENDELSE         : [Ee][Nn][Dd]ELSE;
 ENDIF           : [Ee][Nn][Dd] IF;
 IF              : [Ii][Ff];
 IS              : ([Ii][Ss])|([Ww][Aa][Ss]);
-ISNT            : ([Ii][Ss][Nn][Oo]?[Tt])|([Ww][Aa][Ss][Nn][Oo]?[Tt]);
+ISNOT           : ([Ii][Ss][Nn][Oo]?[Tt])|([Ww][Aa][Ss][Nn][Oo]?[Tt]);
 THEN            : [Tt][Hh][Ee][Nn];
 
 // List separator aliases

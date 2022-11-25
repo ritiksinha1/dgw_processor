@@ -280,9 +280,9 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
   return html_str
 
 
-# format_group_requirement()
+# format_group_description()
 # -------------------------------------------------------------------------------------------------
-def format_group_requirement(num_groups: int, num_required: int):
+def format_group_description(num_groups: int, num_required: int):
   """ Return an English string that handles various combinations of values.
   """
   assert isinstance(num_groups, int) and isinstance(num_required, int), 'Precondition failed'

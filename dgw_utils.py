@@ -9,7 +9,7 @@ import psycopg
 import sys
 
 from collections import namedtuple
-from traceback import print_stack
+from traceback import print_stack, extract_stack
 from pprint import pprint
 from typing import List, Set, Dict, Tuple, Optional, Union, Any
 
@@ -36,6 +36,25 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
     # Special entry for parsing raw scribe blocks
     block_types[('TST01', 'RA000000')] = 'TESTING'
 conn.close()
+
+
+# called_from()
+# -------------------------------------------------------------------------------------------------
+def called_from(depth=3):
+  """ Tell where the caller was called from (developmental aid)
+  """
+  caller_frames = extract_stack()
+
+  for index in range(-2 - depth, -1):
+    try:
+      function_name = f'{caller_frames[index].name}()'
+      file_name = caller_frames[index].filename
+      file_name = file_name[file_name.rindex('/') + 1:]
+      print(f'Frame: {function_name:20} at {file_name} '
+            f'line {caller_frames[index].lineno}', file=sys.stderr)
+    except IndexError:
+      # Dont kvetch if stack isn’t deep enough
+      pass
 
 
 # _with_clause()
@@ -229,61 +248,70 @@ def concentration_list(condition: str, institution: str, requirement_id: str) ->
 # -------------------------------------------------------------------------------------------------
 def get_nv_pairs(ctx):
   """
-      nv_pair         : (nv_lhs '=' nv_rhs?)+;
+      nv_pair         : nv_lhs ('=' nv_rhs?);
       nv_lhs          : SYMBOL;
       nv_rhs          : (STRING | SYMBOL);
 
-      Given a (list of) name-value pairs, create a list of dicts with the names and values. If the
-      name is RemarkJump or AdviceJump, the URL value might span more than one pair, in which case
-      they are concatenated into a single one.
+      Called from header_tag or rule_tag. In either case collect the nv_pars for the tag and return
+      a dict of their name-value pairs, with multiple pairs with the same name coalesced into a
+      single string value. (Unless the values aren't strings, in which case return a comma-separated
+      list of symbols.)
   """
   if DEBUG:
     print(f'*** get_nv_pairs({ctx}', file=sys.stderr)
 
+  # called_from(5)
+  # print(class_name(ctx).lower(), file=sys.stderr)
   contexts = ctx if isinstance(ctx, list) else [ctx]
-  # Strip quotes from rhs; combine all successive lhs into a single dict key.
 
   pairs_list = []
   for context in contexts:
-    nv_pairs = context.nv_pair()
-    last_lhs = None
+    # print(f'\n  {class_name(context)=}', file=sys.stderr)
+    # print(f'  {context.getText()=}', file=sys.stderr)
+    # print(f'  {dir(context)=}', file=sys.stderr)
+    if nv_pairs_ctx := context.nv_pair():
+      pass
+    else:
+      print(f'No nv_pairs_ctx in context', file=sys.stderr)
+      called_from(5)
+      return pairs_list
+    # print(f'    {class_name(nv_pairs_ctx).lower()=}', file=sys.stderr)
+    last_name = None
     rhs_value = None
-    for nv_pair in nv_pairs:
-      this_lhs = nv_pair.nv_lhs()
-      this_rhs = nv_pair.nv_rhs()
-      assert isinstance(this_lhs, list) and isinstance(this_rhs, list) and len(this_lhs) == 1
-
-      this_lhs = this_lhs[0].getText()
+    for nv_pair_ctx in nv_pairs_ctx:
+      this_name = nv_pair_ctx.nv_lhs().getText()
+      this_value = nv_pair_ctx.nv_rhs()
 
       try:
         # If the righthand side is a string
-        this_rhs = this_rhs[0].STRING().getText().strip('"')
+        this_value = this_value.string().getText().strip('"')
       except AttributeError:
         # If the righthand side is a symbol
-        this_rhs = [this_rhs[0].getText()]
-      except IndexError:
-        # Empty righthand side
-        this_rhs = None
+        try:
+          this_value = [this_value.symbol().getText()]  # a list, for concatenation below
+        except AttributeError:
+          # Empty righthand side
+          this_value = None
 
-      if this_lhs == last_lhs:
+      if this_name == last_name:
         # This might be either string or list concatenation
-        rhs_value += this_rhs
+        rhs_value += this_value
       else:
-        # New lhs
-        if last_lhs is not None:
+        # New name
+        if last_name is not None:
           # Finish up previous one
           if isinstance(rhs_value, list):
             rhs_value = ', '.join(rhs_value)
-          pairs_list.append({last_lhs.title().replace('jump', 'Jump')
-                                             .replace('hint', 'Hint'): rhs_value})
+          pairs_list.append({last_name.title().replace('jump', 'Jump')
+                                              .replace('hint', 'Hint'): rhs_value})
         # Start new one
-        last_lhs = this_lhs
-        rhs_value = this_rhs
+        last_name = this_name
+        rhs_value = this_value
 
     if isinstance(rhs_value, list):
       rhs_value = ', '.join(rhs_value)
-    pairs_list.append({last_lhs.title().replace('jump', 'Jump')
-                                       .replace('hint', 'Hint'): rhs_value})
+    pairs_list.append({last_name.title().replace('jump', 'Jump')
+                                        .replace('hint', 'Hint'): rhs_value})
 
   return pairs_list
 
@@ -359,9 +387,11 @@ def get_rules(ctx, institution, requirement_id):
 
 # get_display()
 # -------------------------------------------------------------------------------------------------
+# THIS HAS BEEN MERGED INTO PROXY-ADVICE. NO REFERENCES TO IT SHOULD ACTUALLY BE CALLED
 def get_display(ctx: Any) -> str:
   """ Gather subsstrings from a list of display items into a single string.
   """
+  exit('GET_DISPLAY() SHOULD NOT BE REFERENCED')
   if ctx.display():
     if isinstance(ctx.display(), list):
       display_str = ''
@@ -384,34 +414,36 @@ def get_label(ctx: Any) -> str:
   if DEBUG:
     print(f'*** get_label({class_name(ctx)})', file=sys.stderr)
 
-  label_ctx = None
+  labels_ctx = None
   try:
+    # The label, if present, is one level down if this context is in the header
     match 'header' if context_path(ctx).lower().startswith('head') else 'body':
+
       case 'header':
         if header_label_ctx := ctx.header_label():
-          if label_ctx := header_label_ctx.label():
-            pass
+          labels_ctx = header_label_ctx.label()
+
       case 'body':
-        if label_ctx := ctx.label():
+        if labels_ctx := ctx.label():
           pass
+
       case _: exit(f'Invalid match: {_}')
+
   except AttributeError:
     pass
 
-  if label_ctx is None:
+  if labels_ctx is None:
     return None
 
-  if isinstance(label_ctx, list):
-    label_str = ''
-    for context in label_ctx:
-      label_str += ' '.join([context.string().getText().strip(' "')])
-  else:
-    label_str = label_ctx.string().getText().strip(' "')
+  if not isinstance(labels_ctx, list):
+    labels_ctx = [labels_ctx]
+
+  label_str = ' '.join([label_ctx.string().getText().strip(' "') for label_ctx in labels_ctx])
 
   if DEBUG:
     print(f'    {label_str=}', file=sys.stderr)
 
-  return label_str
+  return label_str if label_str else None
 
 
 # get_scribed_courses()
@@ -470,8 +502,7 @@ discipline      : symbol
     if catalog_number == '@':
       discipline = '@'
     else:
-      raise ScribeError(f'Invalid first course item, “{catalog_number}”, at '
-                        f'{context_path(first_course)}')
+      raise ScribeError(f'Missing discipline or coma in course list: “{catalog_number}”')
 
   try:
     with_list = first_course.with_clause()
@@ -530,50 +561,53 @@ discipline      : symbol
 # get_groups()
 # -------------------------------------------------------------------------------------------------
 def get_groups(ctx: list, institution: str, requirement_id: str) -> list:
-  """ Given a groups ctx, return a list of groups.
-        group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark)* label? ;
-        groups            : group (logical_op group)*; // But only OR should occur
-        group             : LP
-                           ( block
-                           | blocktype
-                           | body_class_credit
-                           | course_list_rule
-                           | group_requirement
-                           | noncourse
-                           | rule_complete ) (qualifier tag? | proxy_advice | remark)* label?
-                           RP ;
+  """ Given a group_list ctx, return a list of groups. Each group is a list of requirements.
+
+      group_requirement : NUMBER GROUP group_list ((qualifier tag?)
+                                                   | hide_rule
+                                                   | proxy_advice
+                                                   | remark
+                                                   | label)*;
+      group_list        : group (logical_op group)*; // But only OR should occur
+      group             : LP
+                         ( block
+                         | blocktype
+                         | body_class_credit
+                         | course_list_rule
+                         | group_requirement
+                         | noncourse
+                         | rule_complete ) RP ;
   """
   if DEBUG:
-    print(f'*** getgroups({class_name(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
-    print(context_path(ctx))
-    print_stack()
+    print(f'*** get_sgroups({class_name(ctx)}, {institution}, {requirement_id})', file=sys.stderr)
 
-  return_dict = {'group_list': []}
-  for group_ctx in ctx.group():
-    children = group_ctx.getChildren()
+  assert class_name(ctx).lower() == 'group_list'
 
-    for child in children:
-      # Ignore LP | RP
-      item_class = class_name(child)
+  return_list = []
+  for group_ctx in ctx.group():   # Ignore logical_op items
+    requirement_list = []
+    requirements = group_ctx.getChildren()
+    for requirement_ctx in requirements:
+      # Verify, but ignore, LP and RP
+      item_class = class_name(requirement_ctx)
       if item_class.lower() == 'terminalnodeimpl':
+        assert requirement_ctx.getText() in ['(', ')']
         continue
 
-      group_dict = dict()
-      group_dict.update(get_qualifiers(child, institution, requirement_id))
-      try:
-        group_dict.update(dgw_handlers.remark(child.remark(), institution, requirement_id))
-      except AttributeError:
-        pass
-      if class_name(child).lower() in dgw_handlers.dispatch_body.keys():
-        group_dict.update(dgw_handlers.dispatch(child, institution, requirement_id))
+      if class_name(requirement_ctx).lower() in dgw_handlers.dispatch_body.keys():
+        requirement_list.append(dgw_handlers.dispatch(requirement_ctx,
+                                                      institution,
+                                                      requirement_id))
       else:
-        print(f'xxxx {class_name(child)} is not a dispatchable body key', file=sys.stderr)
-      return_dict['group_list'].append(group_dict)
+        print(f'xxxx {class_name(requirement_ctx)} is not a dispatchable body key: '
+              f'{requirement_ctx.getText()}', file=sys.stderr)
+
+    return_list.append(requirement_list)
 
   if DEBUG:
-    print('   ', return_dict, file=sys.stderr)
+    print('   ', return_list, file=sys.stderr)
 
-  return return_dict
+  return return_list
 
 
 # get_qualifiers()
@@ -588,7 +622,8 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
       the same qualifier to be repeated.
 
   The list of qualifiers recognized here:
-  qualifier       : maxpassfail
+  qualifier       : hide_rule
+                  | maxpassfail
                   | maxperdisc
                   | maxspread
                   | maxtransfer
@@ -607,16 +642,17 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
 
   if DEBUG:
     print(f'*** get_qualifiers({class_name(ctx)=})', file=sys.stderr)
-    print_stack()
+    # print_stack()
 
-  valid_qualifiers = ['maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer', 'minarea',
-                      'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc', 'minspread',
-                      'proxy_advice', 'rule_tag', 'samedisc', 'share']
+  valid_qualifiers = ['hide_rule', 'maxpassfail', 'maxperdisc', 'maxspread', 'maxtransfer',
+                      'minarea', 'minclass', 'mincredit', 'mingpa', 'mingrade', 'minperdisc',
+                      'minspread', 'proxy_advice', 'rule_tag', 'samedisc', 'share']
 
   if isinstance(ctx, list):
     contexts = ctx
   else:
     contexts = [ctx]
+
   qualifier_dict = dict()
   for context in contexts:
     if class_name(context) == 'Qualifier':
@@ -665,16 +701,16 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
             elif valid_qualifier in ['maxspread', 'minarea', 'mingrade', 'minspread']:
               qualifier_dict[valid_qualifier] = {'number': qualifier_ctx.NUMBER().getText()}
 
-            # minclass        : MINCLASS NUMBER course_list tag? display* label?;
-            # mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
+            # minclass        : MINCLASS NUMBER course_list tag? proxy_advice?;
+            # mincredit       : MINCREDIT NUMBER course_list tag? proxy_advice?;
             elif valid_qualifier in ['minclass', 'mincredit']:
               # build_course_list returns its own dict, with "course_list" as the key, so we start
               # with that, and add the number, display, and label elements to that.
               qualifier_dict[valid_qualifier] = build_course_list(qualifier_ctx.course_list(),
                                                                   institution, requirement_id)
               qualifier_dict[valid_qualifier]['number'] = qualifier_ctx.NUMBER().getText()
-              if qualifier_ctx.display():
-                qualifier_dict[valid_qualifier]['display'] = get_display(qualifier_ctx)
+              if proxy_ctx := qualifier_ctx.proxy_advice():
+                qualifier_dict[valid_qualifier].update(proxy_ctx, intitution, requirement_id)
 
             # mingpa : MINGPA NUMBER (course_list | expression)? tag? display* proxy_advice? label?;
             elif valid_qualifier == 'mingpa':
@@ -696,6 +732,9 @@ def get_qualifiers(ctx: any, institution: str, requirement_id: str) -> list:
 
             elif valid_qualifier == 'share':
               qualifier_dict.update(dgw_handlers.share(qualifier_ctx, institution, requirement_id))
+
+            elif valid_qualifier == 'hide_rule':
+              qualifier_dict['hide_rule'] = True
 
             else:
               print(f'Unexpected qualifier: {valid_qualifier} in {requirement_id} for '

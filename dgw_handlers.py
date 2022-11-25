@@ -31,6 +31,7 @@ from pprint import pprint
 from psycopg.rows import namedtuple_row
 
 DEBUG = os.getenv('DEBUG_HANDLERS')
+ANALYZE_EXPRESSIONS = os.getenv('ANALYZE_EXPRESSIONS')
 
 
 class ParseError(Exception):
@@ -67,8 +68,8 @@ def block(ctx, institution, requirement_id):
   return_dict['block_value'] = symbols[1].upper().strip()
   return_dict['institution'] = institution
 
-  if ctx.rule_tag():
-    return_dict['rule_tag'] = get_nv_pairs(ctx.rule_tag())
+  if rule_tag_ctx := ctx.rule_tag():
+    return_dict.update(rule_tag(rule_tag_ctx, institution, requirement_id))
 
   return {'block': return_dict}
 
@@ -96,13 +97,28 @@ def blocktype(ctx, institution, requirement_id):
   return {'blocktype': return_dict}
 
 
+# copy_header()
+# -------------------------------------------------------------------------------------------------
+def copy_header(ctx, institution, requirement_id):
+  """
+      copy_header     : COPY_HEADER expression;
+        Expect the expression to be (RAnnnnnn)
+  """
+  requirement_id = ctx.expression().getText().strip(')(')
+
+  return {'copy_header': {'institution': institution,
+                          'requirement_id': requirement_id
+                          }
+          }
+
+
 # header_class_credit()
 # -------------------------------------------------------------------------------------------------
 def header_class_credit(ctx, institution, requirement_id):
   """
-      header_class_credit   : (num_classes | num_credits)
+      header_class_credit : (num_classes | num_credits)
                             (logical_op (num_classes | num_credits))?
-                            (IS? pseudo | display | proxy_advice | header_tag | label | tag)*
+                            (IS? pseudo | proxy_advice | header_tag | tag)* header_label?
                           ;
 
       num_classes         : NUMBER CLASS allow_clause?;
@@ -117,14 +133,11 @@ def header_class_credit(ctx, institution, requirement_id):
 
   return_dict['is_pseudo'] = True if ctx.pseudo() else False
 
-  if ctx.header_tag():
-    return_dict['header_tag'] = get_nv_pairs(ctx.header_tag())
+  if header_tag_ctx := ctx.header_tag():
+    return_dict['header_tag'] = get_nv_pairs(header_tag_ctx)
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
-
-  if ctx.proxy_advice():
-    return_dict.update(proxy_advice(ctx.proxy_advice(), institution, requirement_id))
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   return {'header_class_credit': return_dict}
 
@@ -133,21 +146,24 @@ def header_class_credit(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def body_class_credit(ctx, institution, requirement_id):
   """
-body_class_credit : (num_classes | num_credits)
-                    (logical_op (num_classes | num_credits))? course_list_body?
-                    (display | proxy_advice | remark | share | rule_tag | label | tag )*
-                  ;
+      body_class_credit : (num_classes | num_credits)
+                          (logical_op (num_classes | num_credits))? course_list_body?
+                          (hide_rule | proxy_advice | share | rule_tag | (label remark?) | tag )*
+                        ;
 
       num_classes         : NUMBER CLASS allow_clause?;
       num_credits         : NUMBER CREDIT allow_clause?;
 
-      course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
+      course_list_body  : course_list ((qualifier tag?) | proxy_advice | remark)*;
       course_list_rule  : course_list_body label?;  # (Not actually relevant here)
 
     Ignore tag.
   """
 
   return_dict = {'label': get_label(ctx)}
+
+  if ctx.hide_rule():
+    return_dict['hide_rule'] = True
 
   return_dict.update(num_class_or_num_credit(ctx))
 
@@ -159,18 +175,11 @@ body_class_credit : (num_classes | num_credits)
     return_dict.update(build_course_list(ctx.course_list_body().course_list(),
                                          institution, requirement_id))
 
-  # if ctx.pseudo():
-  #   return_dict['is_pseudo'] = True
+  if rule_tag_ctx := ctx.rule_tag():
+    return_dict.update(rule_tag(rule_tag_ctx, institution, requirment_id))
 
-  # display is student-specific
-  # if ctx.display():
-  #   return_dict['display'] = get_display(ctx)
-
-  if ctx.rule_tag():
-    return_dict['rule_tag'] = get_nv_pairs(ctx.rule_tag())
-
-  if ctx.proxy_advice():
-    return_dict.update(proxy_advice(ctx.proxy_advice(), institution, requirement_id))
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   if ctx.remark():
     return_dict['remark'] = ' '.join([s.getText().strip(' "')
@@ -190,39 +199,44 @@ body_class_credit : (num_classes | num_credits)
 # -------------------------------------------------------------------------------------------------
 def header_conditional(ctx, institution, requirement_id):
   """
-      header_conditional    : IF expression THEN (head_rule | head_rule_group) else_head?
-      else_head       : ELSE (head_rule | head_rule_group) ;
-      head_rule_group : (begin_if head_rule+ end_if);
-      head_rule         : header_conditional
-                        | block
-                        | blocktype
-                        | header_class_credit
-                        | copy_rules
-                        | lastres
-                        | maxcredit
-                        | header_maxpassfail
-                        | maxterm
-                        | header_maxtransfer
-                        | header_minclass
-                        | header_mincredit
-                        | mingpa
-                        | mingrade
-                        | header_minperdisc
-                        | minres
-                        | minterm
-                        | noncourse
-                        | proxy_advice
-                        | remark
-                        | rule_complete
-                        | header_share
-                        ;
+  header_conditional  : IF expression THEN (header_rule | header_rule_group ) header_else?;
+  header_else         : ELSE (header_rule | header_rule_group);
+  header_rule_group   : (begin_if header_rule+ end_if);
+  header_rule         : copy_header
+                      | header_class_credit
+                      | header_conditional
+                      | header_maxclass
+                      | header_maxcredit
+                      | header_maxpassfail
+                      | header_maxperdisc
+                      | header_maxterm
+                      | header_maxtransfer
+                      | header_minclass
+                      | header_mincredit
+                      | header_mingpa
+                      | header_mingrade
+                      | header_minperdisc
+                      | header_minres
+                      | header_minterm
+                      | header_share
+                      | header_tag
+                      | lastres
+                      | noncourse
+                      | optional
+                      | proxy_advice
+                      | rule_complete
+                      | standalone
+                      | under
+                      ;
   """
   if DEBUG:
     print(f'*** header_conditional({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
   return_dict = {'condition_str': expression_to_str(ctx.expression())}
-  analyze_expression(ctx.expression(), institution, requirement_id)
+
+  if ANALYZE_EXPRESSIONS:
+    analyze_expression(ctx.expression(), institution, requirement_id)
 
   if ctx.header_rule():
     return_dict['if_true'] = get_rules(ctx.header_rule(), institution, requirement_id)
@@ -276,7 +290,9 @@ def body_conditional(ctx, institution, requirement_id):
 
   condition_str = expression_to_str(ctx.expression())
   return_dict['condition_str'] = condition_str
-  analyze_expression(ctx.expression(), institution, requirement_id)
+
+  if ANALYZE_EXPRESSIONS:
+    analyze_expression(ctx.expression(), institution, requirement_id)
 
   if ctx.body_rule():
     return_dict['if_true'] = get_rules(ctx.body_rule(), institution, requirement_id)
@@ -353,7 +369,7 @@ def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
     CSI01 RA 000544 is the only block observed to use this feature at the top level of the body.
     Update: now seeing it in jjc 1573 (instead)
 
-    course_list_body  : course_list (qualifier tag? | proxy_advice | remark)*;
+    course_list_body  : course_list ((qualifier tag?) | proxy_advice | remark)*;
     course_list_rule  : course_list_body label?;
     course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
   """
@@ -368,9 +384,8 @@ def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
     return_dict.update(get_qualifiers(course_list_body_ctx.qualifier(),
                                       institution, requirement_id))
 
-  if course_list_body_ctx.proxy_advice():
-    return_dict.update(proxy_advice(course_list_body_ctx.proxy_advice(),
-                                    institution, requirement_id))
+  if proxy_ctx := course_list_body_ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   if course_list_body_ctx.remark():
     return_dict['remark'] = ' '.join([s.getText().strip(' "')
@@ -384,17 +399,20 @@ def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
 # -------------------------------------------------------------------------------------------------
 def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
   """
-        group_requirement : NUMBER GROUP groups (qualifier tag? | proxy_advice | remark)* label? ;
-        groups            : group (logical_op group)*; // But only OR should occur
-        group             : LP
-                           ( block
-                           | blocktype
-                           | body_class_credit
-                           | course_list_rule
-                           | group_requirement
-                           | noncourse
-                           | rule_complete ) (qualifier tag? | proxy_advice | remark)* label?
-                           RP ;
+      group_requirement : NUMBER GROUP group_list ((qualifier tag?)
+                                                   | hide_rule
+                                                   | proxy_advice
+                                                   | remark
+                                                   | label)*;
+      group_list        : group (logical_op group)*; // But only OR should occur
+      group             : LP
+                         ( block
+                         | blocktype
+                         | body_class_credit
+                         | course_list_rule
+                         | group_requirement
+                         | noncourse
+                         | rule_complete ) RP ;
 
   “Qualifiers that must be applied to all rules in the group list must occur after the last right
   parenthesis and before the label at the end of the Group statement. Qualifiers that apply only to
@@ -408,32 +426,26 @@ def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
     print(f'*** group_requirement({class_name(ctx)}, 'f'{institution}, {requirement_id})',
           file=sys.stderr)
 
-  if isinstance(ctx, list):
-    group_requirement_contexts = ctx
-  else:
-    group_requirement_contexts = [ctx]
+  assert class_name(ctx).lower() == 'group_requirement'
 
-  requirement_list = []
-  for group_requirement_ctx in group_requirement_contexts:
-    requirement_list_dict = {'label': get_label(group_requirement_ctx)}
-    requirement_list_dict.update(remark(group_requirement_ctx.remark(),
-                                        institution, requirement_id))
-    requirement_list_dict.update(get_qualifiers(group_requirement_ctx.qualifier(),
-                                                institution, requirement_id))
+  # The number of groups required is required; the label is semi-required.
+  group_requirement_dict = {'number': int(ctx.NUMBER().getText()),
+                            'label': get_label(ctx)}
 
-    requirement_list_dict['number'] = group_requirement_ctx.NUMBER().getText()
+  group_requirement_dict.update(get_qualifiers(ctx.qualifier(), institution, requirement_id))
 
-    requirement_list_dict.update(get_groups(group_requirement_ctx.groups(),
-                                            institution, requirement_id))
+  if ctx.hide_rule():
+    group_requirement_dict['hide_rule'] = True
 
-    if group_requirement_ctx.proxy_advice():
-      return_dict.update(proxy_advice(group_requirement_ctx.proxy_advice(),
-                                      institution,
-                                      requirement_id))
+  if proxy_ctx := ctx.proxy_advice():
+    group_requirement_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
-    requirement_list.append({'group_requirement': requirement_list_dict})
+  if remark_ctx := ctx.remark():
+    group_requirement_dict.update(remark(remark_ctx, institution, requirement_id))
 
-  return {'group_requirements': requirement_list}
+  group_requirement_dict['group_list'] = get_groups(ctx.group_list(), institution, requirement_id)
+
+  return {'group_requirement': group_requirement_dict}
 
 
 # header_tag()
@@ -452,11 +464,12 @@ def header_tag(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def rule_tag(ctx, institution, requirement_id):
   """ rule_tag  : (RULE_TAG nv_pair)+;
-      nv_pair   : nv_lhs '=' nv_rhs?;
+      nv_pair   : nv_lhs ('=' nv_rhs)?;
   """
   if DEBUG:
     print(f'*** rule_tag({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
+
   return {'rule_tag': get_nv_pairs(ctx)}
 
 
@@ -464,9 +477,10 @@ def rule_tag(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def lastres(ctx, institution, requirement_id):
   """
-      lastres         : LASTRES NUMBER (OF NUMBER)?
-                        class_or_credit
-                        course_list? tag? display* proxy_advice?;
+      This happens only in headers
+
+      lastres : LASTRES NUMBER (OF NUMBER)? \
+                                    class_or_credit course_list? tag? proxy_advice? header_label?;
   """
   if DEBUG:
     print(f'*** lastres({class_name(ctx)}, {institution}, {requirement_id})',
@@ -484,31 +498,13 @@ def lastres(ctx, institution, requirement_id):
   if ctx.course_list():
     return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  if ctx.proxy_advice():
-    return_dict.update(proxy_advice(ctx.proxy_advice(), institution, requirement_id))
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  if label_str := get_label(ctx):
+    return_dict['label'] = label_str
 
   return {'lastres': return_dict}
-
-
-# header_lastres()
-# -------------------------------------------------------------------------------------------------
-def header_lastres(ctx, institution, requirement_id):
-  """
-      header_lastres    : lastres label?;
-  """
-  if DEBUG:
-    print(f'*** header_lastres({class_name(ctx)}, {institution}, {requirement_id})',
-          file=sys.stderr)
-
-  return_dict = {'label': get_label(ctx)}
-
-  lastres_ctx = ctx.lastres()
-  return_dict.update(lastres(lastres_ctx, institution, requirement_id))
-
-  return {'header_lastres': return_dict}
 
 
 # maxclass()
@@ -732,7 +728,7 @@ def header_maxtransfer(ctx, institution, requirement_id):
 # --------------------------------------------------------------------------------------------------
 def minclass(ctx, institution, requirement_id):
   """
-      minclass        : MINCLASS NUMBER course_list tag? display* label?;
+      minclass        : MINCLASS NUMBER course_list tag? proxy_advice?;
   """
   if DEBUG:
     print(f'*** minclass({class_name(ctx)}, {institution}, {requirement_id})',
@@ -741,8 +737,8 @@ def minclass(ctx, institution, requirement_id):
   return_dict = {'number': ctx.NUMBER().getText()}
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   return {'minclass': return_dict}
 
@@ -770,7 +766,7 @@ def header_minclass(ctx, institution, requirement_id):
 # --------------------------------------------------------------------------------------------------
 def mincredit(ctx, institution, requirement_id):
   """
-      mincredit       : MINCREDIT NUMBER course_list tag? display* label?;
+      mincredit       : MINCREDIT NUMBER course_list tag? proxy_advice?;
   """
   if DEBUG:
     print(f'*** mincredit({class_name(ctx)}, {institution}, {requirement_id})',
@@ -779,8 +775,8 @@ def mincredit(ctx, institution, requirement_id):
   return_dict = {'number': ctx.NUMBER().getText()}
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   return {'mincredit': return_dict}
 
@@ -789,7 +785,7 @@ def mincredit(ctx, institution, requirement_id):
 # --------------------------------------------------------------------------------------------------
 def header_mincredit(ctx, institution, requirement_id):
   """
-      header_mincredit     : mincredit label?;
+      header_mincredit     : mincredit header_label?;
   """
   if DEBUG:
     print(f'*** header_mincredit({class_name(ctx)}, {institution}, {requirement_id})',
@@ -808,7 +804,7 @@ def header_mincredit(ctx, institution, requirement_id):
 # --------------------------------------------------------------------------------------------------
 def mingpa(ctx, institution, requirement_id):
   """
-      mingpa          : MINGPA NUMBER (course_list | expression)? tag? display* label?;
+      mingpa : MINGPA NUMBER (course_list | expression)? tag? proxy_advice?;
   """
   if DEBUG:
     print(f'*** mingpa({class_name(ctx)}, {institution}, {requirement_id})',
@@ -822,8 +818,8 @@ def mingpa(ctx, institution, requirement_id):
   if ctx.expression():
     return_dict['expression'] = ctx.expression().getText()
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   return {'mingpa': return_dict}
 
@@ -832,7 +828,7 @@ def mingpa(ctx, institution, requirement_id):
 # --------------------------------------------------------------------------------------------------
 def header_mingpa(ctx, institution, requirement_id):
   """
-      header_mingpa     : mingpa label?;
+      header_mingpa     : mingpa header_label?;
   """
   if DEBUG:
     print(f'*** header_mingpa({class_name(ctx)}, {institution}, {requirement_id})',
@@ -884,7 +880,8 @@ def header_mingrade(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def minperdisc(ctx, institution, requirement_id):
   """
-      minperdisc  : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP tag? display*;
+      minperdisc : MINPERDISC NUMBER class_or_credit  LP SYMBOL (list_or SYMBOL)* RP \
+                                                                                tag? proxy_advice?;
   """
   if DEBUG:
     print(f'*** minperdisc({class_name(ctx)}, {institution}, {requirement_id})',
@@ -894,6 +891,9 @@ def minperdisc(ctx, institution, requirement_id):
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict['discipline'] = [discp.getText().upper() for discp in ctx.SYMBOL()]
 
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
+
   return {'minperdisc': return_dict}
 
 
@@ -901,7 +901,7 @@ def minperdisc(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def header_minperdisc(ctx, institution, requirement_id):
   """
-      header_minperdisc   : minperdisc label?;
+      header_minperdisc   : minperdisc header_label?;
   """
   if DEBUG:
     print(f'*** header_minperdisc({class_name(ctx)}, {institution}, {requirement_id})',
@@ -920,9 +920,9 @@ def header_minperdisc(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def minres(ctx, institution, requirement_id):
   """
-      minres      : MINRES (num_classes | num_credits) display* tag?;
+      minres      : MINRES (num_classes | num_credits) proxy_advice? tag?;
 
-      This is actually only a header production
+      (This is actually only a header production)
   """
   if DEBUG:
     print(f'*** minres({class_name(ctx)}, {institution}, {requirement_id})',
@@ -930,8 +930,8 @@ def minres(ctx, institution, requirement_id):
 
   return_dict = num_class_or_num_credit(ctx)
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   return {'minres': return_dict}
 
@@ -940,7 +940,7 @@ def minres(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def header_minres(ctx, institution, requirement_id):
   """
-      header_minres : minres label?;
+      header_minres : minres header_label?;
   """
   if DEBUG:
     print(f'*** header_minres({class_name(ctx)}, {institution}, {requirement_id})',
@@ -959,7 +959,7 @@ def header_minres(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def minterm(ctx, institution, requirement_id):
   """
-      minterm         : MINTERM NUMBER class_or_credit course_list? tag? display*;
+      minterm         : MINTERM NUMBER class_or_credit course_list? tag? proxy_advice?;
   """
   if DEBUG:
     print(f'*** minterm({class_name(ctx)}, {institution}, {requirement_id})',
@@ -968,8 +968,8 @@ def minterm(ctx, institution, requirement_id):
   return_dict = {'number': ctx.NUMBER().getText(),
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   return {'minterm': return_dict}
 
@@ -997,7 +997,8 @@ def header_minterm(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def noncourse(ctx, institution, requirement_id):
   """
-      noncourse       : NUMBER NONCOURSE (LP expression RP)? label?;
+      noncourse : NUMBER NONCOURSE (LP expression RP)? (hide_rule
+                                                       | proxy_advice | rule_tag | label)*;
   """
   if DEBUG:
     print(f'*** noncourse({class_name(ctx)}, {institution}, {requirement_id})',
@@ -1010,6 +1011,15 @@ def noncourse(ctx, institution, requirement_id):
     return_dict['expression'] = ctx.expression().getText()
   except AttributeError:
     return_dict['expression'] = None
+
+  if ctx.hide_rule():
+    return_dict['hide_rule'] = True
+
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
+
+  if rule_tag_ctx := ctx.rule_tag():
+    return_dict.update(rule_tag(rule_tag_ctx, institution, requirement_id))
 
   return {'noncourse': return_dict}
 
@@ -1028,22 +1038,37 @@ def optional(ctx, institution, requirement_id):
 
 # proxy_advice()
 # -------------------------------------------------------------------------------------------------
-def proxy_advice(proxy_ctx, institution, requirement_id):
-  """ proxy_advice    : (PROXY_ADVICE STRING)+;
+def proxy_advice(ctx, institution, requirement_id):
+  """
+      advice          : (PROXY_ADVICE string)+;
+      display         : (DISPLAY string)+;
+      proxy_advice    : display | display advice | advice ;
+
+      // Display can be used on the following block header qualifiers: MinGPA, MinRes, LastRes,
+      // MinCredits, MinClasses, MinPerDisc, MinTerm, Under, Credits/Classes.
+      // The Display text will appear in the same section where the Remarks appear; the Display text
+      // does not appear next to the corresponding qualifier.
+      // Display must come before ProxyAdvice - not after it.
+      2022-11-16: Folding display into proxy_advice. Merge them into a single proxy_advice object;
+                  note that Display does allow template replacement, just like proxy-advice.
   """
   if DEBUG:
     print(f'*** proxy_advice({class_name(ctx)}, {institution}, {requirement_id})',
           file=sys.stderr)
 
-  proxy_contexts = proxy_ctx if isinstance(proxy_ctx, list) else [proxy_ctx]
-  proxy_str = ''
-  for proxy_context in proxy_contexts:
-    proxy_str += ' '.join([c.getText().strip(' "') for c in proxy_context.STRING()])
-  proxy_str = proxy_str.replace('  ', ' ')
-  proxy_args = re.findall(r'<.*?>', proxy_str)
+  advice_str = ''
+  contexts = ctx if isinstance(ctx, list) else [ctx]
+  for context in contexts:
+    if display_context := context.display():
+      advice_str += ' '.join([c.getText().strip(' "') for c in display_context.string()])
+    if advice_context := context.advice():
+      advice_str += ' '.join([c.getText().strip(' "') for c in advice_context.string()])
 
-  return_dict = {'proxy_advice': {'proxy_str': proxy_str,
-                                  'proxy_args': [arg.strip('><') for arg in proxy_args]}}
+  advice_str = advice_str.replace('  ', ' ')
+  proxy_args = re.findall(r'<.*?>', advice_str)
+
+  return_dict = {'proxy_advice': {'advice_str': advice_str,
+                                  'arg_names': [arg.strip('><') for arg in proxy_args]}}
 
   return return_dict
 
@@ -1082,11 +1107,11 @@ def rule_complete(ctx, institution, requirement_id):
 
   return_dict['is_complete'] = True if ctx.RULE_COMPLETE() else False
 
-  if ctx.rule_tag():
-    return_dict['rule_tag'] = get_nv_pairs(ctx.rule_tag())
+  if rule_tag_ctx := ctx.rule_tag():
+    return_dict.update(rule_tag(rule_tag_ctx, institution, requirement_id))
 
-  if ctx.proxy_advice():
-    return_dict.update(proxy_advice(ctx.proxy_advice(), institution, requirement_id))
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   return {'rule_complete': return_dict}
 
@@ -1159,11 +1184,11 @@ def subset(ctx, institution, requirement_id):
                           | body_class_credit     class_credit
                           | copy_rules            copy_rules
                           | course_list_rule      course_list_rule
-                          | group_requirement     group_requirements
+                          | group_requirement     group_requirement
                           | noncourse             noncourse
                           | rule_complete         rule_complete
                         )+
-                        ENDSUB (qualifier tag? | proxy_advice | remark | label)*;
+                        ENDSUB ((qualifier tag?) | proxy_advice | remark | label)*;
       The label and qualifiers, remararks, and proxy_advice (if any) are top-level keys in the
       returned dict. The others are returned in a list, using the list to maintain the sequence
       in which they appear in the subset.
@@ -1244,10 +1269,9 @@ def subset(ctx, institution, requirement_id):
 # -------------------------------------------------------------------------------------------------
 def under(ctx, institution, requirement_id):
   """
-      under           : UNDER NUMBER class_or_credit course_list display* label;
+      under           : UNDER NUMBER class_or_credit course_list proxy_advice? header_label?;
 
-      This seems to be the only item in the header that can have a label. But, also, it is normally
-      used in Award blocks, not Degree, major, minor, concentrations.
+      It is normally used in Award blocks, not Degree, major, minor, concentrations.
   """
   if DEBUG:
     print(f'*** under({class_name(ctx)}, {institution}, {requirement_id})',
@@ -1258,8 +1282,8 @@ def under(ctx, institution, requirement_id):
                  'class_or_credit': class_or_credit(ctx.class_or_credit())}
   return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
 
-  if ctx.display():
-    return_dict['display'] = get_display(ctx)
+  if proxy_ctx := ctx.proxy_advice():
+    return_dict.update(proxy_advice(proxy_ctx, institution, requirement_id))
 
   return {'under': return_dict}
 
@@ -1268,9 +1292,9 @@ def under(ctx, institution, requirement_id):
 # =================================================================================================
 """ There are two in case conditional and Share need to be handled differently in Head and Body.
 """
-dispatch_header = {'header_class_credit': header_class_credit,
+dispatch_header = {'copy_header': copy_header,
+                   'header_class_credit': header_class_credit,
                    'header_conditional': header_conditional,
-                   'header_lastres': header_lastres,
                    'header_maxclass': header_maxclass,
                    'header_maxcredit': header_maxcredit,
                    'header_maxpassfail': header_maxpassfail,
@@ -1286,6 +1310,7 @@ dispatch_header = {'header_class_credit': header_class_credit,
                    'header_minterm': header_minterm,
                    'header_share': header_share,
                    'header_tag': header_tag,
+                   'lastres': lastres,
                    'optional': optional,
                    'proxy_advice': proxy_advice,
                    'remark': remark,

@@ -139,8 +139,8 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#groups.
-    def visitGroups(self, ctx:ReqBlockParser.GroupsContext):
+    # Visit a parse tree produced by ReqBlockParser#group_list.
+    def visitGroup_list(self, ctx:ReqBlockParser.Group_listContext):
         return self.visitChildren(ctx)
 
 
@@ -164,6 +164,21 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#noncourse.
+    def visitNoncourse(self, ctx:ReqBlockParser.NoncourseContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#rule_complete.
+    def visitRule_complete(self, ctx:ReqBlockParser.Rule_completeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#under.
+    def visitUnder(self, ctx:ReqBlockParser.UnderContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#allow_clause.
     def visitAllow_clause(self, ctx:ReqBlockParser.Allow_clauseContext):
         return self.visitChildren(ctx)
@@ -176,11 +191,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#body_class_credit.
     def visitBody_class_credit(self, ctx:ReqBlockParser.Body_class_creditContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#header_lastres.
-    def visitHeader_lastres(self, ctx:ReqBlockParser.Header_lastresContext):
         return self.visitChildren(ctx)
 
 
@@ -274,13 +284,28 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#copy_header.
+    def visitCopy_header(self, ctx:ReqBlockParser.Copy_headerContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#copy_rules.
     def visitCopy_rules(self, ctx:ReqBlockParser.Copy_rulesContext):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ReqBlockParser#advice.
+    def visitAdvice(self, ctx:ReqBlockParser.AdviceContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ReqBlockParser#display.
     def visitDisplay(self, ctx:ReqBlockParser.DisplayContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#proxy_advice.
+    def visitProxy_advice(self, ctx:ReqBlockParser.Proxy_adviceContext):
         return self.visitChildren(ctx)
 
 
@@ -291,6 +316,11 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#header_label.
     def visitHeader_label(self, ctx:ReqBlockParser.Header_labelContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ReqBlockParser#hide_rule.
+    def visitHide_rule(self, ctx:ReqBlockParser.Hide_ruleContext):
         return self.visitChildren(ctx)
 
 
@@ -384,11 +414,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#noncourse.
-    def visitNoncourse(self, ctx:ReqBlockParser.NoncourseContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by ReqBlockParser#num_classes.
     def visitNum_classes(self, ctx:ReqBlockParser.Num_classesContext):
         return self.visitChildren(ctx)
@@ -419,11 +444,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by ReqBlockParser#proxy_advice.
-    def visitProxy_advice(self, ctx:ReqBlockParser.Proxy_adviceContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by ReqBlockParser#pseudo.
     def visitPseudo(self, ctx:ReqBlockParser.PseudoContext):
         return self.visitChildren(ctx)
@@ -431,11 +451,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#remark.
     def visitRemark(self, ctx:ReqBlockParser.RemarkContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#rule_complete.
-    def visitRule_complete(self, ctx:ReqBlockParser.Rule_completeContext):
         return self.visitChildren(ctx)
 
 
@@ -471,11 +486,6 @@ class ReqBlockVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ReqBlockParser#tag.
     def visitTag(self, ctx:ReqBlockParser.TagContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by ReqBlockParser#under.
-    def visitUnder(self, ctx:ReqBlockParser.UnderContext):
         return self.visitChildren(ctx)
 
 
