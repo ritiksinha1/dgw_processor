@@ -96,7 +96,7 @@ qualifier         : hide_rule
                   | mingrade
                   | minperdisc
                   | minspread
-                  | proxy_advice
+//                  | proxy_advice
                   | rule_tag
                   | samedisc
                   | share
