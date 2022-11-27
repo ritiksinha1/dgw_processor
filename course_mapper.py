@@ -24,12 +24,14 @@ from typing import Any
 
 
 """ Logging/Development Reports
-      analysis_file:      Analsis of as-yet-unhandled constructs.
+      anomaly_file        Things that look wrong, but we handle anyway
       blocks_file:        List of blocks processed
       debug_file:         Info written during debugging (to avoid stdout/stderr)
       fail_file:          Blocks that failed for one reason or another
       log_file:           Record of requirements processed successfully. Bigger is better!
+      missing_file:       Active plans with no active requirement block
       no_courses_file:    Requirements with no course lists.
+      subplans_file:      What active subplans are (not) referenced?
       todo_file:          Record of all known requirements not yet handled. Smaller is better!
 
     Data for T-Rex
@@ -38,16 +40,14 @@ from typing import Any
       mapping_file        Spreadsheet of course-to-requirements mappings
 
 """
-analysis_file = open('/Users/vickery/Projects/dgw_processor/analysis.txt', 'w')
 anomaly_file = open('/Users/vickery/Projects/dgw_processor/anomalies.txt', 'w')
 blocks_file = open('/Users/vickery/Projects/dgw_processor/blocks.txt', 'w')
 debug_file = open('/Users/vickery/Projects/dgw_processor/debug.txt', 'w')
 fail_file = open('/Users/vickery/Projects/dgw_processor/fail.txt', 'w')
 log_file = open('/Users/vickery/Projects/dgw_processor/log.txt', 'w')
 missing_file = open(f'/Users/vickery/Projects/dgw_processor/missing_ra.txt', 'w')
-new_plan_file = open(f'/Users/vickery/Projects/dgw_processor/new_plans.txt', 'w')
-inactive_plan_file = open(f'/Users/vickery/Projects/dgw_processor/inactive_plans.txt', 'w')
 no_courses_file = open('/Users/vickery/Projects/dgw_processor/no_courses.txt', 'w')
+subplans_file = open('/Users/vickery/Projects/dgw_processor/subplans.txt', 'w')
 todo_file = open(f'/Users/vickery/Projects/dgw_processor/todo.txt', 'w')
 
 programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w', newline='')
@@ -97,9 +97,11 @@ def get_parse_tree(dap_req_block_key: tuple) -> dict:
         assert cursor.rowcount == 1
         parse_tree = cursor.fetchone().parse_tree
         if parse_tree is None:
+          institution, requirement_id = dap_req_block_key
           parse_tree = parse_block(institution, requirement_id, row.period_start, row.period_stop)
           print(f'{institution} {requirement_id} Reference to un-parsed block', file=log_file)
     _parse_trees[dap_req_block_key] = parse_tree
+
   return _parse_trees[dap_req_block_key]
 
 
@@ -468,6 +470,8 @@ def process_block(block_info: dict,
   institution = block_info['institution']
   requirement_id = block_info['requirement_id']
   dap_req_block_key = (institution, requirement_id)
+  # if dap_req_block_key in [('QNS01', 'RA001246'), ('QNS01', 'RA000884')]:
+  #   breakpoint()
   reference_counts[dap_req_block_key] += 1
 
   caller_frame = traceback.extract_stack()[-2]
@@ -607,13 +611,44 @@ def process_block(block_info: dict,
 
   # Finally, if this is a plan block, check whether its subplans have been processed explicitly.
   if plan_dict:
+    # if requirement_id == 'RA001240':
+    #   breakpoint()
+    num_subplans = len(plan_dict['subplans'])
+    zero = []
+    once = []
+    multiple = []
+    s = ' ' if num_subplans == 1 else 's'
     for subplan in plan_dict['subplans']:
-      subplan_id = subplan['requirement_block']['requirement_id']
-      subplan_key = (institution, subplan_id)
-      num_references = subplan_reference_counts[subplan_key]
-      s = '' if num_references == 1 else 's'
-      print(f'{institution} {subplan_id} Subplan was referenced {num_references} time{s}',
-            file=debug_file)
+      subplan_requirement_id = subplan['requirement_block']['requirement_id']
+      subplan_key = (institution, subplan_requirement_id)
+      num_new_references = reference_counts[subplan_key] - subplan_reference_counts[subplan_key]
+      assert num_new_references >= 0
+      match num_new_references:
+        case 0:
+          zero.append(subplan_requirement_id)
+        case 1:
+          once.append(subplan_requirement_id)
+        case _:
+          # Might be interesting
+          multiple.append(subplan_requirement_id)
+
+    if zero:
+      zero_list = ' '.join(zero)
+      zs = ' ' if len(zero) == 1 else 's'
+      print(f'{institution} {requirement_id} {len(zero):2} subplan{zs} of {num_subplans:2} active '
+            f'subplan{s} not explicitly referenced: {zero_list}',
+            file=subplans_file)
+    if once:
+      # Copacetic situation
+      pass
+
+    if multiple:
+      # Might be interesting
+      mult_list = ' '.join(multiple)
+      ms = ' ' if len(mult_list) == 1 else 's'
+      print(f'{institution} {requirement_id} {len(multiple):2} subplan{ms} of {num_subplans:2} '
+            f'active subplan{s} referenced multiple times: {mult_list}',
+            file=subplans_file)
 
       # process_block(subplan['requirement_block'], [{'block_info': block_info_dict}])
 
@@ -968,49 +1003,53 @@ def traverse_body(node: Any, context_list: list) -> None:
             block_args = [requirement_value['institution'],
                           requirement_value['block_type'],
                           requirement_value['block_value']]
-            with psycopg.connect('dbname=cuny_curriculum') as conn:
-              with conn.cursor(row_factory=dict_row) as cursor:
-                blocks = cursor.execute("""
-                select institution, requirement_id, block_type, block_value, title as block_title,
-                       period_start, period_stop, major1
-                  from requirement_blocks
-                 where institution = %s
-                   and block_type = %s
-                   and block_value = %s
-                   and period_stop ~* '^9'
-                """, block_args)
 
-                target_block = None
-                if cursor.rowcount == 0:
-                  print(f'{institution} {requirement_id} Body block: no active {block_args[1:]} '
-                        f'blocks', file=fail_file)
-                elif cursor.rowcount > 1:
-                  # Hopefully, the major1 field of exactly one block will match this program's block
-                  # value, resolving the issue.
-                  matching_rows = []
-                  for row in cursor:
-                    if row['major1'] == block_value:
-                      matching_rows.append(row)
-                  if len(matching_rows) == 1:
-                    target_block = matching_rows[0]
+            if block_args[2].lower().startswith('mhc'):
+              # ignore Honors College requirements
+              pass
+            else:
+              with psycopg.connect('dbname=cuny_curriculum') as conn:
+                with conn.cursor(row_factory=dict_row) as cursor:
+                  blocks = cursor.execute("""
+                  select institution, requirement_id, block_type, block_value, block_title,
+                         period_start, period_stop, major1
+                    from active_req_blocks
+                   where institution = %s
+                     and block_type = %s
+                     and block_value = %s
+                  """, block_args)
+
+                  target_block = None
+                  if cursor.rowcount == 0:
+                    print(f'{institution} {requirement_id} Body block: no active {block_args[1:]} '
+                          f'blocks', file=fail_file)
+                  elif cursor.rowcount > 1:
+                    # Hopefully, the major1 field of exactly one block will match this program's
+                    # block value, resolving the issue.
+                    matching_rows = []
+                    for row in cursor:
+                      if row['major1'] == block_value:
+                        matching_rows.append(row)
+                    if len(matching_rows) == 1:
+                      target_block = matching_rows[0]
+                    else:
+                      print(f'{institution} {requirement_id} Body block: {cursor.rowcount} active '
+                            f'{block_args[1:]} blocks; {len(matching_rows)} major1 matches',
+                            file=fail_file)
                   else:
-                    print(f'{institution} {requirement_id} Body block: {cursor.rowcount} active '
-                          f'{block_args[1:]} blocks; {len(matching_rows)} major1 matches',
-                          file=fail_file)
-                else:
-                  target_block = cursor.fetchone()
+                    target_block = cursor.fetchone()
 
-                if target_block is not None:
-                  process_block(target_block, context_list + requirement_context)
-                  print(f'{institution} {requirement_id} Body block {target_block["block_type"]}',
-                        file=log_file)
+                  if target_block is not None:
+                    process_block(target_block, context_list + requirement_context)
+                    print(f'{institution} {requirement_id} Body block {target_block["block_type"]}',
+                          file=log_file)
 
         case 'blocktype':
           # Presumably, this is a reference to a subplan (concentration) for a plan.
           # Preconditions are:
           #   This block is for a plan
           #   This plan has at least one active plan
-          #   There is at least one matching concentration for this plan
+          #   There is at least one matching CONC block
 
           preconditions = True
 
@@ -1018,30 +1057,39 @@ def traverse_body(node: Any, context_list: list) -> None:
           try:
             active_subplans = block_info['plan_info']['subplans']
           except KeyError as err:
-            preconditions = False
             print(f'{institution} {requirement_id} Body blocktype: from non-plan block',
                   file=fail_file)
-          if len(active_subplans) < 1:
             preconditions = False
+
+          if len(active_subplans) < 1:
             print(f'{institution} {requirement_id} Body blocktype: plan has no active subplans',
-                  file=log_file)
+                  file=fail_file)
+            preconditions = False
 
-          # Log cases where multiple blocks are required
-          num_required = int(requirement_value['number'])
-          if num_required > 1:
-            print(f'{institution} {requirement_id} Body blocktype: {num_required} subplans '
-                  f'required', file=log_file)
-
-          # Log cases where the required blocktype is not CONC, but do it anyway
+          # Required blocktype is not CONC
           required_blocktype = requirement_value['block_type']
           if required_blocktype != 'CONC':
             print(f'{institution} {requirement_id} Body blocktype: required blocktype is '
-                  f'{required_blocktype} (ignored)', file=log_file)
+                  f'{required_blocktype} (ignored)', file=fail_file)
             preconditions = False
 
           if preconditions:
+
+            # Log cases where multiple blocks are required
+            num_required = int(requirement_value['number'])
+            if num_required > 1:
+              print(f'{institution} {requirement_id} Body blocktype: {num_required} subplans '
+                    f'required', file=log_file)
+
+            num_subplans = len(active_subplans)
+            s = '' if num_subplans == 1 else 's'
+            num_subplans_str = f'{num_subplans} subplan{s}'
+
             for active_subplan in active_subplans:
               process_block(active_subplan['block_info'], context_list + requirement_context)
+
+            print(f'{institution} {requirement_id} Block blocktype: {num_subplans_str}',
+                  file=log_file)
 
         case 'class_credit':
           print(institution, requirement_id, 'Body class_credit', file=log_file)
@@ -1073,8 +1121,9 @@ def traverse_body(node: Any, context_list: list) -> None:
           print(institution, requirement_id, 'Body conditional', file=log_file)
 
         case 'copy_rules':
-          print(institution, requirement_id, 'Body copy_rules', file=log_file)
-          # Use the title of the block as the label.
+          # Get rules from target block, which must come from same institution
+          target_requirement_id = requirement_value['requirement_id']
+
           with psycopg.connect('dbname=cuny_curriculum') as conn:
             with conn.cursor(row_factory=dict_row) as cursor:
               cursor.execute("""
@@ -1084,40 +1133,53 @@ def traverse_body(node: Any, context_list: list) -> None:
                where institution = %s
                  and requirement_id = %s
                  and period_stop ~* '^9'
-              """, (requirement_value['institution'],
-                    requirement_value['requirement_id']))
+              """, (institution, target_requirement_id))
               if cursor.rowcount != 1:
-                print(f'{institution} {requirement_id} Body copy_rules: {cursor.rowcount} active '
-                      f'blocks', file=fail_file)
-                return
+                print(f'{institution} {requirement_id} Body copy_rules: {target_requirement_id} not'
+                      f' current', file=fail_file)
 
-              row = cursor.fetchone()
+              else:
+                row = cursor.fetchone()
 
-              is_circular = False
-              for context_dict in context_list:
-                try:
-                  # Assume there are no cross-institutional course requirements
-                  if row['requirement_id'] == context_dict['requirement_id']:
-                    print(institution, requirement_id, 'Body circular copy_rules', file=fail_file)
-                    is_circular = True
-                except KeyError:
-                  pass
-              if not is_circular:
+                is_circular = False
+                for context_dict in context_list:
+                  try:
+                    # There cannot be cross-institutional course requirements, so this is safe
+                    if row['requirement_id'] == context_dict['requirement_id']:
+                      print(institution, requirement_id, 'Body circular copy_rules', file=fail_file)
+                      is_circular = True
+                  except KeyError:
+                    pass
 
-                parse_tree = row['parse_tree']
-                if parse_tree == '{}':
-                  # Not expecting to do this
-                  print(f'{row.institution} {row.requirement_id} Body copy_rules parse target block'
-                        f'{row.requirement_id}', file=log_file)
-                  parse_tree = parse_block(row['institution'], row['requirement_id'],
-                                           row['period_start'], row['period_stop'])
+                if not is_circular:
+                  parse_tree = row['parse_tree']
+                  if parse_tree == '{}':
+                    # Not expecting to do this
+                    print(f'{row.institution} {row.requirement_id} Body copy_rules parse target: '
+                          f'{row.requirement_id}', file=log_file)
+                    parse_tree = parse_block(row['institution'], row['requirement_id'],
+                                             row['period_start'], row['period_stop'])
+                  if 'error' in parse_tree.keys():
+                    print(f'{institution} {requirement_id} Body copy_rules {parse_tree["error"]}',
+                          file=fail_file)
+                  else:
+                    try:
+                      body_list = parse_tree['body_list']
+                    except KeyError as err:
+                      exit(f'{institution} {requirement_id} Body copy_rules: no body_list '
+                           f'{row.requirement_id}')
+                    if len(body_list) == 0:
+                      print(f'{institution} {requirement_id} Body copy_rules: empty body_list',
+                            file=fail_file)
+                    else:
+                      local_dict = {'institution': institution,
+                                    'requirement_id': row['requirement_id'],
+                                    'requirement_name': row['block_title']}
+                      local_context = [local_dict]
+                      traverse_body(body_list,
+                                    context_list + requirement_context + local_context)
 
-                body_list = parse_tree['body_list']
-                local_dict = {'requirement_block': row['requirement_id'],
-                              'requirement_name': ['block_title']}
-                local_context = [local_dict]
-                traverse_body(body_list,
-                              context_list + requirement_context + local_context)
+                      print(institution, requirement_id, 'Body copy_rules', file=log_file)
 
         case 'course_list':
           # Not observed to occur
@@ -1149,15 +1211,14 @@ def traverse_body(node: Any, context_list: list) -> None:
                file=sys.stderr)
 
         case 'group_requirement':
-          print(institution, requirement_id, 'Body group_requirement', file=log_file)
           # ---------------------------------------------------------------------------------------
           """ Each group requirement has a group_list, label, and number (num_required)
               A group_list is a list of groups (!)
-              Each group is one of: block, blocktype, class_credit, course_list,
+              Each group is a list of requirements block, blocktype, class_credit, course_list,
                                     group_requirement(s), noncourse, or rule_complete)
           """
-          groups = requirement_value['group_list']
-          num_groups = len(groups)
+          group_list = requirement_value['group_list']
+          num_groups = len(group_list)
           s = '' if num_groups == 1 else 's'
           if num_groups < len(number_names):
             num_groups_str = number_names[num_groups]
@@ -1194,7 +1255,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             # No: Replace the Scribed name with our formatted one.
             context_dict['requirement_name'] = description_str
 
-          for group_num, group in enumerate(groups):
+          for group_num, group in enumerate(group_list):
             if (group_num + 1) < len(number_ordinals):
               group_num_str = (f'{number_ordinals[group_num + 1].title()} of {num_groups_str} '
                                f'group{s}')
@@ -1204,87 +1265,104 @@ def traverse_body(node: Any, context_list: list) -> None:
             group_context = [{'group_number': group_num + 1,
                               'requirement_name': group_num_str}]
 
-            assert len(group.keys()) == 1
+            for requirement in group:
 
-            for key, value in group.items():
-              match key:
-                case 'block':
-                  block_name = value['label']
-                  block_num_required = int(value['number'])
-                  if block_num_required > 1:
-                    print(f'{institution} {requirement_id} Group block: {block_num_required=}',
-                          file=todo_file)
-                    continue
-                  block_type = value['block_type']
-                  block_value = value['block_value']
-                  block_institution = value['institution']
-                  with psycopg.connect('dbname=cuny_curriculum') as conn:
-                    with conn.cursor(row_factory=dict_row) as cursor:
-                      cursor.execute("""
-                      select institution,
-                                  requirement_id,
-                                  block_type,
-                                  block_value,
-                                  title as block_title,
-                                  period_start, period_stop, major1
-                             from requirement_blocks
-                            where institution = %s
-                              and block_type =  %s
-                              and block_value = %s
-                              and period_stop ~* '^9'
-                      """, [institution, block_type, block_value])
-                      if cursor.rowcount == 0:
-                        print(f'{institution} {requirement_id} Group block: no active '
-                              f'[{block_type}, {block_value}] blocks', file=fail_file)
-                      elif cursor.rowcount > block_num_required:
-                        print(f'{institution} {requirement_id} Group block: {cursor.rowcount} '
-                              f'active [{block_type}, {block_value}] blocks', file=fail_file)
-                      else:
-                        process_block(cursor.fetchone(),
-                                      context_list + requirement_context + group_context)
-                        print(f'{institution} {requirement_id} Group block', file=log_file)
+              for key, value in requirement.items():
+                match key:
+                  case 'block':
+                    block_name = value['label']
+                    block_num_required = int(value['number'])
+                    if block_num_required > 1:
+                      print(f'{institution} {requirement_id} Group block: {block_num_required=}',
+                            file=todo_file)
+                      continue
+                    block_type = value['block_type']
+                    block_value = value['block_value']
+                    block_institution = value['institution']
+                    block_args = [block_institution, block_type, block_value]
+                    with psycopg.connect('dbname=cuny_curriculum') as conn:
+                      with conn.cursor(row_factory=dict_row) as cursor:
+                        cursor.execute("""
+                        select institution,
+                                    requirement_id,
+                                    block_type,
+                                    block_value,
+                                    block_title,
+                                    period_start, period_stop, major1
+                               from active_req_blocks
+                              where institution = %s
+                                and block_type =  %s
+                                and block_value = %s
+                                and period_stop ~* '^9'
+                        """, [institution, block_type, block_value])
 
-                case 'blocktype':
-                  # Not observed to occur
-                  print(institution, requirement_id, 'Group blocktype (ignored)', file=todo_file)
+                        target_block = None
+                        if cursor.rowcount == 0:
+                          print(f'{institution} {requirement_id} Group block: no active '
+                                f'{block_args[1:]} blocks', file=fail_file)
+                        elif cursor.rowcount > 1:
+                          # Hopefully, the major1 field of exactly one block will match this program's
+                          # block value, resolving the issue.
+                          matching_rows = []
+                          for row in cursor:
+                            if row['major1'] == block_value:
+                              matching_rows.append(row)
+                          if len(matching_rows) == 1:
+                            target_block = matching_rows[0]
+                          else:
+                            print(f'{institution} {requirement_id} Group block: {cursor.rowcount} '
+                                  f'active {block_args[1:]} blocks; {len(matching_rows)} major1 '
+                                  f'matches', file=fail_file)
+                        else:
+                          target_block = cursor.fetchone()
 
-                case 'class_credit':
-                  # This is where course lists turn up, in general.
-                  try:
-                    map_courses(institution, requirement_id, block_title,
-                                context_list + requirement_context + group_context, value)
-                  except KeyError as ke:
-                    # Course List is an optional part of ClassCredit
-                    pass
-                  print(institution, requirement_id, 'Group class_credit', file=log_file)
+                        if target_block is not None:
+                          process_block(target_block, context_list + requirement_context)
+                          print(f'{institution} {requirement_id} Group block '
+                                f'{target_block["block_type"]}', file=log_file)
 
-                case 'course_list_rule':
-                  if 'course_list' not in requirement_value.keys():
-                    # Can't have a Course List Rule w/o a course list
-                    print(f'{institution} {requirement_id} Group course_list_rule w/o a Course '
-                          f'List', file=fail_file)
-                  else:
-                    map_courses(institution, requirement_id, block_title,
-                                context_list + group_context, value)
-                    print(institution, requirement_id, 'Group course_list_rule', file=log_file)
+                  case 'blocktype':
+                    # Not observed to occur
+                    print(institution, requirement_id, 'Group blocktype (ignored)', file=todo_file)
 
-                case 'group_requirements':
-                  assert isinstance(value, list)
-                  for group_requirement in value:
-                    traverse_body(value, context_list + requirement_context + group_context)
-                  print(institution, requirement_id, 'Body nested group_requirements',
-                        file=log_file)
+                  case 'class_credit':
+                    # This is where course lists turn up, in general.
+                    try:
+                      map_courses(institution, requirement_id, block_title,
+                                  context_list + requirement_context + group_context, value)
+                    except KeyError as ke:
+                      # Course List is an optional part of ClassCredit
+                      pass
+                    print(institution, requirement_id, 'Group class_credit', file=log_file)
 
-                case 'noncourse':
-                  print(f'{institution} {requirement_id} Group noncourse (ignored)',
-                        file=log_file)
+                  case 'course_list_rule':
+                    if 'course_list' not in requirement_value.keys():
+                      # Can't have a Course List Rule w/o a course list
+                      print(f'{institution} {requirement_id} Group course_list_rule w/o a Course '
+                            f'List', file=fail_file)
+                    else:
+                      map_courses(institution, requirement_id, block_title,
+                                  context_list + group_context, value)
+                      print(institution, requirement_id, 'Group course_list_rule', file=log_file)
 
-                case 'rule_complete':
-                  # Not observed to occur
-                  print(f'{institution} {requirement_id} Group rule_complete', file=todo_file)
+                  case 'group_requirement':
+                    print(institution, requirement_id, 'Body nested group_requirement',
+                          file=log_file)
+                    assert isinstance(value, dict)
+                    traverse_body(requirement, context_list + requirement_context + group_context)
 
-                case _:
-                  exit(f'{institution} {requirement_id} Unexpected Group {key}')
+                  case 'noncourse':
+                    print(f'{institution} {requirement_id} Group noncourse (ignored)',
+                          file=log_file)
+
+                  case 'rule_complete':
+                    # Not observed to occur
+                    print(f'{institution} {requirement_id} Group rule_complete', file=todo_file)
+
+                  case _:
+                    exit(f'{institution} {requirement_id} Unexpected Group {key}')
+
+          print(institution, requirement_id, 'Body group_requirement', file=log_file)
 
         case 'subset':
           print(institution, requirement_id, 'Body subset', file=log_file)
@@ -1333,30 +1411,46 @@ def traverse_body(node: Any, context_list: list) -> None:
                     block_label = block_dict['block']['label']
                     required_block_type = block_dict['block']['block_type']
                     required_block_value = block_dict['block']['block_value']
+                    block_args = [institution, required_block_type, required_block_value]
+
+                    # CONC, MAJOR, and MINOR blocks must be active blocks; other (literally and
+                    # figuratively) blocks need only be current.
                     with psycopg.connect('dbname=cuny_curriculum') as conn:
                       with conn.cursor(row_factory=dict_row) as cursor:
+
                         cursor.execute("""
                         select institution, requirement_id, block_type, block_value,
-                               title as block_title, period_start, period_stop, major1
-                          from requirement_blocks
+                               block_title, period_start, period_stop, major1
+                          from active_req_blocks
                          where institution = %s
                            and block_type = %s
                            and block_value = %s
-                           and period_stop ~* '^9'
-                        """, [institution, required_block_type, required_block_value])
+                        """, block_args)
+
+                        target_block = None
                         if cursor.rowcount == 0:
                           print(f'{institution} {requirement_id} Subset block: no active '
-                                f'[{required_block_type}, {required_block_value}] blocks',
-                                file=fail_file)
-                        elif cursor.rowcount > num_required:
-                          print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
-                                f'active [{required_block_type}, {required_block_value}] blocks',
-                                file=fail_file)
+                                f'{block_args[1:]} blocks', file=fail_file)
+                        elif cursor.rowcount > 1:
+                          # Hopefully, the major1 field of exactly one block will match this
+                          # program's block value, resolving the issue.
+                          matching_rows = []
+                          for row in cursor:
+                            if row['major1'] == block_value:
+                              matching_rows.append(row)
+                          if len(matching_rows) == 1:
+                            target_block = matching_rows[0]
+                          else:
+                            print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
+                                  f'active {block_args[1:]} blocks; {len(matching_rows)} major1 '
+                                  f'matches', file=fail_file)
                         else:
-                          local_context = [{'requirement_name': block_label}]
-                          process_block(cursor.fetchone(),
-                                        context_list + subset_context + local_context)
-                          print(institution, requirement_id, f'Subset block', file=log_file)
+                          target_block = cursor.fetchone()
+
+                        if target_block is not None:
+                          process_block(target_block, context_list + requirement_context)
+                          print(f'{institution} {requirement_id} Subset block '
+                                f'{target_block["block_type"]}', file=log_file)
 
                 case 'blocktype':
                   # Not observed to occur
@@ -1381,73 +1475,70 @@ def traverse_body(node: Any, context_list: list) -> None:
                   #   pass
 
                 case 'copy_rules':
-                  print(institution, requirement_id, 'Subset copy_rules', file=log_file)
-                  try:
-                    target_requirement_id = rule['requirement_id']
-                  except KeyError as err:
-                    print(f'{institution} {requirement_id} Missing key {ke} in Subset copy_rules',
-                          file=sys.stderr)
-                    exit(rule)
-                  target_block = f'{institution} {target_requirement_id}'
-                  if target_block in requirement_context:
-                    print(target_block, 'Subset copy_rules: Circular target', file=fail_file)
-                  else:
-                    with psycopg.connect('dbname=cuny_curriculum') as conn:
-                      with conn.cursor(row_factory=namedtuple_row) as cursor:
-                        cursor.execute("""
-                        select institution,
-                               requirement_id,
-                               block_type,
-                               block_value,
-                               title as block_title,
-                               period_start,
-                               period_stop,
-                               parse_tree
-                          from requirement_blocks
-                         where institution = %s
-                           and requirement_id = %s
-                           and period_stop ~* '^9'
-                        """, [institution, target_requirement_id])
-                        if cursor.rowcount != 1:
-                          print(f'{institution} {requirement_id} Subset copy_rules: '
-                                f'{target_requirement_id} not active',
-                                file=fail_file)
-                        else:
-                          row = cursor.fetchone()
-                          is_circular = False
-                          for context_dict in context_list:
-                            try:
-                              # Assume there are no cross-institutional course requirements
-                              if row.requirement_id == context_dict['requirement_id']:
-                                print(institution, requirement_id, 'Subset circular CopyRules',
-                                      file=fail_file)
-                                is_circular = True
-                            except KeyError:
-                              pass
-                          if not is_circular:
-                            parse_tree = row.parse_tree
-                            if parse_tree == '{}':
-                              print(f'Parsing {row.institution} {row.requirement_id}')
-                              parse_tree = parse_block(row.institution, row.requirement_id,
-                                                       row.period_start, row.period_stop)
-                            try:
-                              body_list = parse_tree['body_list']
-                            except KeyError as ke:
-                              if 'error' in parse_tree.keys():
-                                problem = 'compile error'
-                              else:
-                                problem = 'no body_list'
-                              print(f'{institution} {requirement_id} Subset copy_rules target = '
-                                    f'{row.requirement_id}: {problem}', file=fail_file)
-                              print(f'{institution} {requirement_id} Subset copy_rules target = '
-                                    f'{row.requirement_id}: {parse_tree["error"]} ',
-                                    file=debug_file)
+                  # Get rules from target block, which must come from same institution
+                  target_requirement_id = rule['requirement_id']
+
+                  with psycopg.connect('dbname=cuny_curriculum') as conn:
+                    with conn.cursor(row_factory=namedtuple_row) as cursor:
+                      cursor.execute("""
+                      select institution,
+                             requirement_id,
+                             block_type,
+                             block_value,
+                             title as block_title,
+                             period_start,
+                             period_stop,
+                             parse_tree
+                        from requirement_blocks
+                       where institution = %s
+                         and requirement_id = %s
+                         and period_stop ~* '^9'
+                      """, [institution, target_requirement_id])
+
+                      if cursor.rowcount != 1:
+                        print(f'{institution} {requirement_id} Subset copy_rules: '
+                              f'{target_requirement_id} not current',
+                              file=fail_file)
+                      else:
+                        row = cursor.fetchone()
+                        is_circular = False
+                        for context_dict in context_list:
+                          try:
+                            # There are no cross-institutional course requirements, so this is safe
+                            if row.requirement_id == context_dict['block_info']['requirement_id']:
+                              print(institution, requirement_id, 'Subset circular copy_rules',
+                                    file=fail_file)
+                              is_circular = True
+                          except KeyError as err:
+                            pass
+
+                        if not is_circular:
+                          parse_tree = row.parse_tree
+                          if parse_tree == '{}':
+                            print(f'{institution} {requirement_id} Subset copy_rules: parse '
+                                  f'{row.requirement_id}', file=log_file)
+                            parse_tree = parse_block(row.institution, row.requirement_id,
+                                                     row.period_start, row.period_stop)
+
+                          if 'error' in parse_tree.keys():
+                            problem = parse_tree['error']
+                            print(f'{institution} {requirement_id} Subset copy_rules target '
+                                  f'{row.requirement_id}: {problem}', file=fail_file)
+                          else:
+                            body_list = parse_tree['body_list']
+                            if len(body_list) == 0:
+                              print(f'{institution} {requirement_id} Subset copy_rules target '
+                                    f'{row.requirement_id}: empty body_list',
+                                    file=fail_file)
                             else:
-                              local_dict = {'requirement_block': target_block,
+                              local_dict = {'institution': institution,
+                                            'requirement_id': target_requirement_id,
                                             'requirement_name': row.block_title}
                               local_context = [local_dict]
                               traverse_body(body_list,
                                             context_list + requirement_context + local_context)
+
+                              print(institution, requirement_id, 'Subset copy_rules', file=log_file)
 
                 case 'course_list_rule':
                   if 'course_list' not in rule.keys():
@@ -1488,14 +1579,13 @@ def traverse_body(node: Any, context_list: list) -> None:
                       exit(rule)
                   print(f'{institution} {requirement_id} Subset {key}', file=log_file)
 
-                case 'group_requirements':
-                  # This is a list of group_requirement dicts
-                  print(f'{institution} {requirement_id} Subset {key}', file=log_file)
-                  assert isinstance(rule, list)
-                  for group_requirement in rule:
-                    # This will now show up in log_file as a Body group requirement, but the context
-                    # will include the subset context.
-                    traverse_body(group_requirement, context_list + subset_context)
+                case 'group_requirement':
+                  print(f'{rule=}')
+                  print(f'{requirement=}')
+                  exit()
+                  assert isinstance(requirement, dict)
+                  traverse_body(rule, context_list + subset_context)
+                  print(f'{institution} {requirement_id} Subset group_requirement', file=log_file)
 
                 case 'maxpassfail' | 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
                   # Ignored Qualifiers and rules
@@ -1556,19 +1646,14 @@ if __name__ == "__main__":
   parser.add_argument('-a', '--all', action='store_true')
   parser.add_argument('-d', '--debug', action='store_true')
   parser.add_argument('--do_degrees', action='store_true')
-  parser.add_argument('--do_proxy_advice', action='store_true')
+  parser.add_argument('--no_proxy_advice', action='store_true')
   parser.add_argument('--no_remarks', action='store_true')
-  parser.add_argument('-w', '--weeks', type=int, default=26)
-  parser.add_argument('-p', '--progress', action='store_true')
-  parser.add_argument('-t', '--timing', action='store_true')
   args = parser.parse_args()
-  do_degrees = args.do_degrees
-  do_proxy_advice = args.do_proxy_advice
-  do_remarks = not args.no_remarks
 
-  gestation_period = datetime.timedelta(weeks=args.weeks)
-  gestation_days = gestation_period.days
-  today = datetime.date.today()
+  do_degrees = args.do_degrees
+
+  do_proxy_advice = not args.no_proxy_advice
+  do_remarks = not args.no_remarks
 
   empty_tree = "'{}'"
 
@@ -1613,9 +1698,7 @@ if __name__ == "__main__":
             file=anomaly_file)
     process_block(requirement_block, context_list=[], plan_dict=acad_plan)
 
-  if args.progress:
-    print()
-  s = '' if args.weeks == 1 else 's'
+  # Summary
   print(f'{programs_count:5,} Blocks')
   for k, v in block_types.items():
     print(f'{v:5,} {k.title()}')
@@ -1636,5 +1719,4 @@ if __name__ == "__main__":
       counts_str = '; '.join([f'{value.lineno}={counts[value.lineno]}'])
       print(institution, requirement_id, counts_str, file=caller_file)
 
-  if args.timing:
-    print(f'{(datetime.datetime.now() - start_time).seconds} seconds')
+  print(f'\n{(datetime.datetime.now() - start_time).seconds} seconds')
