@@ -489,11 +489,9 @@ def lastres(ctx, institution, requirement_id):
   return_dict = {'class_or_credit': class_or_credit(ctx.class_or_credit())}
 
   numbers = ctx.NUMBER()
-  return_dict['number'] = numbers.pop().getText().strip()
-  if len(numbers) > 0:
-    return_dict['of_number'] = numbers.pop().getText().strip()
-
-  assert len(numbers) == 0, f'Assertion Error: {len(numbers)} is not zero in lastres()'
+  return_dict['number'] = numbers[0].getText().strip()
+  if len(numbers) > 1:
+    return_dict['of_number'] = numbers[1].getText().strip()
 
   if ctx.course_list():
     return_dict.update(build_course_list(ctx.course_list(), institution, requirement_id))
@@ -1242,6 +1240,9 @@ def subset(ctx, institution, requirement_id):
         return_dict['requirements'].append({'noncourse': noncourse(child,
                                                                    institution,
                                                                    requirement_id)})
+
+      case 'proxy_advice':
+        return_dict['requirements'].append(proxy_advice(child, institution, requirement_id))
 
       case 'rule_complete':
         return_dict['requirements'].append({'rule_complete': rule_complete(child,
