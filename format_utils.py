@@ -2,6 +2,8 @@
 
 """ Utilities shared by htmlificization, format_header_productions, and format body_qualifiers.
       and_list
+      format_proxy_advice
+      format_remark
       format_num_class_credit
       format_course_list
       format_number
@@ -9,10 +11,10 @@
 """
 
 import os
+import re
 import sys
 
-import format_body_qualifiers
-import html_utils
+# import format_body_qualifiers
 
 from collections import namedtuple, defaultdict
 from courses_cache import courses_cache, CourseTuple
@@ -44,6 +46,31 @@ def and_list(args: list) -> str:
       return_str = return_str[0:point] + ' and' + return_str[point:]
 
   return return_str
+
+
+# format_proxy_advice()
+# -------------------------------------------------------------------------------------------------
+def format_proxy_advice(proxy_advice_dict: dict) -> str:
+  """   return_dict = {'proxy_advice': {'proxy_str': proxy_str,
+                                        'proxy_args': [arg.strip('><') for arg in proxy_args]}}
+        Highlight placeholders
+  """
+  assert isinstance(proxy_advice_dict, dict)
+
+  advice_str = proxy_advice_dict['advice_str']
+  advice_str = re.sub('<', '“<span class="warning"RIGHT_BRACKET', advice_str)
+  advice_str = re.sub('>', '</span>”', advice_str)
+  advice_str = advice_str.replace('RIGHT_BRACKET', '>')
+
+  return f'<p><strong>{advice_str}</strong></p>'
+
+
+# format_remark()
+# -------------------------------------------------------------------------------------------------
+def format_remark(remark_str: str) -> str:
+  """ If this is the first element in the body, it should appear in the header. (Not Implemented)
+  """
+  return f'<p><strong>{remark_str}</strong></p>'
 
 
 # format_num_class_credit()
@@ -112,6 +139,9 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
         include_courses     Scribed list of courses that must be taken. Displayed separately.
 
   """
+
+  from format_body_qualifiers import dispatch_body_qualifiers
+
   if DEBUG:
     print(f'*** format_course_list({info.keys()})', file=sys.stderr)
   assert isinstance(info, dict), f'{type(info)} is not dict'
@@ -123,7 +153,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
   try:
 
     # If there are any qualifiers, show them first.
-    if qualifiers_list := format_body_qualifiers.dispatch_body_qualifiers(info):
+    if qualifiers_list := dispatch_body_qualifiers(info):
       html_str += '\n'.join(qualifiers_list)
 
     institution = info['institution']
@@ -181,9 +211,11 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
               match lhs.lower():
                 case 'dwresident':
                   assert op == '=' and rhs in 'yn', f'Bad expression: {expression}'
-                  residency_req = f' <em>Must take at {institution[0:3]}.</em>'
+                  residency_req = (f' <em>Must take at <span class="warning">{institution[0:3]}'
+                                   f'</span>.</em>')
                 case 'dwgrade':
-                  grade_req = f' <em>Minimum grade {op} {rhs} required.</em>'
+                  grade_req = (f' <em>Minimum grade <span class="warning">{op} {rhs}</span> '
+                               f'required.</em>')
                 case _:
                   pass
             except ValueError:

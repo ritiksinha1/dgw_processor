@@ -18,8 +18,9 @@ else:
   DEBUG = False
 
 # The sequence of the following imports matters
-from format_body_qualifiers import dispatch_body_qualifiers
+from format_utils import format_proxy_advice, format_remark
 import format_utils
+from format_body_qualifiers import dispatch_body_qualifiers
 import format_body_qualifiers
 
 
@@ -158,24 +159,21 @@ body_class_credit : (num_classes | num_credits)
   except KeyError:
     num_areas_required = 0
 
-  # There might be pseudo, remark, display, and/or share items. They get shown next as paragraphs.
+  # There might be pseudo, remark, proxy-advice, and/or share items. They get shown next as
+  # paragraphs.
   try:
     if class_credit_dict['is_pseudo']:
       class_credit_str += '<p>This requirement does not have a strict credit limit.</p>'
   except KeyError:
     pass
+
   try:
-    if remark_str := class_credit_dict['remark']:
-      class_credit_str += f'<p>Remark: <em>{remark_str}</em></p>'
+    class_credit_str += format_remark(class_credit_dict['remark'])
   except KeyError:
     pass
 
-  # display is student-specific
   try:
-    if display_str := class_credit_dict['display']:
-      class_credit_str += f'<p><em>{display_str}</em></p>'
-      print('Examine this display_str in format_class_credit. Is it student-specific?:',
-            display_str, file=sys.stderr)
+    class_credit_str += format_proxy_advice(class_credit_dict['proxy_advice'])
   except KeyError:
     pass
 
@@ -355,8 +353,7 @@ def format_course_list_rule(course_list_rule: dict) -> str:
     pass
 
   try:
-    proxy_str = course_list_rule['proxy_advice']['proxy_str']
-    course_list_rule_str += f'<p><strong>Advice: </strong> {proxy_str}</p>'
+    course_list_rule_str += format_proxy_advice(course_list_rule['proxy_advice'])
   except KeyError:
     pass
 
@@ -401,13 +398,12 @@ def format_group_requirement(group_requirement_dict: dict) -> str:
 
   try:
     remark_str = group_requirement_dict['remark']
-    return_str += f'<p><strong>Remark: {remark_str}</strong></p>'
+    return_str += f'<p><strong>{remark_str}</strong></p>'
   except KeyError:
     pass
 
   try:
-    proxy_str = group_requirement_dict['proxy_advice']['proxy_str']
-    return_string += f'<p><strong>Advice: {proxy_str}</strong></p>'
+    return_str += format_proxy_advice(group_requirement_dict['proxy_advice'])
   except KeyError:
     pass
 
@@ -472,7 +468,7 @@ def format_noncourse(noncourse_dict: dict) -> str:
 
   # Not interpreting the expression yet
   expression = noncourse_dict['expression']
-  noncourse_str = f'<p>{number_str} ({expression}){suffix}) required'
+  noncourse_str = f'<p>{number_str} (<span class="warning">{expression}</span>){suffix}) required'
 
   if summary:
     return_str += f'<details>{summary}{noncourse_str}</details>'
@@ -480,14 +476,6 @@ def format_noncourse(noncourse_dict: dict) -> str:
     return_str += noncourse_str
 
   return return_str
-
-
-# format_remark()
-# -------------------------------------------------------------------------------------------------
-def format_remark(remark_str: str) -> str:
-  """
-  """
-  return f'<p>{remark_str}</p>'
 
 
 # format_rule_complete()
@@ -580,13 +568,13 @@ def format_subset(subset_dict: dict) -> str:
 
   # If there is a remark, it goes right after the summary
   try:
-    subset_str += f'<p>{subset_dict.pop("remark")}</p>'
+    subset_str += format_remark(subset_dict['remark'])
   except KeyError:
     pass
 
-  # Proxy advice? (Ignored here)
+  # Proxy advice?
   try:
-    subset_dict.pop("proxy_advice")
+    subset_str += format_proxy_advice(subset_dict['proxy_advice'])
   except KeyError:
     pass
 
@@ -622,8 +610,8 @@ def format_subset(subset_dict: dict) -> str:
         case 'course_list_rule':
           subset_str += format_course_list_rule(value[key])
 
-        case 'group_requirements':
-          subset_str += format_group_requirements(value)
+        case 'group_requirement':
+          subset_str += format_group_requirement(value)
 
         case 'noncourse':
           subset_str += format_noncourse(value[key])
@@ -648,7 +636,7 @@ _dispatch_table = {'block': format_block,
                    'course_list_rule': format_course_list_rule,
                    'group_requirement': format_group_requirement,
                    'noncourse': format_noncourse,
-                   'proxy_advice': format_body_qualifiers.format_proxyadvice,
+                   'proxy_advice': format_proxy_advice,
                    'remark': format_remark,
                    'rule_complete': format_rule_complete,
                    'subset': format_subset

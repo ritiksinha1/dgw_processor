@@ -1,7 +1,8 @@
-""" Utils needed by htmlificization
+""" Utils used directly by htmlificization, and intramodularly.
       dict_to_html
       list_to_html
       to_html
+
 """
 
 import os

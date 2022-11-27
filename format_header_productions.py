@@ -2,9 +2,9 @@
 """ Format header productions. Return a formatted string for each type of rule that can appear
     in the header section of a block.
 
-    Header productions may, optionally, include a label. Header-only productions are marked with an
-    asterisk, and are completely formatted here. The others use helper functions from
-    format_body_productions to handle their non-label parts.
+    Header productions may, optionally, include a label. Header-only productions are completely
+    formatted here. Others use helper functions from format_body_productions to handle their
+    non-label parts.
 
       _format_maxclass_head*
       _format_maxcredit_head*
@@ -18,18 +18,21 @@
       _format_minperdisc_head
       _format_minres_head*
       _format_share_head
+      _format_under
       _dispatch_production
       format_header_productions
 """
 
 import os
 import sys
+import psycopg
 
 
 import format_body_rules
 import format_body_qualifiers
+from format_utils import format_proxy_advice, format_remark, format_course_list, format_number, \
+    format_num_class_credit, number_names
 import format_utils
-import psycopg
 
 from catalogyears import catalog_years
 from psycopg.rows import namedtuple_row
@@ -48,12 +51,12 @@ DEBUG = os.getenv('DEBUG_HEADER')
 
       In all cases where a header production allows (but does not require) a label, dgw_parser will
       supply a 'label' key for the dict, but its value can be None or the empty string. That is,
-      there should be no KeyErrors when calling format_utils.format_course_list(), but the result
+      there should be no KeyErrors when calling format_course_list(), but the result
       needs to be checked for emptiness.
 
       Likewise, in all cases where a header production allows (but does not require) a course_list,
       dgw_parser will supply a 'course_list' key for the dict, but its value can be None. That is,
-      there should be no KeyErrors when calling format_utils.format_course_list(), but the result
+      there should be no KeyErrors when calling format_course_list(), but the result
       needs to be checked for emptiness.
 """
 
@@ -131,7 +134,7 @@ def _format_class_credit(class_credit_dict: dict) -> str:
   except KeyError:
     label_str = None
 
-  return_str = f'<p>{format_utils.format_num_class_credit(class_credit_dict)} required</p>'
+  return_str = f'<p>{format_num_class_credit(class_credit_dict)} required</p>'
 
   try:
     if class_credit_dict['pseudo']:
@@ -140,8 +143,8 @@ def _format_class_credit(class_credit_dict: dict) -> str:
     pass
 
   try:
-    return_str += format_body_qualifiers.format_proxyadvice(class_credit_dict['proxy_advice'])
-  except KeyError:
+    return_str += format_proxy_advice(class_credit_dict['proxy_advice'])
+  except KeyError as err:
     pass
 
   try:
@@ -157,19 +160,18 @@ def _format_class_credit(class_credit_dict: dict) -> str:
 
 # _format_lastres()
 # -------------------------------------------------------------------------------------------------
-def _format_lastres(header_lastres_dict: dict) -> str:
+def _format_lastres(lastres_dict: dict) -> str:
   """
+      lastres : LASTRES NUMBER (OF NUMBER)? class_or_credit \
+                                                     course_list? tag? proxy_advice? header_label?;
   """
-
   try:
-    label_str = header_lastres_dict['label']
+    label_str = lastres_dict['label']
   except KeyError:
     label_str = None
 
-  lastres_dict = header_lastres_dict['lastres']
-
   try:
-    course_list_str = format_utils.format_course_list(lastres_dict['course_list'])
+    course_list_str = format_course_list(lastres_dict['course_list'])
   except KeyError:
     course_list_str = ''
 
@@ -207,11 +209,10 @@ def _format_lastres(header_lastres_dict: dict) -> str:
         lastres_str = (f'<p>At least {number:.2f} credits in these classes must be taken in '
                        f'residence:</p>{credit_str}')
 
-  # display is for student-specific info: ignore it
   try:
-    display_str = f'<p>{lastres_dict["display"]}</p>'
+    lastres_str += format_proxy_advice(lastres_dict['proxy_advice'])
   except KeyError:
-    display_str = ''
+    pass
 
   if label_str:
     return f'<details><summary>{label_str}</summary>{lastres_str}</display>'
@@ -237,13 +238,13 @@ def _format_maxclass_head(maxclass_head_dict: dict) -> str:
     label_str = None
 
   maxclass_dict = maxclass_head_dict['maxclass']
-  number_str, is_unity = format_utils.format_number(maxclass_dict['number'], is_int=True)
+  number_str, is_unity = format_number(maxclass_dict['number'], is_int=True)
   suffix = '' if is_unity else 'es'
   if number_str == '0':
     maxclass_str = 'Zero classes allowed'
   else:
     maxclass_str = f'No more than {number_str} class{suffix} allowed'
-  if course_list := format_utils.format_course_list(maxclass_dict['course_list']):
+  if course_list := format_course_list(maxclass_dict['course_list']):
     maxclass_str = (f'<details><summary>{maxclass_str} in the following courses:</summary>'
                     f'{course_list}</details>')
   else:
@@ -275,14 +276,14 @@ def _format_maxcredit_head(maxcredit_head_dict: dict) -> str:
   maxcredit_dict = maxcredit_head_dict['maxcredit']
 
   # Number of maxcredits can be a range (weird)
-  number_str, is_unity = format_utils.format_number(maxcredit_dict['number'], is_int=False)
+  number_str, is_unity = format_number(maxcredit_dict['number'], is_int=False)
   suffix = '' if is_unity else 's'
   if number_str == '0.00':
     maxcredit_str = 'No credits allowed'
   else:
     maxcredit_str = f'No more than {number_str} credit{suffix} allowed'
 
-  if course_list_str := format_utils.format_course_list(maxcredit_dict['course_list']):
+  if course_list_str := format_course_list(maxcredit_dict['course_list']):
     maxcredit_str = (f'<details><summary>{maxcredit_str} in the following courses:</summary>'
                      f'{course_list_str}</details>')
   else:
@@ -333,7 +334,7 @@ def _format_maxperdisc_head(maxperdisc_head_dict: dict) -> str:
   maxperdisc_info = format_body_qualifiers.format_maxperdisc(maxperdisc_dict)
 
   try:
-    courses_str = format_utils.format_course_list(maxperdisc_dict['course_list'])
+    courses_str = format_course_list(maxperdisc_dict['course_list'])
     maxperdisc_info = maxperdisc_info.replace('</p>', ' in these courses:</p>')
     maxperdisc_info += courses_str
   except KeyError:
@@ -361,14 +362,14 @@ def _format_maxterm_head(maxterm_head_dict: dict) -> str:
   class_credit = maxterm_dict['class_or_credit']
   number = int(maxterm_dict['number'])
   try:
-    number_str = format_utils.number_names[number]
+    number_str = number_names[number]
   except IndexError:
     number_str = f'{number}'
 
   suffix = '' if number == 1 else 's'
   maxterm_str = f'<p>No more than {number_str} {class_credit}{suffix} may be taken each term'
   try:
-    course_list_str = format_utils.format_course_list(maxterm_dict['course_list'])
+    course_list_str = format_course_list(maxterm_dict['course_list'])
     maxterm_str += f' in the following courses:</p>{course_list_str}'
   except KeyError:
     maxterm_str += ' for this requirement</p>'
@@ -396,7 +397,7 @@ def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
   maxtransfer_info = format_body_qualifiers.format_maxtransfer(maxtransfer_dict)
 
   try:
-    courses_str = format_utils.format_course_list(maxtransfer_dict['course_list'])
+    courses_str = format_course_list(maxtransfer_dict['course_list'])
     maxtransfer_info = maxtransfer_info.replace('</p>', ' in these courses:</p>')
     maxtransfer_info += courses_str
   except KeyError:
@@ -446,7 +447,7 @@ def _format_mincredit_head(mincredit_head_dict: dict) -> str:
   mincredit_dict = mincredit_head_dict['mincredit']
   mincredit_info = format_body_qualifiers.format_mincredit(mincredit_dict)
 
-  if courses_str := format_utils.format_course_list(mincredit_dict['course_list']):
+  if courses_str := format_course_list(mincredit_dict['course_list']):
     mincredit_info = mincredit_info.replace('.</p>', ' in these courses:</p>')
     mincredit_info += courses_str
 
@@ -546,7 +547,7 @@ def _format_minres_head(minres_head_dict: dict) -> str:
       display_str = f'<p>{display_str}</p>'
   except KeyError:
     display_str = ''
-  class_credit_str = format_utils.format_num_class_credit(minres_dict)
+  class_credit_str = format_num_class_credit(minres_dict)
   minres_info = f'<p>{class_credit_str} must be completed in residence.</p>'
 
   if label_str:
@@ -638,13 +639,36 @@ def _format_standalone(standalone_dict: dict) -> str:
   """
 
 
-# _nop()
+# _format_under()
 # -------------------------------------------------------------------------------------------------
-def _nop(nop_dict: dict) -> str:
-  """ Placeholder for header productions that are either being ignored or not implemented yet.
+def _format_under(under_dict: dict) -> str:
   """
+      Under Number class_or_credit course_list proxy_advice? header_label?
+  """
+  return_str = '<details>'
 
-  return None
+  label_str = under_dict['label']
+
+  number = float(under_dict['number'])
+  class_credit_str = under_dict['class_or_credit']
+  s = ''
+  if number != 1:
+    s = 's' if class_credit_str == 'credit' else 'es'
+  number_str = f'{int(number)}' if class_credit_str == 'class' else f'{number:.1f}'
+  # I'm guessing the course list will never be just one course
+  summary_str = f'Under {number_str} {class_credit_str}{s} allowed in these courses:'
+  if label_str:
+    return_str += f'<summary>{label_str}<br>{summary_str}</summary>'
+  else:
+    return_str += f'<summary>{summary_str}</summary>'
+  try:
+    return_str += format_proxy_advice(under_dict['proxy_advice'])
+  except KeyError:
+    pass
+
+  return_str += format_course_list(under_dict['course_list'])
+
+  return return_str + '</details>'
 
 
 # dispatch_table {}
@@ -652,7 +676,6 @@ def _nop(nop_dict: dict) -> str:
 dispatch_table = {'copy_header': _format_copy_header,
                   'header_class_credit': _format_class_credit,
                   'conditional_dict': _format_conditional_dict,
-                  'header_lastres': _format_lastres,
                   'header_maxclass': _format_maxclass_head,
                   'header_maxcredit': _format_maxcredit_head,
                   'header_maxpassfail': _format_maxpassfail_head,
@@ -666,12 +689,13 @@ dispatch_table = {'copy_header': _format_copy_header,
                   'header_minperdisc': _format_minperdisc_head,
                   'header_minres': _format_minres_head,
                   'header_tag': _format_header_tag,
+                  'lastres': _format_lastres,
                   'optional': _format_optional,
-                  'proxy_advice': format_body_qualifiers.format_proxyadvice,
-                  'remark': format_body_rules.format_remark,
+                  'proxy_advice': format_proxy_advice,
+                  'remark': format_remark,
                   'header_share': _format_share_head,
                   'standalone': _format_standalone,
-                  'under': _nop
+                  'under': _format_under
                   }
 
 

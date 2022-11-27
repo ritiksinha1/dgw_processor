@@ -19,11 +19,12 @@
 
 import os
 import sys
+import format_utils
 
 from traceback import print_stack
 from typing import Any
 
-from format_utils import format_num_class_credit, format_course_list
+from format_utils import format_num_class_credit, format_course_list, format_proxy_advice
 
 DEBUG = os.getenv('DEBUG_QUALIFIERS')
 
@@ -211,7 +212,7 @@ def format_mingpa(mingpa_dict: dict) -> str:
 
   # If there is an expression, add that to the response string.
   try:
-    mingpa_str += f' in {mingpa_dict.pop("expression")}.</p>'
+    mingpa_str += f' in <span class="warning">{mingpa_dict.pop("expression")}</span>.</p>'
   except KeyError as ke:
     pass
 
@@ -298,17 +299,17 @@ def format_minperdisc(minperdisc_dict: dict) -> str:
 # format_minres()
 # -------------------------------------------------------------------------------------------------
 def format_minres(minres_dict: dict) -> str:
-  """ MINRES (num_classes | num_credits) display* proxy_advice? tag?;
+  """ MINRES (num_classes | num_credits) proxy_advice? tag?;
   """
   if DEBUG:
     print(f'format_minres({minres_dict})', file=sys.stderr)
 
   try:
-    display_str = '<p>' + minres_dict['display'] + '.</p>'
+    proxy_str = format_proxy_advice(minres_dict['proxy_advice'])
   except KeyError:
-    display_str = ''
+    proxy_str = ''
 
-  return (f'{display_str}<p>{format_num_class_credit(minres_dict)} must be completed in '
+  return (f'{proxy_str}<p>{format_num_class_credit(minres_dict)} must be completed in '
           f'residence.</p>')
 
 
@@ -323,20 +324,6 @@ def format_minspread(minspread_dict: dict) -> str:
   number = int(minspread_dict.pop('number'))
   suffix = '' if number == 1 else 's'
   return f'<p>At least {number} discipline{suffix} required.</p>'
-
-
-# format_proxyadvice()
-# -------------------------------------------------------------------------------------------------
-def format_proxyadvice(proxyadvice_dict: dict) -> str:
-  """   return_dict = {'proxy_advice': {'proxy_str': proxy_str,
-                                        'proxy_args': [arg.strip('><') for arg in proxy_args]}}
-      Display nothing if there args, but plain strings might be useful
-  """
-  assert isinstance(proxyadvice_dict, dict)
-  if proxyadvice_dict['proxy_args']:
-    return '<!-- Proxy Advice -->'
-  else:
-    return f'<p>{proxyadvice_dict["proxy_str"]}</p>'
 
 
 # format_ruletag()
@@ -385,7 +372,7 @@ def format_share(share_dict: dict) -> str:
 
   try:
     expression_str = share_dict['expression'].strip(')(')
-    suffix_str = f' with “{expression_str}” requirements'
+    suffix_str = f' with “<span class="warning">{expression_str}</span>” requirements'
   except KeyError as ke:
     suffix_str = f''
 
@@ -406,7 +393,6 @@ _dispatch_table = {'maxpassfail': format_maxpassfail,
                    'minperdisc': format_minperdisc,
                    'minres': format_minres,
                    'minspread': format_minspread,
-                   'proxy_advice': format_proxyadvice,
                    'rule_tag': format_ruletag,
                    'share': format_share,
                    }
