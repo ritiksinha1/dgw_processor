@@ -283,13 +283,19 @@ def scribe_block_to_html(row: tuple, period_range='current') -> str:
 # __main__
 # =================================================================================================
 if __name__ == '__main__':
-  """ Default: Generate and discard all parse_trees(), looking for printed messages.
-      Optional: Specifiy and institution and requirement_id on the command line, and just that one
-                will be done.
+  """ Default: Render a single parse_tree, or all current ones
   """
   with psycopg.connect('dbname=cuny_curriculum') as conn:
     with conn.cursor(row_factory=namedtuple_row) as cursor:
+
       if len(sys.argv) == 3:
+        # Render One
+        # -----------------------------------------------------------------------------------------
+        """ The single tree is rendered to an html file in the extracts directory, unless it didn’t
+            parse correctly or wasn’t parsed at all, in which case it is not rendered. If
+            successful, the parse_tree is also saved to the extracts directory in Scribe (text)  and
+            json formats.
+        """
         _, institution, requirement_id = sys.argv
         institution = institution.upper().strip('01') + '01'
         requirement_id = 'RA' + f"{int(requirement_id.strip('RA')):06}"
@@ -314,7 +320,7 @@ if __name__ == '__main__':
           with open(f'./extracts/{institution[0:3]}_{requirement_id}.scribe', 'w') as scribe_file:
             print(row.requirement_text, file=scribe_file)
 
-          with open(f'./extracts/{institution[0:3]}_{requirement_id}.txt', 'w') as json_file:
+          with open(f'./extracts/{institution[0:3]}_{requirement_id}.json', 'w') as json_file:
             print('HEADER', file=json_file)
             print(row.parse_tree['header_list'], file=json_file)
             print('BODY', file=json_file)
@@ -325,42 +331,53 @@ if __name__ == '__main__':
           with open(f'./extracts/{institution[0:3]}_{requirement_id}.html', 'w') as html_file:
             print(parse_results, file=html_file)
 
-        exit()
+      else:
 
-      longest_times = defaultdict(longtime_factory)
-      cursor.execute("""
-      select institution, requirement_id, block_type, block_value, parse_tree
-        from requirement_blocks
-       where period_stop ~* '^9'
-       order by institution, block_type, block_value, requirement_id
-       """)
-      num_blocks = cursor.rowcount
-      initial_time = perf_counter()
-      for row in cursor:
-        print(f'\r  {cursor.rownumber:5,} {row.institution} {row.requirement_id} '
-              f'{row.block_type:10} {row.block_value} ')
-        if quarantined_dict.is_quarantined((row.institution, row.requirement_id)):
-          print(f'{row.institution} {row.requirement_id}: Quarantined', file=sys.stderr)
-          continue
-        if row.parse_tree == {}:
-          print(f'{row.institution} {row.requirement_id}: Empty Tree', file=sys.stderr)
-          continue
-        elif 'error' in row.parse_tree.keys():
-          print(f'{row.institution} {row.requirement_id}: Error Block', file=sys.stderr)
-          continue
-        start_time = perf_counter()
-        parse_results = html_utils.list_to_html(row.parse_tree['header_list'], section='header')
-        parse_results += html_utils.list_to_html(row.parse_tree['body_list'], section='body')
-        elapsed = perf_counter() - start_time
-        if elapsed > longest_times[row.block_type].time:
-          longest_times[row.block_type] = LongTime._make([row.institution,
-                                                          row.requirement_id,
-                                                          row.block_value,
-                                                          elapsed])
-      total_time = perf_counter() - initial_time
-      print(f'{num_blocks:,} blocks in {total_time:.1f} sec ({(total_time / num_blocks):0.1f} sec '
-            f'per block)')
-  print('Longest Times By Block Type\n  Type        Sec Clg Req ID   Block Value')
-  for block_type, longest_time in longest_times.items():
-    print(f'  {block_type:9} {longest_time.time:5.1f} {longest_time.institution[0:3]} '
-          f'{longest_time.requirement_id} {longest_time.block_value}')
+        # Render All
+        # -------------------------------------------------------------------------------------------
+        """ Here, all the parse trees are rendered to a giant text file (htmlificization.out) as a
+            regression test.
+        """
+        longest_times = defaultdict(longtime_factory)
+        cursor.execute("""
+        select institution, requirement_id, block_type, block_value, parse_tree
+          from requirement_blocks
+         where period_stop ~* '^9'
+         order by institution, block_type, block_value, requirement_id
+         """)
+        num_blocks = cursor.rowcount
+        initial_time = perf_counter()
+        out_file = open ('./htmlificization.out', 'w')
+        err_file = open ('./htmlificization.err', 'w')
+        for row in cursor:
+          print(f'\r  {cursor.rownumber:5,} / {num_blocks:,} {row.institution} '
+                f'{row.requirement_id} {row.block_type:10} {row.block_value} ')
+          if quarantined_dict.is_quarantined((row.institution, row.requirement_id)):
+            print(f'\n{row.institution} {row.requirement_id}: Quarantined', file=out_file)
+            continue
+          if row.parse_tree == {}:
+            print(f'\n{row.institution} {row.requirement_id}: Empty Tree', file=out_file)
+            continue
+          elif 'error' in row.parse_tree.keys():
+            print(f'\n{row.institution} {row.requirement_id}: Error Block', file=out_file)
+            continue
+          start_time = perf_counter()
+          try:
+            render_out = html_utils.list_to_html(row.parse_tree['header_list'], section='header')
+            render_out += html_utils.list_to_html(row.parse_tree['body_list'], section='body')
+            print(f'\n{row.institution} {row.requirement_id}\n', render_out, file=out_file)
+          except Exception as err:
+            print(f'\n{row.institution} {row.requirement_id} {err}', file=err_file)
+          elapsed = perf_counter() - start_time
+          if elapsed > longest_times[row.block_type].time:
+            longest_times[row.block_type] = LongTime._make([row.institution,
+                                                            row.requirement_id,
+                                                            row.block_value,
+                                                            elapsed])
+        total_time = perf_counter() - initial_time
+        print(f'{num_blocks:,} blocks in {total_time:.1f} sec ({(total_time / num_blocks):0.1f} sec '
+              f'per block)')
+        print('Longest Times By Block Type\n  Type        Sec Clg Req ID   Block Value')
+        for block_type, longest_time in longest_times.items():
+          print(f'  {block_type:9} {longest_time.time:5.1f} {longest_time.institution[0:3]} '
+                f'{longest_time.requirement_id} {longest_time.block_value}')
