@@ -2,8 +2,8 @@
 ## Extract Program Requirements From Degree Works Scribe Blocks
 
 ## Goal
-Degree Works (aka “DegreeWorks”) Scribe Blocks specify the requirements a student must meet to obtain an academic degree, major, minor, or concentration. Normally, they are used in conjuction with a student’s transcript to produce an audit report telling what requirements a student has already completed and what the student still needs in order to complete the requirements.
-Scribe Blocks provide (or _should_ provide) a definitive specification of requirements. The goal of this project is to extract program/degree requrements in a form that can serve as the basis for other applications, such as producing catalog descriptions for programs or course maps, and for institutional research. An initial application for the project is to provide a mechanism for publicizing the academic programs for which a course can satisfy a requirement.
+Degree Works (aka “DegreeWorks”) Scribe Blocks specify the requirements a student must meet to obtain an academic degree, major, minor, or concentration. Normally, they are used in conjunction with a student’s transcript to produce an audit report telling what requirements a student has already completed and what the student still needs in order to complete the requirements.
+Scribe Blocks provide (or _should_ provide) a definitive specification of requirements. The goal of this project is to extract program/degree requirements in a form that can serve as the basis for other applications, such as producing catalog descriptions for programs or course maps, and for institutional research. An initial application for the project is to provide a mechanism for publicizing the academic programs for which a course can satisfy a requirement.
 
 ## Terminology
 - _Scribe Block_
@@ -16,7 +16,12 @@ Scribe Blocks provide (or _should_ provide) a definitive specification of requir
 ## Methodology
 For this project, all Scribe Blocks for all degrees and programs at the City University of New York (CUNY) are available from the CUNY Office of Institutional Research and Assessment. These Scribe Blocks and associated metadata are copied to a local database for development work. This Degree Works Processor parses requirement block text from the database into a JSON-encoded parse tree suitable for later processing by other applications. The parse trees are saved in the local database.
 
-This project includes of an [ANTLR](https://www.antlr.org/) grammar for the Scribe language (_ReqBlock.g4_); ANTLR generates a parser from the grammar in either JavaScript or Python. The JavaScript parser is used during testing for a relatively-quick check that all Scribe Blocks can be parsed using the grammar, and reports the handful that have syntax errors. The Python parser (_dgw_parser.py_) traverses the ANTLR parse tree and turns it into the JSON-encoded parse_tree that is saved for use by other applications. Presently, there are two applications: an HTML Viewer (_htmlificization_) and a Course Mapper (_course\_mapper_).
+## Subprojects
+- An [ANTLR](https://www.antlr.org/) grammar for the Scribe language (_ReqBlock.g4_); ANTLR generates lexer/parser code from the grammar in either JavaScript or Python. (Other languages, too.)The JavaScript parser is used during testing for a relatively-quick check that all Scribe Blocks can be parsed using the grammar, and reports the handful that have syntax errors.
+- The Python parser (_dgw\_parser.py_), which traverses the ANTLR parse tree and turns it into the
+JSON-encoded parse_tree that is saved for use by other applications. Modules related to this subproject have names that start with _dgw_.
+- An HTML Viewer (_htmlificization.py_). Modules related to this subproject have names that begin with _html_ or _format_.
+- The Course Mapper (_course\_mapper.py_)
 
 ### HTML Viewer
 The Viewer is part of one of two “Transfer Explorer” projects at CUNY that use this project. The [development project](https://github.com/cvickery/transfer-app/) provides an interface for looking up [any NYS-approved program at CUNY](https://transfer-app.qc.cuny.edu/requirements/), and to view the requirements for that program using the HTML Viewer.
