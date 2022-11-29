@@ -18,11 +18,13 @@ else:
   DEBUG = False
 
 # The sequence of the following imports matters
-from format_utils import format_proxy_advice, format_remark
+from format_utils import format_proxy_advice, format_remark, called_from
 import format_utils
 from format_body_qualifiers import dispatch_body_qualifiers
 import format_body_qualifiers
 
+# Global Circular Reference list: see format_copy_rules()
+copy_rules_references = []
 
 # format_block()
 # -------------------------------------------------------------------------------------------------
@@ -49,11 +51,12 @@ def format_block(block_list_arg: Any) -> str:
     block_type = block_dict['block_type']
     block_value = block_dict['block_value'].upper()
     institution = block_dict['institution']
+
     # Get the block
     with psycopg.connect('dbname=cuny_curriculum') as conn:
       with conn.cursor(row_factory=namedtuple_row) as cursor:
         cursor.execute(f"""
-          select parse_tree from requirement_blocks
+          select requirement_id, parse_tree from requirement_blocks
           where institution = %s
           and block_type ~* %s
           and block_value ~* %s
@@ -66,7 +69,9 @@ def format_block(block_list_arg: Any) -> str:
         elif cursor.rowcount > 1:
           block_str += f'<p class="error">Multiple matching Requirement Blocks found!</p>'
         else:
-          parse_tree = cursor.fetchone().parse_tree
+          row = cursor.fetchone()
+          requirement_id = row.requirement_id
+          parse_tree = row.parse_tree
           if parse_tree == {}:
             parse_results = f'<p class="error">No parse tree available for this block.</p>'
           elif 'error' in parse_tree.keys():
@@ -76,9 +81,10 @@ def format_block(block_list_arg: Any) -> str:
             try:
               parse_results = html_utils.list_to_html(parse_tree['header_list'], section='header')
               parse_results += html_utils.list_to_html(parse_tree['body_list'], section='body')
-            except Exception as e:
-              print(f'{e=}')
-          block_str += parse_results
+              block_str += parse_results
+            except Exception as err:
+              print(f'{institution} {requirement_id} {err=}', file=sys.stderr)
+              called_from(-1, file=sys.stderr)
 
   if summary:
     return f'<details>{summary}{block_str}</details>'
@@ -178,19 +184,18 @@ body_class_credit : (num_classes | num_credits)
     pass
 
   try:
-    # print('dispatching body qualifiers')
     # Qualifiers: Expect list of html paragraphs, but it might be empty
     if qualifiers_list := dispatch_body_qualifiers(class_credit_dict):
       class_credit_str += '\n'.join(qualifiers_list)
-    # print('ok so far')
+
     # If there is a list of courses, it gets shown as a display element.
     if courses_str := format_utils.format_course_list(class_credit_dict['course_list'],
                                                       num_areas_required):
       class_credit_str += courses_str
-    # print('no prob w/ class_credit_dict')
-  except TypeError as te:
+
+  except TypeError as err:
     # This isn't supposed to happen
-    print(te, file=sys.stderr)
+    print(err, file=sys.stderr)
     print(class_credit_dict, file=sys.stderr)
     exit('Unexpected TypeError in format_class_credit()')
   except KeyError as ke:
@@ -202,9 +207,9 @@ body_class_credit : (num_classes | num_credits)
     return f'{prefix_str}{class_credit_str}'
 
 
-# format_conditional_dict()
+# format_conditional()
 # -------------------------------------------------------------------------------------------------
-def format_conditional_dict(conditional_dict: dict) -> str:
+def format_conditional(conditional_dict: dict) -> str:
   """ Format a single conditional item.
   """
   # Preconditions
@@ -238,35 +243,10 @@ def format_conditional_dict(conditional_dict: dict) -> str:
     else_summary = f'<details><summary>Otherwise</summary>'
     else_body += '</details>'
   except KeyError:
+    # False part is optional
     pass
 
   return f'<details>{summary_str}{conditional_body}{else_summary}{else_body}</details>'
-
-
-# format_conditional_dict()
-# -------------------------------------------------------------------------------------------------
-# def format_conditional_dict(conditional_dict: dict) -> str:
-#   """ Expect a conditional expression string, an if_true list of rules, and an optional if_false
-#       list of rules. (Note: conditionals don't have labels: they aren't requirements per se.)
-#       As a reminder of work to be done, we call format_conditional() to interpret the condition
-#       string and return a list of conditions required. But that function is only a stub, pending
-#       determination of what should actually be done to interpret the condition string.
-
-#       The list of rules gets dispatched back into this module, which requires this function to
-#       determine whether to dispatch through format_header_productions or format_body_rules.
-#   """
-#   assert isinstance(conditional_dict, dict), (f'conditional_dict is {type(conditional_dict)}, not '
-#                                               f'dict')
-#   return_str = ''
-#   for conditional_item in conditional_dict:
-#     try:
-#       conditional_dict = conditional_item['conditional']
-#     except KeyError:
-#       raise ValueError(f'Conditional item with no conditional key in [{conditional_item.keys()}]')
-
-#     return_str += format_conditional(conditional_dict)
-
-#   return return_str
 
 
 # format_copy_rules()
@@ -275,15 +255,24 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
   """ Get the body of the referenced block, and display the rules from there.
   """
 
-  try:
-    try:
-      label_str = copy_rules_dict['label']
-      summary = f'<summary>{label_str}</summary>'
-    except KeyError:
-      summary = None
+  # The global list of target (instruction, requirement_id) tuples used to detect circular
+  # references. Emptied each time this routine completes
 
-    institution = copy_rules_dict['institution']
-    requirement_id = copy_rules_dict['requirement_id']
+  global copy_rules_references
+
+  try:
+    label_str = copy_rules_dict['label']
+    summary = f'<summary>{label_str}</summary>'
+  except KeyError:
+    summary = None
+
+  institution = copy_rules_dict['institution']
+  requirement_id = copy_rules_dict['requirement_id']
+  if (institution, requirement_id) in copy_rules_references:
+    copy_rules_str = (f'<p class="error">Block {institution} {requirement_id} tries to copy '
+                      f'rules from itself</p>')
+  else:
+    copy_rules_references.append((institution, requirement_id))
     block_type = copy_rules_dict['block_type']
     block_type = 'Concentration' if block_type == 'CONC' else block_type.title()
     block_value = copy_rules_dict['block_value']
@@ -314,14 +303,11 @@ def format_copy_rules(copy_rules_dict: dict) -> str:
               for key, value in body_element.items():
                 copy_rules_str += dispatch_body_rule(key, value)
 
-    if summary:
-      return f'<details>{summary}{copy_rules_str}</details>'
-    else:
-      return copy_rules_str
-
-  except psycopg.OperationalError as err:
-    print(f'CopyRules from {institution} {requirement_id} Failed', file=sys.stderr)
-    return(f'<p class="error">CopyRules Failed. Circular block reference?</p>')
+  copy_rules_references = []
+  if summary:
+    return f'<details>{summary}{copy_rules_str}</details>'
+  else:
+    return copy_rules_str
 
 
 # format_course_list_rule()
@@ -536,9 +522,9 @@ def format_rule_complete(rule_complete_dict: dict) -> str:
 def format_subset(subset_dict: dict) -> str:
   """                     Grammar                 Dict Key(s)
       subset            : BEGINSUB
-                        ( body_conditional        conditional_dict
+                        ( body_conditional        conditional
                           | block                 block
-                          | blocktype             blocktype_list
+                          | blocktype             blocktype
                           | body_class_credit     class_credit
                           | copy_rules            copy_rules
                           | course_list_rule      course_list_rule
@@ -592,14 +578,14 @@ def format_subset(subset_dict: dict) -> str:
 
     for key, value in requirement.items():
       match key:
-        case 'conditional_dict':
-          subset_str += format_conditional_dict(value[key])
+        case 'conditional':
+          subset_str += format_conditional(value)
 
         case 'block':
-          subset_str += format_block(value[key])
+          subset_str += format_block(value)
 
-        case 'blocktype_list':
-          subset_str += format_blocktype(value[key])
+        case 'blocktype':
+          subset_str += format_blocktype(value)
 
         case 'class_credit':
           subset_str += format_class_credit(value)
@@ -608,16 +594,19 @@ def format_subset(subset_dict: dict) -> str:
           subset_str += format_copy_rules(value)
 
         case 'course_list_rule':
-          subset_str += format_course_list_rule(value[key])
+          subset_str += format_course_list_rule(value)
 
         case 'group_requirement':
           subset_str += format_group_requirement(value)
 
         case 'noncourse':
-          subset_str += format_noncourse(value[key])
+          subset_str += format_noncourse(value)
+
+        case 'proxy_advice':
+          subset_str += format_proxy_advice(value)
 
         case 'rule_complete':
-          subset_str += format_rule_complete(value[key])
+          subset_str += format_rule_complete(value)
 
         case _:
           raise ValueError(f'Unhandled subset rule key: {key}')
@@ -630,8 +619,7 @@ def format_subset(subset_dict: dict) -> str:
 _dispatch_table = {'block': format_block,
                    'blocktype': format_blocktype,
                    'class_credit': format_class_credit,
-                   # 'conditional': format_conditional,
-                   'conditional_dict': format_conditional_dict,
+                   'conditional': format_conditional,
                    'copy_rules': format_copy_rules,
                    'course_list_rule': format_course_list_rule,
                    'group_requirement': format_group_requirement,

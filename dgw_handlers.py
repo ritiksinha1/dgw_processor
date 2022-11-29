@@ -255,7 +255,7 @@ def header_conditional(ctx, institution, requirement_id):
       return_dict['if_false'] = get_rules(ctx.header_else().header_rule_group().header_rule(),
                                           institution, requirement_id)
 
-  return {'conditional_dict': return_dict}
+  return {'conditional': return_dict}
 
 
 # body_conditional()
@@ -314,7 +314,7 @@ def body_conditional(ctx, institution, requirement_id):
       # This can't happen
       return_dict['if_false'] = 'Missing False Part'
 
-  return {'conditional_dict': return_dict}
+  return {'conditional': return_dict}
 
 
 # copy_rules()
@@ -1174,19 +1174,25 @@ def standalone(ctx, institution, requirement_id):
 # subset()
 # -------------------------------------------------------------------------------------------------
 def subset(ctx, institution, requirement_id):
-  """                     Grammar                 Dict Key(s)
+  """
       subset            : BEGINSUB
-                        ( body_conditional        conditional_list
-                          | block                 block
-                          | blocktype             blocktype_list
-                          | body_class_credit     class_credit
-                          | copy_rules            copy_rules
-                          | course_list_rule      course_list_rule
-                          | group_requirement     group_requirement
-                          | noncourse             noncourse
-                          | rule_complete         rule_complete
+                        ( body_conditional
+                          | block
+                          | blocktype
+                          | body_class_credit
+                          | copy_rules
+                          | course_list_rule
+                          | group_requirement
+                          | noncourse
+                          | rule_complete
                         )+
-                        ENDSUB ((qualifier tag?) | proxy_advice | remark | label)*;
+                        ENDSUB ((qualifier tag?)
+                                | hide_rule
+                                | proxy_advice
+                                | remark
+                                | label)*;
+
+
       The label and qualifiers, remararks, and proxy_advice (if any) are top-level keys in the
       returned dict. The others are returned in a list, using the list to maintain the sequence
       in which they appear in the subset.
@@ -1207,19 +1213,13 @@ def subset(ctx, institution, requirement_id):
         return_dict['label'] = get_label(ctx)
 
       case 'block':
-        return_dict['requirements'].append({'block': block(child,
-                                                           institution,
-                                                           requirement_id)})
+        return_dict['requirements'].append(block(child, institution, requirement_id))
 
       case 'blocktype':
-        return_dict['requirements'].append({'blocktype_list': blocktype(child,
-                                                                        institution,
-                                                                        requirement_id)})
+        return_dict['requirements'].append(blocktype(child, institution, requirement_id))
 
       case 'body_conditional':
-         return_dict['requirements'].append({'conditional_dict': body_conditional(child,
-                                                                                  institution,
-                                                                                  requirement_id)})
+         return_dict['requirements'].append(body_conditional(child, institution, requirement_id))
 
       case 'body_class_credit':
         # Return a list of class_credit dicts
@@ -1237,17 +1237,13 @@ def subset(ctx, institution, requirement_id):
                                                              requirement_id))
 
       case 'noncourse':
-        return_dict['requirements'].append({'noncourse': noncourse(child,
-                                                                   institution,
-                                                                   requirement_id)})
+        return_dict['requirements'].append(noncourse(child, institution, requirement_id))
 
       case 'proxy_advice':
         return_dict['requirements'].append(proxy_advice(child, institution, requirement_id))
 
       case 'rule_complete':
-        return_dict['requirements'].append({'rule_complete': rule_complete(child,
-                                                                           institution,
-                                                                           requirement_id)})
+        return_dict['requirements'].append(rule_complete(child, institution, requirement_id))
 
       case 'remark':
         assert 'remark' not in return_dict.keys(), (f'{institution} {requirement_id} Multiple '

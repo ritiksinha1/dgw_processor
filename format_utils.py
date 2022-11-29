@@ -18,7 +18,7 @@ import sys
 
 from collections import namedtuple, defaultdict
 from courses_cache import courses_cache, CourseTuple
-from traceback import print_exception, print_stack
+from traceback import print_exception, print_stack, extract_stack
 
 if os.getenv('DEBUG_FORMAT_UTILS'):
   DEBUG = True
@@ -27,6 +27,28 @@ else:
 
 number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
                 'ten', 'eleven', 'twelve']
+
+
+# called_from()
+# -------------------------------------------------------------------------------------------------
+def called_from(depth=3, out_file=sys.stdout):
+  """ Tell where the caller was called from (developmental aid)
+  """
+  if depth < 0:
+    depth = 999
+
+  caller_frames = extract_stack()
+
+  for index in range(-2 - depth, -1):
+    try:
+      function_name = f'{caller_frames[index].name}()'
+      file_name = caller_frames[index].filename
+      file_name = file_name[file_name.rindex('/') + 1:]
+      print(f'Frame: {function_name:20} at {file_name} '
+            f'line {caller_frames[index].lineno}', file=out_file)
+    except IndexError:
+      # Dont kvetch if stack isn’t deep enough
+      pass
 
 
 # and_list()
