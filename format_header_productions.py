@@ -180,7 +180,7 @@ def _format_lastres(lastres_dict: dict) -> str:
 
   try:
     of_number = float(lastres_dict['of_number'])
-    # print('m of n format')
+    # ('m of n format')
     match (class_credit, course_list_str):
       case ['class', '']:
         lastres_str = (f'<p>At least {number} of the last {of_number} classes must be taken in '
@@ -196,7 +196,7 @@ def _format_lastres(lastres_dict: dict) -> str:
                        f'classes must be taken in residence:</p>{credit_str}')
 
   except KeyError:
-    # print('m-only format')
+    # ('m-only format')
     match (class_credit, course_list_str):
       case ['class', '']:
         lastres_str = (f'<p>At least {number} classes must be taken in residence</p>')
