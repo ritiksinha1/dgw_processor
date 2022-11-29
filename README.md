@@ -18,10 +18,14 @@ For this project, all Scribe Blocks for all degrees and programs at the City Uni
 
 ## Subprojects
 - An [ANTLR](https://www.antlr.org/) grammar for the Scribe language (_ReqBlock.g4_); ANTLR generates lexer/parser code from the grammar in either JavaScript or Python. (Other languages, too.)The JavaScript parser is used during testing for a relatively-quick check that all Scribe Blocks can be parsed using the grammar, and reports the handful that have syntax errors.
+- Quarantine Manager: When the ANTLR lexer/parser fails, for some reason, the block has to be examined manually to determine whether the problem is in the grammar or the Scribe code. If the problem is in the Scribe code, the block is “quarantined” and blocked from further processing.
 - The Python parser (_dgw\_parser.py_), which traverses the ANTLR parse tree and turns it into the
 JSON-encoded parse_tree that is saved for use by other applications. Modules related to this subproject have names that start with _dgw_.
 - An HTML Viewer (_htmlificization.py_). Modules related to this subproject have names that begin with _html_ or _format_.
 - The Course Mapper (_course\_mapper.py_)
+
+### Quarantine Manager
+The quarantine manager provides a singleton object that other modules can use to determine whether a block has been quarantined or not. The module also provides a command-line interface for performing CRUD operations on the set of quarantined blocks. While the quarantined blocks are identified in their parse trees in the database, a CSV file is also maintained as a backing store for the list to help handle cases where different development systems get out of sync with one another. The CLI provides commands for managing the interchange of information among the CSV file, the in-memory dictionary, and the parse trees in the database.
 
 ### HTML Viewer
 The Viewer is part of one of two “Transfer Explorer” projects at CUNY that use this project. The [development project](https://github.com/cvickery/transfer-app/) provides an interface for looking up [any NYS-approved program at CUNY](https://transfer-app.qc.cuny.edu/requirements/), and to view the requirements for that program using the HTML Viewer.

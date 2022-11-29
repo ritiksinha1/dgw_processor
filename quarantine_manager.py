@@ -52,6 +52,7 @@ class QuarantineManager(dict):
                block_type, period_start, period_stop, parse_tree->'error' as explanation
           from requirement_blocks
          where parse_tree->'error' is not null
+         order by institution, requirement_id
         """)
         for row in cursor:
           match row.period_start.lower()[-1]:
@@ -63,7 +64,8 @@ class QuarantineManager(dict):
           key = (row.institution, row.requirement_id)
           values = _Values._make([row.block_type, catalog, year, explanation])
           self._quarantined_dict[key] = values
-
+          # print(f'{row.institution} {row.requirement_id} {row.block_type} {catalog} {year} {explanation}')
+          # print(self._quarantined_dict[key])
     # The dict is dirty if it changes without updating the db
     self._dict_dirty = False
     # The file is dirty if the dict has changed and hasn't been written to it. No check is made to
@@ -96,6 +98,14 @@ class QuarantineManager(dict):
     sk = sorted(self._quarantined_dict.keys(), key=lambda k: [k[0], k[1]])
     return [f'{k[0]} {k[1]}: {self._quarantined_dict[k][3]}' for k in sk]
 
+  # keys
+  # -----------------------------------------------------------------------------------------------
+  @property
+  def keys(self):
+    """ Return list of (institution, requirement_id) tuples
+    """
+    return [k for k in self._quarantined_dict.keys()]
+
   # _read()
   # -----------------------------------------------------------------------------------------------
   def _read(self):
@@ -111,15 +121,6 @@ class QuarantineManager(dict):
           row = CSV_Row._make(line)
           new_dict[(row.institution, row.requirement_id)] = row.explanation
     return new_dict
-
-    # with psycopg.connect('dbname=cuny_curriculum') as conn:
-    #   with conn.cursor(row_factory=namedtuple_row) as cursor:
-    #     # Mark all currently-quarantined blocks as un-parsed
-    #     empty_tree = json.dumps({})
-    #     cursor.execute("""
-    #     update requirement_blocks set parse_tree = %s
-    #     where parse_tree->'error' is not null
-    #     """)
 
   # read()
   # -----------------------------------------------------------------------------------------------
@@ -259,102 +260,104 @@ if __name__ == '__main__':
 
   # CLI until empty line, quit, or exit
   while selection := choice.lower():
-    if selection == '-':
-      pass
-    elif selection in ['q', 'e', 'quit', 'exit']:
-      # Allows overlap with institution names that start with q or e
+    # Allow command name to overlap with institution names that start with q or e
+    if selection in ['q', 'e', 'quit', 'exit']:
       break
 
-      match selection[0]:
+    match selection[0]:
 
-        case '?' | 'h':
-          # CRUD operations
-          print('Add {institution requirement_id reason} to dict, CSV file, and db')
-          print('Change explanation')
-          print('File: show CSV file')
-          print('List: list blocks')
-          print('Read CSV to dict')
-          print('Write dict to CSV')
-          print('Update db from dict')
-          # Query
-          print('<institution> <requirement_id> Is Quarantined?')
+      case '?' | 'h':
+        # CRUD operations
+        print('Add {institution requirement_id reason} to dict, CSV file, and db')
+        print('Change explanation')
+        print('File: show CSV file')
+        print('List: list blocks')
+        print('Read CSV to dict')
+        print('Write dict to CSV')
+        print('Update db from dict')
+        # Query
+        print('<institution> <requirement_id> Is Quarantined?')
 
-        case 'a':
-          # Add institution requirement_id reason to dict, CSV, and db
-          try:
-            # add institution requirement_id explanation
-            cmd, institution, requirement_id, *explanation = choice.split()
-            institution = institution[0:3].upper() + '01'
-            requirement_id = f"RA{int(requirement_id.lower().strip('ra')):06}"
-            explanation = ' '.join(explanation)
-            key = (institution, requirement_id)
-            if qm.is_quarantined(key):
-              print(f'{institution} {requirement_id} is already quarantined')
-            else:
-              qm[key] = explanation
-              print(f'Quarantined {institution} {requirement_id}')
-          except Exception as err:
-            print(f'Add failed: {err}')
-
-        case 'c':
-          # Change an explanation
-          try:
-            cmd, institution, requirement_id, *explanation = choice.split()
-            institution = institution[0:3].upper() + '01'
-            requirement_id = f"RA{int(requirement_id.lower().strip('ra')):06}"
-            explanation = ' '.join(explanation)
-            key = (institution, requirement_id)
-            if old_text := qm.is_quarantined(key):
-              qm[key] = explanation
-              print(f'Changed “{old_text}” ==> “{explanation}”')
-            else:
-              print(f'{institution} {requirement_id} is not quarantined')
-          except Exception as err:
-            print(f'Change failed: {err}')
-
-        case 'f':
-          # Show the CSV file
-          print(qm.file)
-
-        case 'l':
-          # Show the dict
-          for line in qm.list:
-            print(line)
-
-        case 'r':
-          # Read csv file into dict
-          if qm.read():
-            print('Dict changed')
-            assert qm.is_dict_dirty
+      case 'a':
+        # Add institution requirement_id reason to dict, CSV, and db
+        try:
+          # add institution requirement_id explanation
+          cmd, institution, requirement_id, *explanation = choice.split()
+          institution = institution[0:3].upper() + '01'
+          requirement_id = f"RA{int(requirement_id.lower().strip('ra')):06}"
+          explanation = ' '.join(explanation)
+          key = (institution, requirement_id)
+          if qm.is_quarantined(key):
+            print(f'{institution} {requirement_id} is already quarantined')
           else:
-            print('No difference')
-            assert not qm.is_dict_dirty
+            qm[key] = explanation
+            print(f'Quarantined {institution} {requirement_id}')
+        except Exception as err:
+          print(f'Add failed: {err}')
 
-        case 'w':
-          # Write the dict to the CSV
-          num_rows = qm.write()
-          print(f'Saved {num_rows} blocks')
+      case 'c':
+        # Change an explanation
+        try:
+          cmd, institution, requirement_id, *explanation = choice.split()
+          institution = institution[0:3].upper() + '01'
+          requirement_id = f"RA{int(requirement_id.lower().strip('ra')):06}"
+          explanation = ' '.join(explanation)
+          key = (institution, requirement_id)
+          if old_text := qm.is_quarantined(key):
+            qm[key] = explanation
+            print(f'Changed “{old_text}” ==> “{explanation}”')
+          else:
+            print(f'{institution} {requirement_id} is not quarantined')
+        except Exception as err:
+          print(f'Change failed: {err}')
 
-        case 'u':
-          # Update the db from the dict
-          print('update not implemented yet')
+      case 'f':
+        # Show the CSV file
+        print(qm.file)
 
-        case 'e':
-          break
+      case 'l':
+        # Show the dict
+        for line in qm.list:
+          print(line)
 
-        case _:
-          # Not a command, possibly a block check
-          try:
-            institution, requirement_id = choice.split()
-            institution = institution.strip('01').upper() + '01'
-            requirement_id = f'RA{requirement_id.strip("RA"):>06}'
-            explanation = qm.is_quarantined((institution, requirement_id))
-            if explanation:
-              print(f'{institution} {requirement_id}: {explanation}')
-            else:
-              print(f'{institution} {requirement_id} is not quarantined')
-          except Exception as err:
-            print(f'Command deficiency detected: {err}', file=sys.stderr)
+      case 'r':
+        # Read csv file into dict
+        if qm.read():
+          print('Dict changed')
+          assert qm.is_dict_dirty
+        else:
+          print('No difference')
+          assert not qm.is_dict_dirty
+
+      case 'w':
+        # Write the dict to the CSV
+        num_rows = qm.write()
+        print(f'Saved {num_rows} blocks')
+
+      case 'u':
+        # Update the db from the dict
+        print('update not implemented yet')
+
+      case 'e':
+        break
+
+      case '-':
+        # The starter-upper dummy command
+        pass
+
+      case _:
+        # Not a command, possibly a block check
+        try:
+          institution, requirement_id = choice.split()
+          institution = institution.strip('01').upper() + '01'
+          requirement_id = f'RA{requirement_id.strip("RA"):>06}'
+          explanation = qm.is_quarantined((institution, requirement_id))
+          if explanation:
+            print(f'{institution} {requirement_id}: {explanation}')
+          else:
+            print(f'{institution} {requirement_id} is not quarantined')
+        except Exception as err:
+          print(f'Command deficiency detected: {err}', file=sys.stderr)
 
     choice = input('help | add | file | dict | read | write | update : ')
 

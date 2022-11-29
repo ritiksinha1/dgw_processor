@@ -23,7 +23,7 @@ if __name__ == '__main__':
   quarantined_dict = QuarantineManager()
 
   # Convert keys to a list so we can delete from the dict if anything parses correctly now.
-  keys = list(quarantined_dict.keys())
+  keys = quarantined_dict.keys
   num_quarantined = len(keys)
   num_nolonger = 0
   num_success = 0
@@ -40,7 +40,7 @@ if __name__ == '__main__':
           cursor.execute("""
           select institution, requirement_id, period_start, period_stop,
                  requirement_text,
-                 parse_tree->'error' as analysis_text
+                 parse_tree->'error' as explanation
             from requirement_blocks
            where institution = %s
              and requirement_id = %s
@@ -60,10 +60,10 @@ if __name__ == '__main__':
                 print(f'{institution} {requirement_id} Timeout: {error_msg}')
 
               # Restore the original error message
-              analysis_text = row.analysis_text.replace("'", '|')
+              explanation = row.explanation.replace("'", '|')
               restore_query = f"""
               update requirement_blocks
-                     set parse_tree = jsonb_set(parse_tree, '{error_word}', '"{analysis_text}"')
+                     set parse_tree = jsonb_set(parse_tree, '{error_word}', '"{explanation}"')
                where institution = '{institution}'
                  and requirement_id = '{requirement_id}'"""
               update_cursor.execute(restore_query)
