@@ -126,7 +126,6 @@ def header_class_credit(ctx, institution, requirement_id):
       allow_clause        : LP allow NUMBER RP;
 
 """
-
   return_dict = {'label': get_label(ctx)}
 
   return_dict.update(num_class_or_num_credit(ctx))
@@ -1060,7 +1059,7 @@ def proxy_advice(ctx, institution, requirement_id):
     if display_context := context.display():
       advice_str += ' '.join([c.getText().strip(' "') for c in display_context.string()])
     if advice_context := context.advice():
-      advice_str += ' '.join([c.getText().strip(' "') for c in advice_context.string()])
+      advice_str += ' ' + ' '.join([c.getText().strip(' "') for c in advice_context.string()])
 
   advice_str = advice_str.replace('  ', ' ')
   proxy_args = re.findall(r'<.*?>', advice_str)
@@ -1367,3 +1366,7 @@ def dispatch(ctx: any, institution: str, requirement_id: str):
              'institution': institution,
              'requirement_id': requirement_id,
              'part': which_part}}
+
+
+if __name__ == '__main__':
+  print('No command line interface for this module')

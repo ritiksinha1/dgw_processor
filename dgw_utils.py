@@ -40,10 +40,12 @@ conn.close()
 
 # called_from()
 # -------------------------------------------------------------------------------------------------
-def called_from(depth=3):
+def called_from(depth=3, out_file=sys.stderr):
   """ Tell where the caller was called from (developmental aid)
   """
   caller_frames = extract_stack()
+  if depth < 0:
+    depth = 999
 
   for index in range(-2 - depth, -1):
     try:
@@ -51,7 +53,7 @@ def called_from(depth=3):
       file_name = caller_frames[index].filename
       file_name = file_name[file_name.rindex('/') + 1:]
       print(f'Frame: {function_name:20} at {file_name} '
-            f'line {caller_frames[index].lineno}', file=sys.stderr)
+            f'line {caller_frames[index].lineno}', file=out_file)
     except IndexError:
       # Dont kvetch if stack isn’t deep enough
       pass
@@ -420,12 +422,10 @@ def get_label(ctx: Any) -> str:
     match 'header' if context_path(ctx).lower().startswith('head') else 'body':
 
       case 'header':
-        if header_label_ctx := ctx.header_label():
-          labels_ctx = header_label_ctx.label()
+        labels_ctx = ctx.header_label()
 
       case 'body':
-        if labels_ctx := ctx.label():
-          pass
+        labels_ctx = ctx.label()
 
       case _: exit(f'Invalid match: {_}')
 
