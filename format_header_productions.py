@@ -45,7 +45,7 @@ DEBUG = os.getenv('DEBUG_HEADER')
 # =================================================================================================
 """ About Labels and Course Lists
 
-      The grammar differentiates between labels in the header (label_head) and body (label). But
+      The grammar differentiates between labels in the header (header_label) and body (label). But
       dgw_parser has turned them both into 'label' keys, so this module doesn't have to deal with
       that difference.
 
