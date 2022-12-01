@@ -96,7 +96,6 @@ qualifier         : hide_rule
                   | mingrade
                   | minperdisc
                   | minspread
-//                  | proxy_advice
                   | rule_tag
                   | samedisc
                   | share
@@ -223,9 +222,8 @@ rule_complete   : (RULE_COMPLETE | RULE_INCOMPLETE)  ( hide_rule
 
 under           : UNDER NUMBER class_or_credit course_list ( proxy_advice | header_label )*;
 
-/* Rule Components
- * ------------------------------------------------------------------------------------------------
- */
+// Rule Components
+// ------------------------------------------------------------------------------------------------
 allow_clause        : LP allow NUMBER RP;
 
 header_class_credit : (num_classes | num_credits)
