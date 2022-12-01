@@ -20,6 +20,7 @@ from dgw_parser import parse_block
 from psycopg.rows import namedtuple_row, dict_row
 from quarantine_manager import QuarantineManager
 from recordclass import recordclass
+from traceback import extract_stack
 from typing import Any
 
 
@@ -75,6 +76,28 @@ reference_callers = defaultdict(list)
 Reference = namedtuple('Reference', 'name lineno')
 
 MogrifiedInfo = namedtuple('MogrifiedInfo', 'course_id_str course_str career with_clause')
+
+
+# called_from()
+# -------------------------------------------------------------------------------------------------
+def called_from(depth=3, out_file=sys.stdout):
+  """ Tell where the caller was called from (developmental aid)
+  """
+  if depth < 0:
+    depth = 999
+
+  caller_frames = extract_stack()
+
+  for index in range(-2 - depth, -1):
+    try:
+      function_name = f'{caller_frames[index].name}()'
+      file_name = caller_frames[index].filename
+      file_name = file_name[file_name.rindex('/') + 1:]
+      print(f'Frame: {function_name:20} at {file_name} '
+            f'line {caller_frames[index].lineno}', file=out_file)
+    except IndexError:
+      # Dont kvetch if stack isn’t deep enough
+      pass
 
 
 # =================================================================================================
@@ -470,8 +493,6 @@ def process_block(block_info: dict,
   institution = block_info['institution']
   requirement_id = block_info['requirement_id']
   dap_req_block_key = (institution, requirement_id)
-  # if dap_req_block_key in [('QNS01', 'RA001246'), ('QNS01', 'RA000884')]:
-  #   breakpoint()
   reference_counts[dap_req_block_key] += 1
 
   caller_frame = traceback.extract_stack()[-2]
@@ -584,7 +605,7 @@ def process_block(block_info: dict,
                               f'{block_info_dict["block_type"]}',
                               f'{block_info_dict["block_value"]}',
                               f'{block_info_dict["block_title"]}',
-                              f'{header_dict["class_credits"]}',
+                              f'{header_dict["requirement_size"]}',
                               f'{header_dict["max_transfer"]}',
                               f'{header_dict["min_residency"]}',
                               f'{header_dict["min_grade"]}',
@@ -611,8 +632,6 @@ def process_block(block_info: dict,
 
   # Finally, if this is a plan block, check whether its subplans have been processed explicitly.
   if plan_dict:
-    # if requirement_id == 'RA001240':
-    #   breakpoint()
     num_subplans = len(plan_dict['subplans'])
     zero = []
     once = []
@@ -662,11 +681,12 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
 
   return_dict = dict()
   # Empty strings for default values that might or might not be found.
-  for key in ['class_credits', 'min_residency', 'min_grade', 'min_gpa']:
+  for key in ['min_residency', 'min_grade', 'min_gpa']:
     return_dict[key] = ''
   # Empty lists as default limits that might or might not be specified in the header.
-  for key in ['max_transfer', 'max_classes', 'max_credits']:
+  for key in ['requirement_size', 'max_transfer', 'max_classes', 'max_credits']:
     return_dict[key] = []
+
   # The ignomious 'other' column.
   return_dict['other'] = {'maxclass': [],
                           'maxcredit': [],
@@ -693,47 +713,68 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
       match key:
 
         case 'header_class_credit':
-          if return_dict['class_credits']:
-            print(f'{institution} {requirement_id}: Header repeated class-credit declaration',
-                  file=todo_file)
+          # This is the “total credits and/or total classes” part of the header, which we are
+          # calling “requirement size”. Conditionals my cause multiple instances to be specified,
+          # which is why this value is maintained as a list, which may also contain interspersed
+          # conditionals.
+          cc_dict = dict()
 
+          # There's always a label key, but the value may be empty
           if label_str := value['label']:
-            print(f'{institution} {requirement_id}: Header class_credit label: {label_str}',
-                  file=todo_file)
+            cc_dict['label'] = label_str
+
+          try:
+            # There might or might-not be proxy-advice
+            proxy_advice = value['proxy_advice']
+            if do_proxy_advice:
+              cc_dict['proxy_advice'] = value['proxy_advice']
+              print(f'{institution} {requirement_id} Header header_class_credit proxy_advice',
+                    file=log_file)
+            else:
+              print(f'{institution} {requirement_id} Header header_class_credit proxy_advice '
+                    f'(ignored)', file=log_file)
+          except KeyError:
+            # No proxy-advice (normal))
+            pass
+
+          cc_dict['is_pseudo'] = value['is_pseudo']
+
           min_classes = None if value['min_classes'] is None else int(value['min_classes'])
           min_credits = None if value['min_credits'] is None else float(value['min_credits'])
           max_classes = None if value['max_classes'] is None else int(value['max_classes'])
           max_credits = None if value['max_credits'] is None else float(value['max_credits'])
-          assert not (min_credits and max_credits is None), f'{min_credits} {max_credits}'
-          assert not (min_credits is None and max_credits), f'{min_credits} {max_credits}'
-          assert not (min_classes and max_classes is None), f'{min_classes} {max_classes}'
-          assert not (min_classes is None and max_classes), f'{min_classes} {max_classes}'
-          class_credit_list = []
-          if min_classes and max_classes:
+
+          classes_part = ''
+          if min_classes or max_classes:
+            assert min_classes and max_classes, f'{min_classes=} {max_classes=}'
             if min_classes == max_classes:
-              class_credit_list.append(f'{max_classes} classes')
+              classes_part = (f'{max_classes} classes')
             else:
-              class_credit_list.append(f'{min_classes}-{max_classes} classes')
+              classes_part = (f'{min_classes}-{max_classes} classes')
 
-          if min_credits and max_credits:
+          credits_part = ''
+          if min_credits or max_credits:
+            assert min_credits and max_credits, f'{min_credits=} {max_credits=}'
             if min_credits == max_credits:
-              class_credit_list.append(f'{max_credits:.1f} credits')
+              credits_part = (f'{max_credits:.1f} credits')
             else:
-              class_credit_list.append(f'{min_credits:.1f}-{max_credits:.1f} credits')
-            try:
-              proxy_advice = value['proxy_advice']
-              if do_proxy_advice:
-                print(f'{institution} {requirement_id} Header {key} proxy_advice',
-                      file=todo_file)
-              else:
-                print(f'{institution} {requirement_id} Header {key} proxy_advice (ignored)',
-                      file=log_file)
-            except KeyError:
-              # No proxy-advice (normal))
-              pass
-          return_dict['class_credits'] = ' and '.join(class_credit_list)
+              credits_part = (f'{min_credits:.1f}-{max_credits:.1f} credits')
 
-        case 'conditional_dict':
+          if classes_part and credits_part:
+            conjunction = value['conjunction']
+            assert conjunction is not None, f'{classes_part=} {credits_part=}'
+            cc_dict['size'] = f'{classes_part} {conjunction} {credits_part}'
+            print(f'{institution} {requirement_id} Header classes and credits', file=log_file)
+          elif classes_part or credits_part:
+            # One of them is blank
+            cc_dict['size'] = classes_part + credits_part
+            print(f'{institution} {requirement_id} Header classes or credits', file=log_file)
+          else:
+            exit('Malformed header_class_credit')
+
+          return_dict['requirement_size'].append(cc_dict)
+
+        case 'conditional':
           """ Observed:
                 No course list items
                  58   T: ['header_class_credit']
@@ -756,7 +797,7 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
           """
           print(f'{institution} {requirement_id} Header conditional_dict', file=todo_file)
 
-          conditional_dict = header_item['conditional_dict']
+          conditional_dict = header_item['conditional']
           condition_str = conditional_dict['condition_str']
           print(f'\n{institution} {requirement_id} Header conditional_dict: {condition_str}',
                 file=debug_file)
@@ -772,11 +813,15 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
 
         case 'header_lastres':
           # A subset of residency requirements
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header lastres label', file=todo_file)
           print(f'{institution} {requirement_id} Header lastres (ignored)', file=log_file)
           pass
 
         case 'header_maxclass':
           print(f'{institution} {requirement_id} Header maxclass', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header maxclass label', file=todo_file)
           try:
             for cruft_key in ['institution', 'requirement_id']:
               del(value['maxclass']['course_list'][cruft_key])
@@ -817,15 +862,20 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
                         'courses': course_list
                         }
           return_dict['other']['maxcredit'].append(limit_dict)
+
           print(f'{institution} {requirement_id} Header maxcredit', file=log_file)
 
         case 'header_maxpassfail':
           print(f'{institution} {requirement_id} Header maxpassfail', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header maxpassfail label', file=todo_file)
           assert 'maxpassfail' not in return_dict['other'].keys()
           return_dict['other']['maxpassfail'] = value['maxpassfail']
 
         case 'header_maxperdisc':
           print(f'{institution} {requirement_id} Header maxperdisc', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header maxperdisc label', file=todo_file)
           return_dict['other']['maxperdisc'].append(value['maxperdisc'])
 
         case 'header_maxtransfer':
@@ -849,10 +899,14 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
 
         case 'header_minclass':
           print(f'{institution} {requirement_id} Header minclass', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header minclass label', file=todo_file)
           return_dict['other']['minclass'].append(value['minclass'])
 
         case 'header_mincredit':
           print(f'{institution} {requirement_id} Header mincredit', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header mincredit label', file=todo_file)
           return_dict['other']['mincredit'].append(value['mincredit'])
 
         case 'header_mingpa':
@@ -869,13 +923,16 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
           return_dict['min_grade'] = letter_grade(float(value['mingrade']['number']))
 
         case 'header_minperdisc':
+          print(f'{institution} {requirement_id} Header minperdisc', file=log_file)
           if label := value['label']:
             print(f'{institution} {requirement_id} Header minperdisc label', file=todo_file)
           return_dict['other']['minperdisc'].append(value['minperdisc'])
-          print(f'{institution} {requirement_id} Header minperdisc', file=log_file)
 
         case 'header_minres':
           print(f'{institution} {requirement_id} Header minres', file=log_file)
+          if label_str := value['label']:
+            print(f'{institution} {requirement_id} Header minres label', file=todo_file)
+
           return_dict['min_residency'] = header_minres(value)
 
         case 'proxy_advice':
@@ -890,9 +947,9 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
           assert 'remark' not in return_dict['other'].keys()
           return_dict['other']['remark'] = value
 
-        case 'header_maxterm' | 'header_minterm' | 'noncourse' | 'optional' | \
+        case 'header_maxterm' | 'header_minterm' | 'lastres' | 'noncourse' | 'optional' | \
              'rule_complete' | 'standalone' | 'header_share' | 'header_tag' | 'under':
-          # Intentionally ignored
+          # Intentionally ignored: there are no course requirements or restrictions to report.
           print(f'{institution} {requirement_id} Header {key} (ignored)', file=log_file)
           pass
 
@@ -958,7 +1015,6 @@ def traverse_body(node: Any, context_list: list) -> None:
   elif isinstance(node, dict):
     # A dict should have one key that identifies the requirement type, and a sub-dict that gives the
     # details about that requirement, including the label that gives it its name.
-
     assert len(node) == 1, f'{list(node.keys())}'
     requirement_type, requirement_value = list(node.items())[0]
 
@@ -1102,7 +1158,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             # Course List is an optional part of ClassCredit
             pass
 
-        case 'conditional_dict':
+        case 'conditional':
           assert isinstance(requirement_value, dict)
           # Use the condition as the pseudo-name of this requirement
           condition = requirement_value['condition_str']
@@ -1205,11 +1261,6 @@ def traverse_body(node: Any, context_list: list) -> None:
           # requirements.)
           print(institution, requirement_id, 'Body rule_complete (ignored)', file=log_file)
 
-        case 'group_requirements':
-          # Group requirements is a list , so it should not show up here.
-          exit(f'{institution} {requirement_id} Error: unexpected group_requirements',
-               file=sys.stderr)
-
         case 'group_requirement':
           # ---------------------------------------------------------------------------------------
           """ Each group requirement has a group_list, label, and number (num_required)
@@ -1301,8 +1352,8 @@ def traverse_body(node: Any, context_list: list) -> None:
                           print(f'{institution} {requirement_id} Group block: no active '
                                 f'{block_args[1:]} blocks', file=fail_file)
                         elif cursor.rowcount > 1:
-                          # Hopefully, the major1 field of exactly one block will match this program's
-                          # block value, resolving the issue.
+                          # Hopefully, the major1 field of exactly one block will match this
+                          # program's block value, resolving the issue.
                           matching_rows = []
                           for row in cursor:
                             if row['major1'] == block_value:
@@ -1377,11 +1428,20 @@ def traverse_body(node: Any, context_list: list) -> None:
           except KeyError:
             context_dict['requirement_name'] = 'No requirement name available'
             print(f'{institution} {requirement_id} Subset with no label', file=fail_file)
+
+          # Remarks and Proxy-Advice not observed to occur at this, but ..
           try:
             context_dict['remark'] = requirement_value['remark']
             print(f'{institution} {requirement_id} Subset remark', file=log_file)
           except KeyError:
             # Remarks are optional
+            pass
+
+          try:
+            context_dict['proxy_advice'] = requirement_value['proxy_advice']
+            print(f'{institution} {requirement_id} Subset proxy_advice', file=log_file)
+          except KeyError:
+            # Display/Proxy-Advice are optional
             pass
 
           subset_context = [context_dict]
@@ -1398,68 +1458,63 @@ def traverse_body(node: Any, context_list: list) -> None:
 
                 case 'block':
                   # label number type value
-                  if isinstance(rule, list):
-                    block_dicts = rule
-                  else:
-                    block_dicts = [rule]
-                  for block_dict in block_dicts:
-                    num_required = int(block_dict['block']['number'])
-                    if num_required != 1:
-                      print(f'{institution} {requirement_id} Subset block: {num_required=}',
-                            file=fail_file)
-                      continue
-                    block_label = block_dict['block']['label']
-                    required_block_type = block_dict['block']['block_type']
-                    required_block_value = block_dict['block']['block_value']
-                    block_args = [institution, required_block_type, required_block_value]
+                  num_required = int(rule['number'])
+                  if num_required != 1:
+                    print(f'{institution} {requirement_id} Subset block: {num_required=}',
+                          file=fail_file)
+                    continue
+                  block_label = rule['label']
+                  required_block_type = rule['block_type']
+                  required_block_value = rule['block_value']
+                  block_args = [institution, required_block_type, required_block_value]
 
-                    # CONC, MAJOR, and MINOR blocks must be active blocks; other (literally and
-                    # figuratively) blocks need only be current.
-                    with psycopg.connect('dbname=cuny_curriculum') as conn:
-                      with conn.cursor(row_factory=dict_row) as cursor:
+                  # CONC, MAJOR, and MINOR blocks must be active blocks; other (literally and
+                  # figuratively) blocks need only be current.
+                  with psycopg.connect('dbname=cuny_curriculum') as conn:
+                    with conn.cursor(row_factory=dict_row) as cursor:
 
-                        cursor.execute("""
-                        select institution, requirement_id, block_type, block_value,
-                               block_title, period_start, period_stop, major1
-                          from active_req_blocks
-                         where institution = %s
-                           and block_type = %s
-                           and block_value = %s
-                        """, block_args)
+                      cursor.execute("""
+                      select institution, requirement_id, block_type, block_value,
+                             block_title, period_start, period_stop, major1
+                        from active_req_blocks
+                       where institution = %s
+                         and block_type = %s
+                         and block_value = %s
+                      """, block_args)
 
-                        target_block = None
-                        if cursor.rowcount == 0:
-                          print(f'{institution} {requirement_id} Subset block: no active '
-                                f'{block_args[1:]} blocks', file=fail_file)
-                        elif cursor.rowcount > 1:
-                          # Hopefully, the major1 field of exactly one block will match this
-                          # program's block value, resolving the issue.
-                          matching_rows = []
-                          for row in cursor:
-                            if row['major1'] == block_value:
-                              matching_rows.append(row)
-                          if len(matching_rows) == 1:
-                            target_block = matching_rows[0]
-                          else:
-                            print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
-                                  f'active {block_args[1:]} blocks; {len(matching_rows)} major1 '
-                                  f'matches', file=fail_file)
+                      target_block = None
+                      if cursor.rowcount == 0:
+                        print(f'{institution} {requirement_id} Subset block: no active '
+                              f'{block_args[1:]} blocks', file=fail_file)
+                      elif cursor.rowcount > 1:
+                        # Hopefully, the major1 field of exactly one block will match this
+                        # program's block value, resolving the issue.
+                        matching_rows = []
+                        for row in cursor:
+                          if row['major1'] == block_value:
+                            matching_rows.append(row)
+                        if len(matching_rows) == 1:
+                          target_block = matching_rows[0]
                         else:
-                          target_block = cursor.fetchone()
+                          print(f'{institution} {requirement_id} Subset block: {cursor.rowcount} '
+                                f'active {block_args[1:]} blocks; {len(matching_rows)} major1 '
+                                f'matches', file=fail_file)
+                      else:
+                        target_block = cursor.fetchone()
 
-                        if target_block is not None:
-                          process_block(target_block, context_list + requirement_context)
-                          print(f'{institution} {requirement_id} Subset block '
-                                f'{target_block["block_type"]}', file=log_file)
+                      if target_block is not None:
+                        process_block(target_block, context_list + requirement_context)
+                        print(f'{institution} {requirement_id} Subset block '
+                              f'{target_block["block_type"]}', file=log_file)
 
                 case 'blocktype':
                   # Not observed to occur
                   print(f'{institution} {requirement_id} Subset blocktype (ignored)',
                         file=todo_file)
 
-                case 'conditional_dict':
+                case 'conditional':
                   print(f'{institution} {requirement_id} Subset conditional_dict', file=log_file)
-                  traverse_body(rule, context_list + subset_context)
+                  traverse_body(requirement, context_list + subset_context)
 
                   # # Use the condition as the pseudo-name of this requirement
                   # condition = conditional['condition_str']
@@ -1580,11 +1635,7 @@ def traverse_body(node: Any, context_list: list) -> None:
                   print(f'{institution} {requirement_id} Subset {key}', file=log_file)
 
                 case 'group_requirement':
-                  print(f'{rule=}')
-                  print(f'{requirement=}')
-                  exit()
-                  assert isinstance(requirement, dict)
-                  traverse_body(rule, context_list + subset_context)
+                  traverse_body(requirement, context_list + subset_context)
                   print(f'{institution} {requirement_id} Subset group_requirement', file=log_file)
 
                 case 'maxpassfail' | 'maxperdisc' | 'mingpa' | 'minspread' | 'noncourse' | 'share':
@@ -1592,8 +1643,15 @@ def traverse_body(node: Any, context_list: list) -> None:
                   print(f'{institution} {requirement_id} Subset {key} (ignored)', file=log_file)
 
                 case 'proxy_advice':
+                  # Validity check
+                  for context in subset_context:
+                    if 'proxy_advice' in context.keys():
+                      exit(f'{institution} {requirement_id} Subset context with repeated '
+                           f'proxy_advice')
+
                   if do_proxy_advice:
-                    print(f'{institution} {requirement_id} Subset {key}', file=todo_file)
+                    subset_context[-1]['proxy_advice'] = rule
+                    print(f'{institution} {requirement_id} Subset {key}', file=log_file)
                   else:
                     print(f'{institution} {requirement_id} Subset {key} (ignored)', file=log_file)
 
@@ -1623,7 +1681,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           exit(f'{institution} {requirement_id} Unhandled Requirement Type: {requirement_type}'
                f' {requirement_value}')
   else:
-    # Another fatal error (not a list, str, or dict)
+    # Another fatal error: not a list, str, or dict
     exit(f'{institution} {requirement_id} Unhandled node type {type(node)} ({node})')
 
 
