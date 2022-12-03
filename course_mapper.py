@@ -416,7 +416,7 @@ def header_conditional(institution: str, requirement_id: str,
 
           case _:
             print(f'{institution} {requirement_id} Conditional-true {key} not implemented yet',
-                  file=sys.stderr)
+                  file=todo_file)
 
   # If condition is false
   try:
@@ -483,7 +483,7 @@ def header_conditional(institution: str, requirement_id: str,
 
             case _:
               print(f'{institution} {requirement_id} Conditional-false {key} not implemented yet',
-                    file=sys.stderr)
+                    file=todo_file)
   except KeyError:
     # False part is optional
     pass
