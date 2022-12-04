@@ -738,17 +738,23 @@ def process_block(block_info: dict,
     header_dict['other']['plan_info'] = plan_info_dict
 
     # Enter the plan in the programs table
+    total_credits_col = json.dumps(header_dict["total_credits_list"], ensure_ascii=False)
+    maxtransfer_col = json.dumps(header_dict["maxtransfer_list"], ensure_ascii=False)
+    minres_col = json.dumps(header_dict["minres_list"], ensure_ascii=False)
+    mingrade_col = json.dumps(header_dict["mingrade_list"], ensure_ascii=False)
+    mingpa_col = json.dumps(header_dict["mingpa_list"], ensure_ascii=False)
     other_col = json.dumps(header_dict['other'], ensure_ascii=False)
+
     programs_writer.writerow([f'{institution[0:3]}',
                               f'{requirement_id}',
                               f'{block_info_dict["block_type"]}',
                               f'{block_info_dict["block_value"]}',
                               f'{block_info_dict["block_title"]}',
-                              f'{header_dict["total_credits_list"]}',
-                              f'{header_dict["maxtransfer_list"]}',
-                              f'{header_dict["minres_list"]}',
-                              f'{header_dict["mingrade_list"]}',
-                              f'{header_dict["mingpa_list"]}',
+                              total_credits_col,
+                              maxtransfer_col,
+                              minres_col,
+                              mingrade_col,
+                              mingpa_col,
                               other_col,
                               generated_date
                               ])
