@@ -73,7 +73,6 @@ def header_classcredit(value: dict, do_proxyadvice: bool) -> dict:
 
   credits_part = ''
   if min_credits or max_credits:
-    assert min_credits and max_credits, f'{min_credits=} {max_credits=}'
     if min_credits == max_credits:
       credits_part = (f'{max_credits:.1f} credits')
     else:

@@ -856,8 +856,7 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
       return return_dict
   except KeyError as ke:
     # You can't have a parse_tree with no header_list, even it it's empty.
-    print(parse_tree)
-    exit(f'{institution} {requirement_id} Header KeyError ({ke})')
+    print(f'{institution} {requirement_id} Header parse_tree is “{parse_tree}”', file=fail_file)
 
   for header_item in parse_tree['header_list']:
 
