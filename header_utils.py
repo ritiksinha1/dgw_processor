@@ -2,6 +2,8 @@
 """ Utilities for processing header constructs by the course_mapper.
 """
 
+from mogrify_courselist import mogrify_course_list
+
 _dict = {'not-yet': True}
 
 
@@ -35,7 +37,8 @@ def letter_grade(grade_point: float) -> str:
 
 # header_classcredit()
 # -------------------------------------------------------------------------------------------------
-def header_classcredit(value: dict, do_proxyadvice: bool) -> dict:
+def header_classcredit(institution: str, requirement_id: str,
+                       value: dict, do_proxyadvice: bool) -> dict:
   """
       This is the “total credits and/or total classes” part of the header, which we are calling
       “requirement size”. Conditionals my cause multiple instances to be specified, which is why
@@ -93,7 +96,7 @@ def header_classcredit(value: dict, do_proxyadvice: bool) -> dict:
 
 # header_maxtransfer()
 # -------------------------------------------------------------------------------------------------
-def header_maxtransfer(value: dict) -> dict:
+def header_maxtransfer(institution, requirement_id, value: dict) -> dict:
   """
   """
   mt_dict = {'label': value['label']}
@@ -115,7 +118,7 @@ def header_maxtransfer(value: dict) -> dict:
 
 # header_minres()
 # -------------------------------------------------------------------------------------------------
-def header_minres(value: dict) -> dict:
+def header_minres(institution, requirement_id, value: dict) -> dict:
   """ Return a dict with the number of classes or credits (it's always credits, in practice) plus
       the label if there is one.
   """
@@ -137,7 +140,7 @@ def header_minres(value: dict) -> dict:
 
 # header_mingpa()
 # -------------------------------------------------------------------------------------------------
-def header_mingpa(value: dict) -> dict:
+def header_mingpa(institution, requirement_id, value: dict) -> dict:
   """
   """
   mingpa_dict = value['mingpa']
@@ -148,7 +151,7 @@ def header_mingpa(value: dict) -> dict:
 
 # header_mingrade()
 # -------------------------------------------------------------------------------------------------
-def header_mingrade(value: dict) -> dict:
+def header_mingrade(institution, requirement_id, value: dict) -> dict:
   """
   """
   mingrade_dict = value['mingrade']
@@ -160,15 +163,36 @@ def header_mingrade(value: dict) -> dict:
 
 # header_maxclass()
 # -------------------------------------------------------------------------------------------------
-def header_maxclass(value: dict) -> dict:
+def header_maxclass(institution, requirement_id, value: dict) -> dict:
   """
   """
-  return _dict
+
+  try:
+    for cruft_key in ['institution', 'requirement_id']:
+      del(value['maxclass']['course_list'][cruft_key])
+  except KeyError:
+    # The same block might have been mapped in a different context already
+    pass
+
+  number = int(value['maxclass']['number'])
+  course_list = value['maxclass']['course_list']
+  course_list['courses'] = [{'course_id': course_info.course_id_str,
+                             'course': course_info.course_str,
+                             'with': course_info.with_clause}
+                            for course_info in mogrify_course_list(institution,
+                                                                   requirement_id,
+                                                                   course_list)]
+  maxclass_dict = {'label': value['label'],
+                   'number': number,
+                   'courses': course_list
+                   }
+
+  return maxclass_dict
 
 
 # header_maxcredit()
 # -------------------------------------------------------------------------------------------------
-def header_maxcredit(value: dict) -> dict:
+def header_maxcredit(institution, requirement_id, value: dict) -> dict:
   """
   """
   return _dict
@@ -176,7 +200,7 @@ def header_maxcredit(value: dict) -> dict:
 
 # header_maxpassfail()
 # -------------------------------------------------------------------------------------------------
-def header_maxpassfail(value: dict) -> dict:
+def header_maxpassfail(institution, requirement_id, value: dict) -> dict:
   """
   """
   return _dict
@@ -184,7 +208,7 @@ def header_maxpassfail(value: dict) -> dict:
 
 # header_maxperdisc()
 # -------------------------------------------------------------------------------------------------
-def header_maxperdisc(value: dict) -> dict:
+def header_maxperdisc(institution, requirement_id, value: dict) -> dict:
   """
   """
   return _dict
@@ -192,7 +216,7 @@ def header_maxperdisc(value: dict) -> dict:
 
 # header_minclass()
 # -------------------------------------------------------------------------------------------------
-def header_minclass(value: dict) -> dict:
+def header_minclass(institution, requirement_id, value: dict) -> dict:
   """
   """
   return _dict
@@ -200,7 +224,7 @@ def header_minclass(value: dict) -> dict:
 
 # header_mincredit()
 # -------------------------------------------------------------------------------------------------
-def header_mincredit(value: dict) -> dict:
+def header_mincredit(institution, requirement_id, value: dict) -> dict:
   """
   """
   return _dict
@@ -208,7 +232,7 @@ def header_mincredit(value: dict) -> dict:
 
 # header_minperdisc()
 # -------------------------------------------------------------------------------------------------
-def header_minperdisc(value: dict) -> dict:
+def header_minperdisc(institution, requirement_id, value: dict) -> dict:
   """
   """
   return _dict
@@ -216,7 +240,7 @@ def header_minperdisc(value: dict) -> dict:
 
 # header_proxyadvice()
 # -------------------------------------------------------------------------------------------------
-def header_proxyadvice(value: dict) -> dict:
+def header_proxyadvice(institution, requirement_id, value: dict) -> dict:
   """
   """
   return _dict
