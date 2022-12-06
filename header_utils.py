@@ -197,8 +197,27 @@ def header_maxclass(institution, requirement_id, value: dict) -> dict:
 def header_maxcredit(institution, requirement_id, value: dict) -> dict:
   """
   """
-  print(f'{institution} {requirement_id} header_maxcredit', file=todo_file)
-  return notyet_dict
+  try:
+    for cruft_key in ['institution', 'requirement_id']:
+      del(value['maxcredit']['course_list'][cruft_key])
+  except KeyError:
+    pass
+
+  number = float(value['maxcredit']['number'])
+  course_list = value['maxcredit']['course_list']
+  course_list['courses'] = [{'course_id': course_info.course_id_str,
+                             'course': course_info.course_str,
+                             'with': course_info.with_clause}
+                            for course_info in mogrify_course_list(institution,
+                                                                   requirement_id,
+                                                                   course_list)]
+
+  maxcredit_dict = {'label': value['label'],
+                    'number': number,
+                    'courses': course_list
+                    }
+
+  return maxcredit_dict
 
 
 # header_maxpassfail()
