@@ -4,7 +4,9 @@
 
 from mogrify_courselist import mogrify_course_list
 
-_dict = {'not-yet': True}
+notyet_dict = {'not-yet': True}
+
+todo_file = open(f'/Users/vickery/Projects/dgw_processor/todo.txt', 'w')
 
 
 # letter_grade()
@@ -195,7 +197,8 @@ def header_maxclass(institution, requirement_id, value: dict) -> dict:
 def header_maxcredit(institution, requirement_id, value: dict) -> dict:
   """
   """
-  return _dict
+  print(f'{institution} {requirement_id} header_maxcredit', file=todo_file)
+  return notyet_dict
 
 
 # header_maxpassfail()
@@ -203,7 +206,8 @@ def header_maxcredit(institution, requirement_id, value: dict) -> dict:
 def header_maxpassfail(institution, requirement_id, value: dict) -> dict:
   """
   """
-  return _dict
+  print(f'{institution} {requirement_id} header_maxpassfail', file=todo_file)
+  return notyet_dict
 
 
 # header_maxperdisc()
@@ -211,7 +215,8 @@ def header_maxpassfail(institution, requirement_id, value: dict) -> dict:
 def header_maxperdisc(institution, requirement_id, value: dict) -> dict:
   """
   """
-  return _dict
+  print(f'{institution} {requirement_id} header_maxperdisc', file=todo_file)
+  return notyet_dict
 
 
 # header_minclass()
@@ -219,7 +224,8 @@ def header_maxperdisc(institution, requirement_id, value: dict) -> dict:
 def header_minclass(institution, requirement_id, value: dict) -> dict:
   """
   """
-  return _dict
+  print(f'{institution} {requirement_id} header_minclass', file=todo_file)
+  return notyet_dict
 
 
 # header_mincredit()
@@ -227,7 +233,8 @@ def header_minclass(institution, requirement_id, value: dict) -> dict:
 def header_mincredit(institution, requirement_id, value: dict) -> dict:
   """
   """
-  return _dict
+  print(f'{institution} {requirement_id} header_mincredit', file=todo_file)
+  return notyet_dict
 
 
 # header_minperdisc()
@@ -235,7 +242,8 @@ def header_mincredit(institution, requirement_id, value: dict) -> dict:
 def header_minperdisc(institution, requirement_id, value: dict) -> dict:
   """
   """
-  return _dict
+  print(f'{institution} {requirement_id} header_minperdisc', file=todo_file)
+  return notyet_dict
 
 
 # header_proxyadvice()
@@ -243,4 +251,5 @@ def header_minperdisc(institution, requirement_id, value: dict) -> dict:
 def header_proxyadvice(institution, requirement_id, value: dict) -> dict:
   """
   """
-  return _dict
+  print(f'{institution} {requirement_id} header_proxyadvice', file=todo_file)
+  return notyet_dict

@@ -5,8 +5,8 @@
 from collections import namedtuple
 from courses_cache import courses_cache
 
-log_file = open('/Users/vickery/Projects/dgw_processor/log.txt', 'a')
-todo_file = open(f'/Users/vickery/Projects/dgw_processor/todo.txt', 'a')
+log_file = open('/Users/vickery/Projects/dgw_processor/log.txt', 'w')
+todo_file = open(f'/Users/vickery/Projects/dgw_processor/todo.txt', 'w')
 
 MogrifiedInfo = namedtuple('MogrifiedInfo', 'course_id_str course_str career with_clause')
 

@@ -190,11 +190,8 @@ def header_conditional(institution: str, requirement_id: str,
   condition_str = conditional_dict['conditional']['condition_str']
   tagged_list_set = set()
 
-  def tag(is_other, which_list, which_condition):
+  def tag(which_list, which_condition, is_other=False):
     """ Mark those lists which need to have an 'end_if' appended to close (nested) conditionals
-
-        Don't get confused with the if_true/if_false keys of the conditional being processed!
-          is_other is true when one of the return_dict['other'] lists is the target
     """
     tagged_list_set.add((is_other, which_list))
     if is_other:
@@ -209,63 +206,68 @@ def header_conditional(institution: str, requirement_id: str,
         match key:
 
           case 'conditional':
+            print(institution, requirement_id)
+            print(conditional_dict)
+            print()
+            print(requirement)
+            exit()
             header_conditional(institution, requirement_id, return_dict, requirement)
 
           case 'header_class_credit':
-            tag(False, 'total_credits_list', {'if_true': condition_str})
+            tag('total_credits_list', {'if_true': condition_str})
             return_dict['total_credits_list'].append(header_classcredit(institution, requirement_id,
                                                                         value, do_proxyadvice))
 
           case 'header_maxtransfer':
-            tag(False, 'maxtransfer_list', {'if_true': condition_str})
+            tag('maxtransfer_list', {'if_true': condition_str})
             return_dict['maxtransfer_list'].append(header_maxtransfer(institution, requirement_id,
                                                                       value))
 
           case 'header_minres':
-            tag(False, 'minres_list', {'if_true': condition_str})
+            tag('minres_list', {'if_true': condition_str})
             return_dict['minres_list'].append(header_minres(institution, requirement_id, value))
 
           case 'header_mingpa':
-            tag(False, 'mingpa_list', {'if_true': condition_str})
+            tag('mingpa_list', {'if_true': condition_str})
             return_dict['mingpa_list'].append(header_mingpa(institution, requirement_id, value))
 
           case 'header_mingrade':
-            tag(False, 'mingrade_list', {'if_true': condition_str})
+            tag('mingrade_list', {'if_true': condition_str})
             return_dict['mingrade_list'].append(header_mingrade(institution, requirement_id, value))
 
           case 'header_maxclass':
-            tag(True, 'maxclass_list', {'if_true': condition_str})
+            tag('maxclass_list', {'if_true': condition_str}, is_other=True)
             return_dict['other']['maxclass_list'].append(header_maxclass(institution,
                                                                          requirement_id, value))
 
           case 'header_maxcredit':
-            tag(True, 'maxcredit_list', {'if_true': condition_str})
+            tag('maxcredit_list', {'if_true': condition_str}, is_other=True)
             return_dict['other']['maxcredit_list'].append(header_maxcredit(institution,
                                                                            requirement_id, value))
 
           case 'header_maxpassfail':
-            tag(True, 'maxpassfail_list', {'if_true': condition_str})
+            tag('maxpassfail_list', {'if_true': condition_str}, is_other=True)
             return_dict['other']['maxpassfail_list'].append(header_maxpassfail(institution,
                                                                                requirement_id,
                                                                                value))
 
           case 'header_maxperdisc':
-            tag(True, 'maxperdisc_list', {'if_true': condition_str})
+            tag('maxperdisc_list', {'if_true': condition_str}, is_other=True)
             return_dict['other']['maxperdisc_list'].append(header_maxperdisc(institution,
                                                                              requirement_id, value))
 
           case 'header_minclass':
-            tag(True, 'minclass_list', {'if_true': condition_str})
+            tag('minclass_list', {'if_true': condition_str}, is_other=True)
             return_dict['other']['minclass_list'].append(header_minclass(institution,
                                                                          requirement_id, value))
 
           case 'header_mincredit':
-            tag(True, 'mincredit_list', {'if_true': condition_str})
+            tag('mincredit_list', {'if_true': condition_str}, is_other=True)
             return_dict['other']['mincredit_list'].append(header_mincredit(institution,
                                                                            requirement_id, value))
 
           case 'header_minperdisc':
-            tag(True, 'minperdisc_list', {'if_true': condition_str})
+            tag('minperdisc_list', {'if_true': condition_str}, is_other=True)
             return_dict['other']['minperdisc_list'].append(header_minperdisc(institution,
                                                                              requirement_id, value))
 
@@ -274,14 +276,14 @@ def header_conditional(institution: str, requirement_id: str,
             pass
 
           case 'proxyadvice':
-            tag(True, 'proxyadvice_list', {'if_true': condition_str})
+            tag('proxyadvice_list', {'if_true': condition_str}, is_other=True)
             return_dict['other']['proxyadvice_list'].append(header_proxyadvice(institution,
                                                                                requirement_id,
                                                                                value,
                                                                                do_proxyadvice))
 
           case _:
-            print(f'{institution} {requirement_id} Conditional-true {key} not implemented yet',
+            print(f'{institution} {requirement_id} Conditional-true {key} not implemented (yet)',
                   file=todo_file)
 
   # If condition is false
@@ -295,64 +297,64 @@ def header_conditional(institution: str, requirement_id: str,
               header_conditional(institution, requirement_id, return_dict, requirement)
 
             case 'header_class_credit':
-              tag(False, 'total_credits_list', {'if_false': condition_str})
+              tag('total_credits_list', {'if_false': condition_str})
               return_dict['total_credits_list'].append(header_classcredit(institution,
                                                                           requirement_id,
                                                                           value, do_proxyadvice))
 
             case 'header_maxtransfer':
-              tag(False, 'maxtransfer_list', {'if_false': condition_str})
+              tag('maxtransfer_list', {'if_false': condition_str})
               return_dict['maxtransfer_list'].append(header_maxtransfer(institution, requirement_id,
                                                                         value))
 
             case 'header_minres':
-              tag(False, 'minres_list', {'if_false': condition_str})
+              tag('minres_list', {'if_false': condition_str})
               return_dict['minres_list'].append(header_minres(institution, requirement_id, value))
 
             case 'header_mingpa':
-              tag(False, 'mingpa_list', {'if_false': condition_str})
+              tag('mingpa_list', {'if_false': condition_str})
               return_dict['mingpa_list'].append(header_mingpa(institution, requirement_id, value))
 
             case 'header_mingrade':
-              tag(False, 'mingrade_list', {'if_false': condition_str})
+              tag('mingrade_list', {'if_false': condition_str})
               return_dict['mingrade_list'].append(header_mingrade(institution, requirement_id,
                                                                   value))
 
             case 'header_maxclass':
-              tag(True, 'maxclass_list', {'if_false': condition_str})
+              tag('maxclass_list', {'if_false': condition_str}, is_other=True)
               return_dict['other']['maxclass_list'].append(header_maxclass(institution,
                                                                            requirement_id, value))
 
             case 'header_maxcredit':
-              tag(True, 'maxcredit_list', {'if_false': condition_str})
+              tag('maxcredit_list', {'if_false': condition_str}, is_other=True)
               return_dict['other']['maxcredit_list'].append(header_maxcredit(institution,
                                                                              requirement_id, value))
 
             case 'header_maxpassfail':
-              tag(True, 'maxpassfail_list', {'if_false': condition_str})
+              tag('maxpassfail_list', {'if_false': condition_str}, is_other=True)
               return_dict['other']['maxpassfail_list'].append(header_maxpassfail(institution,
                                                                                  requirement_id,
                                                                                  value))
 
             case 'header_maxperdisc':
-              tag(True, 'maxperdisc_list', {'if_false': condition_str})
+              tag('maxperdisc_list', {'if_false': condition_str}, is_other=True)
               return_dict['other']['maxperdisc_list'].append(header_maxperdisc(institution,
                                                                                requirement_id,
                                                                                value))
 
             case 'header_minclass':
-              tag(True, 'minclass_list', {'if_false': condition_str})
+              tag('minclass_list', {'if_false': condition_str}, is_other=True)
               return_dict['other']['minclass_list'].append(header_minclass(institution,
                                                                            requirement_id, value))
 
             case 'header_mincredit':
-              tag(True, 'mincredit_list', {'if_false': condition_str})
+              tag('mincredit_list', {'if_false': condition_str}, is_other=True)
               return_dict['other']['mincredit_list'].append(header_mincredit(institution,
                                                                              requirement_id,
                                                                              value))
 
             case 'header_minperdisc':
-              tag(True, 'minperdisc_list', {'if_false': condition_str})
+              tag('minperdisc_list', {'if_false': condition_str}, is_other=True)
               return_dict['other']['minperdisc_list'].append(header_minperdisc(institution,
                                                                                requirement_id,
                                                                                value))
@@ -362,12 +364,12 @@ def header_conditional(institution: str, requirement_id: str,
               pass
 
             case 'proxyadvice':
-              tag(True, 'proxyadvice_list', {'if_false': condition_str})
+              tag('proxyadvice_list', {'if_false': condition_str}, is_other=True)
               return_dict['other']['proxyadvice_list'].append(proxyadvice(institution,
                                                                           requirement_id, value))
 
             case _:
-              print(f'{institution} {requirement_id} Conditional-false {key} not implemented yet',
+              print(f'{institution} {requirement_id} Conditional-false {key} not implemented (yet)',
                     file=todo_file)
   except KeyError:
     # False part is optional
