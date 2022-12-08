@@ -39,7 +39,9 @@ cat missing_ra.txt >> reports.txt
 for r in log todo fail no_courses # debug analysis
 do
   n=`wc -l ${r}.txt|cut -d ' ' -f 1`
-  echo -e "\n" `printf "%'d" $n` "$r FILE" | tr a-z A-Z >> reports.txt
+  echo -e "\n" `printf "%'d" $n` "$r" | tr a-z A-Z >> reports.txt
+  echo ' -------------------------------------------------------------------------------' \
+       >> reports.txt
   if [[ $r = no_courses ]]
   then
       cat ${r}.txt|sort|uniq -c|sort -r >> reports.txt
