@@ -17,48 +17,20 @@ from catalogyears import catalog_years
 from collections import namedtuple, defaultdict
 from courses_cache import courses_cache
 from dgw_parser import parse_block
-from mogrify_courselist import mogrify_course_list
 from psycopg.rows import namedtuple_row, dict_row
 from quarantine_manager import QuarantineManager
 from recordclass import recordclass
 from traceback import extract_stack
 from typing import Any
 
-from header_utils import header_classcredit, header_maxtransfer, header_minres, header_mingpa, \
-    header_mingrade, header_maxclass, header_maxcredit, header_maxpassfail, header_maxperdisc, \
-    header_minclass, header_mincredit, header_minperdisc, header_proxyadvice, letter_grade
+from course_mapper_files import anomaly_file, blocks_file, fail_file, log_file, no_courses_file, \
+    subplans_file, todo_file, programs_file, requirements_file, mapping_file
 
+from course_mapper_utils import header_classcredit, header_maxtransfer, header_minres, \
+    header_mingpa, header_mingrade, header_maxclass, header_maxcredit, header_maxpassfail, \
+    header_maxperdisc, header_minclass, header_mincredit, header_minperdisc, header_proxyadvice, \
+    letter_grade, mogrify_course_list
 
-""" Logging/Development Reports
-      anomaly_file        Things that look wrong, but we handle anyway
-      blocks_file:        List of blocks processed
-      debug_file:         Info written during debugging (to avoid stdout/stderr)
-      fail_file:          Blocks that failed for one reason or another
-      log_file:           Record of requirements processed successfully. Bigger is better!
-      missing_file:       Active plans with no active requirement block
-      no_courses_file:    Requirements with no course lists.
-      subplans_file:      What active subplans are (not) referenced?
-      todo_file:          Record of all known requirements not yet handled. Smaller is better!
-
-    Data for T-Rex
-      programs_file:      Spreadsheet of info about majors, minors, and concentrations
-      requirements_file:  Spreadsheet of program requirement names
-      mapping_file        Spreadsheet of course-to-requirements mappings
-
-"""
-anomaly_file = open('/Users/vickery/Projects/dgw_processor/anomalies.txt', 'w')
-blocks_file = open('/Users/vickery/Projects/dgw_processor/blocks.txt', 'w')
-debug_file = open('/Users/vickery/Projects/dgw_processor/debug.txt', 'w')
-fail_file = open('/Users/vickery/Projects/dgw_processor/fail.txt', 'w')
-log_file = open('/Users/vickery/Projects/dgw_processor/log.txt', 'w')
-missing_file = open(f'/Users/vickery/Projects/dgw_processor/missing_ra.txt', 'w')
-no_courses_file = open('/Users/vickery/Projects/dgw_processor/no_courses.txt', 'w')
-subplans_file = open('/Users/vickery/Projects/dgw_processor/subplans.txt', 'w')
-todo_file = open(f'/Users/vickery/Projects/dgw_processor/todo.txt', 'w')
-
-programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w', newline='')
-requirements_file = open(f'{__file__.replace(".py", ".requirements.csv")}', 'w', newline='')
-mapping_file = open(f'{__file__.replace(".py", ".course_mappings.csv")}', 'w', newline='')
 
 programs_writer = csv.writer(programs_file)
 requirements_writer = csv.writer(requirements_file)
@@ -183,16 +155,23 @@ def header_conditional(institution: str, requirement_id: str,
                  'minclass_list', 'mincredit_list', 'minres_list', 'mingrade_list', 'mingpa_list']
 
   condition_str = conditional_dict['conditional']['condition_str']
-  tagged_lists = []
+  tagged_true_lists = []
+  tagged_false_lists = []
+
+  # Possible values for which_leg
   true_leg = True
   false_leg = False
 
   def tag(which_list, which_leg=true_leg):
-    """ Manage of the first is_true and, possibly, is_false for each list.
+    """ Manage the first is_true and, possibly, is_false for each list.
     """
-    if (which_list) not in tagged_lists:
-      tagged_lists.append(which_list)
+    if args.concise_conditionals:
+      which_dict = {'if': condition_str} if which_leg else {'else': ''}
+    else:
       which_dict = {'if_true': condition_str} if which_leg else {'if_false': condition_str}
+
+    if which_leg == true_leg and which_list not in tagged_true_lists:
+      tagged_true_lists.append(which_list)
       if which_list in column_lists:
         return_dict[which_list].append(which_dict)
       elif which_list in other_lists:
@@ -200,6 +179,18 @@ def header_conditional(institution: str, requirement_id: str,
       else:
         exit(f'{which_list} is not in column_lists or other_lists')
 
+    if which_leg == false_leg and which_list not in tagged_false_lists:
+      tagged_false_lists.append(which_list)
+      if which_list in column_lists:
+        return_dict[which_list].append(which_dict)
+      elif which_list in other_lists:
+        return_dict['other'][which_list].append(which_dict)
+      else:
+        exit(f'{which_list} is not in column_lists or other_lists')
+
+
+  # True leg handlers
+  # -----------------------------------------------------------------------------------------------
   if true_dict := conditional_dict['conditional']['if_true']:
     for requirement in true_dict:
       for key, value in requirement.items():
@@ -210,7 +201,6 @@ def header_conditional(institution: str, requirement_id: str,
             # to it? Presumably, it's handled by each of the requirements separately. So why isn't
             # this working on the if_false side?
             print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
-            print(f'{institution} {requirement_id} {condition_str} true recursion', file=sys.stderr)
             header_conditional(institution, requirement_id, return_dict, requirement)
 
           case 'header_class_credit':
@@ -301,7 +291,8 @@ def header_conditional(institution: str, requirement_id: str,
             print(f'{institution} {requirement_id} Conditional-true {key} not implemented (yet)',
                   file=todo_file)
 
-  # If condition is false
+  # False (else) leg handlers
+  # -----------------------------------------------------------------------------------------------
   try:
     false_dict = conditional_dict['conditional']['if_false']
     for requirement in false_dict:
@@ -310,7 +301,6 @@ def header_conditional(institution: str, requirement_id: str,
 
           case 'conditional':
             print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
-            print(f'{institution} {requirement_id} {condition_str} false recursion', file=sys.stderr)
             header_conditional(institution, requirement_id, return_dict, requirement)
 
           case 'header_class_credit':
@@ -412,11 +402,13 @@ def header_conditional(institution: str, requirement_id: str,
     pass
 
   # Mark the end of this conditional. The condition_str is for verification, not logically needed.
-  for tagged_list in tagged_lists:
+  if args.concise_conditionals:
+    condition_str = ''
+  for tagged_list in tagged_true_lists:
     if tagged_list in column_lists:
       return_dict[tagged_list].append({'endif': condition_str})
     else:
-      return_dict['other'][tagged_list].append({'end_if': condition_str})
+      return_dict['other'][tagged_list].append({'endif': condition_str})
 
 
 # map_courses()
@@ -644,15 +636,6 @@ def process_block(block_info: dict,
                       'subplan_enrollment': subplan_block_info['recent_enrollment'],
                       }
       plan_info_dict['subplans'].append(subplan_dict)
-
-      # subplan_reference_key = (institution, plan_name)
-      # if subplan_name in subplan_references[subplan_reference_key].keys():
-      #   print(f'{institution} {requirement_id} Multiple references to subplan {subplan_name}',
-      #         file=fail_file)
-      #   return
-      # subplan_reference_dict = {subplan_name: {'requirement_id': rb['requirement_id'],
-      #                                          'reference_count': 0}}
-      # subplan_references[subplan_reference_key] = subplan_reference_dict
 
     block_info_dict['plan_info'] = plan_info_dict
 
@@ -1001,7 +984,7 @@ def traverse_body(node: Any, context_list: list) -> None:
         context_dict['requirement_name'] = requirement_value['label']
       except KeyError:
         # Unless a conditional, if there is no label, add a placeholder name, and log the situation
-        if requirement_type != 'conditional_dict':
+        if requirement_type != 'conditional':
           context_dict['requirement_name'] = 'Unnamed Requirement'
           if requirement_type not in ['copy_rules']:  # There may be others (?) ...
             print(f'{institution} {requirement_id} Body {requirement_type} with no label',
@@ -1683,7 +1666,7 @@ if __name__ == "__main__":
       CSV tables for the programs, their requirements, and course-to-requirement mappings.
 
       An academic plan may be eithr a major or a minor. Note, however, that minors are not required
-      for a degree, but at least one major is required.
+      for a degree, but at least one major is always required.
 
       For a plan/subplan to be mapped here, it must be recently-active as defined in activeplans.py.
       That is, it must an approved program with a current dap_req_block giving the requireents for
@@ -1697,6 +1680,7 @@ if __name__ == "__main__":
   parser.add_argument('--do_degrees', action='store_true')
   parser.add_argument('--no_proxy_advice', action='store_true')
   parser.add_argument('--no_remarks', action='store_true')
+  parser.add_argument('--concise_conditionals', '-c', action='store_true')
   args = parser.parse_args()
 
   do_degrees = args.do_degrees
