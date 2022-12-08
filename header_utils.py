@@ -98,7 +98,7 @@ def header_classcredit(institution: str, requirement_id: str,
 
 # header_maxtransfer()
 # -------------------------------------------------------------------------------------------------
-def header_maxtransfer(institution, requirement_id, value: dict) -> dict:
+def header_maxtransfer(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
   mt_dict = {'label': value['label']}
@@ -120,7 +120,7 @@ def header_maxtransfer(institution, requirement_id, value: dict) -> dict:
 
 # header_minres()
 # -------------------------------------------------------------------------------------------------
-def header_minres(institution, requirement_id, value: dict) -> dict:
+def header_minres(institution: str, requirement_id: str, value: dict) -> dict:
   """ Return a dict with the number of classes or credits (it's always credits, in practice) plus
       the label if there is one.
   """
@@ -142,7 +142,7 @@ def header_minres(institution, requirement_id, value: dict) -> dict:
 
 # header_mingpa()
 # -------------------------------------------------------------------------------------------------
-def header_mingpa(institution, requirement_id, value: dict) -> dict:
+def header_mingpa(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
   mingpa_dict = value['mingpa']
@@ -153,7 +153,7 @@ def header_mingpa(institution, requirement_id, value: dict) -> dict:
 
 # header_mingrade()
 # -------------------------------------------------------------------------------------------------
-def header_mingrade(institution, requirement_id, value: dict) -> dict:
+def header_mingrade(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
   mingrade_dict = value['mingrade']
@@ -165,7 +165,7 @@ def header_mingrade(institution, requirement_id, value: dict) -> dict:
 
 # header_maxclass()
 # -------------------------------------------------------------------------------------------------
-def header_maxclass(institution, requirement_id, value: dict) -> dict:
+def header_maxclass(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
 
@@ -194,7 +194,7 @@ def header_maxclass(institution, requirement_id, value: dict) -> dict:
 
 # header_maxcredit()
 # -------------------------------------------------------------------------------------------------
-def header_maxcredit(institution, requirement_id, value: dict) -> dict:
+def header_maxcredit(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
   try:
@@ -222,52 +222,62 @@ def header_maxcredit(institution, requirement_id, value: dict) -> dict:
 
 # header_maxpassfail()
 # -------------------------------------------------------------------------------------------------
-def header_maxpassfail(institution, requirement_id, value: dict) -> dict:
+def header_maxpassfail(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
-  print(f'{institution} {requirement_id} header_maxpassfail', file=todo_file)
-  return notyet_dict
+  maxpassfail_dict = value['maxpassfail']
+  maxpassfail_dict['label'] = value['label']
+
+  return maxpassfail_dict
 
 
 # header_maxperdisc()
 # -------------------------------------------------------------------------------------------------
-def header_maxperdisc(institution, requirement_id, value: dict) -> dict:
+def header_maxperdisc(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
-  print(f'{institution} {requirement_id} header_maxperdisc', file=todo_file)
-  return notyet_dict
+  maxperdisc_dict = value['maxperdisc']
+  maxperdisc_dict['label'] = value['label']
+
+  return maxperdisc_dict
 
 
 # header_minclass()
 # -------------------------------------------------------------------------------------------------
-def header_minclass(institution, requirement_id, value: dict) -> dict:
+def header_minclass(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
-  print(f'{institution} {requirement_id} header_minclass', file=todo_file)
-  return notyet_dict
+  minclass_dict = value['minclass']
+  minclass_dict['label'] = value['label']
+
+  return minclass_dict
 
 
 # header_mincredit()
 # -------------------------------------------------------------------------------------------------
-def header_mincredit(institution, requirement_id, value: dict) -> dict:
+def header_mincredit(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
-  print(f'{institution} {requirement_id} header_mincredit', file=todo_file)
-  return notyet_dict
+  mincredit_dict = value['mincredit']
+  mincredit_dict['label'] = value['label']
+
+  return mincredit_dict
 
 
 # header_minperdisc()
 # -------------------------------------------------------------------------------------------------
-def header_minperdisc(institution, requirement_id, value: dict) -> dict:
+def header_minperdisc(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
-  print(f'{institution} {requirement_id} header_minperdisc', file=todo_file)
-  return notyet_dict
+  minperdisc_dict = value['minperdisc']
+  minperdisc_dict['label'] = value['label']
+
+  return minperdisc_dict
 
 
 # header_proxyadvice()
 # -------------------------------------------------------------------------------------------------
-def header_proxyadvice(institution, requirement_id, value: dict) -> dict:
+def header_proxyadvice(institution: str, requirement_id: str, value: dict) -> dict:
   """
   """
   print(f'{institution} {requirement_id} header_proxyadvice', file=todo_file)
