@@ -35,11 +35,11 @@ def courses_cache(institution: str, discipline: str, catalog_number: str) -> lis
       (:) in the catalog number.
 
       Reminder to self: neither with clauses nor exclude clauses are handled here. The
-      mogrify_course_list() function in the course_mapper module is an example of a method that
-      takes care of managing those two aspects of scribed course lists using this method to expand
-      individual course references.
+      mogrify_course_list() function in the course_mapper is an example of a method that takes care
+      of managing those two aspects of scribed course lists using this method to expand individual
+      course references.
 
-      Each institution's courses are added to the cache the first time the institution is
+      Each institution’s courses are added to the cache the first time the institution is
       encountered.
 
       Returns a possibly-empty list of CourseTuples.
