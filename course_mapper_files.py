@@ -22,6 +22,9 @@ no_courses_file = open('/Users/vickery/Projects/dgw_processor/no_courses.txt', '
 subplans_file = open('/Users/vickery/Projects/dgw_processor/subplans.txt', 'w')
 todo_file = open(f'/Users/vickery/Projects/dgw_processor/todo.txt', 'w')
 
-programs_file = open(f'{__file__.replace(".py", ".programs.csv")}', 'w', newline='')
-requirements_file = open(f'{__file__.replace(".py", ".requirements.csv")}', 'w', newline='')
-mapping_file = open(f'{__file__.replace(".py", ".course_mappings.csv")}', 'w', newline='')
+programs_file = open('/Users/vickery/Projects/dgw_processor/course_mapper.programs.csv', 'w',
+                     newline='')
+requirements_file = open('/Users/vickery/Projects/dgw_processor/course_mapper.requirements.csv',
+                         'w', newline='')
+mapping_file = open('/Users/vickery/Projects/dgw_processor/course_mapper.course_mappings.csv', 'w',
+                    newline='')
