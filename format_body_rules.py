@@ -147,7 +147,8 @@ body_class_credit : (num_classes | num_credits)
     prefix_str = ''
 
   if 'hide_rule' in class_credit_dict.keys():
-    hidden_str = f'<br><span class="error">This rule will not appear in a degree audit.</span>'
+    hidden_str = (f'<br><span class="error">This requirement will not appear in a degree audit.'
+                  f'</span>')
   else:
     hidden_str = ''
 
