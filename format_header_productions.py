@@ -29,9 +29,14 @@ import psycopg
 
 
 import format_body_rules
-import format_body_qualifiers
+
+from format_body_qualifiers import format_maxpassfail, format_maxperdisc, format_maxtransfer, \
+    format_minclass, format_mincredit, format_mingpa, format_mingrade, format_minperdisc, \
+    format_minres, format_share
+
 from format_utils import format_proxy_advice, format_remark, format_course_list, format_number, \
     format_num_class_credit, number_names
+
 import format_utils
 
 from catalogyears import catalog_years
@@ -215,7 +220,7 @@ def _format_lastres(lastres_dict: dict) -> str:
     pass
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{lastres_str}</display>'
+    return f'<details><summary>{label_str}</summary>{lastres_str}</details>'
   else:
    return lastres_str
 
@@ -309,10 +314,10 @@ def _format_maxpassfail_head(maxpassfail_head_dict: dict) -> str:
     label_str = None
 
   maxpassfail_dict = maxpassfail_head_dict['maxpassfail']
-  maxpassfail_info = format_body_qualifiers.format_maxpassfail(maxpassfail_dict)
+  maxpassfail_info = format_maxpassfail(maxpassfail_dict)
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{maxpassfail_info}<details>'
+    return f'<details><summary>{label_str}</summary>{maxpassfail_info}</details>'
   else:
     return maxpassfail_info
 
@@ -331,7 +336,7 @@ def _format_maxperdisc_head(maxperdisc_head_dict: dict) -> str:
     label_str = None
 
   maxperdisc_dict = maxperdisc_head_dict['maxperdisc']
-  maxperdisc_info = format_body_qualifiers.format_maxperdisc(maxperdisc_dict)
+  maxperdisc_info = format_maxperdisc(maxperdisc_dict)
 
   try:
     courses_str = format_course_list(maxperdisc_dict['course_list'])
@@ -341,7 +346,7 @@ def _format_maxperdisc_head(maxperdisc_head_dict: dict) -> str:
     pass
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{maxperdisc_info}<details>'
+    return f'<details><summary>{label_str}</summary>{maxperdisc_info}</details>'
   else:
     return maxperdisc_info
 
@@ -394,7 +399,7 @@ def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
     label_str = None
 
   maxtransfer_dict = maxtransfer_head_dict['maxtransfer']
-  maxtransfer_info = format_body_qualifiers.format_maxtransfer(maxtransfer_dict)
+  maxtransfer_info = format_maxtransfer(maxtransfer_dict)
 
   try:
     courses_str = format_course_list(maxtransfer_dict['course_list'])
@@ -404,7 +409,7 @@ def _format_maxtransfer_head(maxtransfer_head_dict: dict) -> str:
     pass
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{maxtransfer_info}<details>'
+    return f'<details><summary>{label_str}</summary>{maxtransfer_info}</details>'
   else:
     return maxtransfer_info
 
@@ -423,10 +428,10 @@ def _format_minclass_head(minclass_head_dict: dict) -> str:
     label_str = None
 
   minclass_dict = minclass_head_dict['minclass']
-  minclass_info = format_body_qualifiers.format_minclass(minclass_dict)
+  minclass_info = format_minclass(minclass_dict)
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{minclass_info}<details>'
+    return f'<details><summary>{label_str}</summary>{minclass_info}</details>'
   else:
     return minclass_info
 
@@ -434,7 +439,7 @@ def _format_minclass_head(minclass_head_dict: dict) -> str:
 # _format_mincredit_head()
 # -------------------------------------------------------------------------------------------------
 def _format_mincredit_head(mincredit_head_dict: dict) -> str:
-  """
+  """ MINCREDIT NUMBER course_list tag? proxy_advice?;
   """
   if DEBUG:
     print(f'_format_mincredit_head({mincredit_head_dict}', file=sys.stderr)
@@ -444,17 +449,14 @@ def _format_mincredit_head(mincredit_head_dict: dict) -> str:
   except KeyError:
     label_str = None
 
-  mincredit_dict = mincredit_head_dict['mincredit']
-  mincredit_info = format_body_qualifiers.format_mincredit(mincredit_dict)
-
-  if courses_str := format_course_list(mincredit_dict['course_list']):
-    mincredit_info = mincredit_info.replace('.</p>', ' in these courses:</p>')
-    mincredit_info += courses_str
+  mincredit_html = format_mincredit(mincredit_head_dict['mincredit'])
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{mincredit_info}<details>'
+    print(f'{label_str=}')
+    print(f'{mincredit_html=}')
+    return f'<details><summary>{label_str}</summary>{mincredit_html}</details>'
   else:
-    return mincredit_info
+    return mincredit_html
 
 
 # _format_mingpa_head()
@@ -471,10 +473,10 @@ def _format_mingpa_head(mingpa_head_dict: dict) -> str:
     label_str = None
 
   mingpa_dict = mingpa_head_dict['mingpa']
-  mingpa_info = format_body_qualifiers.format_mingpa(mingpa_dict)
+  mingpa_info = format_mingpa(mingpa_dict)
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{mingpa_info}<details>'
+    return f'<details><summary>{label_str}</summary>{mingpa_info}</details>'
   else:
     return mingpa_info
 
@@ -493,10 +495,10 @@ def _format_mingrade_head(mingrade_head_dict: dict) -> str:
     label_str = None
 
   mingrade_dict = mingrade_head_dict['mingrade']
-  mingrade_info = format_body_qualifiers.format_mingrade(mingrade_dict)
+  mingrade_info = format_mingrade(mingrade_dict)
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{mingrade_info}<details>'
+    return f'<details><summary>{label_str}</summary>{mingrade_info}</details>'
   else:
     return mingrade_info
 
@@ -518,10 +520,10 @@ def _format_minperdisc_head(minperdisc_head_dict: dict) -> str:
     label_str = None
 
   minperdisc_dict = minperdisc_head_dict['minperdisc']
-  minperdisc_info = format_body_qualifiers.format_minperdisc(minperdisc_dict)
+  minperdisc_info = format_minperdisc(minperdisc_dict)
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{minperdisc_info}<details>'
+    return f'<details><summary>{label_str}</summary>{minperdisc_info}</details>'
   else:
     return minperdisc_info
 
@@ -531,7 +533,7 @@ def _format_minperdisc_head(minperdisc_head_dict: dict) -> str:
 def _format_minres_head(minres_head_dict: dict) -> str:
   """
       minres_head : minres label?;
-      minres.     : MINRES (num_classes | num_credits) display* tag?;
+      minres      : MINRES (num_classes | num_credits) proxy_advice? tag?;
   """
   if DEBUG:
     print(f'_format_minres_head({minres_head_dict}', file=sys.stderr)
@@ -541,19 +543,11 @@ def _format_minres_head(minres_head_dict: dict) -> str:
   except KeyError:
     label_str = None
 
-  minres_dict = minres_head_dict['minres']
-  try:
-    if display_str := minres_dict['display']:
-      display_str = f'<p>{display_str}</p>'
-  except KeyError:
-    display_str = ''
-  class_credit_str = format_num_class_credit(minres_dict)
-  minres_info = f'<p>{class_credit_str} must be completed in residence.</p>'
-
+  minres_html = format_minres(minres_head_dict['minres'])
   if label_str:
-    return f'<details>{display_str}<summary>{label_str}</summary>{minres_info}<details>'
+    return f'<details><summary>{label_str}</summary>{minres_html}</details>'
   else:
-    return f'{display_str}{minres_info}'
+    return minres_html
 
 
 # _format_header_tag()
@@ -619,10 +613,10 @@ def _format_share_head(share_head_dict: dict) -> str:
     label_str = None
 
   share_dict = share_head_dict['share']
-  share_info = format_body_qualifiers.format_share(share_dict)
+  share_info = format_share(share_dict)
 
   if label_str:
-    return f'<details><summary>{label_str}</summary>{share_info}<details>'
+    return f'<details><summary>{label_str}</summary>{share_info}</details>'
   else:
     return share_info
 

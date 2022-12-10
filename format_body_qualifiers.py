@@ -180,53 +180,62 @@ def format_minclass(minclass_dict: dict) -> str:
 # format_mincredit()
 # -------------------------------------------------------------------------------------------------
 def format_mincredit(mincredit_dict: dict) -> str:
-  """ dict_keys(['number', 'course_list'])
-      We don't show the course_list here; that will or won't happen depending on the application.
+  """ MINCREDIT NUMBER course_list tag? proxy_advice?;
   """
   if DEBUG:
     print(f'format_mincredit({mincredit_dict})', file=sys.stderr)
 
+  try:
+    return_html = format_proxy_advice(mincredit_dict)
+  except KeyError:
+    return_html = ''
+
   number = float(mincredit_dict.pop('number'))
   suffix = '' if number == 1.0 else 's'
-  return f'<p>At least {number:0.2f} credit{suffix} required.</p>'
+  summary_str = f'At least {number:0.2f} credit{suffix} required in the following courses:'
+
+  course_list_html = format_course_list(mincredit_dict['course_list'])
+
+  return f'<details><summary>{summary_str}</summary>{course_list_html}</details>'
 
 
 # format_mingpa()
 # -------------------------------------------------------------------------------------------------
 def format_mingpa(mingpa_dict: dict) -> str:
-  """ MINGPA NUMBER (course_list | expression)? display*
+  """ MINGPA NUMBER (course_list | expression)? tag? proxy_advice?;
   """
   if DEBUG:
     print(f'*** format_mingpa({mingpa_dict=})', file=sys.stderr)
 
-  number = float(mingpa_dict.pop('number'))
-  mingpa_str = f'<p>A GPA of at least {number:0.2f} is required'
-
   # Possible display text
   try:
-    display_str = f'<p><strong>{mingpa_dict["display"]}</strong>.</p>'
+    display_str = f'<p><strong>{mingpa_dict["proxy_advice"]}</strong>.</p>'
   except KeyError:
     display_str = ''
 
-  # There might be either an expression or a course list, but not both
+  number = float(mingpa_dict.pop('number'))
+  mingpa_html = f'{display_str}<p>A GPA of at least {number:0.2f} is required'
 
-  # If there is an expression, add that to the response string.
+  # There might be either an expression or a course list, but not both
+  # ------------------------------------------------------------------
+  # If there is an expression, add that to the return string.
   try:
-    mingpa_str += f' in <span class="warning">{mingpa_dict.pop("expression")}</span>.</p>'
-  except KeyError as ke:
+    mingpa_html += f' in <span class="warning">{mingpa_dict["expression"]}</span>.'
+  except KeyError:
     pass
 
-  # If there is a course list, it may come back as a string or as a display element.
+  # If there is a course list, it may come back as a string or, if there were areas, as a details
+  # element.
   try:
-    if course_list_str := format_course_list(mingpa_dict['course_list']):
-      if '<display>' in course_list_str:
-        mingpa_str += f' in the following courses:.</p>{course_list_str}'
+    if course_list_html := format_course_list(mingpa_dict['course_list']):
+      if '<details>' in course_list_html:
+        mingpa_html += f' in the following courses:.</p>{course_list_html}'
       else:
-        mingpa_str += f' in the following courses: {course_list_str}.</p>'
+        mingpa_html += f' in the following courses: {course_list_html}.</p>'
   except KeyError:
-    course_list_str = ''
+    pass
 
-  return mingpa_str
+  return mingpa_html
 
 
 # format_mingrade()
