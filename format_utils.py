@@ -324,7 +324,7 @@ def format_course_list(info: dict, num_areas_required: int = 0) -> str:
               html_str += f'{details_body}</details>'
 
     if multiple_areas:
-      html_str += '<details>'
+      html_str += '</details>'
 
   except KeyError as ke:
     error_msg = f'Error: invalid course list: missing key is {ke}'
