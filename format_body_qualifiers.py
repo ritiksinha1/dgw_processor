@@ -47,7 +47,7 @@ def format_maxpassfail(maxpassfail_dict: dict) -> str:
       if number == 0:
         return '<p>No credits may be taken pass/fail.</p>'
       suffix = '' if number == 1 else 's'
-      return f'<p>A maximum of {number:0.2f} credit{suffix} may be taken pass/fail.</p>'
+      return f'<p>A maximum of {number:0.1f} credit{suffix} may be taken pass/fail.</p>'
     else:
       if number == 0:
         return '<p>No classes may be taken pass/fail.</p>'
@@ -119,7 +119,7 @@ def format_maxtransfer(maxtransfer_dict: dict) -> str:
   if number != 1:
     suffix = 's' if class_credit == 'credit' else 'es'
 
-  number_str = f'{number:0.2f}' if class_credit == 'credit' else f'{int(number)}'
+  number_str = f'{number:0.1f}' if class_credit == 'credit' else f'{int(number)}'
 
   discipline_str = ''
   try:
@@ -192,7 +192,7 @@ def format_mincredit(mincredit_dict: dict) -> str:
 
   number = float(mincredit_dict.pop('number'))
   suffix = '' if number == 1.0 else 's'
-  summary_str = f'At least {number:0.2f} credit{suffix} required in the following courses:'
+  summary_str = f'At least {number:0.1f} credit{suffix} required in the following courses:'
 
   course_list_html = format_course_list(mincredit_dict['course_list'])
 
@@ -292,7 +292,7 @@ def format_minperdisc(minperdisc_dict: dict) -> str:
   if number != 1:
     suffix = 's' if class_credit == 'credit' else 'es'
 
-  number_str = f'{number:0.2f}' if class_credit == 'credit' else f'{int(number)}'
+  number_str = f'{number:0.1f}' if class_credit == 'credit' else f'{int(number)}'
 
   discipline_str = ''
   try:
@@ -372,7 +372,7 @@ def format_share(share_dict: dict) -> str:
       number_str = f'{number:.0f}'
     else:
       suffix = '' if number == 1.0 else 's'
-      number_str = f'{number:.2f}'
+      number_str = f'{number:.1f}'
     prefix_str = f'{number_str} {class_credit}{suffix} may'
   except KeyError as ke:
     prefix_str = 'May'

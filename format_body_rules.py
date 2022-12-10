@@ -26,6 +26,7 @@ import format_body_qualifiers
 # Global Circular Reference list: see format_copy_rules()
 copy_rules_references = []
 
+
 # format_block()
 # -------------------------------------------------------------------------------------------------
 def format_block(block_list_arg: Any) -> str:

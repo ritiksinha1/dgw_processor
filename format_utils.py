@@ -127,9 +127,9 @@ def format_num_class_credit(cc_dict: dict):
       if abs(max_credits - min_credits) < 0.01:
         if min_credits > 0.0:
           suffix = '' if abs(min_credits - 1.0) < 0.01 else 's'
-          num_credits_str = f'{min_credits:.2f} credit{suffix}'
+          num_credits_str = f'{min_credits:.1f} credit{suffix}'
       else:
-        num_credits_str = f'Between {min_credits:0.2f} and {max_credits:.2f} credits'
+        num_credits_str = f'Between {min_credits:0.1f} and {max_credits:.1f} credits'
 
     if num_classes_str and num_credits_str:
       conjunction_str = ' ' + cc_dict['conjunction'].lower() + ' '
@@ -388,11 +388,11 @@ def format_number(number_arg, is_int=False):
     if len(parts) == 2:
       min_part = float(parts[0])
       max_part = float(parts[1])
-      number_str = f'between {min_part:.2f} and {max_part:.2f}'
+      number_str = f'between {min_part:.1f} and {max_part:.1f}'
     else:
       value = float(number_arg)
       is_unity = abs(value - 1.0) < 0.01
-      number_str = f'{value:.2f}'
+      number_str = f'{value:.1f}'
 
   return number_str, is_unity
 

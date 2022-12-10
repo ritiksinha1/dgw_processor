@@ -191,13 +191,13 @@ def _format_lastres(lastres_dict: dict) -> str:
         lastres_str = (f'<p>At least {number} of the last {of_number} classes must be taken in '
                        f'residence</p>')
       case ['credit', '']:
-        lastres_str = (f'<p>At least {number:.2f} of the last {of_number:.2f} credits must be '
+        lastres_str = (f'<p>At least {number:.1f} of the last {of_number:.1f} credits must be '
                        f'taken in residence</p>')
       case ['class', class_str]:
         lastres_str = (f'<p>At least {number} of the last {of_number} of these classes must be '
                        f'taken in residence:</p>{class_str}')
       case ['credit', credit_str]:
-        lastres_str = (f'<p>At least {number:2f} of the last {of_number:.2f} credits in these '
+        lastres_str = (f'<p>At least {number:2f} of the last {of_number:.1f} credits in these '
                        f'classes must be taken in residence:</p>{credit_str}')
 
   except KeyError:
@@ -206,12 +206,12 @@ def _format_lastres(lastres_dict: dict) -> str:
       case ['class', '']:
         lastres_str = (f'<p>At least {number} classes must be taken in residence</p>')
       case ['credit', '']:
-        lastres_str = (f'<p>At least {number:.2f} credits must be taken in residence</p>')
+        lastres_str = (f'<p>At least {number:.1f} credits must be taken in residence</p>')
       case ['class', class_str]:
         lastres_str = (f'<p>At least {number} of these classes must be taken in residence:</p>'
                        f'{class_str}')
       case ['credit', credit_str]:
-        lastres_str = (f'<p>At least {number:.2f} credits in these classes must be taken in '
+        lastres_str = (f'<p>At least {number:.1f} credits in these classes must be taken in '
                        f'residence:</p>{credit_str}')
 
   try:
