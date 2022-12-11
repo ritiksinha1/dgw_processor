@@ -410,8 +410,8 @@ def format_group_requirement(group_requirement_dict: dict) -> str:
             return_str += format_course_list(requirement[key])
           case 'course_list_rule':
             return_str += format_course_list_rule(requirement[key])
-          case 'group_requirements':
-            return_str += format_group_requirements(requirement[key])
+          case 'group_requirement':
+            return_str += format_group_requirement(requirement[key])
           case 'noncourse':
             return_str += format_noncourse(requirement[key])
           case 'rule_complete':

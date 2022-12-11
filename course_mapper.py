@@ -1490,19 +1490,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                   print(f'{institution} {requirement_id} Subset conditional', file=log_file)
                   body_conditional(institution, requirement_id, context_list + subset_context, rule)
 
-                  # # Use the condition as the pseudo-name of this requirement
-                  # condition = conditional['condition_str']
-                  # for if_true_dict in conditional['if_true']:
-                  #   condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
-                  #   traverse_body(if_true_dict, context_list + subset_context + condition_list)
-                  # try:
-                  #   for if_false_dict in conditional['if_false']:
-                  #     condition_list = [{'requirement_name': 'if_true', 'condition': condition}]
-                  #     traverse_body(if_true_dict, context_list + subset_context + condition_list)
-                  # except KeyError:
-                  #   # Scribe Else clause is optional
-                  #   pass
-
                 case 'copy_rules':
                   # -------------------------------------------------------------------------------
                   # Get rules from target block, which must come from same institution
