@@ -188,7 +188,6 @@ def header_conditional(institution: str, requirement_id: str,
       else:
         exit(f'{which_list} is not in column_lists or other_lists')
 
-
   # True leg handlers
   # -----------------------------------------------------------------------------------------------
   if true_dict := conditional_dict['conditional']['if_true']:
@@ -197,78 +196,75 @@ def header_conditional(institution: str, requirement_id: str,
         match key:
 
           case 'conditional':
-            # The problem is, _which_ list should have an {'if_true': condition_str} object appended
-            # to it? Presumably, it's handled by each of the requirements separately. So why isn't
-            # this working on the if_false side?
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             header_conditional(institution, requirement_id, return_dict, requirement)
 
           case 'header_class_credit':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('total_credits_list', true_leg)
             return_dict['total_credits_list'].append(header_classcredit(institution, requirement_id,
                                                                         value, do_proxyadvice))
 
           case 'header_maxtransfer':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('maxtransfer_list', true_leg)
             return_dict['maxtransfer_list'].append(header_maxtransfer(institution, requirement_id,
                                                                       value))
 
           case 'header_minres':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('minres_list', true_leg)
             return_dict['minres_list'].append(header_minres(institution, requirement_id, value))
 
           case 'header_mingpa':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('mingpa_list', true_leg)
             return_dict['mingpa_list'].append(header_mingpa(institution, requirement_id, value))
 
           case 'header_mingrade':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('mingrade_list', true_leg)
             return_dict['mingrade_list'].append(header_mingrade(institution, requirement_id, value))
 
           case 'header_maxclass':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('maxclass_list', true_leg)
             return_dict['other']['maxclass_list'].append(header_maxclass(institution,
                                                                          requirement_id, value))
 
           case 'header_maxcredit':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('maxcredit_list', true_leg)
             return_dict['other']['maxcredit_list'].append(header_maxcredit(institution,
                                                                            requirement_id, value))
 
           case 'header_maxpassfail':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('maxpassfail_list', true_leg)
             return_dict['other']['maxpassfail_list'].append(header_maxpassfail(institution,
                                                                                requirement_id,
                                                                                value))
 
           case 'header_maxperdisc':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('maxperdisc_list', true_leg)
             return_dict['other']['maxperdisc_list'].append(header_maxperdisc(institution,
                                                                              requirement_id, value))
 
           case 'header_minclass':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('minclass_list', true_leg)
             return_dict['other']['minclass_list'].append(header_minclass(institution,
                                                                          requirement_id, value))
 
           case 'header_mincredit':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('mincredit_list', true_leg)
             return_dict['other']['mincredit_list'].append(header_mincredit(institution,
                                                                            requirement_id, value))
 
           case 'header_minperdisc':
-            print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
             tag('minperdisc_list', true_leg)
             return_dict['other']['minperdisc_list'].append(header_minperdisc(institution,
                                                                              requirement_id, value))
@@ -279,11 +275,11 @@ def header_conditional(institution: str, requirement_id: str,
 
           case 'proxyadvice':
             if do_proxy_advice:
-              print(f'{institution} {requirement_id} Header true conditional {key}', file=log_file)
+              print(f'{institution} {requirement_id} Header conditional true {key}', file=log_file)
               tag('proxyadvice_list', true_leg)
               return_dict['other']['proxyadvice_list'].append(value)
             else:
-              print(f'{institution} {requirement_id} Header true conditional {key} (ignored)',
+              print(f'{institution} {requirement_id} Header conditional true {key} (ignored)',
                     file=log_file)
               pass
 
@@ -300,97 +296,97 @@ def header_conditional(institution: str, requirement_id: str,
         match key:
 
           case 'conditional':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             header_conditional(institution, requirement_id, return_dict, requirement)
 
           case 'header_class_credit':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('total_credits_list', false_leg)
             return_dict['total_credits_list'].append(header_classcredit(institution,
                                                                         requirement_id,
                                                                         value, do_proxyadvice))
 
           case 'header_maxtransfer':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('maxtransfer_list', false_leg)
             return_dict['maxtransfer_list'].append(header_maxtransfer(institution, requirement_id,
                                                                       value))
 
           case 'header_minres':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('minres_list', false_leg)
             return_dict['minres_list'].append(header_minres(institution, requirement_id, value))
 
           case 'header_mingpa':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('mingpa_list', false_leg)
             return_dict['mingpa_list'].append(header_mingpa(institution, requirement_id, value))
 
           case 'header_mingrade':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('mingrade_list', false_leg)
             return_dict['mingrade_list'].append(header_mingrade(institution, requirement_id,
                                                                 value))
 
           case 'header_maxclass':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('maxclass_list', false_leg)
             return_dict['other']['maxclass_list'].append(header_maxclass(institution,
                                                                          requirement_id, value))
 
           case 'header_maxcredit':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('maxcredit_list', false_leg)
             return_dict['other']['maxcredit_list'].append(header_maxcredit(institution,
                                                                            requirement_id, value))
 
           case 'header_maxpassfail':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('maxpassfail_list', false_leg)
             return_dict['other']['maxpassfail_list'].append(header_maxpassfail(institution,
                                                                                requirement_id,
                                                                                value))
 
           case 'header_maxperdisc':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('maxperdisc_list', false_leg)
             return_dict['other']['maxperdisc_list'].append(header_maxperdisc(institution,
                                                                              requirement_id,
                                                                              value))
 
           case 'header_minclass':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('minclass_list', false_leg)
             return_dict['other']['minclass_list'].append(header_minclass(institution,
                                                                          requirement_id, value))
 
           case 'header_mincredit':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('mincredit_list', false_leg)
             return_dict['other']['mincredit_list'].append(header_mincredit(institution,
                                                                            requirement_id,
                                                                            value))
 
           case 'header_minperdisc':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             tag('minperdisc_list', false_leg)
             return_dict['other']['minperdisc_list'].append(header_minperdisc(institution,
                                                                              requirement_id,
                                                                              value))
 
           case 'header_share':
-            print(f'{institution} {requirement_id} Header false conditional {key}', file=log_file)
+            print(f'{institution} {requirement_id} Header conditional false {key}', file=log_file)
             # Ignore
             pass
 
           case 'proxyadvice':
             if do_proxy_advice:
-              print(f'{institution} {requirement_id} Header true conditional {key}',
+              print(f'{institution} {requirement_id} Header conditional true {key}',
                     file=log_file)
               tag('proxyadvice_list', false_leg)
               return_dict['other']['proxyadvice_list'].append(value)
             else:
-              print(f'{institution} {requirement_id} Header true conditional {key} (ignored)',
+              print(f'{institution} {requirement_id} Header conditional true {key} (ignored)',
                     file=log_file)
               pass
 
@@ -409,6 +405,34 @@ def header_conditional(institution: str, requirement_id: str,
       return_dict[tagged_list].append({'endif': condition_str})
     else:
       return_dict['other'][tagged_list].append({'endif': condition_str})
+
+
+# body_conditional()
+# -------------------------------------------------------------------------------------------------
+def body_conditional(institution: str, requirement_id: str,
+                     context_list: list, conditional_dict: dict):
+  """
+      Update the return_dict with conditional info determined by traversing the conditional_dict
+      recursively.
+  """
+
+  condition_str = conditional_dict['condition_str']
+  begin_true = {'if': condition_str} if args.concise_conditionals else {'if_true': condition_str}
+  begin_false = {'else': ''} if args.concise_conditionals else {'if_false': condition_str}
+
+  if true_dict := conditional_dict['if_true']:
+    context_list.append(begin_true)
+    traverse_body(true_dict, context_list)
+    context_list.pop()
+
+  try:
+   false_dict = conditional_dict['if_false']
+   context_list.append(begin_false)
+   traverse_body(false_dict, context_list)
+   context_list.pop()
+  except KeyError as err:
+    # false leg is optional
+    pass
 
 
 # map_courses()
@@ -1108,20 +1132,7 @@ def traverse_body(node: Any, context_list: list) -> None:
         case 'conditional':
           # ---------------------------------------------------------------------------------------
           assert isinstance(requirement_value, dict)
-          # Use the condition as the pseudo-name of this requirement
-          condition = requirement_value['condition_str']
-          for if_true_dict in requirement_value['if_true']:
-            condition_dict = {'requirement_name': 'if_true', 'condition': condition}
-            condition_list = [condition_dict]
-            traverse_body(if_true_dict, context_list + condition_list)
-          try:
-            for if_false_dict in requirement_value['if_false']:
-              condition_dict = {'requirement_name': 'if_false', 'condition': condition}
-              condition_list = [condition_dict]
-              traverse_body(if_false_dict, context_list + condition_list)
-          except KeyError:
-            # Scribe Else clause is optional
-            pass
+          body_conditional(institution, requirement_id, context_list, requirement_value)
           print(institution, requirement_id, 'Body conditional', file=log_file)
 
         case 'copy_rules':
@@ -1389,7 +1400,7 @@ def traverse_body(node: Any, context_list: list) -> None:
             context_dict['requirement_name'] = 'No requirement name available'
             print(f'{institution} {requirement_id} Subset with no label', file=fail_file)
 
-          # Remarks and Proxy-Advice not observed to occur at this, but ..
+          # Remarks and Proxy-Advice (not observed to occur)
           try:
             context_dict['remark'] = requirement_value['remark']
             print(f'{institution} {requirement_id} Subset remark', file=log_file)
@@ -1476,8 +1487,8 @@ def traverse_body(node: Any, context_list: list) -> None:
 
                 case 'conditional':
                   # -------------------------------------------------------------------------------
-                  print(f'{institution} {requirement_id} Subset conditional_dict', file=log_file)
-                  traverse_body(requirement, context_list + subset_context)
+                  print(f'{institution} {requirement_id} Subset conditional', file=log_file)
+                  body_conditional(institution, requirement_id, context_list + subset_context, rule)
 
                   # # Use the condition as the pseudo-name of this requirement
                   # condition = conditional['condition_str']
