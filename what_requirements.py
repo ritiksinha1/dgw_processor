@@ -1,8 +1,7 @@
 #! /usr/local/bin/python3
-""" Given a list of course_ids or (institution, discipline, catalog_number) tuples, generate a list
-    of requirements each course satisfies.
-    A "requirement" is a program name and requirement name., but does not show the requirement
-    structure.
+""" Read from stdin a list of course_ids or (institution, discipline, catalog_number) tuples,
+    generate a list of requirements each course satisfies. A "requirement" is a program name and
+    requirement name., but does not show the requirement structure.
 """
 
 import psycopg
@@ -12,93 +11,182 @@ from argparse import ArgumentParser
 from psycopg.rows import namedtuple_row
 
 
-parser = ArgumentParser()
-parser.add_argument('-c', '--full_context', action='store_true')
-parser.add_argument('-o', '--output_file', default=None)
-args = parser.parse_args()
-
-if args.output_file:
-  out_file = open(args.output_file, 'w')
-else:
-  out_file = sys.stdout
-
-condition_str = ''
-num_groups = 0
-num_required = 0
-group_number = 0
-
-
-def show_requirements(requirement_cursor):
-  """ Given an open cursor
+def show_requirements(course_id_str: str, full_context=False) -> list:
+  """ Given
   """
-  for requirement_row in requirement_cursor:
-    if args.full_context:
-      context_list = requirement_row.context
-      leader = f'{requirement_row.requirement_id}'
-      for context in context_list:
-        for key, value in context.items():
-          match key:
+  return_list = []
 
-            case 'block_info':
-              leader += '  '
-              block_type = value['block_type']
-              block_title = value['block_title']
-              print(f'\n{leader} {block_type} “{block_title}”', file=out_file)
+  condition_str = ''
+  num_groups = 0
+  num_required = 0
+  group_number = 0
 
-            case 'condition':
-              condition_str = value
+  with psycopg.connect(dbname='cuny_curriculum') as conn:
+    with conn.cursor(row_factory=namedtuple_row) as requirements_cursor:
 
-            case 'mingrade':
-              leader += '  '
-              print(f'{leader} Minimum grade of {value} required', file=out_file)
+      requirements_cursor.execute("""
+      select r.context, r.requirement_id
+        from course_mappings.requirements r
+        where r.requirement_key in (select requirement_key
+                                      from course_mappings.mappings
+                                     where course_id = %s)
+        order by r.requirement_key
+      """, (course_id_str, ))
 
-            case 'num_groups':
-              num_groups = value
+      if requirements_cursor.rowcount == 0:
+        return_list.append('  No major/minor requirements')
 
-            case 'num_required':
-              num_required = value
+      for requirement_row in requirements_cursor:
+        context_list = requirement_row.context
 
-            case 'group_number':
-              leader += '  '
-              s = '' if num_required == 1 else 's'
-              ss = '' if num_groups == 1 else 's'
-              print(f'{leader}Group {group_number + 1} of {num_required} required '
-                    f'group{s} out of {num_groups} alternative{ss}', file=out_file)
-            case 'remark':
-              # Ignore
-              pass
+        if not full_context:
+          # Show the plan/sub-plan(s) and last requirement_name in the context chain
+          requirement_name = None
+          depth = 0
+          for index in range(len(context_list) - 1, -1, -1):
+            if 'requirement_name' in context_list[index].keys():
+              requirement_name = context_list[index]['requirement_name']
+              break
+            elif 'requirement' in context_list[index].keys():
+              requirement_name = context_list[index]['requirement']['label']
+              break
 
-            case 'requirement':
-              # Ignore: this the label was already handled as 'requirement_name'
-              pass
+          if requirement_name is not None:
+              # # Ignore intermediate "marker" items
+              # if requirement_name in ['if_true', 'if_false', 'condition', 'group_requirement',
+              #                         'num_groups', 'num_required', 'group_number',
+              #                         'group_number_str']:
+              #   continue
+              for j in range(index):
+                try:
+                  requirement_id = context_list[j]['block_info']['requirement_id']
+                  block_type = context_list[j]['block_info']['block_type']
+                  block_title = context_list[j]['block_info']['block_title']
+                  enrollment = context_list[j]['block_info']['plan_info']['plan_enrollment']
+                  s = ' ' if enrollment == 1 else 's'
+                  if j == 0:
+                    return_list.append('')
+                  return_list.append(f'{requirement_id} {block_type} ({enrollment:,} student{s}) '
+                                     f'“{block_title}”')
+                except KeyError:
+                  pass
+              return_list.append(f'{requirement_id} {requirement_name}')
 
-            case 'requirement_name':
-              leader += '  '
-              if value == 'if_true':
-                print(f'{leader}If {condition_str} is TRUE', file=out_file)
-              elif value == 'if_false':
-                print(f'{leader}If {condition_str} is FALSE', file=out_file)
-              else:
-                print(leader, value, file=out_file)
+          else:
+            return_list.append(f'Error: no requirement_name found in {len(context_list)} contexts')
 
-            case _:
-              print(f'{leader} {key=}??')
+        else:
+          # Show entire context chain
+          depth = 0
+          requirement_id = requirement_row.requirement_id
+          # Mark the beginning of a requirement chain
+          return_list.append('')
+
+          for context in context_list:
+            for key, value in context.items():
+
+              match key:
+
+                case 'block_info':
+                  depth += 1
+                  leader = depth * '  '
+                  requirement_id = value['requirement_id']
+                  block_type = value['block_type']
+                  block_title = value['block_title']
+                  if 'plan_info' in value.keys():
+                    enrollment = value['plan_info']['plan_enrollment']
+                  elif 'subplan' in value.keys():
+                    enrollment = value['subplan']['subplan_enrollment']
+                  else:
+                    enrollment = None
+                  return_list.append(f'{requirement_id}{leader}{block_type} “{block_title}” '
+                                     f'({enrollment:,} students) ')
+
+                case 'if_true':
+                  depth += 1
+                  leader = depth * '  '
+                  return_list.append(f'{requirement_id} {leader}If {value} is TRUE')
+
+                case 'if_false':
+                  depth += 1
+                  leader = depth * '  '
+                  return_list.append(f'{requirement_id} {leader}If {value} is FALSE')
+
+                case 'mingrade':
+                  depth += 1
+                  leader = depth * '  '
+                  return_list.append(f'{requirement_id}{leader}Minimum grade of {value} required')
+
+                case 'num_groups':
+                  num_groups = value
+
+                case 'num_required':
+                  depth += 1
+                  leader = depth * '  '
+                  num_required = value
+                  s = '' if num_required == 1 else 's'
+                  return_list.append(f'{requirement_id}{leader}{num_required} Group{s} required')
+
+                case 'group_number':
+                  # ss = '' if num_groups == 1 else 's'
+                  # return_list.append(f'{requirement_id}{leader}Group {group_number + 1} of '
+                  #                    f'{num_required} required group{s} out of {num_groups} '
+                  #                    f'group{ss}')
+                  pass
+
+                case 'group_number_str':
+                  return_list.append(f'{requirement_id}{leader}{value}')
+
+                case 'remark':
+                  # Ignore
+                  pass
+
+                case 'requirement':
+                  # Ignore: this the label was already handled as 'requirement_name'
+                  pass
+
+                case 'requirement_name':
+                  depth += 1
+                  leader = depth * '  '
+                  if value == 'if_true':
+                    return_list.append(f'{requirement_id}{leader}If {condition_str} is TRUE')
+                  elif value == 'if_false':
+                    return_list.append(f'{requirement_id}{leader}If {condition_str} is FALSE')
+                  else:
+                    return_list.append(f'{requirement_id}{leader}{value}')
+
+                case _:
+                  return_list.append(f'{requirement_id}{leader}{key=}??')
+
+  return return_list
 
 
-with psycopg.connect('dbname=cuny_curriculum') as conn:
-  with conn.cursor(row_factory=namedtuple_row) as course_cursor:
-    with conn.cursor(row_factory=namedtuple_row) as requirement_cursor:
+if __name__ == '__main__':
+
+  parser = ArgumentParser()
+  parser.add_argument('-c', '--full_context', action='store_true')
+  parser.add_argument('-p', '--prompt_str', default='')
+  args = parser.parse_args()
+
+  with psycopg.connect('dbname=cuny_curriculum') as conn:
+    with conn.cursor(row_factory=namedtuple_row) as course_cursor:
       # The input list comes from stdin
+      print(args.prompt_str, end='')
+      sys.stdout.flush()
       while line := sys.stdin.readline():
 
-        if line.lower().strip() == 'q':
+        command = line.lower().strip()
+        if command in ['q', '']:
+          # Quit
           exit()
+        if command == '-c':
+          # Toggle compact mode
+          args.full_context = not args.full_context
+          print('Full context is', args.full_context)
+          continue
 
-        parts = line.split()
+        parts = command.split()
         match len(parts):
-          case 0:
-            # Ignore blank lines
-            pass
 
           case 1:
             course_id = f'{int(parts[0]):06}'
@@ -110,38 +198,6 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
              where course_id = %s
                and course_status = 'A'
             """, (course_id, ))
-
-            if course_cursor.rowcount == 0:
-              print(f'{course_id} not found', file=out_file)
-
-            offer_nbrs = []
-            for row in course_cursor:
-              course_id = str(row.course_id)
-              offer_nbrs.append(row.offer_nbr)
-              if row.attributes != 'None':
-                attributes = row.attributes.split(';')
-                attributes = ', '.join([a.split(':')[1] for a in attributes])
-
-              else:
-                attributes = 'None'
-              print(f'{row.course_id:06}:{row.offer_nbr} {row.institution[0:3]} {row.discipline:>6} '
-                    f'{row.catalog_number:6} {row.designation:5} {attributes}', file=out_file)
-
-              for offer_nbr in offer_nbrs:
-                course_id_str = f'{int(row.course_id):06}:{offer_nbr}'
-                requirement_cursor.execute("""
-                select p.type, p.code, r.context, r.requirement_id
-                  from course_mappings.mappings m,
-                       course_mappings.programs p,
-                       course_mappings.requirements r
-                  where m.course_id = %s
-                    and r.requirement_key = m.requirement_key
-                    and p.requirement_id = r.requirement_id
-                """, (course_id_str, ))
-                if requirement_cursor.rowcount == 0:
-                  print('  No major/minor requirements', file=out_file)
-                else:
-                  show_requirements(requirement_cursor)
 
           case 3:
             institution, discipline, catalog_number = parts
@@ -155,43 +211,25 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
                and course_status = 'A'
             """, parts)
 
-            if course_cursor.rowcount == 0:
-              print(f'{line.strip()}: not found', file=out_file)
-
-            offer_nbrs = []
-
-            for row in course_cursor:
-
-              course_id = str(row.course_id)
-
-              offer_nbrs.append(row.offer_nbr)
-              if row.attributes != 'None':
-                attributes = row.attributes.split(';')
-                attributes = ', '.join([a.split(':')[1] for a in attributes])
-              else:
-                attributes = 'None'
-
-              print(f'\n{row.course_id:06}:{row.offer_nbr} {row.institution[0:3]} '
-                    f'{row.discipline:>6} {row.catalog_number:6} {row.designation:5} {attributes}',
-                    file=out_file)
-
-              for offer_nbr in offer_nbrs:
-                course_id_str = f'{int(row.course_id):06}:{offer_nbr}'
-                requirement_cursor.execute("""
-                select p.type, p.code, r.context, r.requirement_id
-                  from course_mappings.mappings m,
-                       course_mappings.programs p,
-                       course_mappings.requirements r
-                  where m.course_id = %s
-                    and r.requirement_key = m.requirement_key
-                    and p.requirement_id = r.requirement_id
-                """, (course_id_str, ))
-
-                if requirement_cursor.rowcount == 0:
-                  print('  No major/minor requirements', file=out_file)
-
-                else:
-                  show_requirements(requirement_cursor)
-
           case _:
-            print(f'Expected 1 or three parts. “{line}” has {len(parts)}')
+            print(f'Expected 1 or three parts. “{command}” has {len(parts)}')
+
+        if course_cursor.rowcount == 0:
+          return_list.append(f'{course_id} not found')
+          continue
+
+        for row in course_cursor:
+          course_id = str(row.course_id)
+          course_id_str = f'{row.course_id:06}:{row.offer_nbr}'
+          if row.attributes != 'None':
+            attributes = row.attributes.split(';')
+            attributes = ', '.join([a.split(':')[1] for a in attributes])
+
+          else:
+            attributes = 'None'
+
+          print(f'{course_id_str} {row.institution[0:3]} {row.discipline:>6} '
+                f'{row.catalog_number:6} {row.designation:5} {attributes}')
+          print('\n'.join(show_requirements(course_id_str, args.full_context)))
+          print(args.prompt_str, end='')
+          sys.stdout.flush()
