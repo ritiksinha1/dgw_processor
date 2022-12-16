@@ -189,7 +189,7 @@ def header_conditional(institution: str, requirement_id: str,
         exit(f'{which_list} is not in column_lists or other_lists')
 
   # True leg handlers
-  # -----------------------------------------------------------------------------------------------
+  # -----------------
   if true_dict := conditional_dict['conditional']['if_true']:
     for requirement in true_dict:
       for key, value in requirement.items():
@@ -288,7 +288,7 @@ def header_conditional(institution: str, requirement_id: str,
                   file=todo_file)
 
   # False (else) leg handlers
-  # -----------------------------------------------------------------------------------------------
+  # -------------------------
   try:
     false_dict = conditional_dict['conditional']['if_false']
     for requirement in false_dict:
@@ -604,12 +604,12 @@ def process_block(block_info: dict,
 
       plan_dict:
        plan_name, plan_type, plan_description, plan_cip_code, plan_effective_date,
-       requirement_block, subplans_list
+       requirement_id, subplans_list
 
       subplans_list:
         subplan_dict:
           subplan_name, subplan_type, subplan_description, subplan_cip_code, subplan_effective_date,
-          requirement_block
+          requirement_id
 
       requirement_block: (Will appear in plan_dicts, subplan_dicts, and nested dicts)
         institution, requirement_id, block_type, block_value, block_title, catalog_years_str,
@@ -687,6 +687,18 @@ def process_block(block_info: dict,
                               other_col,
                               generated_date
                               ])
+  else:
+    """ For non-plan blocks, look up the subplan in the plan dict, if possible
+    """
+    subplan_list = context_list[0]['block_info']['plan_info']['subplans']
+    found = False
+    for subplan in subplan_list:
+      if subplan['block_info']['requirement_id'] == requirement_id:
+        found = True
+        block_info_dict['subplan'] = subplan
+    if not found:
+      # For example, an OTHER block of prerequisite requirements for a program.
+      print(f'{institution} {requirement_id} No matching subplan', file=todo_file)
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
@@ -1030,8 +1042,9 @@ def traverse_body(node: Any, context_list: list) -> None:
                           requirement_value['block_value']]
 
             if block_args[2].lower().startswith('mhc'):
-              # ignore Honors College requirements
+              # Ignore Honors College requirements
               pass
+
             else:
               with psycopg.connect('dbname=cuny_curriculum') as conn:
                 with conn.cursor(row_factory=dict_row) as cursor:
@@ -1045,9 +1058,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                   """, block_args)
 
                   target_block = None
+
                   if cursor.rowcount == 0:
                     print(f'{institution} {requirement_id} Body block: no active {block_args[1:]} '
                           f'blocks', file=fail_file)
+
                   elif cursor.rowcount > 1:
                     # Hopefully, the major1 field of exactly one block will match this program's
                     # block value, resolving the issue.
@@ -1074,7 +1089,7 @@ def traverse_body(node: Any, context_list: list) -> None:
           # Presumably, this is a reference to a subplan (concentration) for a plan.
           # Preconditions are:
           #   This block is for a plan
-          #   This plan has at least one active plan
+          #   This plan has to have at least one active plan
           #   There is at least one matching CONC block
 
           preconditions = True
@@ -1277,12 +1292,12 @@ def traverse_body(node: Any, context_list: list) -> None:
               group_num_str = f'Group number {group_num + 1:,} of {num_groups_str} group{s}'
 
             group_context = [{'group_number': group_num + 1,
-                              'requirement_name': group_num_str}]
+                              'group_number_str': group_num_str}]
 
             for requirement in group:
-
               for key, value in requirement.items():
                 match key:
+
                   case 'block':
                     # -----------------------------------------------------------------------------
                     block_name = value['label']
@@ -1345,8 +1360,10 @@ def traverse_body(node: Any, context_list: list) -> None:
                     # -----------------------------------------------------------------------------
                     # This is where course lists turn up, in general.
                     try:
+                      label_str = value['label']
                       map_courses(institution, requirement_id, block_title,
-                                  context_list + requirement_context + group_context, value)
+                                  context_list + requirement_context + group_context +
+                                  [{'requirement_name': label_str}], value)
                     except KeyError as ke:
                       # Course List is an optional part of ClassCredit
                       pass
