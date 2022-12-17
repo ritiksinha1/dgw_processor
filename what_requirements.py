@@ -44,33 +44,36 @@ def what_requirements(course_id_str: str, full_context=False) -> list:
           requirement_name = None
           depth = 0
           for index in range(len(context_list) - 1, -1, -1):
-            if 'requirement_name' in context_list[index].keys():
-              requirement_name = context_list[index]['requirement_name']
-              break
-            elif 'requirement' in context_list[index].keys():
+            # if 'requirement_name' in context_list[index].keys():
+            #   requirement_name = context_list[index]['requirement_name']
+            #   break
+            if 'requirement' in context_list[index].keys():
               requirement_name = context_list[index]['requirement']['label']
+              num_alternative_courses = context_list[index]['requirement']['num_courses'] - 1
               break
 
           if requirement_name is not None:
-              # # Ignore intermediate "marker" items
-              # if requirement_name in ['if_true', 'if_false', 'condition', 'group_requirement',
-              #                         'num_groups', 'num_required', 'group_number',
-              #                         'group_number_str']:
-              #   continue
-              for j in range(index):
-                try:
-                  requirement_id = context_list[j]['block_info']['requirement_id']
-                  block_type = context_list[j]['block_info']['block_type']
-                  block_title = context_list[j]['block_info']['block_title']
-                  enrollment = context_list[j]['block_info']['plan_info']['plan_enrollment']
-                  s = ' ' if enrollment == 1 else 's'
-                  if j == 0:
-                    return_list.append('')
-                  return_list.append(f'{requirement_id} {block_type} ({enrollment:,} student{s}) '
-                                     f'“{block_title}”')
-                except KeyError:
-                  pass
-              return_list.append(f'{requirement_id} {requirement_name}')
+            # # Ignore intermediate "marker" items
+            # if requirement_name in ['if_true', 'if_false', 'condition', 'group_requirement',
+            #                         'num_groups', 'num_required', 'group_number',
+            #                         'group_number_str']:
+            #   continue
+            for j in range(index):
+              try:
+                requirement_id = context_list[j]['block_info']['requirement_id']
+                block_type = context_list[j]['block_info']['block_type']
+                block_title = context_list[j]['block_info']['block_title']
+                enrollment = context_list[j]['block_info']['plan_info']['plan_enrollment']
+                s = ' ' if enrollment == 1 else 's'
+                if j == 0:
+                  return_list.append('')
+                return_list.append(f'{requirement_id} {block_type} ({enrollment:,} student{s}) '
+                                   f'“{block_title}”')
+              except KeyError:
+                pass
+            s = '' if num_alternative_courses == 1 else 's'
+            return_list.append(f'{requirement_id} {requirement_name} ({num_alternative_courses} '
+                               f'course alternative{s})')
 
           else:
             return_list.append(f'Error: no requirement_name found in {len(context_list)} contexts')
