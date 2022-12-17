@@ -98,7 +98,7 @@ def what_requirements(course_id_str: str, full_context=False) -> list:
                   elif 'subplan' in value.keys():
                     enrollment = value['subplan']['subplan_enrollment']
                   else:
-                    enrollment = None
+                    enrollment = 0
                   s = '' if enrollment == 1 else 's'
                   return_list.append(f'{requirement_id}{leader}{block_type} “{block_title}” '
                                      f'({enrollment:,} student{s}) ')
