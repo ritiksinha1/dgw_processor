@@ -11,7 +11,7 @@ from argparse import ArgumentParser
 from psycopg.rows import namedtuple_row
 
 
-def show_requirements(course_id_str: str, full_context=False) -> list:
+def what_requirements(course_id_str: str, full_context=False) -> list:
   """ Given
   """
   return_list = []
@@ -99,8 +99,9 @@ def show_requirements(course_id_str: str, full_context=False) -> list:
                     enrollment = value['subplan']['subplan_enrollment']
                   else:
                     enrollment = None
+                  s = '' if enrollment == 1 else 's'
                   return_list.append(f'{requirement_id}{leader}{block_type} “{block_title}” '
-                                     f'({enrollment:,} students) ')
+                                     f'({enrollment:,} student{s}) ')
 
                 case 'if_true':
                   depth += 1
@@ -230,6 +231,6 @@ if __name__ == '__main__':
 
           print(f'{course_id_str} {row.institution[0:3]} {row.discipline:>6} '
                 f'{row.catalog_number:6} {row.designation:5} {attributes}')
-          print('\n'.join(show_requirements(course_id_str, args.full_context)))
+          print('\n'.join(what_requirements(course_id_str, args.full_context)))
           print(args.prompt_str, end='')
           sys.stdout.flush()
