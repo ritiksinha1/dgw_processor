@@ -73,7 +73,7 @@ def what_requirements(course_id_str: str, full_context=False) -> list:
                 pass
             s = '' if num_alternative_courses == 1 else 's'
             return_list.append(f'{requirement_id} {requirement_name} ({num_alternative_courses} '
-                               f'course alternative{s})')
+                               f'other course{s})')
 
           else:
             return_list.append(f'Error: no requirement_name found in {len(context_list)} contexts')
@@ -146,8 +146,12 @@ def what_requirements(course_id_str: str, full_context=False) -> list:
                   pass
 
                 case 'requirement':
-                  # Ignore: this the label was already handled as 'requirement_name'
-                  pass
+                  # This is where the number of courses is found
+                  num_alternatives = value['num_courses'] - 1
+                  s = '' if num_alternatives == 1 else 's'
+                  y = 'ies' if num_alternatives == 1 else 'y'
+                  return_list.append(f'{requirement_id}{leader}{num_alternatives} other course{s} '
+                                     f'satisf{y} this requirement')
 
                 case 'requirement_name':
                   depth += 1
