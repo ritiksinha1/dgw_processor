@@ -3,6 +3,7 @@
     get_course_mapping_info.py to see what requirements a course satisfies, for example.
 """
 
+import argparse
 import csv
 import os
 import sys
@@ -23,6 +24,10 @@ def _count_generator(reader):
 
 
 if __name__ == '__main__':
+  parser = argparse.ArgumentParser('Load db tables from course mappper CSV files')
+  parser.add_argument('-p', '--progress', action='store_true')
+  args = parser.parse_args()
+
   session_start = time()
   csv.field_size_limit(sys.maxsize)
 
@@ -97,7 +102,8 @@ if __name__ == '__main__':
         with open(file) as csv_file:
           reader = csv.reader(csv_file)
           for line in reader:
-            print(f'\r{reader.line_num:,}/{num_lines:,} {round(reader.line_num/nl)}%', end='')
+            if args.progress:
+              print(f'\r{reader.line_num:,}/{num_lines:,} {round(reader.line_num/nl)}%', end='')
             if reader.line_num == 1:
               Row = namedtuple('Row', [col.lower().replace(' ', '_').replace('with', 'with_exp')
                                for col in line])
