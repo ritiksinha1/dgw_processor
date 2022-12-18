@@ -64,8 +64,7 @@ class QuarantineManager(dict):
           key = (row.institution, row.requirement_id)
           values = _Values._make([row.block_type, catalog, year, explanation])
           self._quarantined_dict[key] = values
-          # print(f'{row.institution} {row.requirement_id} {row.block_type} {catalog} {year} {explanation}')
-          # print(self._quarantined_dict[key])
+
     # The dict is dirty if it changes without updating the db
     self._dict_dirty = False
     # The file is dirty if the dict has changed and hasn't been written to it. No check is made to
@@ -96,7 +95,7 @@ class QuarantineManager(dict):
   @property
   def list(self):
     sk = sorted(self._quarantined_dict.keys(), key=lambda k: [k[0], k[1]])
-    return [f'{k[0]} {k[1]}: {self._quarantined_dict[k][3]}' for k in sk]
+    return [f'{k[0]} {k[1]}: {self._quarantined_dict[k].explanation}' for k in sk]
 
   # keys
   # -----------------------------------------------------------------------------------------------
@@ -112,14 +111,15 @@ class QuarantineManager(dict):
     """ Construct dict from CSV file
     """
     new_dict = dict()
-    with open(QuarantineManager._csv_file) as csv_file:
+    with open(QuarantineManager._csv_file, newline='') as csv_file:
       reader = csv.reader(csv_file)
       for line in reader:
         if reader.line_num == 1:
           CSV_Row = namedtuple('CSV_Row', [c.lower().replace(' ', '_') for c in line])
         else:
           row = CSV_Row._make(line)
-          new_dict[(row.institution, row.requirement_id)] = row.explanation
+          value = _Values._make([row.block_type, row.catalog, row.year, row.explanation])
+          new_dict[(row.institution, row.requirement_id)] = value
     return new_dict
 
   # read()
@@ -161,10 +161,37 @@ class QuarantineManager(dict):
     with open(csv_file, 'w', newline='') as csv_file:
       writer = csv.writer(csv_file)
       writer.writerow(['Institution', 'Requirement ID', 'Block Type', 'Catalog', 'Year',
-                       'Explanation', 'Can Ellucian'])
+                       'Explanation'])
       for key in sk:
         writer.writerow([key[0], key[1]] + list(self._quarantined_dict[key]))
     return len(self._quarantined_dict)
+
+  # update()
+  # -----------------------------------------------------------------------------------------------
+  def update(self):
+    """ Replace the parse trees of all quarantined blocks with explanations from current dict.
+    """
+    with psycopg.connect('dbname=cuny_curriculum') as conn:
+      with conn.cursor() as cursor:
+        num_updated = num_failed = 0
+        for key, value in self._quarantined_dict.items():
+          institution, requirement_id = key
+          parse_tree = json.dumps({'error': value.explanation,
+                                   'header_list': [],
+                                   'body_list': []})
+          cursor.execute("""
+          update requirement_blocks set parse_tree = %s
+          where institution ~* %s
+          and requirement_id = %s
+          """, (parse_tree, institution, requirement_id))
+          if cursor.rowcount == 1:
+            num_updated += 1
+          else:
+            num_failed += 1
+
+    self._dict_dirty = False
+    return {'num_updated': num_updated,
+            'num_failed': num_failed}
 
   # __setitem__()
   # -----------------------------------------------------------------------------------------------
@@ -204,7 +231,7 @@ class QuarantineManager(dict):
         self._quarantined_dict[k] = [block_type, catalog, year, explanation]
 
         # Update the parse_tree in the db
-        parse_tree = json.dumps({'error': f'{explanation}'})
+        parse_tree = json.dumps({'error': f'{explanation}', 'header_list': [], 'body_list': []})
         cursor.execute("""
         update requirement_blocks set parse_tree = %s
         where institution = %s
@@ -336,7 +363,9 @@ if __name__ == '__main__':
 
       case 'u':
         # Update the db from the dict
-        print('update not implemented yet')
+        result = qm.update()
+        for k, v in result.items():
+          print(k, v)
 
       case 'e':
         break
@@ -370,8 +399,9 @@ if __name__ == '__main__':
     if reply.lower().startswith('n'):
       print('Not Updated')
     else:
-      qm.update()
-      print('Updated')
+      result = qm.update()
+      for k, v in result.items():
+        print(k, v)
 
   if qm.is_file_dirty:
     reply = input('Save CSV before exiting? [Yn]? ')
