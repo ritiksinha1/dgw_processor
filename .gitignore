@@ -46,3 +46,4 @@ Logs/
 /etc/queries/
 /quarantined_blocks.csv
 /quarantined_blocks.save
+/quarantined_blocks_2*
