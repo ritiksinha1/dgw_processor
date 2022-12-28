@@ -96,7 +96,9 @@ if __name__ == '__main__':
         table_name = (file.name.replace('course_mapper.', '')
                                .replace('course_', '')
                                .replace('.csv', ''))
-        print(f'\n{table_name}: {num_lines:,} lines')
+        if args.progress:
+          print()
+        print(f'{table_name}: {num_lines:,} lines')
         tables[table_name] = num_lines - 1
         nl = num_lines / 100.0
         with open(file) as csv_file:
