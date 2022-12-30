@@ -15,6 +15,7 @@ from activeplans import active_plans
 from argparse import ArgumentParser
 from catalogyears import catalog_years
 from collections import namedtuple, defaultdict
+from copy import copy, deepcopy
 from courses_cache import courses_cache
 from dgw_parser import parse_block
 from psycopg.rows import namedtuple_row, dict_row
@@ -26,10 +27,11 @@ from typing import Any
 from course_mapper_files import anomaly_file, blocks_file, fail_file, log_file, no_courses_file, \
     subplans_file, todo_file, programs_file, requirements_file, mapping_file
 
-from course_mapper_utils import header_classcredit, header_maxtransfer, header_minres, \
-    header_mingpa, header_mingrade, header_maxclass, header_maxcredit, header_maxpassfail, \
-    header_maxperdisc, header_minclass, header_mincredit, header_minperdisc, header_proxyadvice, \
-    letter_grade, mogrify_course_list
+from course_mapper_utils import format_group_description, get_parse_tree, get_restrictions, \
+    header_classcredit, header_maxtransfer, header_minres, header_mingpa, header_mingrade, \
+    header_maxclass, header_maxcredit, header_maxpassfail, header_maxperdisc, header_minclass, \
+    header_mincredit, header_minperdisc, header_proxyadvice, letter_grade, mogrify_course_list, \
+    number_names, number_ordinals
 
 
 programs_writer = csv.writer(programs_file)
@@ -38,104 +40,16 @@ map_writer = csv.writer(mapping_file)
 
 generated_date = str(datetime.date.today())
 
-
 requirement_index = 0
-number_names = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-                'ten', 'eleven', 'twelve']
-number_ordinals = ['zeroth', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh',
-                   'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth']
 
 quarantine_manager = QuarantineManager()
-_parse_trees = defaultdict(dict)
 
 reference_counts = defaultdict(int)
 reference_callers = defaultdict(list)
 Reference = namedtuple('Reference', 'name lineno')
 
 
-# called_from()
-# -------------------------------------------------------------------------------------------------
-def called_from(depth=3, out_file=sys.stdout):
-  """ Tell where the caller was called from (developmental aid)
-  """
-  if depth < 0:
-    depth = 999
-
-  caller_frames = extract_stack()
-
-  for index in range(-2 - depth, -1):
-    try:
-      function_name = f'{caller_frames[index].name}()'
-      file_name = caller_frames[index].filename
-      file_name = file_name[file_name.rindex('/') + 1:]
-      print(f'Frame: {function_name:20} at {file_name} '
-            f'line {caller_frames[index].lineno}', file=out_file)
-    except IndexError:
-      # Dont kvetch if stack isn’t deep enough
-      pass
-
-
 # =================================================================================================
-
-# get_parse_tree()
-# -------------------------------------------------------------------------------------------------
-def get_parse_tree(dap_req_block_key: tuple) -> dict:
-  """ Look up the parse tree for a dap_req_block.
-      Cache it, and return it.
-  """
-  if dap_req_block_key not in _parse_trees.keys():
-    with psycopg.connect('dbname=cuny_curriculum') as conn:
-      with conn.cursor(row_factory=namedtuple_row) as cursor:
-        cursor.execute("""
-        select period_start, period_stop, parse_tree
-          from requirement_blocks
-         where institution ~* %s
-           and requirement_id = %s
-        """, dap_req_block_key)
-        assert cursor.rowcount == 1
-        parse_tree = cursor.fetchone().parse_tree
-        if parse_tree is None:
-          institution, requirement_id = dap_req_block_key
-          parse_tree = parse_block(institution, requirement_id, row.period_start, row.period_stop)
-          print(f'{institution} {requirement_id} Reference to un-parsed block', file=log_file)
-    _parse_trees[dap_req_block_key] = parse_tree
-
-  return _parse_trees[dap_req_block_key]
-
-
-# format_group_description()
-# -------------------------------------------------------------------------------------------------
-def format_group_description(num_groups: int, num_required: int):
-  """ Return an English string to replace the label (requirement_name) for group requirements.
-  """
-  assert isinstance(num_groups, int) and isinstance(num_required, int), 'Precondition failed'
-
-  suffix = '' if num_required == 1 else 's'
-  if num_required < len(number_names):
-    num_required_str = number_names[num_required].lower()
-  else:
-    num_required_str = f'{num_required:,}'
-
-  s = '' if num_groups == 1 else 's'
-
-  if num_groups < len(number_names):
-    num_groups_str = number_names[num_groups].lower()
-  else:
-    num_groups_str = f'{num_groups:,}'
-
-  if num_required == num_groups:
-    if num_required == 1:
-      prefix = 'The'
-    elif num_required == 2:
-      prefix = 'Both of the'
-    else:
-      prefix = 'All of the'
-  elif (num_required == 1) and (num_groups == 2):
-    prefix = 'Either of the'
-  else:
-    prefix = f'Any {num_required_str} of the'
-  return f'{prefix} following {num_groups_str} group{s}'
-
 
 # header_conditional()
 # -------------------------------------------------------------------------------------------------
@@ -462,7 +376,7 @@ Requirement Key, Course ID, Career, Course, With
   requirement_index += 1
 
   # Copy the requirement_dict in case a local version has to be constructed
-  requirement_info = requirement_dict.copy()
+  requirement_info = requirement_dict.deepcopy()
   try:
     course_list = requirement_info['course_list']
   except KeyError:
@@ -515,37 +429,6 @@ Requirement Key, Course ID, Career, Course, With
     requirements_writer.writerow(data_row)
 
 
-# get_restrictions()
-# -------------------------------------------------------------------------------------------------
-def get_restrictions(node: dict) -> dict:
-  """ Return qualifiers that might affect transferability.
-  """
-  assert isinstance(node, dict)
-
-  return_dict = dict()
-  # The maxtransfer restriction puts a limit on the number of classes or credits that can be
-  # transferred, possibly with a list of "types" for which the limit applies. I think the type names
-  # have to come from a dgw table somewhere.
-  try:
-    transfer_dict = node['maxtransfer']
-    return_dict['maxtransfer'] = transfer_dict
-  except KeyError:
-    pass
-
-  # The mingrade restriction puts a limit on the minimum required grade for all courses in a course
-  # list. It’s a float (like a GPA) in Scribe, but is replaced with a letter grade here.
-  mingrade_dict = {}
-  try:
-    mingrade_dict = node['mingrade']
-    number = float(mingrade_dict['number'])
-    grade_str = letter_grade(number)
-    return_dict['mingrade'] = grade_str
-  except KeyError:
-    pass
-
-  return return_dict
-
-
 # process_block()
 # =================================================================================================
 def process_block(block_info: dict,
@@ -555,16 +438,18 @@ def process_block(block_info: dict,
       The block will be:
         - An academic plan (major or minor)
         - A subplan (concentration)
-        - A nested requirement referenced from a plan or subplan.
+        - A nested (“other”) requirement referenced from a plan or subplan.
 
       Plans are special: they are the top level of a program, and get entered into the programs
       table. The context list for requirements get initialized here with information about the
       program, including header-level requirements/restrictions, and a list of active subplans
       associated with the plan. When the plan's parse tree is processed, any block referenced by
       a block, block_type, or copy_rules clause will be checked and, if it is of type CONC, verified
-      against the plan's list of active subplans.
+      against the plan's list of active subplans, and its context is added to the list of
+      references for the subplan. If a block is neither a plan nor a subplan, its context is added
+      to the list of “others” references for the plan.
 
-      Orphans are subplans (concentrations) that are never referenced by its plan's requirements.
+      Orphans are subplans (concentrations) that are never referenced by its plan’s requirements.
   """
 
   institution = block_info['institution']
@@ -604,18 +489,24 @@ def process_block(block_info: dict,
 
       plan_dict:
        plan_name, plan_type, plan_description, plan_cip_code, plan_effective_date,
-       requirement_id, subplans_list
+       requirement_id, subplans, others
 
-      subplans_list:
+      subplans: (list of subplan_dict)
         subplan_dict:
-          subplan_name, subplan_type, subplan_description, subplan_cip_code, subplan_effective_date,
-          requirement_id
+          subplan_block_info, subplan_name, subplan_type, subplan_description, subplan_cip_code,
+          subplan_effective_date, subplan_active_terms, subplan_enrollment, subplan_references
+          subplan_referenes: (list)
+            contexts in which the subplan was referenced
+      others: (list of other_dict)
+        other_dict:
+          other_block_info, other_references
+            other_references: (list)
+              contexts in which the block was referenced
 
-      requirement_block: (Will appear in plan_dicts, subplan_dicts, and nested dicts)
+      block_info_dict: (Will appear in plan_dicts, subplan_dicts, and other dicts)
         institution, requirement_id, block_type, block_value, block_title, catalog_years_str,
-        num_active_terms, enrollment
 
-      header_dict: (Not part of block_info: used to populate program table, and handled here if
+      header_dict: (Not part of block_info: used to populate program table, and handled here when
                     a plan_dict is received.)
         class_credits, minres_list, mingrade_list, mingpa_list, maxtransfer_list, max_classes,
         max_credits, other
@@ -631,8 +522,11 @@ def process_block(block_info: dict,
                      'catalog_years': catalog_years_str}
 
   if plan_dict:
-    """ For plans, the block_info_dict gets updated with info about the plan and its subplans.
+    """ For plans, the block_info_dict, which will become context_list[0], gets updated with info
+        about the plan, its subplans, and others referenced indirectly.
     """
+    assert len(context_list) == 0, f'{institution} {requirement_id} plan_dict w/ non-empty context'
+
     plan_name = plan_dict['plan']
     plan_info_dict = {'plan_name': plan_name,
                       'plan_type': plan_dict['type'],
@@ -641,29 +535,30 @@ def process_block(block_info: dict,
                       'plan_cip_code': plan_dict['cip_code'],
                       'plan_active_terms': block_info['num_recent_active_terms'],
                       'plan_enrollment': block_info['recent_enrollment'],
-                      'subplans': []
+                      'subplans': [],
+                      'others': []
                       }
 
-    subplan_reference_counts = dict()
     for subplan in plan_dict['subplans']:
       subplan_block_info = subplan['requirement_block']
       subplan_key = (institution, subplan_block_info['requirement_id'])
-      subplan_reference_counts[subplan_key] = reference_counts[subplan_key]
-      subplan_name = subplan['subplan']
-      subplan_dict = {'block_info': subplan_block_info,
-                      'subplan_name': subplan_name,
+      subplan_dict = {'subplan_block_info': subplan_block_info,
+                      'subplan_name': subplan['subplan'],
                       'subplan_type': subplan['type'],
                       'subplan_description': subplan['description'],
                       'subplan_effective_date': subplan['effective_date'],
                       'subplan_cip_code': subplan['cip_code'],
                       'subplan_active_terms': subplan_block_info['num_recent_active_terms'],
                       'subplan_enrollment': subplan_block_info['recent_enrollment'],
+                      'subplan_references': []
                       }
       plan_info_dict['subplans'].append(subplan_dict)
 
     block_info_dict['plan_info'] = plan_info_dict
 
     # Add the plan_info_dict to the programs table too, but I'm not sure this is needed ...
+    # ... and you can't do it until the body has been traversed and the subplan references have
+    # been updated.
     header_dict['other']['plan_info'] = plan_info_dict
 
     # Enter the plan in the programs table
@@ -693,30 +588,33 @@ def process_block(block_info: dict,
     subplan_list = context_list[0]['block_info']['plan_info']['subplans']
     found = False
     for subplan in subplan_list:
-      if subplan['block_info']['requirement_id'] == requirement_id:
+      if subplan['subplan_block_info']['requirement_id'] == requirement_id:
+        subplan['subplan_references'].append(context_list)
         found = True
-        block_info_dict['subplan'] = subplan
     if not found:
-      # For example, an OTHER block of prerequisite requirements for a program.
-      print(f'{institution} {requirement_id} No matching subplan', file=todo_file)
+      others_list = context_list[0]['block_info']['plan_info']['others']
+      others_dict = {'other_block_info': block_info,
+                     'other_block_context': context_list
+                     }
+      others_list.append(others_dict)
 
   # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
   # to be primed with the root node of the body tree: the body_list. process_block() itself may be
   # invoked from within traverse_body() to handle block, blocktype and copy_rules constructs.
   try:
     body_list = parse_tree['body_list']
-  except KeyError as ke:
+  except KeyError:
     print(institution, requirement_id, 'Missing Body', file=fail_file)
     return
   if len(body_list) == 0:
     print(institution, requirement_id, 'Empty Body', file=log_file)
   else:
-    context_list += [{'block_info': block_info_dict}]
+    breakpoint()
     for body_item in body_list:
       # traverse_body(body_item, item_context)
-      traverse_body(body_item, context_list)
+      traverse_body(body_item, context_list + [{'block_info': block_info_dict}])
 
-  # Finally, if this is a plan block, check whether its subplans have been processed explicitly.
+  # Finally, if this is a plan block, check whether its subplans have been processed
   if plan_dict:
     num_subplans = len(plan_dict['subplans'])
     zero = []
@@ -726,7 +624,7 @@ def process_block(block_info: dict,
     for subplan in plan_dict['subplans']:
       subplan_requirement_id = subplan['requirement_block']['requirement_id']
       subplan_key = (institution, subplan_requirement_id)
-      num_new_references = reference_counts[subplan_key] - subplan_reference_counts[subplan_key]
+      num_new_references = reference_counts[subplan_key]  # - subplan_reference_counts[subplan_key]
       assert num_new_references >= 0
       match num_new_references:
         case 0:
@@ -1127,7 +1025,8 @@ def traverse_body(node: Any, context_list: list) -> None:
             num_subplans_str = f'{num_subplans} subplan{s}'
 
             for active_subplan in active_subplans:
-              process_block(active_subplan['block_info'], context_list + requirement_context)
+              process_block(active_subplan['subplan_block_info'],
+                            context_list + requirement_context)
 
             print(f'{institution} {requirement_id} Block blocktype: {num_subplans_str}',
                   file=log_file)
