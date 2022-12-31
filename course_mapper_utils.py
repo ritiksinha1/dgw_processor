@@ -413,6 +413,40 @@ def header_proxyadvice(institution: str, requirement_id: str, value: dict) -> di
   return notyet_dict
 
 
+# mogrify_context_list()
+# -------------------------------------------------------------------------------------------------
+def mogrify_context_list(context_list: list) -> list:
+  """
+      Given a context list, extract a list of strings that summarizes the info from each dict in the
+      list
+  """
+  return_list = []
+  for element in context_list:
+    for key, value in element.items():
+      match key:
+
+        case 'block_info':
+          return_list.append(f'{value["requirement_id"]} {value["block_type"]} '
+                             f'{value["block_value"]}')
+
+        case 'if_true':
+          return_list.append(f'TRUE: {value}')
+
+        case 'if_false':
+          return_list.append(f'FALSE: {value}')
+
+        case 'requirement_name':
+          return_list.append(value)
+
+        case 'num_groups' | 'num_required' | 'remark':
+          pass
+
+        case _:
+          exit(element)
+
+  return return_list
+
+
 # mogrify_course_list()
 # -------------------------------------------------------------------------------------------------
 def mogrify_course_list(institution: str, requirement_id: str, course_dict: dict) -> list:

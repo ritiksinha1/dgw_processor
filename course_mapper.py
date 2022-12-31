@@ -30,8 +30,8 @@ from course_mapper_files import anomaly_file, blocks_file, fail_file, log_file, 
 from course_mapper_utils import format_group_description, get_parse_tree, get_restrictions, \
     header_classcredit, header_maxtransfer, header_minres, header_mingpa, header_mingrade, \
     header_maxclass, header_maxcredit, header_maxpassfail, header_maxperdisc, header_minclass, \
-    header_mincredit, header_minperdisc, header_proxyadvice, letter_grade, mogrify_course_list, \
-    number_names, number_ordinals
+    header_mincredit, header_minperdisc, header_proxyadvice, letter_grade, mogrify_context_list, \
+    mogrify_course_list, number_names, number_ordinals
 
 
 programs_writer = csv.writer(programs_file)
@@ -376,7 +376,7 @@ Requirement Key, Course ID, Career, Course, With
   requirement_index += 1
 
   # Copy the requirement_dict in case a local version has to be constructed
-  requirement_info = requirement_dict.deepcopy()
+  requirement_info = deepcopy(requirement_dict)
   try:
     course_list = requirement_info['course_list']
   except KeyError:
@@ -559,7 +559,41 @@ def process_block(block_info: dict,
     # Add the plan_info_dict to the programs table too, but I'm not sure this is needed ...
     # ... and you can't do it until the body has been traversed and the subplan references have
     # been updated.
-    header_dict['other']['plan_info'] = plan_info_dict
+    # header_dict['other']['plan_info'] = plan_info_dict
+
+  else:
+    """ For non-plan blocks, look up the subplan in the plan dict, if possible
+    """
+    subplan_list = context_list[0]['block_info']['plan_info']['subplans']
+    found = False
+    for subplan in subplan_list:
+      if subplan['subplan_block_info']['requirement_id'] == requirement_id:
+        subplan['subplan_references'].append(mogrify_context_list(context_list))
+        found = True
+    if not found:
+      others_list = context_list[0]['block_info']['plan_info']['others']
+      others_dict = {'other_block_info': block_info,
+                     'other_block_context': mogrify_context_list(context_list)
+                     }
+      others_list.append(others_dict)
+
+  # Traverse the body of the block. If this is a program block, the subplan and others lists will be
+  # updated by any block, blocktype, and copy_rules items encountered during the recursive traversal
+  # process.
+  try:
+    body_list = parse_tree['body_list']
+  except KeyError:
+    print(institution, requirement_id, 'Missing Body', file=fail_file)
+    return
+  if len(body_list) == 0:
+    print(institution, requirement_id, 'Empty Body', file=log_file)
+  else:
+    for body_item in body_list:
+      # traverse_body(body_item, item_context)
+      traverse_body(body_item, context_list + [{'block_info': block_info_dict}])
+
+  # Finish handling academic plans
+  if plan_dict:
 
     # Enter the plan in the programs table
     total_credits_col = json.dumps(header_dict["total_credits_list"], ensure_ascii=False)
@@ -582,78 +616,23 @@ def process_block(block_info: dict,
                               other_col,
                               generated_date
                               ])
-  else:
-    """ For non-plan blocks, look up the subplan in the plan dict, if possible
-    """
-    subplan_list = context_list[0]['block_info']['plan_info']['subplans']
-    found = False
-    for subplan in subplan_list:
-      if subplan['subplan_block_info']['requirement_id'] == requirement_id:
-        subplan['subplan_references'].append(context_list)
-        found = True
-    if not found:
-      others_list = context_list[0]['block_info']['plan_info']['others']
-      others_dict = {'other_block_info': block_info,
-                     'other_block_context': context_list
-                     }
-      others_list.append(others_dict)
 
-  # traverse_body() is a recursive procedure that handles nested requirements, so to start, it has
-  # to be primed with the root node of the body tree: the body_list. process_block() itself may be
-  # invoked from within traverse_body() to handle block, blocktype and copy_rules constructs.
-  try:
-    body_list = parse_tree['body_list']
-  except KeyError:
-    print(institution, requirement_id, 'Missing Body', file=fail_file)
-    return
-  if len(body_list) == 0:
-    print(institution, requirement_id, 'Empty Body', file=log_file)
-  else:
-    breakpoint()
-    for body_item in body_list:
-      # traverse_body(body_item, item_context)
-      traverse_body(body_item, context_list + [{'block_info': block_info_dict}])
-
-  # Finally, if this is a plan block, check whether its subplans have been processed
-  if plan_dict:
-    num_subplans = len(plan_dict['subplans'])
-    zero = []
-    once = []
-    multiple = []
-    s = ' ' if num_subplans == 1 else 's'
-    for subplan in plan_dict['subplans']:
-      subplan_requirement_id = subplan['requirement_block']['requirement_id']
-      subplan_key = (institution, subplan_requirement_id)
-      num_new_references = reference_counts[subplan_key]  # - subplan_reference_counts[subplan_key]
-      assert num_new_references >= 0
-      match num_new_references:
-        case 0:
-          zero.append(subplan_requirement_id)
-        case 1:
-          once.append(subplan_requirement_id)
-        case _:
-          # Might be interesting
-          multiple.append(subplan_requirement_id)
-
-    if zero:
-      zero_list = ' '.join(zero)
-      zs = ' ' if len(zero) == 1 else 's'
-      print(f'{institution} {requirement_id} {len(zero):2} subplan{zs} of {num_subplans:2} active '
-            f'subplan{s} not explicitly referenced: {zero_list}',
-            file=subplans_file)
-    if once:
-      # Copacetic situation
-      pass
-
-    if multiple:
-      # Might be interesting
-      mult_list = ' '.join(multiple)
-      ms = ' ' if len(mult_list) == 1 else 's'
-      print(f'{institution} {requirement_id} {len(multiple):2} subplan{ms} of {num_subplans:2} '
-            f'active subplan{s} referenced multiple times: {mult_list}',
-            file=subplans_file)
-
-      # process_block(subplan['requirement_block'], [{'block_info': block_info_dict}])
+    # Log information about subplan and others references
+    if (num_subplans := len(plan_dict['subplans'])) > 0:
+      # Log cases where there are either zero or more than one reference to the subplan
+      for subplan in plan_dict['subplans']:
+        exit(subplan.keys())
+        num_references = len(subplan['subplan_references'])
+        subplan_name = subplan['subplan_name']
+        if num_references == 0:
+          print(f'{institution} {requirement_id} subplan {subplan_name} not referenced',
+                file=subplans_file)
+        if num_references > 0:
+          print(f'{institution} {requirement_id} subplan {subplan_name} referenced '
+                f'{num_references} times', file=subplans_file)
+    if (num_others := len(plan_dict['others'])) > 0:
+      exit(plan_dict['others'])
+      print(f'{institution} {requirement_id} ')
 
 
 # traverse_header()
