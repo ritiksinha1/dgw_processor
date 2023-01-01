@@ -620,19 +620,20 @@ def process_block(block_info: dict,
     # Log information about subplan and others references
     if (num_subplans := len(plan_dict['subplans'])) > 0:
       # Log cases where there are either zero or more than one reference to the subplan
-      for subplan in plan_dict['subplans']:
-        exit(subplan.keys())
+      for subplan in block_info_dict['plan_info']['subplans']:
         num_references = len(subplan['subplan_references'])
         subplan_name = subplan['subplan_name']
         if num_references == 0:
-          print(f'{institution} {requirement_id} subplan {subplan_name} not referenced',
+          print(f'{institution} {requirement_id} Subplan {subplan_name} not referenced',
                 file=subplans_file)
-        if num_references > 0:
-          print(f'{institution} {requirement_id} subplan {subplan_name} referenced '
+        if num_references > 1:
+          print(f'{institution} {requirement_id} Subplan {subplan_name} referenced '
                 f'{num_references} times', file=subplans_file)
-    if (num_others := len(plan_dict['others'])) > 0:
-      exit(plan_dict['others'])
-      print(f'{institution} {requirement_id} ')
+
+    if (num_others := len(block_info_dict['plan_info']['others'])) > 0:
+      s = '' if num_others == 1 else 's'
+      print(f'{institution} {requirement_id} {num_others} Other block{s} referenced',
+            file=subplans_file)
 
 
 # traverse_header()

@@ -36,7 +36,7 @@ cat anomalies.txt >> reports.txt
 echo -e "\n`wc -l missing_ra.txt|awk '{print $1}'` PLANS WITH NO SCRIBE BLOCKS" >> reports.txt
 cat missing_ra.txt >> reports.txt
 
-for r in log todo fail no_courses # debug analysis
+for r in log todo fail no_courses
 do
   n=`wc -l ${r}.txt|cut -d ' ' -f 1`
   echo -e "\n" `printf "%'d" $n` "$r" | tr a-z A-Z >> reports.txt
@@ -54,3 +54,14 @@ do
     fi
   fi
 done
+
+# Subplans and Others
+echo -e "\n Subplan References" >> reports.txt
+echo ' -------------------------------------------------------------------------------' \
+     >> reports.txt
+ack 'Subplan' subplans.txt | sort|uniq >> reports.txt
+
+echo -e "\n Other Block References" >> reports.txt
+echo ' -------------------------------------------------------------------------------' \
+     >> reports.txt
+ack 'Other' subplans.txt |cut -c 16- | sort|uniq -c| sort -r >> reports.txt
