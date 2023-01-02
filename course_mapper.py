@@ -531,6 +531,7 @@ def process_block(block_info: dict,
     plan_info_dict = {'plan_name': plan_name,
                       'plan_type': plan_dict['type'],
                       'plan_description': plan_dict['description'],
+                      'plan_catalog_years': catalog_years_str,
                       'plan_effective_date': plan_dict['effective_date'],
                       'plan_cip_code': plan_dict['cip_code'],
                       'plan_active_terms': block_info['num_recent_active_terms'],
@@ -556,10 +557,9 @@ def process_block(block_info: dict,
 
     block_info_dict['plan_info'] = plan_info_dict
 
-    # Add the plan_info_dict to the programs table too, but I'm not sure this is needed ...
-    # ... and you can't do it until the body has been traversed and the subplan references have
-    # been updated.
-    # header_dict['other']['plan_info'] = plan_info_dict
+    # Add the plan_info_dict to the programs table too, for generating the header-based catalog
+    # description of the program.
+    header_dict['other']['plan_info'] = plan_info_dict
 
   else:
     """ For non-plan blocks, look up the subplan in the plan dict, if possible
