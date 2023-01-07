@@ -466,9 +466,15 @@ def process_block(block_info: dict,
     print(f'{institution} {requirement_id} Quarantined block (ignored)', file=log_file)
     return
   parse_tree = get_parse_tree(dap_req_block_key)
+
+  if len(parse_tree) == 0:
+    # Block not parsed yet.
+    print(f'{institution} {requirement_id} Empty parse tree (ignored)', file=fail_file)
+    return
+
   if 'error' in parse_tree.keys():
     # Should not occur
-    print(f'{institution} {requirement_id} Parse Error', file=fail_file)
+    print(f'{institution} {requirement_id} {parse_tree["error"]}', file=fail_file)
     return
 
   header_dict = traverse_header(institution, requirement_id, parse_tree)
@@ -669,13 +675,14 @@ def traverse_header(institution: str, requirement_id: str, parse_tree: dict) -> 
                           'minperdisc_list': [],
                           'proxyadvice_list': [],
                           'conditional_dict': []}
+
   try:
     if len(parse_tree['header_list']) == 0:
       print(f'{institution} {requirement_id} Empty Header', file=log_file)
       return return_dict
   except KeyError as ke:
-    # You can't have a parse_tree with no header_list, even it it's empty.
-    print(f'{institution} {requirement_id} Header parse_tree is “{parse_tree}”', file=fail_file)
+    # Should not occur
+    parse_tree = exit(f'{institution} {requirement_id} Invalid parse_tree: {parse_tree}')
 
   for header_item in parse_tree['header_list']:
 
@@ -851,8 +858,12 @@ def traverse_body(node: Any, context_list: list) -> None:
 
   global do_remarks, args
 
+  # Get the program block_type and block_value from the first element of the context_list
+  program_block_type = context_list[0]['block_info']['block_type']
+  program_block_value = context_list[0]['block_info']['block_value']
+
   # Find the containing block’s context.
-  # Ir’s the last block_info item in the context_list
+  # It’s the last block_info item in the context_list
   for ctx in reversed(context_list):
     try:
       block_info = ctx['block_info']
@@ -946,13 +957,14 @@ def traverse_body(node: Any, context_list: list) -> None:
                     # block value, resolving the issue.
                     matching_rows = []
                     for row in cursor:
-                      if row['major1'] == block_value:
+                      if row['major1'] == program_block_value:
                         matching_rows.append(row)
                     if len(matching_rows) == 1:
                       target_block = matching_rows[0]
                     else:
                       print(f'{institution} {requirement_id} Body block: {cursor.rowcount} active '
-                            f'{block_args[1:]} blocks; {len(matching_rows)} major1 matches',
+                            f'{block_args[1:]} blocks; {len(matching_rows)} major1 = '
+                            f'{program_block_value} matches',
                             file=fail_file)
                   else:
                     target_block = cursor.fetchone()
@@ -961,6 +973,9 @@ def traverse_body(node: Any, context_list: list) -> None:
                     process_block(target_block, context_list + requirement_context)
                     print(f'{institution} {requirement_id} Body block {target_block["block_type"]}',
                           file=log_file)
+                    print(f'{institution} {requirement_id} Body block {target_block["block_type"]} '
+                          f'{target_block["requirement_id"]}',
+                          file=sys.stderr)
 
         case 'blocktype':
           # ---------------------------------------------------------------------------------------
