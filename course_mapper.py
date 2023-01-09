@@ -938,10 +938,11 @@ def traverse_body(node: Any, context_list: list) -> None:
               with psycopg.connect('dbname=cuny_curriculum') as conn:
                 with conn.cursor(row_factory=dict_row) as cursor:
                   blocks = cursor.execute("""
-                  select institution, requirement_id, block_type, block_value, block_title,
+                  select institution, requirement_id, block_type, block_value, title as block_title,
                          period_start, period_stop, major1
-                    from active_req_blocks
-                   where institution = %s
+                    from requirement_blocks
+                   where term_info is not null
+                     and institution = %s
                      and block_type = %s
                      and block_value = %s
                   """, block_args)
@@ -1211,10 +1212,11 @@ def traverse_body(node: Any, context_list: list) -> None:
                                     requirement_id,
                                     block_type,
                                     block_value,
-                                    block_title,
+                                    title as block_title,
                                     period_start, period_stop, major1
-                               from active_req_blocks
-                              where institution = %s
+                               from requirement_blocks
+                              where term_info is not null
+                                and institution = %s
                                 and block_type =  %s
                                 and block_value = %s
                                 and period_stop ~* '^9'
@@ -1358,9 +1360,10 @@ def traverse_body(node: Any, context_list: list) -> None:
 
                       cursor.execute("""
                       select institution, requirement_id, block_type, block_value,
-                             block_title, period_start, period_stop, major1
-                        from active_req_blocks
-                       where institution = %s
+                             title as block_title, period_start, period_stop, major1
+                        from requirement_blocks
+                       where term_info is not null
+                         and institution = %s
                          and block_type = %s
                          and block_value = %s
                       """, block_args)

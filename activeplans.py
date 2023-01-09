@@ -63,7 +63,19 @@ with psycopg.connect('dbname=cuny_curriculum') as conn:
 
     # Create dict of requirement blocks that have been active “recently,” and their enrollments.
     # In T-Rex, ”recently offered” means within the past calendar year.
-    cursor.execute('select * from active_req_blocks;')
+    cursor.execute("""
+    select institution,
+           requirement_id,
+           block_type,
+           block_value,
+           title as block_title,
+           major1,
+           period_start,
+           period_stop,
+           term_info
+      from requirement_blocks
+     where term_info is not null
+    """)
     for row in cursor:
       current_term = current_terms[row.institution]
       first_recent_term = current_term - 10
