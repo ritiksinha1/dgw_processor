@@ -861,20 +861,23 @@ def traverse_body(node: Any, context_list: list) -> None:
   # Get the program block_type and block_value from the first element of the context_list
   program_block_type = context_list[0]['block_info']['block_type']
   program_block_value = context_list[0]['block_info']['block_value']
-
-  # Find the containing block’s context.
-  # It’s the last block_info item in the context_list
-  for ctx in reversed(context_list):
+  nested_blocks = []
+  for context_item in context_list:
     try:
-      block_info = ctx['block_info']
-      institution = block_info['institution']
-      requirement_id = block_info['requirement_id']
-      block_type = block_info['block_type']
-      block_value = block_info['block_value']
-      block_title = block_info['block_title']
-      break
-    except KeyError as ke:
-      continue
+      nested_blocks.append(context_item['block_info'])
+    except KeyError:
+      pass
+  nested_block_values = [block_info['block_value'] for block_info in nested_blocks]
+  # Eliminate duplicates while preserving order (does nothing!)
+  nested_block_values = list(dict.fromkeys(nested_block_values))
+
+  # The containing block’s context is the last block_info in the context list
+  block_info = nested_blocks[-1]
+  institution = block_info['institution']
+  requirement_id = block_info['requirement_id']
+  block_type = block_info['block_type']
+  block_value = block_info['block_value']
+  block_title = block_info['block_title']
 
   # Handle lists
   if isinstance(node, list):
@@ -958,8 +961,9 @@ def traverse_body(node: Any, context_list: list) -> None:
                     # block value, resolving the issue.
                     matching_rows = []
                     for row in cursor:
-                      if row['major1'] == program_block_value:
+                      if row['major1'] in nested_block_values:
                         matching_rows.append(row)
+                        print(nested_block_values.index(row['major1']), f'of {len(nested_block_values)}', file=sys.stderr)
                     if len(matching_rows) == 1:
                       target_block = matching_rows[0]
                     else:
@@ -974,9 +978,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                     process_block(target_block, context_list + requirement_context)
                     print(f'{institution} {requirement_id} Body block {target_block["block_type"]}',
                           file=log_file)
-                    print(f'{institution} {requirement_id} Body block {target_block["block_type"]} '
-                          f'{target_block["requirement_id"]}',
-                          file=sys.stderr)
 
         case 'blocktype':
           # ---------------------------------------------------------------------------------------
