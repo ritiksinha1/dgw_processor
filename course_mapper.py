@@ -963,7 +963,6 @@ def traverse_body(node: Any, context_list: list) -> None:
                     for row in cursor:
                       if row['major1'] in nested_block_values:
                         matching_rows.append(row)
-                        print(nested_block_values.index(row['major1']), f'of {len(nested_block_values)}', file=sys.stderr)
                     if len(matching_rows) == 1:
                       target_block = matching_rows[0]
                     else:
