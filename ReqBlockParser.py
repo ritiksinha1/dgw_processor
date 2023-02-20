@@ -1,4 +1,4 @@
-# Generated from ReqBlock.g4 by ANTLR 4.11.1
+# Generated from ReqBlock.g4 by ANTLR 4.12.0
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -713,7 +713,7 @@ class ReqBlockParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.11.1")
+        self.checkVersion("4.12.0")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -856,7 +856,7 @@ class ReqBlockParser ( Parser ):
             self.state = 222
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while ((_la) & ~0x3f) == 0 and ((1 << _la) & -7265716055767515072) != 0 or _la==70 or _la==76:
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & -7265716055767515072) != 0) or _la==70 or _la==76:
                 self.state = 219
                 self.header_rule()
                 self.state = 224
@@ -916,7 +916,7 @@ class ReqBlockParser ( Parser ):
             self.state = 228
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while ((_la) & ~0x3f) == 0 and ((1 << _la) & 261208778392076354) != 0 or (((_la - 70)) & ~0x3f) == 0 and ((1 << (_la - 70)) & 134218691) != 0:
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 261208778392076354) != 0) or ((((_la - 70)) & ~0x3f) == 0 and ((1 << (_la - 70)) & 134218691) != 0):
                 self.state = 225
                 self.body_rule()
                 self.state = 230
@@ -2415,7 +2415,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 372 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (((_la) & ~0x3f) == 0 and ((1 << _la) & -7265716055767515072) != 0 or _la==70 or _la==76):
+                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & -7265716055767515072) != 0) or _la==70 or _la==76):
                     break
 
             self.state = 374
@@ -2945,7 +2945,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 422 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (((_la) & ~0x3f) == 0 and ((1 << _la) & 261208778392076354) != 0 or (((_la - 70)) & ~0x3f) == 0 and ((1 << (_la - 70)) & 134218691) != 0):
+                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 261208778392076354) != 0) or ((((_la - 70)) & ~0x3f) == 0 and ((1 << (_la - 70)) & 134218691) != 0)):
                     break
 
             self.state = 424
@@ -3664,7 +3664,7 @@ class ReqBlockParser ( Parser ):
                 self.state = 489 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (((_la) & ~0x3f) == 0 and ((1 << _la) & 216172782118240258) != 0 or (((_la - 70)) & ~0x3f) == 0 and ((1 << (_la - 70)) & 134218691) != 0):
+                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & 216172782118240258) != 0) or ((((_la - 70)) & ~0x3f) == 0 and ((1 << (_la - 70)) & 134218691) != 0)):
                     break
 
             self.state = 491
@@ -8777,7 +8777,7 @@ class ReqBlockParser ( Parser ):
                 self.match(ReqBlockParser.EQ)
                 self.state = 976
                 _la = self._input.LA(1)
-                if not((((_la - 76)) & ~0x3f) == 0 and ((1 << (_la - 76)) & 11) != 0):
+                if not(((((_la - 76)) & ~0x3f) == 0 and ((1 << (_la - 76)) & 11) != 0)):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -9178,7 +9178,7 @@ class ReqBlockParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 1018
             _la = self._input.LA(1)
-            if not((((_la - 71)) & ~0x3f) == 0 and ((1 << (_la - 71)) & 161218563) != 0):
+            if not(((((_la - 71)) & ~0x3f) == 0 and ((1 << (_la - 71)) & 161218563) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
