@@ -47,3 +47,4 @@ Logs/
 /quarantined_blocks.csv
 /quarantined_blocks.save
 /quarantined_blocks_2*
+/.aliases
