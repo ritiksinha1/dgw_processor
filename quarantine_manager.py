@@ -30,17 +30,22 @@ _Values = namedtuple('_Values', _fieldnames)
 
 
 class QuarantineManager(dict):
-  """ Manage dict of quarantined dap_req_blocks. Initialized from the requirement_blocks table,
-      but command line interface available for saving the dict to quarantined_blocks.csv and/or for
-      using quarantined_blocks.csv to build a new copy of the dict.
+  """Manage dict of quarantined dap_req_blocks.
+
+  Initialized from the requirement_blocks table, but command line interface available for saving the
+  dict to quarantined_blocks.csv and/or for using quarantined_blocks.csv to build a new copy of the
+  dict.
   """
-  _csv_file = Path('/Users/vickery/Projects/dgw_processor', 'quarantined_blocks.csv')
+
+  home_dir = Path.home()
+  _csv_file = Path(home_dir, 'Projects/dgw_processor/quarantined_blocks.csv')
 
   # __init__()
   # -----------------------------------------------------------------------------------------------
   def __init__(self):
-    """ The dict is initialized from the db, but can be overwritten from the csv file or written to
-        the csv file.
+    """Initialize the dict from the db.
+
+    Can be overwritten from the csv file or written to the csv file.
     """
     self._quarantined_dict = dict()
 
@@ -75,25 +80,29 @@ class QuarantineManager(dict):
   # -----------------------------------------------------------------------------------------------
   @property
   def is_dict_dirty(self):
+    """Getter for dict_dirty property."""
     return self._dict_dirty
 
   # is_file_dirty
   # -----------------------------------------------------------------------------------------------
   @property
   def is_file_dirty(self):
+    """Getter for file_dirty property."""
     return self._file_dirty
 
   # file
   # -----------------------------------------------------------------------------------------------
   @property
   def file(self):
+    """Return the contents of the CSV file."""
     with open(self._csv_file) as f:
-      return(f.read())
+      return (f.read())
 
   # list
   # -----------------------------------------------------------------------------------------------
   @property
   def list(self):
+    """Return a list of quarantined blocks, with explanations."""
     sk = sorted(self._quarantined_dict.keys(), key=lambda k: [k[0], k[1]])
     return [f'{k[0]} {k[1]}: {self._quarantined_dict[k].explanation}' for k in sk]
 
@@ -101,15 +110,13 @@ class QuarantineManager(dict):
   # -----------------------------------------------------------------------------------------------
   @property
   def keys(self):
-    """ Return list of (institution, requirement_id) tuples
-    """
+    """Return list of (institution, requirement_id) tuples."""
     return [k for k in self._quarantined_dict.keys()]
 
   # _read()
   # -----------------------------------------------------------------------------------------------
   def _read(self):
-    """ Construct dict from CSV file
-    """
+    """Construct dict from CSV file."""
     new_dict = dict()
     with open(QuarantineManager._csv_file, newline='') as csv_file:
       reader = csv.reader(csv_file)
@@ -125,8 +132,7 @@ class QuarantineManager(dict):
   # read()
   # -----------------------------------------------------------------------------------------------
   def read(self):
-    """ Public method for replacing dict using contents of the csv file.
-    """
+    """Public method for replacing dict using contents of the csv file."""
     old_len = len(self._quarantined_dict)
     new_dict = self._read()
     new_len = len(new_dict)
@@ -149,8 +155,9 @@ class QuarantineManager(dict):
   # write()
   # -----------------------------------------------------------------------------------------------
   def write(self):
-    """ Back up the CSV file, and write the dict to a new one.
-        Leaves dirtiness unchanged
+    """Back up the CSV file, and write the dict to a new one.
+
+    Leaves dirtiness unchanged.
     """
     #   Back up current CSV
     csv_file = QuarantineManager._csv_file
@@ -169,8 +176,7 @@ class QuarantineManager(dict):
   # update()
   # -----------------------------------------------------------------------------------------------
   def update(self):
-    """ Replace the parse trees of all quarantined blocks with explanations from current dict.
-    """
+    """Replace the parse trees of all quarantined blocks with explanations from current dict."""
     with psycopg.connect('dbname=cuny_curriculum') as conn:
       with conn.cursor() as cursor:
         num_updated = num_failed = 0
@@ -196,10 +202,11 @@ class QuarantineManager(dict):
   # __setitem__()
   # -----------------------------------------------------------------------------------------------
   def __setitem__(self, k: _Key, explanation: str) -> dict:
-    """ Implements the add command.
-        Given the explanation, fill in the remainder of the quarantined dict entry, insert it into
-        the dict, and update the parse_tree in the db. This leaves the file dirty until it gets
-        written to the CSV.
+    """Implement the add command.
+
+    Given the explanation, fill in the remainder of the quarantined dict entry, insert it into the
+    dict, and update the parse_tree in the db. This leaves the file dirty until it gets written to
+    the CSV.
     """
     assert len(k) == 2, f'Key should be (institution, requirement_id): {k} received'
     if not isinstance(k, _Key):
@@ -244,8 +251,9 @@ class QuarantineManager(dict):
   # __delitem__()
   # -----------------------------------------------------------------------------------------------
   def __delitem__(self, k):
-    """ If k is quarantined, remove it from the dict and CSV file. Return a copy of the deleted
-        entry as a dict, or None if the key was not quarantined.
+    """Remove k from the dict and CSV file if is quarantined.
+
+    Return a copy of the deleted entry as a dict, or None if the key was not quarantined.
     """
     if k not in self._quarantined_dict.keys():
       raise KeyError(f'Unable to delete {k}: not quaratined.')
@@ -257,17 +265,20 @@ class QuarantineManager(dict):
   # __getitem__()
   # -----------------------------------------------------------------------------------------------
   def __getitem__(self, k):
-    return(self._quarantined_dict[k])
+    """Getter for quarantined blocks."""
+    return (self._quarantined_dict[k])
 
   # is_quarantined()
   # -----------------------------------------------------------------------------------------------
   def is_quarantined(self, key):
+    """Return presence of block in the quarantined dict."""
     try:
       return self._quarantined_dict[key].explanation
     except KeyError:
       return None
 
   def __str__(self):
+    """Dunder method for printable copy of quarantined dict (not used)."""
     return pformat(self._quarantined_dict)
 
 
@@ -389,7 +400,7 @@ if __name__ == '__main__':
         except Exception as err:
           print(f'Command deficiency detected: {err}', file=sys.stderr)
 
-    choice = input('help | add | file | dict | read | write | update : ')
+    choice = input('help | add | file | list | read | write | update : ')
 
   # Exit
   # -----------------------------------------------------------------------------------------------
