@@ -1,4 +1,5 @@
 #! /usr/local/bin/python3
+"""Build cip_soc table."""
 
 import csv
 import psycopg
