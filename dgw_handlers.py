@@ -1,6 +1,7 @@
 #! /usr/local/bin/python3
-""" These are the handlers for all the head and body rule types defined in ReqBlock.g4
-    This revised version changes the structure of the dicts, mainly to eliminate the 'tag' key.
+"""These are the handlers for all the head and body rule types defined in ReqBlock.g4.
+
+This revised version changes the structure of the dicts, mainly to eliminate the 'tag' key.
 """
 
 import os
@@ -35,6 +36,8 @@ ANALYZE_EXPRESSIONS = os.getenv('ANALYZE_EXPRESSIONS')
 
 
 class ParseError(Exception):
+  """Name the exception class for parse errors."""
+
   pass
 
 
@@ -45,13 +48,13 @@ class ParseError(Exception):
 # block()
 # -------------------------------------------------------------------------------------------------
 def block(ctx, institution, requirement_id):
-  """
-      block           : NUMBER BLOCK expression rule_tag? label;
+  """Handle block rules.
 
-      The expression will be a {block-type, block-value} pair enclosed in parens and separated by
-      an equal sign.
-  """
+  block           : NUMBER BLOCK expression rule_tag? label;
 
+  The expression will be a {block-type, block-value} pair enclosed in parens and separated by
+  an equal sign.
+  """
   return_dict = {'label': get_label(ctx)}
 
   return_dict['number'] = int(ctx.NUMBER().getText())
@@ -77,12 +80,12 @@ def block(ctx, institution, requirement_id):
 # blocktype()
 # -------------------------------------------------------------------------------------------------
 def blocktype(ctx, institution, requirement_id):
-  """
-      blocktype       : NUMBER BLOCKTYPE expression label;
+  """Handle blocktype rules.
 
-      The expression is a block type, enclosed in parentheses
-  """
+  blocktype       : NUMBER BLOCKTYPE expression label;
 
+  The expression is a block type, enclosed in parentheses
+  """
   return_dict = {'label': get_label(ctx)}
 
   return_dict['number'] = ctx.NUMBER().getText()
@@ -100,12 +103,12 @@ def blocktype(ctx, institution, requirement_id):
 # copy_header()
 # -------------------------------------------------------------------------------------------------
 def copy_header(ctx, institution, requirement_id):
-  """
-      copy_header     : COPY_HEADER expression;
-        Expect the expression to be (RAnnnnnn)
+  """Handle copy_headers rule, if they ever occur.
+
+  copy_header     : COPY_HEADER expression;
+  Expect the expression to be (RAnnnnnn)
   """
   requirement_id = ctx.expression().getText().strip(')(')
-
   return {'copy_header': {'institution': institution,
                           'requirement_id': requirement_id
                           }
@@ -687,7 +690,9 @@ def header_maxterm(ctx, institution, requirement_id):
 # maxtransfer()
 # -------------------------------------------------------------------------------------------------
 def maxtransfer(ctx, institution, requirement_id):
-  """ maxtransfer      : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
+  """Handle maxtransfer qualifiers.
+
+  maxtransfer      : MAXTRANSFER NUMBER class_or_credit (LP SYMBOL (list_or SYMBOL)* RP)? tag?;
   """
   if DEBUG:
     print(f'*** maxtransfer({class_name(ctx)}, {institution}, {requirement_id})',
@@ -705,8 +710,9 @@ def maxtransfer(ctx, institution, requirement_id):
 # header_maxtransfer()
 # -------------------------------------------------------------------------------------------------
 def header_maxtransfer(ctx, institution, requirement_id):
-  """
-      header_maxtransfer : maxtransfer label?;
+  """Handle header_maxtransfer qualifiers.
+
+  header_maxtransfer : maxtransfer label?;
   """
   if DEBUG:
     print(f'*** header_maxtransfer({class_name(ctx)}, {institution}, {requirement_id})',
