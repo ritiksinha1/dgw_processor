@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
       row = cursor.fetchone()
 
-  base_name = f'{institution}_{requirement_id}_{row.block_type}_{row.block_value}'
+  base_name = f'{institution}_{requirement_id}_{row.block_type}_{row.block_value}'.replace('/', '.')
 
   parse_tree = row.parse_tree
 
