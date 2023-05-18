@@ -118,17 +118,17 @@ def copy_header(ctx, institution, requirement_id):
 # header_class_credit()
 # -------------------------------------------------------------------------------------------------
 def header_class_credit(ctx, institution, requirement_id):
+  """Handle class_credit in the header.
+
+  header_class_credit : (num_classes | num_credits)
+                        (logical_op (num_classes | num_credits))?
+                        (IS? pseudo | proxy_advice | header_tag | tag)* header_label?
+                      ;
+
+  num_classes         : NUMBER CLASS allow_clause?;
+  num_credits         : NUMBER CREDIT allow_clause?;
+  allow_clause        : LP allow NUMBER RP;
   """
-      header_class_credit : (num_classes | num_credits)
-                            (logical_op (num_classes | num_credits))?
-                            (IS? pseudo | proxy_advice | header_tag | tag)* header_label?
-                          ;
-
-      num_classes         : NUMBER CLASS allow_clause?;
-      num_credits         : NUMBER CREDIT allow_clause?;
-      allow_clause        : LP allow NUMBER RP;
-
-"""
   return_dict = {'label': get_label(ctx)}
 
   return_dict.update(num_class_or_num_credit(ctx))
@@ -147,21 +147,21 @@ def header_class_credit(ctx, institution, requirement_id):
 # body_class_credit()
 # -------------------------------------------------------------------------------------------------
 def body_class_credit(ctx, institution, requirement_id):
+  """Handle class/credit requirement.
+
+    body_class_credit : (num_classes | num_credits)
+                        (logical_op (num_classes | num_credits))? course_list_body?
+                        (hide_rule | proxy_advice | share | rule_tag | (label remark?) | tag )*
+                      ;
+
+    num_classes         : NUMBER CLASS allow_clause?;
+    num_credits         : NUMBER CREDIT allow_clause?;
+
+    course_list_body  : course_list ((qualifier tag?) | proxy_advice | remark)*;
+    course_list_rule  : course_list_body label?;  # (Not actually relevant here)
+
+  Ignore tag.
   """
-      body_class_credit : (num_classes | num_credits)
-                          (logical_op (num_classes | num_credits))? course_list_body?
-                          (hide_rule | proxy_advice | share | rule_tag | (label remark?) | tag )*
-                        ;
-
-      num_classes         : NUMBER CLASS allow_clause?;
-      num_credits         : NUMBER CREDIT allow_clause?;
-
-      course_list_body  : course_list ((qualifier tag?) | proxy_advice | remark)*;
-      course_list_rule  : course_list_body label?;  # (Not actually relevant here)
-
-    Ignore tag.
-  """
-
   return_dict = {'label': get_label(ctx)}
 
   if ctx.hide_rule():
@@ -200,7 +200,8 @@ def body_class_credit(ctx, institution, requirement_id):
 # header_conditional()
 # -------------------------------------------------------------------------------------------------
 def header_conditional(ctx, institution, requirement_id):
-  """
+  """Handle conditional in the header.
+
   header_conditional  : IF expression THEN (header_rule | header_rule_group ) header_else?;
   header_else         : ELSE (header_rule | header_rule_group);
   header_rule_group   : (begin_if header_rule+ end_if);
@@ -263,26 +264,28 @@ def header_conditional(ctx, institution, requirement_id):
 # body_conditional()
 # -------------------------------------------------------------------------------------------------
 def body_conditional(ctx, institution, requirement_id):
-  """ Just like header_conditional, except the rule or rule_group can be followed by requirements
-      that apply to the rule or rule group.
+  """Handle conditional in the body.
 
-      body_conditional  : IF expression THEN (body_rule | body_rule_group) body_else? ;
-      body_else         : ELSE (body_rule | body_rule_group);
-      body_rule_group : (begin_if body_rule+ end_if);
+  Just like header_conditional, except the rule or rule_group can be followed by requirements that
+  apply to the rule or rule group.
 
-      body_rule       :block
-                      | blocktype
-                      | body_class_credit
-                      | body_conditional
-                      | course_list_rule
-                      | copy_rules
-                      | group_requirement
-                      | noncourse
-                      | proxy_advice
-                      | remark
-                      | rule_complete
-                      | subset
-                      ;
+  body_conditional  : IF expression THEN (body_rule | body_rule_group) body_else? ;
+  body_else         : ELSE (body_rule | body_rule_group);
+  body_rule_group : (begin_if body_rule+ end_if);
+
+  body_rule       :block
+                  | blocktype
+                  | body_class_credit
+                  | body_conditional
+                  | course_list_rule
+                  | copy_rules
+                  | group_requirement
+                  | noncourse
+                  | proxy_advice
+                  | remark
+                  | rule_complete
+                  | subset
+                  ;
   """
   if DEBUG:
       print(f'*** body_conditional({class_name(ctx)}, {institution}, {requirement_id})',
@@ -322,10 +325,11 @@ def body_conditional(ctx, institution, requirement_id):
 # copy_rules()
 # -------------------------------------------------------------------------------------------------
 def copy_rules(ctx, institution, requirement_id):
-  """
-      copy_rules      : COPY_RULES expression SEMICOLON?;
+  """Handle copy_rules.
 
-      The expression is a requirement_id enclosed in parentheses (RA######).
+  copy_rules      : COPY_RULES expression SEMICOLON?;
+
+  The expression is a requirement_id enclosed in parentheses (RA######).
   """
   if DEBUG:
       print(f'*** copy_rules({class_name(ctx)}, {institution}, {requirement_id})',
@@ -364,18 +368,18 @@ def copy_rules(ctx, institution, requirement_id):
 # course_list_rule()
 # -------------------------------------------------------------------------------------------------
 def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
+  """Handle course_list that is a rule.
+
+  In the body, a bare course list (presumably followed by a label) can serve as a requirement,
+  with the implicit assumption that all courses in the list are required.
+
+  CSI01 RA 000544 is the only block observed to use this feature at the top level of the body.
+  Update: now seeing it in jjc 1573 (instead)
+
+  course_list_body  : course_list ((qualifier tag?) | proxy_advice | remark)*;
+  course_list_rule  : course_list_body label?;
+  course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
   """
-    In the body, a bare course list (presumably followed by a label) can serve as a requirement,
-    with the implicit assumption that all courses in the list are required.
-
-    CSI01 RA 000544 is the only block observed to use this feature at the top level of the body.
-    Update: now seeing it in jjc 1573 (instead)
-
-    course_list_body  : course_list ((qualifier tag?) | proxy_advice | remark)*;
-    course_list_rule  : course_list_body label?;
-    course_list     : course_item (and_list | or_list)? (except_list | include_list)* proxy_advice?;
-  """
-
   return_dict = {'label': get_label(ctx)}
 
   course_list_body_ctx = ctx.course_list_body()
@@ -400,21 +404,22 @@ def course_list_rule(ctx: Any, institution: str, requirement_id: str) -> dict:
 # group_requirement()
 # -------------------------------------------------------------------------------------------------
 def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
-  """
-      group_requirement : NUMBER GROUP group_list ((qualifier tag?)
-                                                   | hide_rule
-                                                   | proxy_advice
-                                                   | remark
-                                                   | label)*;
-      group_list        : group (logical_op group)*; // But only OR should occur
-      group             : LP
-                         ( block
-                         | blocktype
-                         | body_class_credit
-                         | course_list_rule
-                         | group_requirement
-                         | noncourse
-                         | rule_complete ) RP ;
+  """Handle group_requirement.
+
+  group_requirement : NUMBER GROUP group_list ((qualifier tag?)
+                                               | hide_rule
+                                               | proxy_advice
+                                               | remark
+                                               | label)*;
+  group_list        : group (logical_op group)*; // But only OR should occur
+  group             : LP
+                     ( block
+                     | blocktype
+                     | body_class_credit
+                     | course_list_rule
+                     | group_requirement
+                     | noncourse
+                     | rule_complete ) RP ;
 
   “Qualifiers that must be applied to all rules in the group list must occur after the last right
   parenthesis and before the label at the end of the Group statement. Qualifiers that apply only to
@@ -453,7 +458,9 @@ def group_requirement(ctx: Any, institution: str, requirement_id: str) -> dict:
 # header_tag()
 # -------------------------------------------------------------------------------------------------
 def header_tag(ctx, institution, requirement_id):
-  """ header_tag  : (HEADER_TAG nv_pair)+;
+  """Handle header_tag.
+
+  header_tag  : (HEADER_TAG nv_pair)+;
   """
   if DEBUG:
     print(f'*** header_tag({class_name(ctx)}, {institution}, {requirement_id})',
@@ -465,8 +472,10 @@ def header_tag(ctx, institution, requirement_id):
 # rule_tag()
 # -------------------------------------------------------------------------------------------------
 def rule_tag(ctx, institution, requirement_id):
-  """ rule_tag  : (RULE_TAG nv_pair)+;
-      nv_pair   : nv_lhs ('=' nv_rhs)?;
+  """Handle rule_tag.
+
+  rule_tag  : (RULE_TAG nv_pair)+;
+  nv_pair   : nv_lhs ('=' nv_rhs)?;
   """
   if DEBUG:
     print(f'*** rule_tag({class_name(ctx)}, {institution}, {requirement_id})',
@@ -478,11 +487,12 @@ def rule_tag(ctx, institution, requirement_id):
 # lastres()
 # -------------------------------------------------------------------------------------------------
 def lastres(ctx, institution, requirement_id):
-  """
-      This happens only in headers
+  """Handle lastres.
 
-      lastres : LASTRES NUMBER (OF NUMBER)? \
-                                    class_or_credit course_list? tag? proxy_advice? header_label?;
+  This happens only in headers
+
+  lastres : LASTRES NUMBER (OF NUMBER)? \
+                                class_or_credit course_list? tag? proxy_advice? header_label?;
   """
   if DEBUG:
     print(f'*** lastres({class_name(ctx)}, {institution}, {requirement_id})',
@@ -510,10 +520,11 @@ def lastres(ctx, institution, requirement_id):
 # maxclass()
 # --------------------------------------------------------------------------------------------------
 def maxclass(ctx, institution, requirement_id):
-  """
-      maxclass        : MAXCLASS NUMBER course_list? tag?;
+  """Handle maxclass.
 
-      This is actually only a header production
+  maxclass        : MAXCLASS NUMBER course_list? tag?;
+
+  This is actually only a header production.
   """
   if DEBUG:
     print(f'*** maxclass({class_name(ctx)}, {institution}, {requirement_id})',
@@ -528,8 +539,9 @@ def maxclass(ctx, institution, requirement_id):
 # header_maxclass()
 # --------------------------------------------------------------------------------------------------
 def header_maxclass(ctx, institution, requirement_id):
-  """
-      header_maxclass   : maxclass label?;
+  """Handle maxclass in the header.
+
+  header_maxclass   : maxclass label?;
   """
   if DEBUG:
     print(f'*** header_maxclass({class_name(ctx)}, {institution}, {requirement_id})',
@@ -547,11 +559,12 @@ def header_maxclass(ctx, institution, requirement_id):
 # maxcredit()
 # --------------------------------------------------------------------------------------------------
 def maxcredit(ctx, institution, requirement_id):
-  """
-      header_maxcredit  : maxcredit label?;
-      maxcredit       : MAXCREDIT NUMBER course_list? tag?;
+  """Handle maxcredit.
 
-      This is actually only a header production
+  header_maxcredit  : maxcredit label?;
+  maxcredit       : MAXCREDIT NUMBER course_list? tag?;
+
+  This is actually only a header production.
   """
   if DEBUG:
     print(f'*** maxcredit({class_name(ctx)}, {institution}, {requirement_id})',
@@ -566,8 +579,9 @@ def maxcredit(ctx, institution, requirement_id):
 # header_maxcredit()
 # --------------------------------------------------------------------------------------------------
 def header_maxcredit(ctx, institution, requirement_id):
-  """
-      header_maxcredit  : maxcredit label?;
+  """Handle maxcredit in the header.
+
+  header_maxcredit  : maxcredit label?;
   """
   if DEBUG:
     print(f'*** header_maxcredit({class_name(ctx)}, {institution}, {requirement_id})',
@@ -585,8 +599,9 @@ def header_maxcredit(ctx, institution, requirement_id):
 # maxpassfail()
 # --------------------------------------------------------------------------------------------------
 def maxpassfail(ctx, institution, requirement_id):
-  """
-      maxpassfail      : MAXPASSFAIL NUMBER class_or_credit tag?;
+  """Handle maxpassfail.
+
+  maxpassfail      : MAXPASSFAIL NUMBER class_or_credit tag?;
   """
   if DEBUG:
     print(f'*** maxpassfail({class_name(ctx)}, {institution}, {requirement_id})',
@@ -601,8 +616,9 @@ def maxpassfail(ctx, institution, requirement_id):
 # header_maxpassfail()
 # --------------------------------------------------------------------------------------------------
 def header_maxpassfail(ctx, institution, requirement_id):
-  """
-      header_maxpassfail : maxpassfail label?;
+  """Handle maxpassfail in the header.
+
+  header_maxpassfail : maxpassfail label?;
   """
   if DEBUG:
     print(f'*** header_maxpassfail({class_name(ctx)}, {institution}, {requirement_id})',
@@ -620,8 +636,9 @@ def header_maxpassfail(ctx, institution, requirement_id):
 # maxperdisc()
 # -------------------------------------------------------------------------------------------------
 def maxperdisc(ctx, institution, requirement_id):
-  """
-      maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
+  """Handle maxperdisc.
+
+  maxperdisc      : MAXPERDISC NUMBER class_or_credit LP SYMBOL (list_or SYMBOL)* RP tag?;
   """
   if DEBUG:
     print(f'*** maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}',
@@ -637,8 +654,9 @@ def maxperdisc(ctx, institution, requirement_id):
 # header_maxperdisc()
 # -------------------------------------------------------------------------------------------------
 def header_maxperdisc(ctx, institution, requirement_id):
-  """
-      header_maxperdisc : maxperdisc label? ;
+  """Handle maxperdisc in the header.
+
+  header_maxperdisc : maxperdisc label? ;
   """
   if DEBUG:
     print(f'*** header_maxperdisc({class_name(ctx)=}, {institution=}, {requirement_id=}',
@@ -655,8 +673,10 @@ def header_maxperdisc(ctx, institution, requirement_id):
 # maxterm()
 # -------------------------------------------------------------------------------------------------
 def maxterm(ctx, institution, requirement_id):
-  """ maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
-      But the course_list is optional in the body.
+  """Handle maxterm.
+
+  maxterm         : MAXTERM NUMBER class_or_credit course_list tag?;
+  But the course_list is optional in the body.
   """
   if DEBUG:
     print(f'*** maxterm({class_name(ctx)}, {institution}, {requirement_id})',
@@ -672,7 +692,9 @@ def maxterm(ctx, institution, requirement_id):
 # header_maxterm()
 # -------------------------------------------------------------------------------------------------
 def header_maxterm(ctx, institution, requirement_id):
-  """ header_maxterm    : maxterm label?;
+  """Handle maxterm qualifiers in header.
+
+  header_maxterm    : maxterm label?;
   """
   if DEBUG:
     print(f'*** maxterm({class_name(ctx)}, {institution}, {requirement_id})',
@@ -730,8 +752,9 @@ def header_maxtransfer(ctx, institution, requirement_id):
 # minclass()
 # --------------------------------------------------------------------------------------------------
 def minclass(ctx, institution, requirement_id):
-  """
-      minclass        : MINCLASS NUMBER course_list tag? proxy_advice?;
+  """Handle minclass.
+
+  minclass        : MINCLASS NUMBER course_list tag? proxy_advice?;
   """
   if DEBUG:
     print(f'*** minclass({class_name(ctx)}, {institution}, {requirement_id})',
@@ -749,8 +772,9 @@ def minclass(ctx, institution, requirement_id):
 # header_minclass()
 # --------------------------------------------------------------------------------------------------
 def header_minclass(ctx, institution, requirement_id):
-  """
-      header_minclass     : minclass label?;
+  """Handle minclass in header.
+
+  header_minclass     : minclass label?;
   """
   if DEBUG:
     print(f'*** header_minclass({class_name(ctx)}, {institution}, {requirement_id})',
@@ -768,8 +792,9 @@ def header_minclass(ctx, institution, requirement_id):
 # mincredit()
 # --------------------------------------------------------------------------------------------------
 def mincredit(ctx, institution, requirement_id):
-  """
-      mincredit       : MINCREDIT NUMBER course_list tag? proxy_advice?;
+  """Handle mincredit.
+
+  mincredit       : MINCREDIT NUMBER course_list tag? proxy_advice?;
   """
   if DEBUG:
     print(f'*** mincredit({class_name(ctx)}, {institution}, {requirement_id})',
